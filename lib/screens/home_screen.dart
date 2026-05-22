@@ -8,6 +8,17 @@ import 'monitors_screen.dart';
 import 'predict_screen.dart';
 import 'river_monitor_screen.dart';
 import 'weather_screen.dart';
+// In any screen, replace mock data with:
+import '../services/cwc_live_provider.dart';
+
+final reading = await CwcLiveProvider.instance.getReadingFromMap(
+  AppConstants.monitoredCities.firstWhere((m) => m['city'] == 'Patna')
+);
+
+print(reading.currentLevelM);  // Real CWC gauge reading
+print(reading.riskLabel);      // CRITICAL / SEVERE / MODERATE / LOW
+print(reading.alertColour);    // RED / ORANGE / YELLOW / GREEN
+print(reading.source);         // Which source provided it
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
