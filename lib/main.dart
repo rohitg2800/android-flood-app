@@ -19,19 +19,15 @@ import 'theme/river_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Defer first frame so splash renders before heavy init.
   WidgetsBinding.instance.deferFirstFrame();
 
   try {
-    // 1. Load .env
     try {
       await dotenv.load(fileName: '.env', mergeWith: {});
     } catch (e) {
-      if (kDebugMode) debugPrint('\u26a0\ufe0f  .env not found — running with defaults: $e');
+      if (kDebugMode) debugPrint('⚠️ .env not found — running with defaults: $e');
     }
 
-    // 2. Firebase
     if (!kIsWeb) {
       try {
         if (Firebase.apps.isEmpty) {
@@ -40,22 +36,21 @@ Future<void> main() async {
           ).timeout(
             const Duration(seconds: 5),
             onTimeout: () {
-              if (kDebugMode) debugPrint('\u26a0\ufe0f  Firebase.initializeApp timed out — continuing without Firebase');
+              if (kDebugMode) debugPrint('⚠️ Firebase.initializeApp timed out');
               throw TimeoutException('Firebase init timeout');
             },
           );
         }
       } catch (e) {
-        if (kDebugMode) debugPrint('\u26a0\ufe0f  Firebase init failed (non-fatal): $e');
+        if (kDebugMode) debugPrint('⚠️ Firebase init failed (non-fatal): $e');
       }
     }
 
-    // 3. System chrome
     if (!kIsWeb) {
       SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-        statusBarColor:                    Colors.transparent,
-        statusBarIconBrightness:           Brightness.light,
-        systemNavigationBarColor:          AppPalette.navy0,
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        systemNavigationBarColor: AppPalette.navy0,
         systemNavigationBarIconBrightness: Brightness.light,
       ));
       await SystemChrome.setPreferredOrientations([
@@ -64,38 +59,33 @@ Future<void> main() async {
       ]);
     }
 
-    // 4. Global error handlers
     FlutterError.onError = (FlutterErrorDetails details) {
       if (kDebugMode) {
         FlutterError.presentError(details);
-        debugPrint('\u274c FlutterError: ${details.summary}');
+        debugPrint('❌ FlutterError: ${details.summary}');
       }
     };
     PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
-      if (kDebugMode) debugPrint('\u274c PlatformDispatcher: $error\n$stack');
+      if (kDebugMode) debugPrint('❌ PlatformDispatcher: $error\n$stack');
       return true;
     };
 
-    // 5. Theme
     await ThemeProvider().init();
 
-    // 6. Essential services
     if (!kIsWeb) {
-      // LocalCacheService must be ready before ThresholdAlertService starts.
       await LocalCacheService.instance.init().catchError((e) {
-        if (kDebugMode) debugPrint('\u26a0\ufe0f  LocalCacheService.init failed: $e');
+        if (kDebugMode) debugPrint('⚠️ LocalCacheService.init failed: $e');
       });
 
       unawaited(
         FcmService.instance.init().catchError((e) {
-          if (kDebugMode) debugPrint('\u26a0\ufe0f  FcmService.init failed: $e');
+          if (kDebugMode) debugPrint('⚠️ FcmService.init failed: $e');
         }),
       );
 
-      // ThresholdAlertService calls GloFAS flood API directly (no backend).
       unawaited(
         ThresholdAlertService.instance.start().catchError((e) {
-          if (kDebugMode) debugPrint('\u26a0\ufe0f  ThresholdAlertService.start failed: $e');
+          if (kDebugMode) debugPrint('⚠️ ThresholdAlertService.start failed: $e');
         }),
       );
     }
@@ -103,23 +93,24 @@ Future<void> main() async {
     WidgetsBinding.instance.allowFirstFrame();
   }
 
-  runApp(const ProviderScope(child: OpsFloodApp()));
+  runApp(const ProviderScope(child: BiharFloodWatchApp()));
 }
 
-class OpsFloodApp extends ConsumerWidget {
-  const OpsFloodApp({super.key});
+/// Bihar Flood Watch — बिहार बाढ़ निगरानी
+class BiharFloodWatchApp extends ConsumerWidget {
+  const BiharFloodWatchApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp(
-      title:                      'OpsFlood',
+      title: 'Bihar Flood Watch',
       debugShowCheckedModeBanner: false,
-      themeMode:                  themeMode,
-      theme:                      RiverColors.lightTheme(),
-      darkTheme:                  RiverColors.darkTheme(),
-      home:                       const SplashScreen(),
+      themeMode: themeMode,
+      theme: RiverColors.lightTheme(),
+      darkTheme: RiverColors.darkTheme(),
+      home: const SplashScreen(),
       routes: {
         AlertsScreen.route: (_) => const AlertsScreen(),
       },
