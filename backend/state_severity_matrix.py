@@ -104,9 +104,14 @@ def danger_level_override_guard(
         1. river_level  >= hfl_m          → allow CRITICAL (no cap)
         2. river_level  >= danger_level_m → allow up to SEVERE (cap CRITICAL → SEVERE)
         3. river_level  >= warning_level_m→ allow up to SEVERE (within model confidence)
-        4. river_level  <  warning_level_m AND rain < region_severe_threshold
+        4. river_level  <  warning_level_m AND rain < per-state severe threshold
                                           → cap at MODERATE
         5. warning_level_m or danger_level_m == 0 → guard skipped (datum unknown)
+
+    Rule 4 uses the per-state calibrated rainfall_7d_mm["severe"] threshold from
+    the entry so that states like Bihar (390 mm) are not under-capped by the
+    generic PLAINS region threshold (300 mm). Falls back to the region lookup
+    only when the entry key is absent.
 
     Delhi and Mizoram use MSL datums; their entries carry the correct MSL values
     so this function handles them correctly without special-casing.
@@ -128,8 +133,15 @@ def danger_level_override_guard(
     if warning_level <= 0.0 or danger_level <= 0.0:
         return severity
 
-    region_rain = get_region_rainfall_thresholds(entry["region"])
-    severe_rain_threshold = float(region_rain["severe"])
+    # FIX: use per-state calibrated severe threshold (entry["rainfall_7d_mm"]["severe"])
+    # instead of the generic region-level lookup, so carefully-calibrated states
+    # (e.g. Bihar 390 mm, Kerala 550 mm) are not under-capped by PLAINS 300 mm.
+    # Fall back to the region lookup only when the entry key is missing.
+    try:
+        severe_rain_threshold = float(entry["rainfall_7d_mm"]["severe"])
+    except (KeyError, TypeError):
+        region_rain = get_region_rainfall_thresholds(entry["region"])
+        severe_rain_threshold = float(region_rain["severe"])
 
     current_order  = SEVERITY_ORDER[severity]
 
@@ -148,7 +160,7 @@ def danger_level_override_guard(
         return SEVERITY_FROM_ORDER[capped]
 
     # Rule 4 — below warning level
-    # If rainfall also below region severe threshold → hard cap at MODERATE
+    # If rainfall also below per-state severe threshold → hard cap at MODERATE
     if rainfall_7d_mm < severe_rain_threshold:
         capped = min(current_order, SEVERITY_ORDER["MODERATE"])
         return SEVERITY_FROM_ORDER[capped]
@@ -980,7 +992,10 @@ def build_effective_state_entry(
 
     - Always starts from the state matrix entry.
     - If telemetry provides non-zero/sane warning/danger levels, they override the state's warning/danger.
-    - If base HFL is lower than overridden danger, approximate HFL as (danger + 1.0).
+    - FIX: HFL fallback uses max(state_hfl, danger * 1.20) instead of danger + 1.0 so the
+      CRITICAL window is never artificially collapsed to 1 m above SEVERE. The 1.20 factor
+      gives a ~2.4 m gap at Bihar's danger level (12.0 m → 14.4 m) which matches the
+      Kosi at Baltara calibrated HFL (14.40 m bed-relative).
 
     Telemetry override is only applied when values are > 0.
     """
@@ -999,9 +1014,12 @@ def build_effective_state_entry(
     if danger > 0.0:
         entry["danger_level_m"] = danger
 
-    hfl = _telemetry_level(entry.get("hfl_m"))
-    if danger > 0.0 and hfl < danger:
-        entry["hfl_m"] = danger + 1.0
+    # FIX: use max(state_hfl, danger * 1.20) instead of danger + 1.0 so the CRITICAL
+    # window is never collapsed to a 1 m band. 1.20 factor aligns with Bihar Kosi at
+    # Baltara calibrated values (danger 12.00 m → HFL 14.40 m ≈ danger × 1.20).
+    state_hfl = _telemetry_level(base_entry.get("hfl_m"))
+    if danger > 0.0:
+        entry["hfl_m"] = max(state_hfl, danger * 1.20)
 
     # Defensive: keep ordering consistent when both values are provided.
     # (If CWC warning > danger due to noise, clamp warning down.)
