@@ -3,8 +3,14 @@
 // FloodData — one city's live flood snapshot.
 // Fields derived directly from CityDetailScreen + DashboardScreen usage.
 //
-// Backend riskLevel values : 'CRITICAL' | 'HIGH' | 'MODERATE' | 'LOW'
+// Backend riskLevel values : 'CRITICAL' | 'SEVERE' | 'MODERATE' | 'LOW'
 // Backend imdSeverity values: 'RED' | 'ORANGE' | 'YELLOW' | null
+//
+// NOTE: The backend (state_severity_matrix.py) emits 'SEVERE' — NOT 'HIGH'.
+// All UI code must use the 'SEVERE' string.  Use the [priorityColor] and
+// [priorityOrder] getters below instead of writing inline switch blocks.
+
+import 'dart:ui' show Color;
 
 class FloodData {
   final String  city;
@@ -20,7 +26,7 @@ class FloodData {
   /// 0–100 — percentage of danger-level capacity currently occupied.
   final double capacityPercent;
 
-  /// 'CRITICAL' | 'HIGH' | 'MODERATE' | 'LOW'
+  /// 'CRITICAL' | 'SEVERE' | 'MODERATE' | 'LOW'
   final String riskLevel;
 
   /// 'LIVE' (CWC) or 'ESTIMATED'
@@ -56,6 +62,34 @@ class FloodData {
     required this.lastUpdated,
   });
 
+  // ── Derived helpers ────────────────────────────────────────────────────────
+
+  /// Sort weight: 4 = CRITICAL (highest) → 1 = LOW.
+  /// Use this for sorting lists by severity instead of comparing strings.
+  int get priorityOrder {
+    switch (riskLevel) {
+      case 'CRITICAL': return 4;
+      case 'SEVERE':   return 3;
+      case 'MODERATE': return 2;
+      case 'LOW':
+      default:         return 1;
+    }
+  }
+
+  /// Canonical severity colour shared across all screens.
+  /// Returns a [Color] — no need for inline switch blocks in UI code.
+  Color get priorityColor {
+    switch (riskLevel) {
+      case 'CRITICAL': return const Color(0xFFB71C1C); // deep red
+      case 'SEVERE':   return const Color(0xFFE65100); // deep orange
+      case 'MODERATE': return const Color(0xFFF9A825); // amber
+      case 'LOW':
+      default:         return const Color(0xFF2E7D32); // green
+    }
+  }
+
+  // ── JSON ──────────────────────────────────────────────────────────────────
+
   factory FloodData.fromJson(Map<String, dynamic> j) {
     // Helper: safely parse any JSON numeric value to double.
     double d(dynamic v, [double fallback = 0.0]) {
@@ -85,6 +119,12 @@ class FloodData {
     final imdRain = dNull(j['imd_rainfall_mm'] ?? j['imdRainfallMm']);
     final cwcRain = d(j['rainfall_24h_mm'] ?? j['effectiveRainfallMm']);
 
+    // Normalise riskLevel to uppercase so casing differences from the API
+    // never silently fall through to the 'LOW' default.
+    final raw = (j['risk_level'] ?? j['riskLevel'] ?? 'LOW').toString().toUpperCase();
+    const _valid = {'CRITICAL', 'SEVERE', 'MODERATE', 'LOW'};
+    final level = _valid.contains(raw) ? raw : 'LOW';
+
     return FloodData(
       city:                 (j['city']      as String?  ) ?? '',
       state:                (j['state']     as String?  ) ?? '',
@@ -94,7 +134,7 @@ class FloodData {
       dangerLevel:          danger,
       safeLevel:            d(j['safe_level'] ?? j['safeLevel']),
       capacityPercent:      cap,
-      riskLevel:            (j['risk_level'] ?? j['riskLevel'] ?? 'LOW') as String,
+      riskLevel:            level,
       status:               (j['status']     as String?  ) ?? 'ESTIMATED',
       imdSeverity:           j['imd_severity'] as String?,
       imdRainfallMm:        imdRain,
