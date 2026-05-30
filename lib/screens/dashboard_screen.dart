@@ -1,13 +1,7 @@
 // lib/screens/dashboard_screen.dart
-// OpsFlood — DashboardScreen v15 (Abyss Ops premium rebuild)
-// ─────────────────────────────────────────────────────────────────────────────
-// Layout:
-//   1. AppBar strip          — logo + live pill + refresh
-//   2. KPI row               — 4 PremiumStatCards in horizontal scroll
-//   3. National risk OpsBarChart — top 8 cities by capacity
-//   4. River trend OpsAreaChart  — selected city level history
-//   5. CWC station row       — compact shimmer cards
-//   6. State risk heatmap    — inline
+// OpsFlood — DashboardScreen v16
+// Phase 3 fix: _riskColor 'HIGH' → 'SEVERE', severity sort uses priorityOrder,
+// KPI counts use riskLevel string (not raw capacity thresholds).
 library;
 
 import 'dart:math' as math;
@@ -64,17 +58,25 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   // ── Data helpers ───────────────────────────────────────────────────────────
+
+  // Sort: highest severity first, then highest capacity within same tier.
   List<FloodData> get _sorted {
     final list = List<FloodData>.from(_service.liveLevels);
-    list.sort((a, b) => b.capacityPercent.compareTo(a.capacityPercent));
+    list.sort((a, b) {
+      final cmp = b.priorityOrder.compareTo(a.priorityOrder);
+      if (cmp != 0) return cmp;
+      return b.capacityPercent.compareTo(a.capacityPercent);
+    });
     return list;
   }
 
+  // Use riskLevel string so these counts agree with backend severity labels.
   int get _criticalCount =>
-      _sorted.where((d) => d.capacityPercent >= 85).length;
+      _sorted.where((d) => d.riskLevel == 'CRITICAL').length;
 
   int get _alertCount =>
-      _sorted.where((d) => d.capacityPercent >= 45).length;
+      _sorted.where((d) =>
+          d.riskLevel == 'CRITICAL' || d.riskLevel == 'SEVERE').length;
 
   FloodData? get _selectedData {
     if (_selectedCity == null) return null;
@@ -243,7 +245,6 @@ class _DashboardScreenState extends State<DashboardScreen>
             ],
           ),
         ),
-        // Live pill
         AnimatedBuilder(
           animation: _pulseAnim,
           builder: (_, __) => Container(
@@ -473,7 +474,8 @@ class _DashboardScreenState extends State<DashboardScreen>
       );
     }
 
-    final statusColor = _riskColor(selected.riskLevel);
+    // Use model getter — single source of truth.
+    final statusColor = selected.priorityColor;
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
@@ -550,7 +552,8 @@ class _DashboardScreenState extends State<DashboardScreen>
       child: Row(
         children: top.map((d) {
           final active = (_selectedCity ?? top.first.city) == d.city;
-          final color  = _riskColor(d.riskLevel);
+          // Use model getter — no inline switch.
+          final color  = d.priorityColor;
           return GestureDetector(
             onTap: () => setState(() => _selectedCity = d.city),
             child: AnimatedContainer(
@@ -685,14 +688,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               fontSize: 9, color: AppPalette.textGrey)),
       ]);
 
-  Color _riskColor(String level) {
-    switch (level.toUpperCase()) {
-      case 'CRITICAL': return AppPalette.critical;
-      case 'HIGH':     return AppPalette.danger;
-      case 'MODERATE': return AppPalette.warning;
-      default:         return AppPalette.safe;
-    }
-  }
+  // _riskColor removed — use data.priorityColor instead.
 
   String _shortTime(DateTime ts) {
     try {
