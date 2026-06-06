@@ -29,6 +29,8 @@ import 'screens/state_matrix_screen.dart';
 import 'screens/weather_screen.dart';
 import 'services/fcm_service.dart';
 import 'services/local_cache_service.dart';
+import 'services/notification_service.dart';   // #22 — topic subscriptions
+import 'services/offline_cache_service.dart';  // #26 — connectivity + TTL cache
 import 'services/threshold_alert_service.dart';
 import 'theme/river_theme.dart';
 
@@ -105,13 +107,29 @@ Future<void> main() async {
 
     // 7. Essential services
     if (!kIsWeb) {
+      // Existing cache layer
       await LocalCacheService.instance.init().catchError((e) {
         if (kDebugMode) debugPrint('⚠️  LocalCacheService.init failed: $e');
       });
 
+      // ── Task #26: OfflineCacheService — connectivity detection + TTL cache ──
+      unawaited(
+        OfflineCacheService().initialize().catchError((e) {
+          if (kDebugMode) debugPrint('⚠️  OfflineCacheService.initialize failed (non-fatal): $e');
+        }),
+      );
+
+      // Existing FCM setup (handles message routing)
       unawaited(
         FcmService.instance.init().catchError((e) {
           if (kDebugMode) debugPrint('⚠️  FcmService.init failed: $e');
+        }),
+      );
+
+      // ── Task #22: NotificationService — local channel + topic subscriptions ──
+      unawaited(
+        NotificationService().initialize().catchError((e) {
+          if (kDebugMode) debugPrint('⚠️  NotificationService.initialize failed (non-fatal): $e');
         }),
       );
 
@@ -133,6 +151,8 @@ class EquinoxBHApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Task #1: ThemeProvider already wired — themeModeProvider drives MaterialApp
+    // RiverColors.lightTheme() / darkTheme() are the canonical MD3 themes
     final AppThemeMode appMode = ref.watch(themeModeProvider);
     final locale               = ref.watch(localeProvider);
 
@@ -171,7 +191,6 @@ class EquinoxBHApp extends ConsumerWidget {
         '/model_info':                  (_) => const ModelInfoScreen(),
         '/bihar_river_map':             (_) => const BiharRiverMapScreen(),
         '/india_river_explorer':        (_) => const IndiaRiverExplorerScreen(),
-        // ── Phase 3 — city detail with named-route + arg pass-through ──────
         CityDetailScreen.route: (ctx) {
           final city = ModalRoute.of(ctx)!.settings.arguments as String;
           return CityDetailScreen(cityName: city);

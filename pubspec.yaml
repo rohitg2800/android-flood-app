@@ -26,26 +26,33 @@ dependencies:
   firebase_core:      ^4.9.0
   firebase_messaging: ^16.2.2
   cloud_firestore:    ^6.4.1
+  firebase_auth:      ^5.3.1
 
   # Background tasks
   workmanager: ^0.9.0+3
 
-  # Charts
+  # Charts — already present (#15 water level charts)
   fl_chart: ^1.2.0
 
   # Storage & prefs
   shared_preferences: ^2.3.0
 
+  # Offline SQLite ORM — Task #3 / Issue #26 full Drift integration
+  drift:              ^2.14.0
+  sqlite3_flutter_libs: ^0.5.0
+  path_provider:      ^2.1.0
+  path:               ^1.9.0
+
   # i18n
   intl: ^0.20.2
 
-  # Links
+  # Links — already present (#28 one-tap call)
   url_launcher: ^6.3.0
 
-  # Local notifications
+  # Local notifications — already present (#22 FCM foreground display)
   flutter_local_notifications: ^17.2.4
 
-  # Network status
+  # Network status — already present (#26 connectivity detection)
   connectivity_plus: ^7.1.1
 
   # Ads
@@ -59,6 +66,9 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
+  # Drift code-gen (run: dart run build_runner build)
+  drift_dev:    ^2.14.0
+  build_runner: ^2.4.0
 
 flutter_launcher_icons:
   android: true
@@ -74,3 +84,4 @@ flutter:
   assets:
     - .env
     - assets/icon/opsflood_icon.png
+    - assets/data/

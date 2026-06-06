@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
 import '../services/offline_cache_service.dart';
+import '../services/ops_client.dart';
 
 /// Resolves issue #20: Advanced Flood Forecasting (72-Hour Prediction)
+/// Task #4: wired to real OpsClient → GET /api/v1/forecast/{station_id}
 class ForecastPoint {
   final DateTime timestamp;
   final double predictedLevel;
@@ -25,9 +27,9 @@ class ForecastPoint {
 
 class StationForecast {
   final String stationId;
-  final List<ForecastPoint> points; // at 6h, 12h, 24h, 48h, 72h
+  final List<ForecastPoint> points; // 12 points @ 6h intervals = 72h
   final String summaryText;
-  final double modelAccuracy; // percentage
+  final double modelAccuracy;
   final double mae;
   final double rmse;
   final DateTime generatedAt;
@@ -55,6 +57,21 @@ class StationForecast {
             ? DateTime.parse(map['generated_at'])
             : DateTime.now(),
       );
+
+  /// True if the 72h peak exceeds the dangerLevel passed in
+  bool willExceedDanger(double dangerLevel) =>
+      points.any((p) => p.predictedLevel >= dangerLevel);
+
+  /// Hour offset when level is first predicted to cross threshold (or null)
+  int? hoursUntilThreshold(double threshold) {
+    for (final p in points) {
+      if (p.predictedLevel >= threshold) {
+        final diff = p.timestamp.difference(generatedAt);
+        return diff.inHours;
+      }
+    }
+    return null;
+  }
 }
 
 class ForecastProvider extends ChangeNotifier {
@@ -70,50 +87,84 @@ class ForecastProvider extends ChangeNotifier {
   StationForecast? getForecast(String stationId) =>
       _forecasts[stationId];
 
-  Future<void> fetchForecast(String stationId, String baseUrl) async {
+  Future<void> fetchForecast(String stationId, [String? _ignoredBaseUrl]) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
       final cache = OfflineCacheService();
+
+      // 1. Stale-while-revalidate: serve cache first
       final cached = await cache.getCachedData('forecast_$stationId');
       if (cached != null) {
         _forecasts[stationId] = StationForecast.fromMap(cached);
         notifyListeners();
       }
 
-      // TODO: Wire real API when backend forecast endpoint is ready:
-      // GET $baseUrl/api/v1/forecast/$stationId
+      // 2. Skip network if offline
+      if (!cache.isOnline) {
+        debugPrint('ForecastProvider: offline — serving cached forecast for $stationId');
+        return;
+      }
 
-      // Demo forecast data (72h with 6h intervals)
-      final now = DateTime.now();
-      _forecasts[stationId] = StationForecast(
-        stationId: stationId,
-        points: List.generate(12, (i) {
-          final hours = (i + 1) * 6;
-          final base = 45.2 + (i * 0.3) + (i > 6 ? -0.1 * (i - 6) : 0);
-          return ForecastPoint(
-            timestamp: now.add(Duration(hours: hours)),
-            predictedLevel: base,
-            confidenceLow: base - 0.8,
-            confidenceHigh: base + 0.8,
-          );
-        }),
-        summaryText:
-            'Expected to approach Warning level (~48m) in approximately 18 hours. '
-            'Peak predicted at 72h with gradual recession thereafter.',
-        modelAccuracy: 82.5,
-        mae: 0.34,
-        rmse: 0.47,
-        generatedAt: now,
+      // 3. Real API call via OpsClient → /api/v1/forecast/{station_id}
+      // Backend returns:
+      // {
+      //   station_id: string,
+      //   points: [{ timestamp, predicted_level, confidence_low, confidence_high }],
+      //   summary_text: string,
+      //   model_accuracy: float,   // 0–100
+      //   mae: float,
+      //   rmse: float,
+      //   generated_at: ISO8601
+      // }
+      final data = await OpsClient.instance.get(
+        '/api/v1/forecast/$stationId',
       );
+
+      _forecasts[stationId] = StationForecast.fromMap(data);
+      await cache.cacheData('forecast_$stationId', data);
+      notifyListeners();
     } catch (e) {
       _error = e.toString();
       debugPrint('ForecastProvider error: $e');
+
+      // Keep last forecast visible — do not blank the UI on error
+      if (!_forecasts.containsKey(stationId)) {
+        _forecasts[stationId] = StationForecast(
+          stationId: stationId,
+          points: const [],
+          summaryText: 'Forecast unavailable — check connection',
+          modelAccuracy: 0,
+          mae: 0,
+          rmse: 0,
+          generatedAt: DateTime.now(),
+        );
+      }
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  /// Bulk-fetch for all stations in a district
+  /// GET /api/v1/forecast?district={district}
+  Future<void> fetchDistrictForecasts(String district) async {
+    if (!OfflineCacheService().isOnline) return;
+    try {
+      final data = await OpsClient.instance.get(
+        '/api/v1/forecast',
+        queryParams: {'district': district},
+      );
+      final list = (data['data'] as List<dynamic>? ?? []);
+      for (final item in list.cast<Map<String, dynamic>>()) {
+        final forecast = StationForecast.fromMap(item);
+        _forecasts[forecast.stationId] = forecast;
+      }
+      notifyListeners();
+    } catch (e) {
+      debugPrint('ForecastProvider.fetchDistrictForecasts error: $e');
     }
   }
 }
