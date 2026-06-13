@@ -19,7 +19,7 @@ class StationCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final rt = ref.watch(riverThemeProvider);
+    final rt = ref.watch(robTheme);
     return _RoboticCard(data: data, theme: rt, onTap: onTap);
   }
 }
