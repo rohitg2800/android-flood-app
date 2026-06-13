@@ -101,7 +101,7 @@ class _IncidentReportScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('✅ Incident reported. Thank you!'),
-          backgroundColor: Color(0xFF4CAF50),
+          backgroundColor: AppPalette.safe,
         ),
       );
       Navigator.of(context).pop();

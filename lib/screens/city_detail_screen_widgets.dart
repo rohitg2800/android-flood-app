@@ -397,7 +397,7 @@ class ImdAlertTile extends StatelessWidget {
     switch (sev.toUpperCase()) {
       case 'RED':    return AppPalette.danger;
       case 'ORANGE': return AppPalette.warning;
-      default:       return const Color(0xFFFFD600);
+      default:       return const AppPalette.gold;
     }
   }
 }

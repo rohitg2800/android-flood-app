@@ -144,7 +144,7 @@ class _ExportScreenState
           _ExportActionCard(
             t:           t,
             icon:        Icons.table_chart_rounded,
-            iconColor:   const Color(0xFF43A047),
+            iconColor:   const AppPalette.safe,
             title:       'Export as CSV',
             subtitle:    'UTF-8 BOM • Excel compatible • RFC-4180',
             buttonLabel: 'Generate CSV',
@@ -157,7 +157,7 @@ class _ExportScreenState
           _ExportActionCard(
             t:           t,
             icon:        Icons.picture_as_pdf_rounded,
-            iconColor:   const Color(0xFFE53935),
+            iconColor:   const AppPalette.critical,
             title:       'Export as PDF',
             subtitle:
                 'A4 landscape • Severity colour coding • Multi-page',

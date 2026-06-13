@@ -32,28 +32,28 @@ const _pages = [
     subtitle:
         'Get instant notifications when river levels cross danger thresholds at 50+ CWC stations across Bihar.',
     icon: Icons.notifications_active_outlined,
-    color: Color(0xFF0D47A1),
+    color: AppPalette.oceanAccent,
   ),
   _PageData(
     title: 'Live River Map',
     subtitle:
         'Track flood risk across all 38 Bihar districts with our colour-coded heatmap, updated every 15 minutes.',
     icon: Icons.map_outlined,
-    color: Color(0xFF1565C0),
+    color: AppPalette.oceanAccent,
   ),
   _PageData(
     title: 'Evacuation Routes',
     subtitle:
         'Find the nearest safe shelter and open road routes instantly — works offline when you need it most.',
     icon: Icons.directions_outlined,
-    color: Color(0xFF0277BD),
+    color: AppPalette.oceanAccent,
   ),
   _PageData(
     title: 'Community Reporting',
     subtitle:
         'Report local flooding with a photo and location. Help your district prepare and respond faster.',
     icon: Icons.group_outlined,
-    color: Color(0xFF01579B),
+    color: AppPalette.oceanAccent,
   ),
 ];
 
