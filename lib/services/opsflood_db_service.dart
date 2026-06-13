@@ -162,18 +162,18 @@ class OpsFloodDbService {
       _prefix.isEmpty ? name : '${_prefix}_$name';
 
   Future<_CacheResult> _readCache(String key) async {
-    final value = await _cache.read(key);
+    final value = _cache.getString(key);
     return _CacheResult(value);
   }
 
   // ── STATIONS ───────────────────────────────────────────────────────────────
   Future<DbResult<DbStation>> getStations() async {
-    final path = AppConfig.epCwcStations;          // was: const path
+    final path = AppConfig.epCwcStations;
     final raw  = await _client.get(path);
     if (_isOk(raw)) {
       final list   = _asList(raw);
       final result = list.map(DbStation.fromMap).toList();
-      await _cache.write(path, jsonEncode(list));
+      await _cache.setString(path, jsonEncode(list));
       _mirrorStations(result);
       return DbResult(data: result);
     }
@@ -195,12 +195,12 @@ class OpsFloodDbService {
 
   // ── LIVE READINGS ──────────────────────────────────────────────────────────
   Future<DbResult<DbReading>> getAllReadings() async {
-    final path = AppConfig.epLiveTelemetry;        // was: const path
+    final path = AppConfig.epLiveTelemetry;
     final raw  = await _client.get(path);
     if (_isOk(raw)) {
       final list   = _asList(raw);
       final result = list.map(DbReading.fromMap).toList();
-      await _cache.write(path, jsonEncode(list));
+      await _cache.setString(path, jsonEncode(list));
       _mirrorReadings(result);
       return DbResult(data: result);
     }
@@ -213,13 +213,13 @@ class OpsFloodDbService {
   }
 
   Future<DbResult<DbReading>> getCityReadings(String city) async {
-    final path = AppConfig.epLiveTelemetry;        // was: const path
-    final raw  = await _client.get(path, queryParams: {'city': city});
+    final path = AppConfig.epLiveTelemetry;
     final cacheKey = '$path?city=${Uri.encodeComponent(city)}';
+    final raw  = await _client.get(cacheKey);
     if (_isOk(raw)) {
       final list   = _asList(raw);
       final result = list.map(DbReading.fromMap).toList();
-      await _cache.write(cacheKey, jsonEncode(list));
+      await _cache.setString(cacheKey, jsonEncode(list));
       _mirrorReadings(result);
       return DbResult(data: result);
     }
@@ -233,12 +233,12 @@ class OpsFloodDbService {
 
   // ── CRITICAL ALERTS ────────────────────────────────────────────────────────
   Future<DbResult<DbAlert>> getCriticalAlerts() async {
-    final path = AppConfig.epCriticalAlerts;       // was: const path
+    final path = AppConfig.epCriticalAlerts;
     final raw  = await _client.get(path);
     if (_isOk(raw)) {
       final list   = _asList(raw);
       final result = list.map(DbAlert.fromMap).toList();
-      await _cache.write(path, jsonEncode(list));
+      await _cache.setString(path, jsonEncode(list));
       _mirrorAlerts(result);
       return DbResult(data: result);
     }
@@ -252,7 +252,7 @@ class OpsFloodDbService {
 
   // ── PREDICTIONS ────────────────────────────────────────────────────────────
   Future<DbResult<DbPrediction>> getPredictions({String? city}) async {
-    final path = AppConfig.epPredict;              // was: const path
+    final path = AppConfig.epPredict;
     final Map<String, dynamic> body = {if (city != null) 'city': city};
     final raw = await _client.post(path, body);
     if (_isOk(raw)) {
@@ -260,7 +260,7 @@ class OpsFloodDbService {
           ? raw['data'] as Map<String, dynamic> : raw;
       final result = DbPrediction.fromMap({...obj, if (city != null) 'city': city});
       if (city != null) {
-        await _cache.write('$path?city=${Uri.encodeComponent(city)}', jsonEncode([obj]));
+        await _cache.setString('$path?city=${Uri.encodeComponent(city)}', jsonEncode([obj]));
       }
       _mirrorPrediction(result);
       return DbResult(data: [result]);
@@ -275,10 +275,10 @@ class OpsFloodDbService {
   }
 
   Future<Map<String, dynamic>> fetchStateSeverity() async {
-    final path = AppConfig.epStateSeverity;        // was: const path
+    final path = AppConfig.epStateSeverity;
     final raw  = await _client.get(path);
     if (_isOk(raw)) {
-      await _cache.write(path, jsonEncode(raw));
+      await _cache.setString(path, jsonEncode(raw));
       return raw;
     }
     final cached = await _readCache(path);
