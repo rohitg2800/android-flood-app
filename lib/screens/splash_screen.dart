@@ -1,9 +1,13 @@
 // lib/screens/splash_screen.dart
-// OpsFlood — SplashScreen v3
+// OpsFlood — SplashScreen v4
 //
 // After the boot animation completes:
 //   • If onboarding not done  → /onboarding
 //   • Otherwise               → /shell
+//
+// v4 fixes: splash-freeze when onboardingProvider.future never resolves
+//   (AsyncError, hung SharedPreferences, or cold-boot race).  A 3-second
+//   timeout + error fallback guarantees the screen always exits.
 library;
 
 import 'dart:math' as math;
@@ -62,12 +66,31 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   }
 
   Future<void> _navigate() async {
-    final done = await ref.read(onboardingProvider.future);
+    // ── Determine if onboarding is done ──────────────────────────────────────
+    // .future only resolves on AsyncData; it hangs forever on AsyncError.
+    // Add a 3-second safety timeout and a catch so the splash ALWAYS exits.
+    bool done = false;
+    try {
+      done = await ref
+          .read(onboardingProvider.future)
+          .timeout(const Duration(seconds: 3));
+    } catch (_) {
+      // AsyncError OR timeout: default to shell so the user isn't locked out.
+      // On next launch SharedPreferences will be healthy and routing is correct.
+      done = true;
+    }
+
     if (!mounted) return;
-    Navigator.pushReplacementNamed(
-      context,
-      done ? MainShell.route : OnboardingScreen.route,
-    );
+
+    // Use addPostFrameCallback to guarantee Navigator is fully mounted
+    // (eliminates rare cold-boot "Navigator not found" assertion).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(
+        context,
+        done ? MainShell.route : OnboardingScreen.route,
+      );
+    });
   }
 
   @override
