@@ -1,5 +1,5 @@
 // lib/screens/weather_screen.dart
-// OpsFlood — WeatherScreen v4.0 — 3D theme
+// OpsFlood — WeatherScreen v4.1 — field names aligned with WeatherProvider v6
 library;
 
 import 'dart:math' as math;
@@ -25,9 +25,9 @@ class WeatherScreen extends ConsumerStatefulWidget {
 
 class _WeatherScreenState extends ConsumerState<WeatherScreen>
     with TickerProviderStateMixin {
-  final _searchCtrl   = TextEditingController();
-  final _searchFocus  = FocusNode();
-  bool  _searchOpen   = false;
+  final _searchCtrl  = TextEditingController();
+  final _searchFocus = FocusNode();
+  bool  _searchOpen  = false;
   late AnimationController _searchBarCtrl;
   late Animation<double>   _searchBarAnim;
   late AnimationController _contentCtrl;
@@ -96,6 +96,31 @@ class _WeatherScreenState extends ConsumerState<WeatherScreen>
       ..forward();
   }
 
+  /// Map an Open-Meteo / wttr WMO weather code to an emoji icon.
+  static String _wmoIcon(int code) {
+    if (code == 0)                          return '\u2600\uFE0F';  // Clear
+    if (code <= 2)                          return '\u26C5';       // Partly cloudy
+    if (code == 3)                          return '\u2601\uFE0F'; // Overcast
+    if (code >= 45 && code <= 48)           return '\uD83C\uDF2B\uFE0F'; // Fog
+    if (code >= 51 && code <= 67)           return '\uD83C\uDF27\uFE0F'; // Drizzle/Rain
+    if (code >= 71 && code <= 77)           return '\u2744\uFE0F'; // Snow
+    if (code >= 80 && code <= 82)           return '\uD83C\uDF26\uFE0F'; // Rain showers
+    if (code >= 95 && code <= 99)           return '\u26C8\uFE0F'; // Thunderstorm
+    return '\uD83C\uDF24\uFE0F';
+  }
+
+  static String _wmoDesc(int code) {
+    if (code == 0)                          return 'Clear Sky';
+    if (code <= 2)                          return 'Partly Cloudy';
+    if (code == 3)                          return 'Overcast';
+    if (code >= 45 && code <= 48)           return 'Foggy';
+    if (code >= 51 && code <= 67)           return 'Rain';
+    if (code >= 71 && code <= 77)           return 'Snow';
+    if (code >= 80 && code <= 82)           return 'Rain Showers';
+    if (code >= 95 && code <= 99)           return 'Thunderstorm';
+    return 'Cloudy';
+  }
+
   @override
   Widget build(BuildContext context) {
     final ws = ref.watch(weatherProvider);
@@ -153,17 +178,17 @@ class _WeatherScreenState extends ConsumerState<WeatherScreen>
                 child: SizeTransition(
                   sizeFactor: _searchBarAnim,
                   child: Padding(
-                    padding:
-                        const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
                     child: Column(
                       children: [
                         Td3InputField(
                           controller: _searchCtrl,
                           label: 'City',
-                          hint: 'Search city…',
+                          hint: 'Search city\u2026',
                           icon: Icons.location_city_rounded,
                           required: false,
                           readOnly: false,
+                          onChanged: _onSearchChanged,
                           suffixWidget: _searchCtrl.text.isNotEmpty
                               ? IconButton(
                                   icon: Icon(Icons.clear,
@@ -193,10 +218,12 @@ class _WeatherScreenState extends ConsumerState<WeatherScreen>
                                       title: Text(c.name,
                                           style: TextStyle(
                                               color: t.textPrimary,
-                                              fontWeight:
-                                                  FontWeight.w600)),
+                                              fontWeight: FontWeight.w600)),
+                                      // CityResult has `admin1` not `state`
                                       subtitle: Text(
-                                          '${c.state}, ${c.country}',
+                                          c.admin1.isNotEmpty
+                                              ? '${c.admin1}, ${c.country}'
+                                              : c.country,
                                           style: TextStyle(
                                               color: t.textSecondary,
                                               fontSize: 11)),
@@ -219,13 +246,13 @@ class _WeatherScreenState extends ConsumerState<WeatherScreen>
                   child: _WeatherContent(
                     ws: ws,
                     t: t,
-                    contentAnim: _contentAnim,
+                    wmoIcon: _wmoIcon,
+                    wmoDesc: _wmoDesc,
                   ),
                 ),
               ),
 
-              const SliverToBoxAdapter(
-                  child: SizedBox(height: 80)),
+              const SliverToBoxAdapter(child: SizedBox(height: 80)),
             ],
           ),
         ),
@@ -239,15 +266,22 @@ class _WeatherScreenState extends ConsumerState<WeatherScreen>
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _WeatherContent extends StatelessWidget {
-  final WeatherState    ws;
-  final RiverColors     t;
-  final Animation<double> contentAnim;
-  const _WeatherContent(
-      {required this.ws, required this.t, required this.contentAnim});
+  final WeatherState ws;
+  final RiverColors  t;
+  final String Function(int code) wmoIcon;
+  final String Function(int code) wmoDesc;
+
+  const _WeatherContent({
+    required this.ws,
+    required this.t,
+    required this.wmoIcon,
+    required this.wmoDesc,
+  });
 
   @override
   Widget build(BuildContext context) {
-    if (ws.isLoading) {
+    // --- Loading ---
+    if (ws.status == WeatherStatus.loading) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 60),
         child: Center(
@@ -255,22 +289,37 @@ class _WeatherContent extends StatelessWidget {
         ),
       );
     }
-    if (ws.error != null) {
+
+    // --- Error ---
+    if (ws.status == WeatherStatus.error) {
       return Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           children: [
-            Icon(Icons.cloud_off_rounded, size: 56, color: t.danger),
+            // RiverColors has riverDanger, not danger
+            Icon(Icons.cloud_off_rounded, size: 56, color: t.riverDanger),
             const SizedBox(height: 12),
             Text(
-              ws.error!,
+              ws.error,
               style: TextStyle(color: t.textSecondary, fontSize: 13),
               textAlign: TextAlign.center,
             ),
+            if (ws.isRateLimited && ws.retryInSeconds > 0) ...[  
+              const SizedBox(height: 8),
+              Text(
+                'Retrying in ${ws.retryInSeconds}s',
+                style: TextStyle(
+                    color: t.textSecondary,
+                    fontSize: 12,
+                    fontStyle: FontStyle.italic),
+              ),
+            ],
           ],
         ),
       );
     }
+
+    // --- No data yet ---
     if (ws.current == null) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 80),
@@ -281,7 +330,9 @@ class _WeatherContent extends StatelessWidget {
       );
     }
 
-    final w = ws.current!;
+    final w    = ws.current!;
+    final icon = wmoIcon(w.weatherCode);
+    final desc = wmoDesc(w.weatherCode);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -301,8 +352,9 @@ class _WeatherContent extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // WeatherCurrent uses `tempC`, not `temperature`
                       Text(
-                        '${w.temperature.toStringAsFixed(1)}°C',
+                        '${w.tempC.toStringAsFixed(1)}\u00B0C',
                         style: TextStyle(
                           color: t.textPrimary,
                           fontSize: 48,
@@ -318,7 +370,7 @@ class _WeatherContent extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        w.description.toUpperCase(),
+                        desc.toUpperCase(),
                         style: TextStyle(
                             color: t.textSecondary,
                             fontSize: 12,
@@ -326,18 +378,16 @@ class _WeatherContent extends StatelessWidget {
                             fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 8),
+                      // `feelsLikeC`, not `feelsLike`
                       Text(
-                        'Feels like ${w.feelsLike.toStringAsFixed(1)}°C',
-                        style: TextStyle(
-                            color: t.textSecondary, fontSize: 12),
+                        'Feels like ${w.feelsLikeC.toStringAsFixed(1)}\u00B0C',
+                        style:
+                            TextStyle(color: t.textSecondary, fontSize: 12),
                       ),
                     ],
                   ),
                 ),
-                Text(
-                  w.icon,
-                  style: const TextStyle(fontSize: 72),
-                ),
+                Text(icon, style: const TextStyle(fontSize: 72)),
               ],
             ),
           ),
@@ -361,20 +411,23 @@ class _WeatherContent extends StatelessWidget {
                 valueColor: Colors.lightBlue,
                 icon: Icons.water_drop_rounded,
               ),
+              // `windKph`, not `windSpeed`
               Td3StatTile(
-                value: '${w.windSpeed.toStringAsFixed(1)} m/s',
+                value: '${(w.windKph / 3.6).toStringAsFixed(1)} m/s',
                 label: 'WIND SPEED',
                 valueColor: t.accent,
                 icon: Icons.air_rounded,
               ),
+              // `surfacePressure`, not `pressure`
               Td3StatTile(
-                value: '${w.pressure} hPa',
+                value: '${w.surfacePressure.toStringAsFixed(0)} hPa',
                 label: 'PRESSURE',
                 valueColor: AppPalette.gold,
                 icon: Icons.compress_rounded,
               ),
+              // `visibilityKm`, not `visibility`
               Td3StatTile(
-                value: '${w.visibility.toStringAsFixed(0)} km',
+                value: '${w.visibilityKm.toStringAsFixed(0)} km',
                 label: 'VISIBILITY',
                 valueColor: AppPalette.safe,
                 icon: Icons.visibility_rounded,
@@ -384,75 +437,13 @@ class _WeatherContent extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // ── Condition tags ──────────────────────────────────────────
-          if (ws.conditionTags.isNotEmpty) ...[
-            Td3SectionHeader('Conditions', accentColor: t.accent),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: ws.conditionTags
-                  .map((tag) => Td3Chip(
-                        label: tag.label,
-                        color: tag.color,
-                        icon: tag.icon,
-                      ))
-                  .toList(),
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          // ── Hourly / daily forecast ─────────────────────────────────
-          if (ws.hourlyForecast.isNotEmpty) ...[
-            Td3SectionHeader('Hourly Forecast', accentColor: t.accent),
-            const SizedBox(height: 10),
-            SizedBox(
-              height: 110,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: ws.hourlyForecast.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 10),
-                itemBuilder: (_, i) {
-                  final h = ws.hourlyForecast[i];
-                  return Td3Card(
-                    accentColor: t.accent,
-                    elevation: Td3.elevMid,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 10),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          DateFormat('HH:mm')
-                              .format(h.time.toLocal()),
-                          style: TextStyle(
-                              color: t.textSecondary, fontSize: 11),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(h.icon,
-                            style: const TextStyle(fontSize: 24)),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${h.temperature.toStringAsFixed(0)}°',
-                          style: TextStyle(
-                              color: t.textPrimary,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 14),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          // ── Daily forecast ──────────────────────────────────────────
-          if (ws.dailyForecast.isNotEmpty) ...[
+          // ── 7-Day forecast ──────────────────────────────────────────
+          // WeatherState has `forecast` (List<WeatherDay>),
+          // not `dailyForecast` or `hourlyForecast`.
+          if (ws.forecast.isNotEmpty) ...[
             Td3SectionHeader('7-Day Forecast', accentColor: t.accent),
             const SizedBox(height: 10),
-            ...ws.dailyForecast.map((d) => Padding(
+            ...ws.forecast.map((d) => Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Td3Card(
                     elevation: Td3.elevMid,
@@ -461,29 +452,31 @@ class _WeatherContent extends StatelessWidget {
                     child: Row(
                       children: [
                         SizedBox(
-                          width: 80,
+                          width: 90,
                           child: Text(
-                            DateFormat('EEE, d MMM')
-                                .format(d.date.toLocal()),
+                            // WeatherDay.date is a String ("2026-06-13")
+                            _fmtDate(d.date),
                             style: TextStyle(
                                 color: t.textSecondary, fontSize: 12),
                           ),
                         ),
-                        Text(d.icon,
+                        Text(wmoIcon(d.weatherCode),
                             style: const TextStyle(fontSize: 22)),
                         const Spacer(),
+                        // WeatherDay uses `minC` / `maxC`, not `tempMin` / `tempMax`
                         Text(
-                          '${d.tempMin.toStringAsFixed(0)}° / '
-                          '${d.tempMax.toStringAsFixed(0)}°',
+                          '${d.minC.toStringAsFixed(0)}\u00B0 / '
+                          '${d.maxC.toStringAsFixed(0)}\u00B0',
                           style: TextStyle(
                               color: t.textPrimary,
                               fontWeight: FontWeight.w700,
                               fontSize: 13),
                         ),
                         const SizedBox(width: 10),
-                        if (d.precipChance > 0)
+                        // WeatherDay uses `precipProb`, not `precipChance`
+                        if (d.precipProb > 0)
                           Td3Chip(
-                            label: '${d.precipChance}%',
+                            label: '${d.precipProb.toStringAsFixed(0)}%',
                             color: Colors.lightBlue,
                             icon: Icons.grain,
                             fontSize: 10,
@@ -492,11 +485,18 @@ class _WeatherContent extends StatelessWidget {
                     ),
                   ),
                 )),
+            const SizedBox(height: 24),
           ],
-
-          const SizedBox(height: 24),
         ],
       ),
     );
+  }
+
+  static String _fmtDate(String iso) {
+    try {
+      return DateFormat('EEE, d MMM').format(DateTime.parse(iso));
+    } catch (_) {
+      return iso;
+    }
   }
 }
