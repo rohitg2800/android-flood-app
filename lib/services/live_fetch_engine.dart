@@ -190,9 +190,6 @@ class LiveCityData {
   FloodData toFloodData(String city, String state,
       {String? riverName, String district = ''}) {
     final level  = currentLevel ?? 0.0;
-    final capPct = dangerLevel > 0
-        ? (level / dangerLevel * 100).clamp(0.0, 150.0)
-        : 0.0;
     return FloodData(
       city:                city,
       district:            district,
@@ -201,11 +198,12 @@ class LiveCityData {
       currentLevel:        level,
       warningLevel:        warningLevel,
       dangerLevel:         dangerLevel,
-      riskLevel:           riskLevel ?? 'LOW',
-      status:              'LIVE',
-      effectiveRainfallMm: rainfall24h ?? 0.0,
       flowRate:            flowRate,
+      imdRainfallMm:       rainfall24h,
       lastUpdated:         lastUpdated,
+      stationId:           '',
+      stationName:         city,
+      river:               riverName ?? '',
     );
   }
 }

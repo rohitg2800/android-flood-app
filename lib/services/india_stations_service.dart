@@ -142,18 +142,15 @@ class IndiaStationsService {
     final current = _d(raw['current_level'] ?? raw['river_level']) ?? 0.0;
     final danger  = _d(raw['danger_level'])  ?? 0.0;
     final warning = _d(raw['warning_level']) ?? 0.0;
-    final safe    = _d(raw['safe_level'])    ?? ((warning - 2).clamp(0.0, 999.0));
     final flow    = _d(raw['flow_rate'] ?? raw['river_discharge'])
                  ?? _glofasFlow(raw['latitude'] ?? raw['lat'],
                                 raw['longitude'] ?? raw['lon']);
     final rain    = _d(raw['rainfall_24h']) ?? 0.0;
-    final rawRisk = (raw['risk_level'] as String?)?.toUpperCase() ?? 'LOW';
-    final risk    = _normaliseRisk(rawRisk, current, danger, warning);
-    final cap     = danger > 0
-        ? (current / danger * 100).clamp(0.0, 100.0)
-        : 0.0;
 
     return FloodData(
+      stationId:           raw['station_id']?.toString() ?? '',
+      stationName:         city,
+      river:               raw['river_name']?.toString() ?? raw['river']?.toString() ?? '',
       city:                city,
       district:            raw['district']?.toString() ?? '',
       state:               state,
@@ -161,27 +158,10 @@ class IndiaStationsService {
       currentLevel:        current,
       warningLevel:        warning,
       dangerLevel:         danger,
-      riskLevel:           risk,
-      status:              raw['data_source']?.toString() ?? 'BACKEND',
-      imdSeverity:         'GREEN',
       imdRainfallMm:       rain,
-      effectiveRainfallMm: rain,
       flowRate:            flow,
       lastUpdated:         DateTime.now(),
     );
-  }
-
-  String _normaliseRisk(
-    String raw, double current, double danger, double warning,
-  ) {
-    const valid = {'CRITICAL', 'HIGH', 'MODERATE', 'LOW', 'NORMAL'};
-    final base = valid.contains(raw) ? raw : 'LOW';
-    if (current > 0 && danger > 0) {
-      final r = current / danger;
-      if (r >= 1.0  && base != 'CRITICAL') return 'CRITICAL';
-      if (r >= 0.85 && base == 'LOW')      return 'HIGH';
-    }
-    return base;
   }
 
   double? _d(dynamic v) {
