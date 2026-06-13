@@ -100,8 +100,10 @@ final riverStationProvider = FutureProvider.autoDispose
     );
   }
 
-  // All non-Birpur stations: resolve from the merged live provider
-  final all = await ref.watch(mergedStationsProvider.future);
+  // All non-Birpur stations: resolve from the merged live provider.
+  // mergedStationsProvider is a regular Provider<List<RiverStation>>, not a
+  // FutureProvider — use synchronous watch (no .future).
+  final all = ref.watch(mergedStationsProvider);
   return all.where((s) => s.station == id.stationName)
       .cast<RiverStation?>()
       .firstOrNull;

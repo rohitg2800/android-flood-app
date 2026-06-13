@@ -1,5 +1,6 @@
 // lib/constants/app_constants.dart
 
+import 'app_config.dart';
 import 'alert_channels.dart';
 import 'flood_thresholds.dart';
 import 'india_geodata.dart';
@@ -65,6 +66,8 @@ class AppConstants {
   static String get infoChannelName          => 'Flood Information';
 
   // ── Backward-compat shims ──────────────────────────────────────────────────
-  static double get criticalThreshold => FloodThresholds.critical;
-  static List<String> get indianStates => IndiaGeodata.states;
+  static double get criticalThreshold        => FloodThresholds.critical;
+  static List<String> get indianStates       => IndiaGeodata.states;
+  static String get baseUrl                  => AppConfig.baseUrl;
+  static List<Map<String, dynamic>> get monitoredCities => IndiaGeodata.monitoredCities;
 }
