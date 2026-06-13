@@ -57,7 +57,12 @@ class CommunityIncident extends HiveObject {
   @HiveField(7)  final DateTime      reportedAt;
   @HiveField(8)  final String        submittedBy;
   @HiveField(9)  final List<String>  photoUrls;
-  @HiveField(10) bool synced;
+  @HiveField(10) bool verified;   // moderator-verified flag
+  @HiveField(11) int  upvotes;    // community upvote count
+
+  /// Transient (not persisted to Hive) — tracks whether this incident
+  /// has been successfully synced to Firestore. Set by IncidentSyncService.
+  bool synced;
 
   CommunityIncident({
     required this.id,
@@ -70,7 +75,9 @@ class CommunityIncident extends HiveObject {
     required this.reportedAt,
     required this.submittedBy,
     required this.photoUrls,
-    this.synced = false,
+    this.verified = false,
+    this.upvotes  = 0,
+    this.synced   = false,
   });
 
   /// First photo URL, or null if no photos attached.
@@ -87,6 +94,8 @@ class CommunityIncident extends HiveObject {
     'reported_at':  reportedAt.toIso8601String(),
     'submitted_by': submittedBy,
     'photo_urls':   photoUrls,
+    'verified':     verified,
+    'upvotes':      upvotes,
     'synced':       synced,
   };
 
@@ -102,6 +111,8 @@ class CommunityIncident extends HiveObject {
         reportedAt:  DateTime.parse(j['reported_at'] as String),
         submittedBy: j['submitted_by'] as String? ?? '',
         photoUrls:   List<String>.from(j['photo_urls'] as List? ?? []),
+        verified:    j['verified']     as bool? ?? false,
+        upvotes:     j['upvotes']      as int?  ?? 0,
         synced:      j['synced']       as bool? ?? false,
       );
 }
