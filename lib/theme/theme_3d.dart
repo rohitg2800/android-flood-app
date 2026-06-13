@@ -12,7 +12,7 @@
 //   • Td3Divider       — 1-px rule
 //   • Td3AppBar        — SliverAppBar with layered bottom edge (optional subtitle)
 //   • Td3BottomNav     — BottomNavBar with floating pill indicator
-//   • Td3InputField    — recessed 3-D input (optional `required` + `readOnly` flags)
+//   • Td3InputField    — recessed 3-D input (optional `required` + `readOnly` + `suffixWidget` flags)
 //   • Td3Painters      — CustomPainter helpers (gloss overlay, depth edge)
 library;
 
@@ -925,6 +925,9 @@ class Td3InputField extends StatefulWidget {
   final bool           required;
   /// When true, the field is not editable (mirrors TextField.readOnly).
   final bool           readOnly;
+  /// Optional widget shown at the trailing edge of the input (e.g. a clear button).
+  /// When provided it replaces the default suffix area entirely.
+  final Widget?        suffixWidget;
 
   const Td3InputField({
     super.key,
@@ -937,6 +940,7 @@ class Td3InputField extends StatefulWidget {
     this.obscureText = false,
     this.required = false,
     this.readOnly = false,
+    this.suffixWidget,
   });
 
   @override
@@ -1019,6 +1023,7 @@ class _Td3InputFieldState extends State<Td3InputField> {
               prefixIcon:    widget.icon != null
                   ? Icon(widget.icon, color: t.textSecondary, size: 18)
                   : null,
+              suffixIcon:    widget.suffixWidget,
               border:        InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 14, vertical: 12,
