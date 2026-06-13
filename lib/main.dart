@@ -45,7 +45,7 @@ import 'services/fcm_topic_manager.dart';
 import 'services/alert_notification_bridge.dart';
 import 'services/alert_engine.dart';
 import 'services/rtdas_threshold_sync_service.dart';
-import 'services/active_alert_controller.dart'; // ← NEW v6
+import 'services/active_alert_controller.dart';
 import 'theme/river_theme.dart';
 import 'theme/robotic_theme.dart';
 import 'providers/theme_provider.dart';
@@ -57,6 +57,7 @@ final FlutterLocalNotificationsPlugin _localNotifications =
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Guard: on hot-restart the native Firebase is already alive.
   if (Firebase.apps.isEmpty) {
     await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform);
@@ -71,9 +72,20 @@ Future<void> main() async {
   await dotenv.load(fileName: '.env').catchError((_) {});
 
   // ── Firebase ──────────────────────────────────────────────────────────────
-  if (Firebase.apps.isEmpty) {
-    await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform);
+  // try/catch swallows the [core/duplicate-app] exception that fires on
+  // hot-restart: the Android process is still alive, Firebase native is
+  // already initialised, but the Dart isolate restarts and calls initializeApp
+  // a second time.  Firebase.apps.isEmpty is true from Dart's perspective
+  // during a hot-restart so the guard alone is insufficient — the native
+  // layer throws before Dart can check.
+  try {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform);
+    }
+  } catch (e) {
+    // Already initialised by a previous hot-restart — safe to ignore.
+    debugPrint('[Firebase] already initialised: $e');
   }
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
@@ -120,17 +132,12 @@ Future<void> main() async {
   );
 
   // ── RTDAS threshold auto-sync (Layer 3) ───────────────────────────────────
-  // Must run BEFORE DataFetchEngine.start() so thresholds in
-  // ThresholdOverrideStore are ready when the first live gauge feed arrives.
   unawaited(RtdasThresholdSyncService.instance.start());
 
   // ── Data engine ───────────────────────────────────────────────────────────
   DataFetchEngine.instance.start();
 
   // ── Active alert rules engine ─────────────────────────────────────────────
-  // Must start AFTER DataFetchEngine so its stream is already active.
-  // Consumes DataFetchEngine.instance.stream → emits deduplicated AlertItems
-  // to LiveAlertBanner / DangerProximityBanner widgets.
   ActiveAlertController.instance.start();
 
   // ── Alert → Notification bridge ───────────────────────────────────────────
