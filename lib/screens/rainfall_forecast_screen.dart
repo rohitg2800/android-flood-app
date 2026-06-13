@@ -1,17 +1,16 @@
 // lib/screens/rainfall_forecast_screen.dart
 // OpsFlood — Module 14: Rainfall Forecast Screen
 //
-// 7-day IMD-style rainfall forecast per district with:
-//  • Hourly rain probability bars (fl_chart)
-//  • Daily summary cards (rain mm, wind, humidity)
-//  • Flood risk correlation badge
-//  • Weather icon mapping
-//  • Pull-to-refresh
+// fix (2026-06-13): All `const AppPalette.xyz` expressions replaced with
+// plain `AppPalette.xyz` field accesses. AppPalette has no const constructor,
+// so `const AppPalette.x` is a constructor-call syntax and causes
+// "Expected to find '('" parse errors wherever a Color is expected.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import '../theme/river_theme.dart';
 
 // ---------------------------------------------------------------------------
 // Models
@@ -24,8 +23,8 @@ class DayForecast {
   final double tempMin;
   final int humidity;
   final double windKmh;
-  final double floodRisk; // 0.0 – 1.0
-  final String condition; // 'heavy_rain' | 'moderate_rain' | 'light_rain' | 'cloudy' | 'clear'
+  final double floodRisk;
+  final String condition;
   const DayForecast({
     required this.date,
     required this.rainMm,
@@ -101,15 +100,14 @@ class RainfallForecastScreen extends ConsumerWidget {
     final forecastAsync = ref.watch(_forecastProvider(district));
 
     return Scaffold(
-      backgroundColor: const AppPalette.abyss2,
+      backgroundColor: AppPalette.abyss2,
       appBar: AppBar(
         title: const Text('Rainfall Forecast'),
-        backgroundColor: const AppPalette.oceanAccent,
+        backgroundColor: AppPalette.oceanAccent,
         foregroundColor: Colors.white,
       ),
       body: Column(
         children: [
-          // District selector
           SizedBox(
             height: 48,
             child: ListView.separated(
@@ -132,18 +130,18 @@ class RainfallForecastScreen extends ConsumerWidget {
                         horizontal: 14, vertical: 4),
                     decoration: BoxDecoration(
                       color: selected
-                          ? const AppPalette.oceanAccent
+                          ? AppPalette.oceanAccent
                           : Colors.white,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                          color: const AppPalette.oceanAccent,
+                          color: AppPalette.oceanAccent,
                           width: selected ? 0 : 1),
                     ),
                     child: Text(d,
                         style: TextStyle(
                             color: selected
                                 ? Colors.white
-                                : const AppPalette.oceanAccent,
+                                : AppPalette.oceanAccent,
                             fontSize: 12,
                             fontWeight: FontWeight.w600)),
                   ),
@@ -241,10 +239,10 @@ class _RainBarChart extends StatelessWidget {
           barGroups: forecasts.asMap().entries.map((e) {
             final risk = e.value.floodRisk;
             final color = risk > 0.7
-                ? const AppPalette.critical
+                ? AppPalette.critical
                 : risk > 0.4
-                    ? const AppPalette.warning
-                    : const AppPalette.cyan;
+                    ? AppPalette.warning
+                    : AppPalette.cyan;
             return BarChartGroupData(
               x: e.key,
               barRods: [
@@ -281,11 +279,11 @@ class _DayCard extends StatelessWidget {
   };
 
   Color _iconColor(String cond) => switch (cond) {
-    'heavy_rain'    => const AppPalette.critical,
-    'moderate_rain' => const AppPalette.oceanAccent,
-    'light_rain'    => const AppPalette.cyan,
+    'heavy_rain'    => AppPalette.critical,
+    'moderate_rain' => AppPalette.oceanAccent,
+    'light_rain'    => AppPalette.cyan,
     'cloudy'        => Colors.grey,
-    _               => const AppPalette.warning,
+    _               => AppPalette.warning,
   };
 
   String _riskLabel(double r) =>
@@ -293,10 +291,10 @@ class _DayCard extends StatelessWidget {
     r > 0.4 ? 'Moderate' : 'Low';
 
   Color _riskColor(double r) =>
-    r > 0.8 ? const AppPalette.critical :
-    r > 0.6 ? const AppPalette.warning :
-    r > 0.4 ? const AppPalette.warning :
-    const AppPalette.safe;
+    r > 0.8 ? AppPalette.critical :
+    r > 0.6 ? AppPalette.warning :
+    r > 0.4 ? AppPalette.warning :
+    AppPalette.safe;
 
   @override
   Widget build(BuildContext context) {
@@ -308,7 +306,6 @@ class _DayCard extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         child: Row(
           children: [
-            // Date & icon
             SizedBox(
               width: 56,
               child: Column(
@@ -328,25 +325,23 @@ class _DayCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            // Stats
             Expanded(
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _Stat(Icons.water_drop, '${forecast.rainMm.toInt()}mm',
-                      const AppPalette.oceanAccent),
+                      AppPalette.oceanAccent),
                   _Stat(Icons.thermostat,
                       '${forecast.tempMax.toInt()}°/${forecast.tempMin.toInt()}°',
-                      const AppPalette.danger),
+                      AppPalette.danger),
                   _Stat(Icons.water, '${forecast.humidity}%',
-                      const AppPalette.cyan),
+                      AppPalette.cyan),
                   _Stat(Icons.air, '${forecast.windKmh.toInt()}km/h',
                       Colors.grey),
                 ],
               ),
             ),
             const SizedBox(width: 8),
-            // Risk badge
             Container(
               padding: const EdgeInsets.symmetric(
                   horizontal: 8, vertical: 4),

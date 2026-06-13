@@ -10,6 +10,10 @@
 // v3 (2026-06-13) — Gap 1:
 //   GaugeHeroCard: added freshness footer row showing lastUpdated timestamp
 //   and effectiveRainfallMm badge when rainfall > 0.
+//
+// fix (2026-06-13): _sevColor returned `const AppPalette.gold` which is a
+//   class constructor call, not a Color. Replaced with the static field
+//   AppPalette.gold directly (no `const` keyword, no `new`, just the field).
 library;
 
 import 'package:flutter/material.dart';
@@ -123,9 +127,6 @@ class GaugeHeroCard extends StatelessWidget {
   final FloodData data;
   const GaugeHeroCard({super.key, required this.data});
 
-  /// Format lastUpdated as:
-  ///   • "Updated 14:32"         — same calendar day
-  ///   • "Updated 11 Jun 14:32"  — different day
   static String _formatUpdated(DateTime ts) {
     final now   = DateTime.now();
     final hh    = ts.hour.toString().padLeft(2, '0');
@@ -149,7 +150,7 @@ class GaugeHeroCard extends StatelessWidget {
     final pct   = (data.currentLevel / data.dangerLevel).clamp(0.0, 1.2);
 
     final updatedLabel = _formatUpdated(data.lastUpdated);
-    final rainfall     = data.effectiveRainfallMm;   // double or null
+    final rainfall     = data.effectiveRainfallMm;
     final hasRain      = rainfall != null && rainfall > 0;
 
     return Container(
@@ -164,8 +165,6 @@ class GaugeHeroCard extends StatelessWidget {
         ],
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-
-        // ── Level + Risk badge ──────────────────────────────────────────────
         Row(children: [
           Expanded(child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -192,8 +191,6 @@ class GaugeHeroCard extends StatelessWidget {
           ),
         ]),
         const SizedBox(height: 14),
-
-        // ── Progress bar ────────────────────────────────────────────────────
         ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: LinearProgressIndicator(
@@ -204,8 +201,6 @@ class GaugeHeroCard extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-
-        // ── Warning / Danger pills ──────────────────────────────────────────
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -213,8 +208,6 @@ class GaugeHeroCard extends StatelessWidget {
             _levelPill(t, 'Danger',  data.dangerLevel,  AppPalette.danger),
           ],
         ),
-
-        // ── Freshness footer (Gap 1) ────────────────────────────────────────
         const SizedBox(height: 10),
         Divider(height: 1, color: t.stroke),
         const SizedBox(height: 8),
@@ -393,11 +386,14 @@ class ImdAlertTile extends StatelessWidget {
     );
   }
 
+  // FIX: AppPalette.gold is a static const Color field — reference it
+  // directly. Do NOT write `const AppPalette.gold` (that is a constructor
+  // call syntax, not a field access, and AppPalette has no const constructor).
   static Color _sevColor(String sev) {
     switch (sev.toUpperCase()) {
       case 'RED':    return AppPalette.danger;
       case 'ORANGE': return AppPalette.warning;
-      default:       return const AppPalette.gold;
+      default:       return AppPalette.gold;   // ← field access, no `const`
     }
   }
 }
@@ -440,13 +436,11 @@ class NdmaAdvisoryTile extends StatelessWidget {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CollapsibleContacts
-// stationName is passed through to SosScreen so that screen pre-filters
-// contacts to the matching district.
 // ─────────────────────────────────────────────────────────────────────────────
 class CollapsibleContacts extends StatelessWidget {
   final List<EmergencyContact> contacts;
   final String       state;
-  final String       stationName;   // e.g. "Birpur", "Gandhi Ghat"
+  final String       stationName;
   final bool         expanded;
   final VoidCallback onToggle;
 
@@ -469,7 +463,6 @@ class CollapsibleContacts extends StatelessWidget {
         border: Border.all(color: t.stroke),
       ),
       child: Column(children: [
-        // ── Header row ──────────────────────────────────────────────────────
         InkWell(
           onTap: onToggle,
           borderRadius: BorderRadius.circular(16),
@@ -495,8 +488,6 @@ class CollapsibleContacts extends StatelessWidget {
             ]),
           ),
         ),
-
-        // ── Expanded body ────────────────────────────────────────────────────
         if (expanded) ...[
           Divider(height: 1, color: t.stroke),
           if (contacts.isEmpty)
@@ -507,8 +498,6 @@ class CollapsibleContacts extends StatelessWidget {
             )
           else
             ...contacts.map((c) => _ContactRow(contact: c, t: t)),
-
-          // ── "View All" button → SosScreen with stationName ───────────────
           Divider(height: 1, color: t.stroke),
           InkWell(
             onTap: () {

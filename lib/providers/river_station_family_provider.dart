@@ -1,12 +1,9 @@
 // lib/providers/river_station_family_provider.dart
 //
-// Replaces the hardcoded per-station provider pattern (e.g. kosi_birpur_provider)
-// with a single parameterised family:
-//
-//   riverStationProvider(StationId.kosiBirpur)  →  AsyncValue<RiverStation>
-//
-// All 31 Bihar gauge stations from GAUGE_THRESHOLDS are enumerated in StationId.
-// Backward-compat alias: kosiBirpurProvider is re-exported below.
+// fix (2026-06-13): The backward-compat `export` directive at the bottom was
+// placed after the `riverStationProvider` declaration — Dart forbids directives
+// after any declaration in the same library. Moved the export to the top of
+// the directive block, before all code.
 //
 library;
 
@@ -16,8 +13,17 @@ import '../models/river_station.dart';
 import 'kosi_birpur_provider.dart' show kosiBirpurProvider, KosiBirpurReading;
 import 'real_time_river_provider.dart' show mergedStationsProvider;
 
+// Backward-compat re-export — MUST appear before any declarations.
+export 'kosi_birpur_provider.dart' show
+    kosiBirpurProvider,
+    kosiBirpurStationProvider,
+    cwcStationsWithBirpurProvider,
+    kosiStationsProvider,
+    birpurBadgeProvider,
+    BirpurBadge;
+
 // ─────────────────────────────────────────────────────────────────────────────
-// Station identifier enum — mirrors GAUGE_THRESHOLDS in flood_predictor.py
+// Station identifier enum
 // ─────────────────────────────────────────────────────────────────────────────
 enum StationId {
   // Ganga basin
@@ -60,7 +66,6 @@ enum StationId {
   kamtaul,
   sripalpur;
 
-  /// Display name matching CWC / WRD station name strings
   String get stationName => switch (this) {
     StationId.gandhighat    => 'Gandhighat',
     StationId.dighaghat     => 'Dighaghat',
@@ -98,17 +103,10 @@ enum StationId {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // riverStationProvider — parameterised family
-//
-// For StationId.kosiBirpur: delegates to the enriched kosiBirpurProvider
-// (discharge, trend, WRIS hydrograph) and converts to RiverStation.
-//
-// For all other stations: looks up the station in mergedStationsProvider
-// (already the single source of truth) by name match.
 // ─────────────────────────────────────────────────────────────────────────────
 final riverStationProvider = FutureProvider.autoDispose
     .family<RiverStation?, StationId>((ref, id) async {
   if (id == StationId.kosiBirpur) {
-    // Delegate to the enriched Birpur provider
     final reading = await ref.watch(kosiBirpurProvider.future);
     return RiverStation(
       city:        'Birpur',
@@ -127,7 +125,6 @@ final riverStationProvider = FutureProvider.autoDispose
     );
   }
 
-  // All other stations — look up in merged list by station name
   final merged = ref.watch(mergedStationsProvider);
   final name   = id.stationName.toLowerCase();
   return merged
@@ -135,15 +132,3 @@ final riverStationProvider = FutureProvider.autoDispose
                     name.contains(s.station.toLowerCase()))
       .firstOrNull;
 });
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Backward-compat re-export: existing widgets using kosiBirpurProvider
-// can keep importing from this file without any changes.
-// ─────────────────────────────────────────────────────────────────────────────
-export 'kosi_birpur_provider.dart' show
-    kosiBirpurProvider,
-    kosiBirpurStationProvider,
-    cwcStationsWithBirpurProvider,
-    kosiStationsProvider,
-    birpurBadgeProvider,
-    BirpurBadge;

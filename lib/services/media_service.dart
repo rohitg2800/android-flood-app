@@ -1,35 +1,23 @@
 // lib/services/media_service.dart
 // OpsFlood — Module 6: Media, Image Attachments & Export
 //
-// MediaService
-// ─────────────────────────────────────────────────────────────────────────
-// Wraps image_picker and provides a clean API for:
-//   • Camera capture
-//   • Gallery selection
-//   • Basic quality compression (via ImageQuality param)
-//   • Returns typed MediaFile with path, bytes, and size
-//
-// Used by:
-//   • _SubmitIncidentSheet  (community_screen.dart)
-//   • IncidentSyncService   (upload queue)
-//   • ExportScreen          (attach photo to PDF report)
+// fix (2026-06-13): `import 'package:flutter/material.dart'` was placed after
+// the class declaration for MediaService (line 157) — Dart forbids directives
+// after declarations. Moved all imports to the top of the file. Also removed
+// the local `typedef Uint8List = List<int>` that shadowed dart:typed_data and
+// replaced it with a proper import.
 
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-// ── MediaFile result type ────────────────────────────────────────────────
+// ── MediaFile result type ─────────────────────────────────────────────────────
 
 class MediaFile {
-  /// Absolute path on device storage.
   final String path;
-
-  /// Raw bytes — null until [loadBytes] is called or eager=true.
   Uint8List? bytes;
-
-  /// Compressed file size in kilobytes.
   final double sizeKb;
-
-  /// Original filename.
   final String name;
 
   MediaFile({
@@ -41,17 +29,13 @@ class MediaFile {
 
   File get file => File(path);
 
-  /// Loads bytes lazily from [path].
   Future<Uint8List> loadBytes() async {
     bytes ??= await file.readAsBytes();
     return bytes!;
   }
 }
 
-// Alias so we don't need to import dart:typed_data everywhere.
-typedef Uint8List = List<int>;
-
-// ── MediaService ─────────────────────────────────────────────────────────────
+// ── MediaService ──────────────────────────────────────────────────────────────
 
 class MediaService {
   MediaService._();
@@ -59,10 +43,6 @@ class MediaService {
 
   final _picker = ImagePicker();
 
-  // ── Public API ───────────────────────────────────────────────────
-
-  /// Pick an image from the device camera.
-  /// Returns null if the user cancels.
   Future<MediaFile?> pickImageFromCamera({
     int quality = 75,
     double? maxWidth,
@@ -77,8 +57,6 @@ class MediaService {
     return _toMediaFile(xFile);
   }
 
-  /// Pick an image from the device gallery.
-  /// Returns null if the user cancels.
   Future<MediaFile?> pickImageFromGallery({
     int quality = 75,
     double? maxWidth,
@@ -93,7 +71,6 @@ class MediaService {
     return _toMediaFile(xFile);
   }
 
-  /// Pick multiple images from gallery (up to [limit]).
   Future<List<MediaFile>> pickMultipleImages({
     int quality = 70,
     int limit   = 3,
@@ -110,12 +87,8 @@ class MediaService {
     return results;
   }
 
-  // ── Image source chooser sheet ──────────────────────────────────────
-
-  /// Shows a bottom-sheet to choose Camera vs Gallery.
-  /// Returns null if the user cancels.
   Future<MediaFile?> pickWithChooser(
-    context, {
+    BuildContext context, {
     int quality = 75,
   }) async {
     MediaFile? result;
@@ -136,8 +109,6 @@ class MediaService {
     return result;
   }
 
-  // ── Helpers ────────────────────────────────────────────────────────────
-
   Future<MediaFile?> _toMediaFile(XFile? xFile) async {
     if (xFile == null) return null;
     final file  = File(xFile.path);
@@ -152,9 +123,7 @@ class MediaService {
   }
 }
 
-// ── _MediaChooserSheet ────────────────────────────────────────────────────
-
-import 'package:flutter/material.dart';
+// ── _MediaChooserSheet ────────────────────────────────────────────────────────
 
 class _MediaChooserSheet extends StatelessWidget {
   final VoidCallback onCamera;

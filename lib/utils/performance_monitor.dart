@@ -1,19 +1,13 @@
 // lib/utils/performance_monitor.dart
 // OpsFlood — Module 9: Performance tracing helpers
 //
-// Thin wrappers around dart:developer Timeline for Debug/Profile builds.
-// All calls are no-ops in release builds (kReleaseMode guard).
-//
-// Usage:
-//   PerfTrace.start('cwc_fetch');
-//   await _fetch();
-//   PerfTrace.end('cwc_fetch');
-//
-//   // Or with sync block:
-//   PerfTrace.sync('build_chart', () => _buildChart());
+// fix (2026-06-13): FrameBudgetGuard declared `extends WidgetsBindingObserver`
+// but WidgetsBindingObserver is a mixin, not a class. The correct syntax is
+// `with WidgetsBindingObserver` (mixin application on a plain class).
 
 import 'dart:developer' as dev;
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 
 class PerfTrace {
   PerfTrace._();
@@ -49,7 +43,6 @@ class PerfTrace {
     }
   }
 
-  /// Logs a custom event marker visible in DevTools timeline.
   static void mark(String name,
       [Map<String, dynamic>? data]) {
     if (kReleaseMode) return;
@@ -60,7 +53,9 @@ class PerfTrace {
 /// Attaches a [WidgetsBindingObserver] that warns when a frame
 /// exceeds [budgetMs] milliseconds.  Call [FrameBudgetGuard.attach()]
 /// from main() in debug/profile builds only.
-class FrameBudgetGuard extends WidgetsBindingObserver {
+///
+/// FIX: WidgetsBindingObserver is a mixin — use `with`, not `extends`.
+class FrameBudgetGuard with WidgetsBindingObserver {
   final int budgetMs;
   FrameBudgetGuard({this.budgetMs = 16});
 
@@ -82,7 +77,6 @@ class FrameBudgetGuard extends WidgetsBindingObserver {
     final elapsed =
         DateTime.now().difference(_start).inMilliseconds;
     if (elapsed > budgetMs) {
-      // ignore: avoid_print
       debugPrint(
           '⚠️  Frame budget exceeded: ${elapsed}ms (budget ${budgetMs}ms)');
     }
