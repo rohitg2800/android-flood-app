@@ -176,8 +176,12 @@ class RiverColors extends ThemeExtension<RiverColors> {
   final Color navInactive;
   final Color scaffoldBg;
 
-  /// Alias used by screens that reference t.bgBase (maps to cardBg).
+  /// Alias: t.bgBase → cardBg
   Color get bgBase => cardBg;
+
+  /// Alias: t.danger → riverDanger
+  /// Used by live_stations_screen.dart and weather_screen.dart.
+  Color get danger => riverDanger;
 
   static RiverColors of(BuildContext context) =>
       Theme.of(context).extension<RiverColors>() ?? _golden;

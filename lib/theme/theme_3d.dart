@@ -10,11 +10,8 @@
 //   • Td3Badge         — floating badge with hard drop-shadow
 //   • Td3AppBar        — SliverAppBar with layered bottom edge
 //   • Td3BottomNav     — BottomNavBar with floating pill indicator
+//   • Td3InputField    — recessed 3-D input (added onChanged in v1.1)
 //   • Td3Painters      — CustomPainter helpers (gloss overlay, depth edge)
-//
-// Usage:
-//   Td3Card(child: ...)          — replace every Card/Container
-//   Td3Button(label:'Go', ...)   — replace ElevatedButton
 library;
 
 import 'dart:math' as math;
@@ -28,51 +25,40 @@ import 'river_theme.dart';
 class Td3 {
   Td3._();
 
-  // Elevation tiers  (depth in logical pixels)
   static const double elevFlush   = 0;
   static const double elevLow     = 2;
   static const double elevMid     = 4;
   static const double elevHigh    = 8;
   static const double elevFloat   = 14;
 
-  // Gloss opacity  (specular highlight strength)
   static const double glossStrong = 0.22;
   static const double glossMid    = 0.13;
   static const double glossSoft   = 0.07;
 
-  // Shadow palette — warm-tinted dark shadows
   static const Color shadowDark   = Color(0x44201808);
   static const Color shadowMid    = Color(0x28201808);
   static const Color shadowLight  = Color(0x14201808);
 
-  // Bottom-edge depth strip (gives "thickness" illusion)
   static const Color edgeDark     = Color(0x55000000);
   static const Color edgeMid      = Color(0x33000000);
 
-  // Duration constants
   static const Duration pressDown = Duration(milliseconds: 80);
   static const Duration pressUp   = Duration(milliseconds: 160);
 
-  // ── Shadow factories ──────────────────────────────────────────────────────
-
-  /// Standard multi-layer shadow for a raised card.
   static List<BoxShadow> cardShadow(Color accent, {double elev = elevMid}) =>
       [
-        // contact shadow (tight)
         BoxShadow(
           color: shadowDark,
           blurRadius: elev * 0.8,
           spreadRadius: -elev * 0.3,
           offset: Offset(0, elev * 0.5),
         ),
-        // ambient (wide, soft)
         BoxShadow(
           color: shadowLight,
           blurRadius: elev * 3,
           spreadRadius: 0,
           offset: Offset(0, elev * 1.5),
         ),
-        // coloured accent glow (subtle)
         BoxShadow(
           color: accent.withValues(alpha: 0.08),
           blurRadius: elev * 4,
@@ -81,7 +67,6 @@ class Td3 {
         ),
       ];
 
-  /// Pressed-in inset shadow.
   static List<BoxShadow> pressedShadow() => [
         BoxShadow(
           color: shadowDark,
@@ -91,7 +76,6 @@ class Td3 {
         ),
       ];
 
-  /// Floating badge shadow.
   static List<BoxShadow> badgeShadow(Color c) => [
         BoxShadow(
             color: c.withValues(alpha: 0.50),
@@ -103,9 +87,6 @@ class Td3 {
             offset: const Offset(0, 1)),
       ];
 
-  // ── Border factory ────────────────────────────────────────────────────────
-
-  /// Top-edge highlight + bottom-edge depth — creates "thickness" look.
   static Border depthBorder({
     Color? topColor,
     Color? bottomColor,
@@ -135,10 +116,6 @@ class Td3 {
 // Td3Card
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Drop-in replacement for Container/Card.  Adds:
-///   • Multi-layer depth shadows
-///   • Gloss top-edge highlight strip
-///   • Optional bottom-depth edge (makes card look "thick")
 class Td3Card extends StatelessWidget {
   final Widget   child;
   final Color?   color;
@@ -174,12 +151,10 @@ class Td3Card extends StatelessWidget {
       borderRadius: br,
       child: Stack(
         children: [
-          // Base card
           Padding(
             padding: padding ?? const EdgeInsets.all(0),
             child: child,
           ),
-          // Gloss highlight — top-left specular strip
           if (showGloss)
             Positioned.fill(
               child: IgnorePointer(
@@ -213,7 +188,6 @@ class Td3Card extends StatelessWidget {
 // Td3Button
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Physically press-able button — sinks 3 px when held.
 class Td3Button extends StatefulWidget {
   final String  label;
   final IconData? icon;
@@ -253,7 +227,6 @@ class _Td3ButtonState extends State<Td3Button>
     final tc = widget.textColor ?? Colors.white;
     final br = BorderRadius.circular(widget.borderRadius);
 
-    // Press sink: translate Y + shrink shadows
     final sinkY = _pressed ? 3.0 : 0.0;
 
     return GestureDetector(
@@ -333,7 +306,6 @@ class _Td3ButtonState extends State<Td3Button>
                         ],
                       ),
               ),
-              // Gloss
               Positioned.fill(
                 child: IgnorePointer(
                   child: CustomPaint(
@@ -356,7 +328,6 @@ class _Td3ButtonState extends State<Td3Button>
 // Td3Chip
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Embossed pill chip — status labels, filter chips, tags.
 class Td3Chip extends StatelessWidget {
   final String  label;
   final Color   color;
@@ -425,9 +396,8 @@ class Td3Chip extends StatelessWidget {
 // Td3ProgressBar
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Recessed track + raised fill bar with specular stripe.
 class Td3ProgressBar extends StatelessWidget {
-  final double value;          // 0.0 – 1.0
+  final double value;
   final Color  fillColor;
   final double height;
   final BorderRadius? borderRadius;
@@ -454,7 +424,6 @@ class Td3ProgressBar extends StatelessWidget {
         border: Border.all(
             color: Td3.shadowDark, width: 0.6),
         boxShadow: [
-          // inset-style: dark outer ring
           BoxShadow(
               color: Td3.shadowDark,
               blurRadius: 3,
@@ -465,7 +434,6 @@ class Td3ProgressBar extends StatelessWidget {
         borderRadius: br,
         child: Stack(
           children: [
-            // Fill
             FractionallySizedBox(
               widthFactor: v,
               child: Container(
@@ -483,7 +451,6 @@ class Td3ProgressBar extends StatelessWidget {
                 ),
               ),
             ),
-            // Specular stripe
             Positioned(
               top: 0, left: 0, right: 0,
               height: height * 0.38,
@@ -514,7 +481,6 @@ class Td3ProgressBar extends StatelessWidget {
 // Td3StatTile
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// KPI / metric tile.  Raised number with depth glow, label beneath.
 class Td3StatTile extends StatelessWidget {
   final String   value;
   final String   label;
@@ -587,7 +553,6 @@ class Td3StatTile extends StatelessWidget {
 // Td3Badge
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Floating badge — LIVE / CRITICAL / MODERATE etc.
 class Td3Badge extends StatelessWidget {
   final String  label;
   final Color   color;
@@ -646,7 +611,6 @@ class Td3Badge extends StatelessWidget {
 // Td3AppBar
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// SliverAppBar with layered bottom-edge depth strip.
 class Td3AppBar extends StatelessWidget {
   final String    title;
   final String?   subtitle;
@@ -748,7 +712,6 @@ class Td3NavItem {
   });
 }
 
-/// Floating pill bottom nav bar with 3-D raised active indicator.
 class Td3BottomNav extends StatelessWidget {
   final List<Td3NavItem> items;
   final int              currentIndex;
@@ -851,7 +814,7 @@ class Td3BottomNav extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Td3InputField
+// Td3InputField  (v1.1 — added onChanged callback)
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// Recessed 3-D input field — sunken appearance when unfocused,
@@ -866,6 +829,8 @@ class Td3InputField extends StatefulWidget {
   final bool    readOnly;
   final String? Function(String?)? validator;
   final Widget? suffixWidget;
+  /// Optional callback fired on every text change (forwards to TextFormField).
+  final ValueChanged<String>? onChanged;
 
   const Td3InputField({
     super.key,
@@ -873,11 +838,12 @@ class Td3InputField extends StatefulWidget {
     required this.label,
     required this.hint,
     required this.icon,
-    this.numeric  = false,
-    this.required = true,
-    this.readOnly = false,
+    this.numeric   = false,
+    this.required  = true,
+    this.readOnly  = false,
     this.validator,
     this.suffixWidget,
+    this.onChanged,
   });
 
   @override
@@ -927,8 +893,9 @@ class _Td3InputFieldState extends State<Td3InputField> {
       child: Focus(
         onFocusChange: (f) => setState(() => _focused = f),
         child: TextFormField(
-          controller:  widget.controller,
-          readOnly:    widget.readOnly,
+          controller:   widget.controller,
+          readOnly:     widget.readOnly,
+          onChanged:    widget.onChanged,
           keyboardType: widget.numeric
               ? const TextInputType.numberWithOptions(decimal: true)
               : TextInputType.text,
@@ -963,7 +930,6 @@ class _Td3InputFieldState extends State<Td3InputField> {
 // Td3SectionHeader
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Section header with a 3-D raised accent pip on the left.
 class Td3SectionHeader extends StatelessWidget {
   final String text;
   final Color? accentColor;
@@ -976,7 +942,6 @@ class Td3SectionHeader extends StatelessWidget {
     final c = accentColor ?? t.accent;
     return Row(
       children: [
-        // 3-D pip
         Container(
           width: 3, height: 14,
           margin: const EdgeInsets.only(right: 8),
@@ -1014,7 +979,6 @@ class Td3SectionHeader extends StatelessWidget {
 // Td3Divider
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Double-line divider — top bright / bottom dark — looks chiselled.
 class Td3Divider extends StatelessWidget {
   const Td3Divider({super.key});
 
@@ -1039,7 +1003,6 @@ class Td3Divider extends StatelessWidget {
 // CustomPainters
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Paints a top-left gloss highlight (specular reflection simulation).
 class _GlossPainter extends CustomPainter {
   final BorderRadius radius;
   final double       opacity;
@@ -1057,7 +1020,6 @@ class _GlossPainter extends CustomPainter {
     );
     canvas.clipRRect(rrect);
 
-    // Gloss gradient — top half, fading to transparent
     final paint = Paint()
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
@@ -1097,11 +1059,10 @@ Color _darken(Color c, double amount) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Extension helpers  (optional convenience)
+// Extension helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
 extension Td3WidgetExt on Widget {
-  /// Wrap any widget in a Td3Card.
   Widget td3Card({
     Color?  color,
     Color?  accentColor,
