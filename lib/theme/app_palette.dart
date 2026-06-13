@@ -4,21 +4,22 @@
 // monitors_screen.dart expects.
 library;
 
+// ── Dart directive ordering: exports MUST precede imports ───────────────
 export 'river_theme.dart' show AppPalette, RiverColors;
 
-// The constants below extend AppPalette's static surface tokens.
-// They are defined here as top-level constants because Dart does not
-// allow adding static members to an existing class via extensions.
+// ── Imports ───────────────────────────────────────────────────
 import 'package:flutter/material.dart';
 import 'river_theme.dart';
 
-extension AppPaletteExtra on AppPalette {
-  // not used — constants below are what monitors_screen needs
-}
+// ── Top-level colour constants ────────────────────────────────────────────
+// These extend AppPalette’s surface tokens as plain const Color values
+// (Dart does not allow adding statics to a class via extensions).
 
-// surface  ≈ abyss2  (card background)
-const Color kPaletteSurface  = AppPalette.abyss2;
-// surface2 ≈ abyss3  (slightly elevated card / progress track)
+/// Card background  (≈ AppPalette.abyss2 = 0xFF251800)
+const Color kPaletteSurface = AppPalette.abyss2;
+
+/// Elevated card / progress-bar track  (≈ AppPalette.abyss3 = 0xFF312200)
 const Color kPaletteSurface2 = AppPalette.abyss3;
-// textPrimary ≈ textWhite
+
+/// Primary text colour  (≈ AppPalette.textWhite = 0xFFFFF8E7)
 const Color kPaletteTextPrimary = AppPalette.textWhite;
