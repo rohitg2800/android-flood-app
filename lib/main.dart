@@ -57,12 +57,40 @@ final FlutterLocalNotificationsPlugin _localNotifications =
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Guard: on hot-restart the native Firebase is already alive.
   if (Firebase.apps.isEmpty) {
     await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform);
   }
   debugPrint('[FCM BG] ${message.notification?.title}');
+}
+
+/// Services that are safe to start after the first frame is rendered.
+/// None of these should block the UI — they are fire-and-forget.
+void _startBackgroundServices() {
+  // Notification channels — requires Android context but not the UI thread.
+  unawaited(NotificationChannelService.instance.init().catchError(
+      (e) => debugPrint('[Boot] NotificationChannelService: $e')));
+
+  // FCM topic subscriptions — needs a valid FCM token (network call).
+  // Must NOT be awaited on the main thread: hangs on emulators / no-network.
+  unawaited(FcmTopicManager.instance.init().catchError(
+      (e) => debugPrint('[Boot] FcmTopicManager: $e')));
+
+  // RTDAS threshold sync.
+  unawaited(RtdasThresholdSyncService.instance.start().catchError(
+      (e) => debugPrint('[Boot] RtdasThresholdSyncService: $e')));
+
+  // Live data engine.
+  DataFetchEngine.instance.start();
+
+  // Alert rules engine.
+  ActiveAlertController.instance.start();
+
+  // Alert → local-notification bridge.
+  final Stream<FloodAlert> alertStream = DataFetchEngine.instance.alertStream
+      .map((snapshot) => AlertEngine.instance.evaluate(snapshot))
+      .expand((alerts) => alerts);
+  AlertNotificationBridge.instance.start(alertStream);
 }
 
 Future<void> main() async {
@@ -72,30 +100,23 @@ Future<void> main() async {
   await dotenv.load(fileName: '.env').catchError((_) {});
 
   // ── Firebase ──────────────────────────────────────────────────────────────
-  // try/catch swallows the [core/duplicate-app] exception that fires on
-  // hot-restart: the Android process is still alive, Firebase native is
-  // already initialised, but the Dart isolate restarts and calls initializeApp
-  // a second time.  Firebase.apps.isEmpty is true from Dart's perspective
-  // during a hot-restart so the guard alone is insufficient — the native
-  // layer throws before Dart can check.
   try {
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(
           options: DefaultFirebaseOptions.currentPlatform);
     }
   } catch (e) {
-    // Already initialised by a previous hot-restart — safe to ignore.
     debugPrint('[Firebase] already initialised: $e');
   }
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  // ── Local notifications ───────────────────────────────────────────────────
+  // ── Local notifications (android init only — no network) ─────────────────
   const androidSettings =
       AndroidInitializationSettings('@mipmap/ic_launcher');
   const iosSettings = DarwinInitializationSettings(
-    requestAlertPermission: true,
-    requestBadgePermission: true,
-    requestSoundPermission: true,
+    requestAlertPermission: false, // defer permission to onboarding
+    requestBadgePermission: false,
+    requestSoundPermission: false,
   );
   await _localNotifications.initialize(
     const InitializationSettings(
@@ -103,19 +124,13 @@ Future<void> main() async {
     onDidReceiveNotificationResponse: _onNotificationTap,
   );
 
-  // ── Module 7: Notification channels & FCM topics ─────────────────────────
-  await NotificationChannelService.instance.init();
-  await FcmTopicManager.instance.init();
-
   // ── Hive ──────────────────────────────────────────────────────────────────
   await Hive.initFlutter();
   Hive.registerAdapter(IncidentTypeAdapter());
   Hive.registerAdapter(CommunityIncidentAdapter());
   await Hive.openBox<CommunityIncident>('community_incidents');
 
-  // ── FIX: pre-load saved locale BEFORE runApp so localeProvider starts
-  //   with the correct Locale synchronously — no async race, no English flash,
-  //   no null AppLocalizations on the first frame. ───────────────────────────
+  // ── Pre-load saved locale (no network — just SharedPreferences) ───────────
   final prefs = await SharedPreferences.getInstance();
   final savedLangCode = prefs.getString('app_locale') ?? 'en';
 
@@ -131,21 +146,9 @@ Future<void> main() async {
     ),
   );
 
-  // ── RTDAS threshold auto-sync (Layer 3) ───────────────────────────────────
-  unawaited(RtdasThresholdSyncService.instance.start());
-
-  // ── Data engine ───────────────────────────────────────────────────────────
-  DataFetchEngine.instance.start();
-
-  // ── Active alert rules engine ─────────────────────────────────────────────
-  ActiveAlertController.instance.start();
-
-  // ── Alert → Notification bridge ───────────────────────────────────────────
-  final Stream<FloodAlert> alertStream = DataFetchEngine.instance.alertStream
-      .map((snapshot) => AlertEngine.instance.evaluate(snapshot))
-      .expand((alerts) => alerts);
-  AlertNotificationBridge.instance.start(alertStream);
-
+  // ── Launch UI immediately ─────────────────────────────────────────────────
+  // Background services (FCM topics, data engine, alert bridge) are started
+  // after the first frame so they never delay the splash screen.
   runApp(
     ProviderScope(
       overrides: [
@@ -154,6 +157,9 @@ Future<void> main() async {
       child: const FloodWatchApp(),
     ),
   );
+
+  // Start all background services post-frame (non-blocking).
+  WidgetsBinding.instance.addPostFrameCallback((_) => _startBackgroundServices());
 }
 
 void _onNotificationTap(NotificationResponse response) {
