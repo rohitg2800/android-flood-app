@@ -12,6 +12,7 @@ import 'map_screen.dart';
 import 'settings_screen.dart';
 
 class MainShell extends StatefulWidget {
+  // No initialTab — tab is managed internally via IndexedStack.
   const MainShell({super.key});
 
   static const String route = '/shell';
@@ -81,9 +82,9 @@ class _MainShellState extends State<MainShell>
         children: _screens,
       ),
       bottomNavigationBar: Td3BottomNav(
-        items: _navItems,
         currentIndex: _index,
         onTap: (i) => setState(() => _index = i),
+        items: _navItems,
       ),
     );
   }

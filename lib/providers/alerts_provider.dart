@@ -1,7 +1,7 @@
-// lib/providers/alerts_provider.dart  v3.0
+// lib/providers/alerts_provider.dart  v3.1
 // Re-exports alert symbols from data_fetch_provider + alert_engine.
-// Removed the broken activeAlertsCountProvider that referenced missing
-// dataFetchProvider / AlertEngine directly — use alertCountProvider instead.
+// criticalAlertCountProvider removed from show list — it is not exported
+// by data_fetch_provider.dart (fixes undefined_shown_name warning).
 library;
 
 export 'data_fetch_provider.dart'
@@ -11,7 +11,6 @@ export 'data_fetch_provider.dart'
         emergencyAlertsProvider,
         warningAlertsProvider,
         alertCountProvider,
-        criticalAlertCountProvider,
         stationAlertsProvider,
         sourceStatusProvider,
         dataFetchProvider,

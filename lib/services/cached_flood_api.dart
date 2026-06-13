@@ -1,6 +1,9 @@
 // lib/services/cached_flood_api.dart
 // OpsFlood — Cache-Aware FloodApi Wrapper
-// Stale-while-revalidate strategy using LocalCacheService (returns String?).
+// Stale-while-revalidate strategy using LocalCacheService.
+//
+// fix: LocalCacheService uses getString/setString/remove/clear — not
+// read/write/delete/clearAll. All calls updated to match actual API.
 library;
 
 import 'dart:convert';
@@ -16,27 +19,24 @@ class CachedFloodApi {
   final _api   = FloodApi.instance;
   final _cache = LocalCacheService.instance;
 
-  // TTL for "fresh" cache entries
   static const Duration _freshTtl = Duration(minutes: 5);
 
-  // Timestamp key suffix
   static String _tsKey(String key) => '${key}__ts';
 
-  // ── Generic cache-aware GET wrapper ────────────────────────────────────────
+  // ── Generic cache-aware GET wrapper ───────────────────────────────────────
   Future<Map<String, dynamic>> _cached(
     String cacheKey,
     Future<Map<String, dynamic>> Function() fetcher, {
     bool bypassCache = false,
   }) async {
     if (!bypassCache) {
-      final raw = await _cache.read(cacheKey);
+      final raw = _cache.getString(cacheKey);          // was: _cache.read()
       if (raw != null) {
         final isStale = !_cache.isFresh(_tsKey(cacheKey), _freshTtl);
         if (!isStale) {
           _log('cache HIT  $cacheKey');
           return _decode(raw);
         } else {
-          // Stale: return old data and revalidate in background
           _log('cache STALE $cacheKey — revalidating in background');
           _revalidate(cacheKey, fetcher);
           return _decode(raw);
@@ -53,7 +53,7 @@ class CachedFloodApi {
   ) async {
     final result = await fetcher();
     if (result['status'] != 'error') {
-      await _cache.write(cacheKey, jsonEncode(result));
+      await _cache.setString(cacheKey, jsonEncode(result)); // was: _cache.write()
       await _cache.setNow(_tsKey(cacheKey));
     }
     return result;
@@ -69,7 +69,7 @@ class CachedFloodApi {
     });
   }
 
-  // ── Public API (mirrors FloodApi) ──────────────────────────────────────────
+  // ── Public API ─────────────────────────────────────────────────────────────
   Future<Map<String, dynamic>> allTelemetry({int limit = 1000}) =>
       _cached('live_telemetry_all_$limit', () => _api.allTelemetry(limit: limit));
 
@@ -115,13 +115,13 @@ class CachedFloodApi {
       _api.triggerIngestion();
 
   Future<void> invalidate(String cacheKey) async {
-    await _cache.delete(cacheKey);
-    await _cache.delete(_tsKey(cacheKey));
+    await _cache.remove(cacheKey);          // was: _cache.delete()
+    await _cache.remove(_tsKey(cacheKey));  // was: _cache.delete()
   }
 
-  Future<void> clearAll() => _cache.clearAll();
+  Future<void> clearAll() => _cache.clear(); // was: _cache.clearAll()
 
-  // ── Helpers ─────────────────────────────────────────────────────────────────
+  // ── Helpers ────────────────────────────────────────────────────────────────
   Map<String, dynamic> _decode(String json) {
     try {
       final parsed = jsonDecode(json);

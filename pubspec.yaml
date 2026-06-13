@@ -1,10 +1,10 @@
 name: equinox_flood
-description: EQUINOX-BR05 - AI-powered flood prediction app
+description: OpsFlood — Real-time Bihar flood monitoring app
 publish_to: 'none'
-version: 1.1.0+2
+version: 1.0.0+1
 
 environment:
-  sdk: '>=3.4.0 <4.0.0'
+  sdk: '>=3.3.0 <4.0.0'
 
 dependencies:
   html: ^0.15.4
@@ -71,7 +71,7 @@ dependencies:
   flutter_map: ^8.1.1
   latlong2:    ^0.9.1
 
-  # Hive runtime — no codegen needed at build time
+  # Hive runtime
   hive:         ^2.2.3
   hive_flutter: ^1.1.0
   uuid:         ^4.4.2
@@ -88,8 +88,8 @@ dependencies:
   # Timestamps
   timeago: ^3.7.0
 
-  # AI flood background monitoring service
-  flutter_background_service: ^5.0.10
+  # Home screen widget
+  home_widget: ^0.7.0
 
 dev_dependencies:
   flutter_test:
@@ -139,9 +139,3 @@ flutter:
       fonts:
         - asset: assets/fonts/JetBrainsMono-Regular.ttf
           weight: 400
-        - asset: assets/fonts/JetBrainsMono-Medium.ttf
-          weight: 500
-        - asset: assets/fonts/JetBrainsMono-SemiBold.ttf
-          weight: 600
-        - asset: assets/fonts/JetBrainsMono-Bold.ttf
-          weight: 700

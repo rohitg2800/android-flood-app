@@ -50,8 +50,13 @@ class AppConstants {
   static const String storageKeyPredictions  = 'cached_predictions';
   static const String storageKeySourcePolicy = 'source_policy';
 
+  // ── Flood level defaults ──────────────────────────────────────────────────
+  /// Default river warning level (metres) used when station metadata is absent.
+  static const double defaultWarningLevel    = 8.0;
+  /// Default river danger level (metres) used when station metadata is absent.
+  static const double defaultDangerLevel     = 10.0;
+
   // ── Notification Channels — delegate to AlertChannels ────────────────────
-  // Tests assert AppConstants.criticalAlertChannelId == AlertChannels.criticalId
   static String get criticalAlertChannelId   => AlertChannels.criticalId;
   static String get criticalAlertChannelName => AlertChannels.criticalName;
   static String get warningAlertChannelId    => AlertChannels.warningId;
@@ -59,10 +64,7 @@ class AppConstants {
   static String get infoChannelId            => 'flood_info';
   static String get infoChannelName          => 'Flood Information';
 
-  // ── Backward-compat shims (used by constants_domain_test) ─────────────────
-  /// Delegates to FloodThresholds.critical (capacity % threshold = 90.0).
+  // ── Backward-compat shims ──────────────────────────────────────────────────
   static double get criticalThreshold => FloodThresholds.critical;
-
-  /// Delegates to IndiaGeodata.states.
   static List<String> get indianStates => IndiaGeodata.states;
 }

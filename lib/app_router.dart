@@ -9,9 +9,6 @@
 //     onGenerateRoute: AppRouter.onGenerateRoute,
 //     initialRoute: AppRouter.initial,
 //   )
-//
-// All routes check onboarding state; first-launch redirects
-// to /onboarding automatically.
 
 import 'package:flutter/material.dart';
 
@@ -27,7 +24,6 @@ import 'screens/notification_settings_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/sos_screen.dart';
 import 'screens/evacuation_routes_screen.dart';
-import 'screens/evacuation_routes_screen.dart' show EvacuationRoutesScreen;
 import 'screens/crowd_report_feed_screen.dart';
 import 'screens/analytics_dashboard_screen.dart';
 import 'screens/rainfall_forecast_screen.dart';
@@ -37,6 +33,8 @@ import 'screens/cwc_station_detail_screen.dart';
 import 'screens/river_detail_screen.dart';
 import 'screens/historical_analytics_screen.dart';
 import 'screens/predict_screen.dart';
+import 'models/flood_data.dart';
+import 'services/befiqr_cwc_service.dart';
 
 // ---------------------------------------------------------------------------
 // Route names (const strings — use these everywhere)
@@ -75,25 +73,20 @@ class Routes {
 class AppRouter {
   AppRouter._();
 
-  static final navigatorKey =
-      GlobalKey<NavigatorState>();
+  static final navigatorKey = GlobalKey<NavigatorState>();
 
   /// Initial route: SplashScreen decides onboarding vs shell.
   static const String initial = Routes.splash;
 
-  static Route<dynamic> onGenerateRoute(
-      RouteSettings settings) {
+  static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     final uri  = Uri.parse(settings.name ?? '/');
     final path = uri.path;
-
-    // Parse query params (e.g. /shell?tab=2)
-    final tab = int.tryParse(
-        uri.queryParameters['tab'] ?? '') ?? 0;
 
     final Widget page = switch (path) {
       Routes.splash    => const SplashScreen(),
       Routes.onboarding => const OnboardingScreen(),
-      Routes.shell     => MainShell(initialTab: tab),
+      // MainShell has no initialTab param — use IndexedStack internally
+      Routes.shell     => const MainShell(),
       Routes.dashboard => const DashboardScreen(),
       Routes.alerts    => const AlertsScreen(),
       Routes.map       => const BiharRiverMapScreen(),
@@ -104,7 +97,10 @@ class AppRouter {
       Routes.profile   => const ProfileScreen(),
       Routes.sos       => const SosScreen(),
       Routes.evacuation => const EvacuationRoutesScreen(),
-      Routes.crowdReports => const CrowdReportFeedScreen(),
+      // CrowdReportFeedScreen exists but has no class body — use a stub
+      Routes.crowdReports => const Scaffold(
+          body: Center(child: Text('Crowd Reports coming soon')),
+        ),
       Routes.analytics => const AnalyticsDashboardScreen(),
       Routes.rainfallForecast =>
           const RainfallForecastScreen(),
@@ -115,16 +111,18 @@ class AppRouter {
           const HistoricalAnalyticsScreen(),
       Routes.predict   => const PredictScreen(),
 
-      // /station/STATION_ID
-      _ when path.startsWith('/station/') => () {
-          final id = path.replaceFirst('/station/', '');
-          return CwcStationDetailScreen(stationId: id);
+      // /station — expects CwcStation in settings.arguments
+      Routes.stationDetail => () {
+          final station = settings.arguments as CwcStation?;
+          if (station == null) return const SplashScreen();
+          return CwcStationDetailScreen(station: station);
         }(),
 
-      // /river/RIVER_NAME
-      _ when path.startsWith('/river/') => () {
-          final name = path.replaceFirst('/river/', '');
-          return RiverDetailScreen(riverName: name);
+      // /river — expects FloodData in settings.arguments
+      Routes.riverDetail => () {
+          final data = settings.arguments as FloodData?;
+          if (data == null) return const SplashScreen();
+          return RiverDetailScreen(data: data);
         }(),
 
       _ => const SplashScreen(),
@@ -140,13 +138,10 @@ class AppRouter {
   // Convenience push helpers
   // --------------------------------------------------
 
-  static Future<T?> push<T>(String route,
-      {Object? arguments}) =>
-      navigatorKey.currentState!.pushNamed<T>(
-          route, arguments: arguments);
+  static Future<T?> push<T>(String route, {Object? arguments}) =>
+      navigatorKey.currentState!.pushNamed<T>(route, arguments: arguments);
 
-  static Future<T?> pushReplacement<T>(String route,
-      {Object? arguments}) =>
+  static Future<T?> pushReplacement<T>(String route, {Object? arguments}) =>
       navigatorKey.currentState!.pushReplacementNamed<T, dynamic>(
           route, arguments: arguments);
 
@@ -154,6 +149,5 @@ class AppRouter {
       navigatorKey.currentState?.pop(result);
 
   static void popUntilRoot() =>
-      navigatorKey.currentState
-          ?.popUntil((r) => r.isFirst);
+      navigatorKey.currentState?.popUntil((r) => r.isFirst);
 }

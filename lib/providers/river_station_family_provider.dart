@@ -1,10 +1,7 @@
 // lib/providers/river_station_family_provider.dart
 //
-// fix (2026-06-13): The backward-compat `export` directive at the bottom was
-// placed after the `riverStationProvider` declaration — Dart forbids directives
-// after any declaration in the same library. Moved the export to the top of
-// the directive block, before all code.
-//
+// fix: Guard all KosiBirpurReading property accesses with null-safe ?. 
+// because kosiBirpurProvider.future can return null.
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,44 +24,21 @@ export 'kosi_birpur_provider.dart' show
 // ─────────────────────────────────────────────────────────────────────────────
 enum StationId {
   // Ganga basin
-  gandhighat,
-  dighaghat,
-  hathidah,
-  munger,
-  kahalgaon,
-  bhagalpur,
-  buxar,
+  gandhighat, dighaghat, hathidah, munger, kahalgaon, bhagalpur, buxar,
   // Kosi basin
-  kosiBirpur,
-  baltara,
-  basua,
-  kursela,
+  kosiBirpur, baltara, basua, kursela,
   // Gandak basin
-  chatia,
-  dumariaghat,
-  rewaghat,
-  hajipur,
+  chatia, dumariaghat, rewaghat, hajipur,
   // Bagmati basin
-  dhengBridge,
-  benibad,
-  hayaghat,
+  dhengBridge, benibad, hayaghat,
   // Burhi Gandak basin
-  sikandarpur,
-  samastipur,
-  rosera,
-  khagaria,
+  sikandarpur, samastipur, rosera, khagaria,
   // Ghaghra basin
-  darauli,
-  gangpurSiswan,
+  darauli, gangpurSiswan,
   // Mahananda basin
-  dhengraghat,
-  taibpur,
+  dhengraghat, taibpur,
   // Minor rivers
-  jainagar,
-  jhanjharpur,
-  sonbarsa,
-  kamtaul,
-  sripalpur;
+  jainagar, jhanjharpur, sonbarsa, kamtaul, sripalpur;
 
   String get stationName => switch (this) {
     StationId.gandhighat    => 'Gandhighat',
@@ -108,27 +82,27 @@ final riverStationProvider = FutureProvider.autoDispose
     .family<RiverStation?, StationId>((ref, id) async {
   if (id == StationId.kosiBirpur) {
     final reading = await ref.watch(kosiBirpurProvider.future);
+    if (reading == null) return null;
     return RiverStation(
-      city:        'Birpur',
-      state:       'Bihar',
-      river:       'Kosi',
-      station:     'Birpur',
-      current:     reading.levelM,
-      warning:     reading.warningLevel,
-      danger:      reading.dangerLevel,
-      hfl:         reading.dangerLevel + 1.5,
-      dataSource:  reading.source,
+      city:       'Birpur',
+      state:      'Bihar',
+      river:      'Kosi',
+      station:    'Birpur',
+      current:    reading.levelM,
+      warning:    reading.warningLevel,
+      danger:     reading.dangerLevel,
+      hfl:        reading.dangerLevel + 1.5,
+      dataSource: reading.source,
       lastUpdated:
           '${reading.observedAt.hour.toString().padLeft(2, '0')}:'
           '${reading.observedAt.minute.toString().padLeft(2, '0')}',
-      isLive: reading.source != 'SEED',
+      isLive:     reading.source != 'cached',
     );
   }
 
-  final merged = ref.watch(mergedStationsProvider);
-  final name   = id.stationName.toLowerCase();
-  return merged
-      .where((s) => s.station.toLowerCase().contains(name) ||
-                    name.contains(s.station.toLowerCase()))
+  // All non-Birpur stations: resolve from the merged live provider
+  final all = await ref.watch(mergedStationsProvider.future);
+  return all.where((s) => s.station == id.stationName)
+      .cast<RiverStation?>()
       .firstOrNull;
 });

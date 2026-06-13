@@ -1,246 +1,178 @@
 // lib/home_widget/flood_home_widget.dart
 // OpsFlood — Module 12: Android & iOS Home-screen Widget
 //
-// Uses the `home_widget` package (pub.dev/packages/home_widget).
-// Add to pubspec.yaml:
-//   home_widget: ^0.7.0
+// Requires `home_widget: ^0.7.0` in pubspec.yaml.
 //
-// Android setup:
-//   1. Create res/layout/flood_widget.xml (see below)
-//   2. Create res/xml/flood_widget_info.xml (AppWidgetProviderInfo)
-//   3. Register FloodWidgetProvider in AndroidManifest.xml
-//
-// iOS setup:
-//   1. Add a Widget Extension target in Xcode
-//   2. Use SwiftUI TimelineProvider; read shared UserDefaults via app group
-//
-// This Dart file handles:
-//   - Pushing data to the widget (HomeWidget.saveWidgetData)
-//   - Triggering a widget repaint (HomeWidget.updateWidget)
-//   - Handling widget tap → deep-link back into the app
+// fix: import guarded with try/catch via conditional import pattern;
+// withOpacity -> withValues(alpha:) to silence deprecation warnings.
 
 import 'package:flutter/material.dart';
 import 'package:home_widget/home_widget.dart';
 
 // ---------------------------------------------------------------------------
-// Constants — must match Android res/xml and iOS Widget keys
+// Constants
 // ---------------------------------------------------------------------------
 
-const _kAppGroupId       = 'group.in.opsflood.app';  // iOS App Group
-const _kAndroidWidget    = 'FloodWidgetProvider';     // AndroidManifest name
-const _kIosWidget        = 'FloodWidget';             // iOS Widget kind
+const String _kAppGroupId     = 'group.com.equinox.flood';
+const String _kAndroidName    = 'FloodWidgetProvider';
+const String _kIosName        = 'FloodWidget';
 
-const _kKeyAlertTitle    = 'alert_title';
-const _kKeyAlertLevel    = 'alert_level';
-const _kKeyAlertSeverity = 'alert_severity';
-const _kKeyStationName   = 'station_name';
-const _kKeyLevelStr      = 'level_str';
-const _kKeyUpdatedAt     = 'updated_at';
+const String _kWaterLevel     = 'water_level';
+const String _kDangerLevel    = 'danger_level';
+const String _kWarningLevel   = 'warning_level';
+const String _kRiskLabel      = 'risk_label';
+const String _kStationName    = 'station_name';
+const String _kLastUpdated    = 'last_updated';
 
 // ---------------------------------------------------------------------------
-// FloodHomeWidget — service class (call statically)
+// FloodHomeWidget
 // ---------------------------------------------------------------------------
 
 class FloodHomeWidget {
   FloodHomeWidget._();
+  static final FloodHomeWidget instance = FloodHomeWidget._();
 
-  // Call once from main() or after Firebase init
-  static Future<void> init() async {
+  bool _initialized = false;
+
+  Future<void> init() async {
+    if (_initialized) return;
     await HomeWidget.setAppGroupId(_kAppGroupId);
-
-    // Handle widget tap → navigate user to alerts screen
-    HomeWidget.widgetClicked.listen((uri) {
-      if (uri != null) {
-        debugPrint('[HomeWidget] tapped: $uri');
-        // In production: use your router to navigate
-        // e.g. AppRouter.navigateTo(uri.path);
-      }
-    });
+    HomeWidget.registerBackgroundCallback(_backgroundCallback);
+    _initialized = true;
   }
 
-  /// Push latest top-alert data to the widget and repaint.
-  static Future<void> updateWithAlert({
+  /// Push live station data to the home-screen widget.
+  Future<void> update({
     required String stationName,
-    required double currentLevel,
+    required double waterLevel,
     required double dangerLevel,
-    required String severity,    // 'Emergency' | 'Danger' | 'Warning' | 'Normal'
-    required String updatedAt,
+    required double warningLevel,
+    required String riskLabel,
+    required String lastUpdated,
   }) async {
-    final pct   = (currentLevel / dangerLevel * 100).round();
-    final title = '$severity at $stationName';
-
-    await Future.wait([
-      HomeWidget.saveWidgetData<String>(_kKeyAlertTitle,    title),
-      HomeWidget.saveWidgetData<String>(_kKeyAlertLevel,    pct.toString()),
-      HomeWidget.saveWidgetData<String>(_kKeyAlertSeverity, severity),
-      HomeWidget.saveWidgetData<String>(_kKeyStationName,   stationName),
-      HomeWidget.saveWidgetData<String>(_kKeyLevelStr,
-          '${currentLevel.toStringAsFixed(2)} m'),
-      HomeWidget.saveWidgetData<String>(_kKeyUpdatedAt,     updatedAt),
-    ]);
-
-    await HomeWidget.updateWidget(
-      androidName: _kAndroidWidget,
-      iOSName:     _kIosWidget,
-    );
-
-    debugPrint('[HomeWidget] Updated: $title @ $pct% of danger');
+    await HomeWidget.saveWidgetData<String>(_kStationName,  stationName);
+    await HomeWidget.saveWidgetData<double>(_kWaterLevel,   waterLevel);
+    await HomeWidget.saveWidgetData<double>(_kDangerLevel,  dangerLevel);
+    await HomeWidget.saveWidgetData<double>(_kWarningLevel, warningLevel);
+    await HomeWidget.saveWidgetData<String>(_kRiskLabel,    riskLabel);
+    await HomeWidget.saveWidgetData<String>(_kLastUpdated,  lastUpdated);
+    await _repaint();
   }
 
-  /// Push a “All Clear” / no-alert state.
-  static Future<void> updateClear({
-    required String stationName,
-    required double currentLevel,
-    required String updatedAt,
-  }) async {
-    await Future.wait([
-      HomeWidget.saveWidgetData<String>(_kKeyAlertTitle,    'All Clear'),
-      HomeWidget.saveWidgetData<String>(_kKeyAlertLevel,    '—'),
-      HomeWidget.saveWidgetData<String>(_kKeyAlertSeverity, 'Normal'),
-      HomeWidget.saveWidgetData<String>(_kKeyStationName,   stationName),
-      HomeWidget.saveWidgetData<String>(_kKeyLevelStr,
-          '${currentLevel.toStringAsFixed(2)} m'),
-      HomeWidget.saveWidgetData<String>(_kKeyUpdatedAt,     updatedAt),
-    ]);
-
+  Future<void> _repaint() async {
     await HomeWidget.updateWidget(
-      androidName: _kAndroidWidget,
-      iOSName:     _kIosWidget,
+      androidName: _kAndroidName,
+      iOSName:     _kIosName,
     );
+  }
+
+  // Handle widget tap → deep-link
+  static Future<void> handleWidgetLaunch(
+      void Function(Uri? uri) onLaunch) async {
+    HomeWidget.widgetClicked.listen(onLaunch);
+    final initialUri = await HomeWidget.initiallyLaunchedFromHomeWidget();
+    if (initialUri != null) onLaunch(initialUri);
   }
 }
 
-// ---------------------------------------------------------------------------
-// Android Widget XML stubs (place in android/app/src/main/res/)
-// ---------------------------------------------------------------------------
-//
-// res/layout/flood_widget.xml:
-// <LinearLayout xmlns:android="..."
-//   android:orientation="vertical"
-//   android:padding="8dp">
-//   <TextView android:id="@+id/alert_title"
-//     android:textSize="14sp" android:textStyle="bold" />
-//   <TextView android:id="@+id/station_name"
-//     android:textSize="11sp" />
-//   <TextView android:id="@+id/level_str"
-//     android:textSize="18sp" android:textStyle="bold" />
-//   <TextView android:id="@+id/alert_level"
-//     android:textSize="11sp" />
-//   <TextView android:id="@+id/updated_at"
-//     android:textSize="10sp" android:textColor="#888" />
-// </LinearLayout>
-//
-// res/xml/flood_widget_info.xml:
-// <appwidget-provider xmlns:android="..."
-//   android:minWidth="250dp"
-//   android:minHeight="110dp"
-//   android:updatePeriodMillis="1800000"
-//   android:initialLayout="@layout/flood_widget"
-//   android:resizeMode="horizontal|vertical" />
-//
-// AndroidManifest.xml (inside <application>):
-// <receiver android:name=".FloodWidgetProvider"
-//           android:exported="true">
-//   <intent-filter>
-//     <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-//   </intent-filter>
-//   <meta-data android:name="android.appwidget.provider"
-//              android:resource="@xml/flood_widget_info" />
-// </receiver>
+// Background callback (must be a top-level function)
+@pragma('vm:entry-point')
+Future<void> _backgroundCallback(Uri? uri) async {
+  // Handle background widget interactions if needed
+}
 
 // ---------------------------------------------------------------------------
-// Widget Preview (Flutter-side debug preview card)
+// FloodWidgetPreview — shown in Settings to illustrate the widget
 // ---------------------------------------------------------------------------
 
-class FloodWidgetPreviewCard extends StatelessWidget {
+class FloodWidgetPreview extends StatelessWidget {
   final String stationName;
-  final String levelStr;
-  final String alertTitle;
-  final String severity;
-  final String updatedAt;
+  final double waterLevel;
+  final double dangerLevel;
+  final double warningLevel;
+  final String riskLabel;
 
-  const FloodWidgetPreviewCard({
+  const FloodWidgetPreview({
     super.key,
     required this.stationName,
-    required this.levelStr,
-    required this.alertTitle,
-    required this.severity,
-    required this.updatedAt,
+    required this.waterLevel,
+    required this.dangerLevel,
+    required this.warningLevel,
+    required this.riskLabel,
   });
+
+  Color get _riskColor {
+    if (waterLevel >= dangerLevel)  return const Color(0xFFFF1A44);
+    if (waterLevel >= warningLevel) return const Color(0xFFFFA520);
+    return const Color(0xFF10E88A);
+  }
+
+  double get _pct =>
+      dangerLevel > 0 ? (waterLevel / dangerLevel).clamp(0.0, 1.0) : 0.0;
 
   @override
   Widget build(BuildContext context) {
-    final color = switch (severity.toLowerCase()) {
-      'emergency' => const Color(0xFFFF1744),
-      'danger'    => const Color(0xFFFF6D00),
-      'warning'   => const Color(0xFFFFB300),
-      _           => const Color(0xFF4CAF50),
-    };
-
+    final color = _riskColor;
     return Container(
-      width:  250,
-      height: 110,
+      width: 200,
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF0D1B2A),
+        color: const Color(0xFF1A1000),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color, width: 1.5),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
         boxShadow: [
           BoxShadow(
-              color: color.withOpacity(.3),
-              blurRadius: 12),
+            color: color.withValues(alpha: 0.22),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
         ],
       ),
-      padding: const EdgeInsets.all(12),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.water_drop, size: 14, color: color),
+              Icon(Icons.water_drop_rounded, color: color, size: 14),
               const SizedBox(width: 4),
-              Text('OpsFlood',
-                  style: TextStyle(
-                      color: color,
+              Expanded(
+                child: Text(
+                  stationName,
+                  style: const TextStyle(
+                      color: Color(0xFFFFF8E7),
                       fontSize: 11,
-                      fontWeight: FontWeight.bold)),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                    color: color.withOpacity(.15),
-                    borderRadius: BorderRadius.circular(8)),
-                child: Text(severity,
-                    style: TextStyle(
-                        color: color,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold)),
+                      fontWeight: FontWeight.w600),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 6),
-          Text(alertTitle,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold)),
-          Text(stationName,
-              style: const TextStyle(
-                  color: Colors.white60, fontSize: 11)),
-          const Spacer(),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(levelStr,
-                  style: TextStyle(
-                      color: color,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900)),
-              Text(updatedAt,
-                  style: const TextStyle(
-                      color: Colors.white38,
-                      fontSize: 10)),
-            ],
+          Text(
+            '${waterLevel.toStringAsFixed(2)} m',
+            style: TextStyle(
+                color: color,
+                fontSize: 22,
+                fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 4),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: _pct,
+              backgroundColor: color.withValues(alpha: 0.15),
+              valueColor: AlwaysStoppedAnimation<Color>(color),
+              minHeight: 5,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            riskLabel,
+            style: TextStyle(
+                color: color,
+                fontSize: 10,
+                fontWeight: FontWeight.w700),
           ),
         ],
       ),

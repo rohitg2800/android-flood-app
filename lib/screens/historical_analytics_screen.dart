@@ -1,24 +1,48 @@
 // lib/screens/historical_analytics_screen.dart
-// OpsFlood — Historical Analytics Screen (Phase 3)
+// OpsFlood — Historical Analytics Screen
 //
-// Three tabs:
-//   1. Timeline  — flood event list (WL/DL/HFL crossings)
-//   2. Chart     — yearly peak-level bar chart with danger-level overlay
-//   3. Stats     — summary KPI cards
-//
-// Data source: historicalDataProvider (Riverpod)
-// No external dependencies beyond fl_chart + river_theme
-// ---------------------------------------------------------------------------
+// Self-contained: defines HistoricalFloodRecord, FloodEventType,
+// and historicalDataProvider inline so no missing-file imports are needed.
+// Replace the stub provider with real data when backend is ready.
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../models/historical_flood_data.dart';
-import '../providers/historical_data_provider.dart';
 import '../theme/river_theme.dart';
 
-// ── helpers ─────────────────────────────────────────────────────────────────
+// ── Models ───────────────────────────────────────────────────────────────────
+
+enum FloodEventType { hfl, dangerLevel, warningLevel }
+
+class HistoricalFloodRecord {
+  final DateTime date;
+  final String   station;
+  final String   river;
+  final double   peakLevel;
+  final double   dangerLevel;
+  final double   warningLevel;
+  final FloodEventType eventType;
+
+  const HistoricalFloodRecord({
+    required this.date,
+    required this.station,
+    required this.river,
+    required this.peakLevel,
+    required this.dangerLevel,
+    required this.warningLevel,
+    required this.eventType,
+  });
+}
+
+// ── Provider (stub — replace with real API call) ──────────────────────────────
+
+final historicalDataProvider =
+    FutureProvider<List<HistoricalFloodRecord>>((ref) async {
+  // Stub: return empty list until backend is wired.
+  return const [];
+});
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 Color _eventColor(FloodEventType t) {
   switch (t) {
@@ -28,7 +52,7 @@ Color _eventColor(FloodEventType t) {
   }
 }
 
-// ── screen ──────────────────────────────────────────────────────────────────
+// ── Screen ───────────────────────────────────────────────────────────────────
 
 class HistoricalAnalyticsScreen extends ConsumerStatefulWidget {
   const HistoricalAnalyticsScreen({super.key});
@@ -62,11 +86,12 @@ class _HistoricalAnalyticsScreenState
 
     return Theme(
       data: Theme.of(context).copyWith(
-        tabBarTheme: TabBarTheme(
-          labelStyle:        const TextStyle(fontWeight: FontWeight.w700),
+        // TabBarThemeData (not TabBarTheme) is the correct type for copyWith
+        tabBarTheme: TabBarThemeData(
+          labelStyle:           const TextStyle(fontWeight: FontWeight.w700),
           unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w400),
-          indicatorColor:    AppPalette.cyan,
-          labelColor:        AppPalette.cyan,
+          indicatorColor:       AppPalette.cyan,
+          labelColor:           AppPalette.cyan,
           unselectedLabelColor: t.textSecondary,
         ),
       ),
@@ -104,7 +129,7 @@ class _HistoricalAnalyticsScreenState
   }
 }
 
-// ── Timeline tab ─────────────────────────────────────────────────────────────
+// ── Timeline Tab ─────────────────────────────────────────────────────────────
 
 class _TimelineTab extends StatelessWidget {
   final List<HistoricalFloodRecord> records;
@@ -113,64 +138,56 @@ class _TimelineTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = RiverColors.of(context);
-
     if (records.isEmpty) {
       return Center(
         child: Text('No historical data available.',
             style: TextStyle(color: t.textSecondary)),
       );
     }
-
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
       itemCount: records.length,
-      itemBuilder: (context, i) {
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemBuilder: (_, i) {
         final r = records[i];
-        return _EventTile(record: r);
+        final color = _eventColor(r.eventType);
+        return Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: t.cardBg,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: color.withValues(alpha: 0.35)),
+          ),
+          child: Row(
+            children: [
+              Container(width: 8, height: 8,
+                  decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('${r.station} — ${r.river}',
+                        style: TextStyle(color: t.textPrimary,
+                            fontWeight: FontWeight.w600)),
+                    Text('Peak: ${r.peakLevel.toStringAsFixed(2)} m  |  '
+                        '${r.date.year}-${r.date.month.toString().padLeft(2,"0")}-${r.date.day.toString().padLeft(2,"0")}',
+                        style: TextStyle(color: t.textSecondary, fontSize: 12)),
+                  ],
+                ),
+              ),
+              Text(r.eventType.name.toUpperCase(),
+                  style: TextStyle(color: color, fontSize: 10,
+                      fontWeight: FontWeight.w700)),
+            ],
+          ),
+        );
       },
     );
   }
 }
 
-class _EventTile extends StatelessWidget {
-  final HistoricalFloodRecord record;
-  const _EventTile({required this.record});
-
-  @override
-  Widget build(BuildContext context) {
-    final t     = RiverColors.of(context);
-    final color = _eventColor(record.eventType);
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color:        t.cardBg,
-        borderRadius: BorderRadius.circular(12),
-        border:       Border.all(color: t.stroke.withValues(alpha: 0.5)),
-      ),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: color.withValues(alpha: 0.2),
-          child: Icon(Icons.water_drop, color: color, size: 18),
-        ),
-        title: Text(
-          record.stationName,
-          style: TextStyle(color: t.textPrimary, fontWeight: FontWeight.w600),
-        ),
-        subtitle: Text(
-          '${record.eventDate}  •  ${record.eventType.name}  •  ${record.waterLevel.toStringAsFixed(2)} m',
-          style: TextStyle(color: t.textSecondary, fontSize: 12),
-        ),
-        trailing: Text(
-          record.year.toString(),
-          style: TextStyle(color: t.textSecondary, fontSize: 12),
-        ),
-      ),
-    );
-  }
-}
-
-// ── Chart tab ────────────────────────────────────────────────────────────────
+// ── Chart Tab ─────────────────────────────────────────────────────────────────
 
 class _ChartTab extends StatelessWidget {
   final List<HistoricalFloodRecord> records;
@@ -179,159 +196,64 @@ class _ChartTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = RiverColors.of(context);
-
-    // Group by year → max water level
-    final Map<int, double> byYear = {};
-    for (final r in records) {
-      byYear[r.year] = (byYear[r.year] ?? 0).clamp(0, r.waterLevel) == 0
-          ? r.waterLevel
-          : (byYear[r.year]! > r.waterLevel ? byYear[r.year]! : r.waterLevel);
-    }
-
-    final years = byYear.keys.toList()..sort();
-
-    if (years.isEmpty) {
+    if (records.isEmpty) {
       return Center(
-          child: Text('No data for chart.',
-              style: TextStyle(color: t.textSecondary)));
-    }
-
-    final bars = years.asMap().entries.map((e) {
-      final y   = e.value;
-      final val = byYear[y]!;
-      // Danger level proxy — in real app pull from station metadata
-      const dangerLevel = 8.0;
-      final barColor = val >= dangerLevel ? AppPalette.danger : AppPalette.cyan;
-      return BarChartGroupData(
-        x: e.key,
-        barRods: [
-          BarChartRodData(
-            toY:       val,
-            color:     barColor,
-            width:     16,
-            borderRadius: BorderRadius.circular(4),
-          )
-        ],
+        child: Text('No chart data.', style: TextStyle(color: t.textSecondary)),
       );
-    }).toList();
+    }
+    // Group by year, pick max peakLevel
+    final Map<int, double> yearPeak = {};
+    for (final r in records) {
+      final yr = r.date.year;
+      yearPeak[yr] = (yearPeak[yr] ?? 0).clamp(0, double.infinity) < r.peakLevel
+          ? r.peakLevel : yearPeak[yr]!;
+    }
+    final years  = yearPeak.keys.toList()..sort();
+    final groups = years.asMap().entries.map((e) => BarChartGroupData(
+      x: e.key,
+      barRods: [
+        BarChartRodData(
+          toY: yearPeak[e.value]!,
+          color: AppPalette.cyan,
+          width: 14,
+          borderRadius: BorderRadius.circular(4),
+        ),
+      ],
+    )).toList();
 
     return Padding(
       padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Yearly Peak Water Levels',
-              style: TextStyle(
-                  color:      t.textPrimary,
-                  fontWeight: FontWeight.w700,
-                  fontSize:   16)),
-          const SizedBox(height: 4),
-          Text('Bar = peak level  •  Dashed = danger threshold',
-              style: TextStyle(color: t.textSecondary, fontSize: 12)),
-          const SizedBox(height: 16),
-          Expanded(
-            child: BarChart(
-              BarChartData(
-                barGroups: bars,
-                gridData: FlGridData(
-                  show: true,
-                  getDrawingHorizontalLine: (_) =>
-                      FlLine(color: t.stroke.withValues(alpha: 0.3), strokeWidth: 1),
-                  getDrawingVerticalLine:   (_) => FlLine(color: Colors.transparent),
-                ),
-                borderData: FlBorderData(show: false),
-                titlesData: FlTitlesData(
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (v, _) {
-                        final i = v.toInt();
-                        if (i < 0 || i >= years.length) return const SizedBox();
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            years[i].toString().substring(2),
-                            style: TextStyle(color: t.textSecondary, fontSize: 10),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles:   true,
-                      reservedSize: 32,
-                      getTitlesWidget: (v, _) => Text(
-                        v.toStringAsFixed(0),
-                        style: TextStyle(color: t.textSecondary, fontSize: 10),
-                      ),
-                    ),
-                  ),
-                  topTitles:   const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                ),
-                extraLinesData: ExtraLinesData(
-                  horizontalLines: [
-                    HorizontalLine(
-                      y:            8.0,
-                      color:        AppPalette.danger,
-                      strokeWidth:  1.5,
-                      dashArray:    [6, 3],
-                      label:        HorizontalLineLabel(
-                        show:      true,
-                        alignment: Alignment.topRight,
-                        style:     TextStyle(color: AppPalette.danger, fontSize: 10),
-                        labelResolver: (_) => 'DL',
-                      ),
-                    ),
-                  ],
-                ),
+      child: BarChart(
+        BarChartData(
+          barGroups: groups,
+          gridData: const FlGridData(show: false),
+          borderData: FlBorderData(show: false),
+          titlesData: FlTitlesData(
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                getTitlesWidget: (v, _) {
+                  final idx = v.toInt();
+                  if (idx < 0 || idx >= years.length) return const SizedBox();
+                  return Text('${years[idx]}',
+                      style: TextStyle(color: t.textSecondary, fontSize: 9));
+                },
               ),
             ),
+            leftTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false)),
+            topTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false)),
+            rightTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false)),
           ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _Legend(color: AppPalette.cyan, label: 'Peak Level'),
-              const SizedBox(width: 20),
-              _Legend(color: AppPalette.danger, label: 'Danger Level', dashed: true),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
-class _Legend extends StatelessWidget {
-  final Color  color;
-  final String label;
-  final bool   dashed;
-  const _Legend({required this.color, required this.label, this.dashed = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 24, height: 3,
-          decoration: BoxDecoration(
-            color:        dashed ? Colors.transparent : color,
-            border:       dashed ? Border.all(color: color) : null,
-          ),
-        ),
-        const SizedBox(width: 6),
-        Text(label,
-            style: TextStyle(
-                color:    RiverColors.of(context).textSecondary,
-                fontSize: 11)),
-      ],
-    );
-  }
-}
-
-// ── Stats tab ────────────────────────────────────────────────────────────────
+// ── Stats Tab ─────────────────────────────────────────────────────────────────
 
 class _StatsTab extends StatelessWidget {
   final List<HistoricalFloodRecord> records;
@@ -339,117 +261,49 @@ class _StatsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = RiverColors.of(context);
-
-    int  hfl     = 0;
-    int  danger  = 0;
-    int  warning = 0;
-    int  total   = records.length;
-    double maxLevel = 0;
-
-    for (final r in records) {
-      switch (r.eventType) {
-        case FloodEventType.hfl:          hfl++;     break;
-        case FloodEventType.dangerLevel:  danger++;  break;
-        case FloodEventType.warningLevel: warning++; break;
-      }
-      if (r.waterLevel > maxLevel) maxLevel = r.waterLevel;
-    }
+    final t      = RiverColors.of(context);
+    final hflCnt = records.where((r) => r.eventType == FloodEventType.hfl).length;
+    final dlCnt  = records.where((r) => r.eventType == FloodEventType.dangerLevel).length;
+    final wlCnt  = records.where((r) => r.eventType == FloodEventType.warningLevel).length;
+    final avgPeak = records.isEmpty ? 0.0
+        : records.map((r) => r.peakLevel).reduce((a, b) => a + b) / records.length;
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _StatCard(
-          icon: Icons.water_rounded,
-          color: AppPalette.critical,
-          label: 'HFL Events',
-          value: hfl.toString(),
-          t:     t,
-        ),
-        _StatCard(
-          icon: Icons.show_chart_rounded,
-          color: AppPalette.cyan,
-          label: 'Total Records',
-          value: total.toString(),
-          t:     t,
-        ),
-        _StatCard(
-          icon: Icons.warning_rounded,
-          color: AppPalette.danger,
-          label: 'Danger Crossings',
-          value: danger.toString(),
-          t:     t,
-        ),
-        _StatCard(
-          icon: Icons.emergency_rounded,
-          color: AppPalette.critical,
-          label: 'Emergency Events',
-          value: hfl.toString(),
-          t:     t,
-        ),
-        _StatCard(
-          icon: Icons.timer_rounded,
-          color: AppPalette.warning,
-          label: 'Warning Crossings',
-          value: warning.toString(),
-          t:     t,
-        ),
-        _StatCard(
-          icon: Icons.height_rounded,
-          color: AppPalette.cyan,
-          label: 'Max Water Level',
-          value: '${maxLevel.toStringAsFixed(2)} m',
-          t:     t,
-        ),
+        _StatRow(label: 'Total Events',  value: '${records.length}',           color: AppPalette.cyan,     t: t),
+        _StatRow(label: 'HFL Crossings', value: '$hflCnt',                     color: AppPalette.critical, t: t),
+        _StatRow(label: 'Danger Level',  value: '$dlCnt',                      color: AppPalette.danger,   t: t),
+        _StatRow(label: 'Warning Level', value: '$wlCnt',                      color: AppPalette.warning,  t: t),
+        _StatRow(label: 'Avg Peak',      value: '${avgPeak.toStringAsFixed(2)} m', color: AppPalette.gold, t: t),
       ],
     );
   }
 }
 
-class _StatCard extends StatelessWidget {
-  final IconData  icon;
-  final Color     color;
-  final String    label;
-  final String    value;
+class _StatRow extends StatelessWidget {
+  final String label, value;
+  final Color  color;
   final RiverColors t;
-  const _StatCard({
-    required this.icon,
-    required this.color,
-    required this.label,
-    required this.value,
-    required this.t,
+  const _StatRow({
+    required this.label, required this.value,
+    required this.color, required this.t,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color:        t.cardBg,
-        borderRadius: BorderRadius.circular(12),
-        border:       Border.all(color: t.stroke.withValues(alpha: 0.5)),
+        color: t.cardBg, borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Container(
-            width: 40, height: 40,
-            decoration: BoxDecoration(
-              color:        color.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(label,
-                style: TextStyle(color: t.textSecondary, fontSize: 14)),
-          ),
-          Text(value,
-              style: TextStyle(
-                  color:      t.textPrimary,
-                  fontSize:   18,
-                  fontWeight: FontWeight.w700)),
+          Text(label, style: TextStyle(color: t.textSecondary)),
+          Text(value, style: TextStyle(
+              color: color, fontWeight: FontWeight.w700)),
         ],
       ),
     );
