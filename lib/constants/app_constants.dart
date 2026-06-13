@@ -1,5 +1,6 @@
 // lib/constants/app_constants.dart
 
+import 'alert_channels.dart';
 import 'flood_thresholds.dart';
 import 'india_geodata.dart';
 
@@ -37,14 +38,6 @@ class AppConstants {
   static const Duration animationNormal      = Duration(milliseconds: 350);
   static const Duration animationSlow        = Duration(milliseconds: 600);
 
-  // ── Notification Channels ─────────────────────────────────────────────────
-  static const String criticalAlertChannelId   = 'equinox_bh_critical';
-  static const String criticalAlertChannelName = 'Critical Flood Alerts';
-  static const String warningAlertChannelId    = 'equinox_bh_warning';
-  static const String warningAlertChannelName  = 'Flood Warnings';
-  static const String infoChannelId            = 'flood_info';
-  static const String infoChannelName          = 'Flood Information';
-
   // ── Severity ──────────────────────────────────────────────────────────────
   static const List<String> severityLevels = [
     'LOW', 'MODERATE', 'SEVERE', 'CRITICAL',
@@ -56,6 +49,15 @@ class AppConstants {
   static const String storageKeyAlerts       = 'cached_alerts';
   static const String storageKeyPredictions  = 'cached_predictions';
   static const String storageKeySourcePolicy = 'source_policy';
+
+  // ── Notification Channels — delegate to AlertChannels ────────────────────
+  // Tests assert AppConstants.criticalAlertChannelId == AlertChannels.criticalId
+  static String get criticalAlertChannelId   => AlertChannels.criticalId;
+  static String get criticalAlertChannelName => AlertChannels.criticalName;
+  static String get warningAlertChannelId    => AlertChannels.warningId;
+  static String get warningAlertChannelName  => AlertChannels.warningName;
+  static String get infoChannelId            => 'flood_info';
+  static String get infoChannelName          => 'Flood Information';
 
   // ── Backward-compat shims (used by constants_domain_test) ─────────────────
   /// Delegates to FloodThresholds.critical (capacity % threshold = 90.0).
