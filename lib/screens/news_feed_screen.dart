@@ -211,9 +211,9 @@ class _FilterBar extends ConsumerWidget {
 
   static Color _severityColor(NewsSeverity sv) {
     switch (sv) {
-      case NewsSeverity.critical: return const AppPalette.critical;
-      case NewsSeverity.high:     return const AppPalette.danger;
-      case NewsSeverity.moderate: return const AppPalette.warning;
+      case NewsSeverity.critical: return AppPalette.critical;
+      case NewsSeverity.high:     return AppPalette.danger;
+      case NewsSeverity.moderate: return AppPalette.warning;
       case NewsSeverity.info:     return AppPalette.textGrey;
     }
   }
@@ -397,9 +397,9 @@ class _NewsCard extends StatelessWidget {
 
   Color get _sevColor {
     switch (item.severity) {
-      case NewsSeverity.critical: return const AppPalette.critical;
-      case NewsSeverity.high:     return const AppPalette.danger;
-      case NewsSeverity.moderate: return const AppPalette.warning;
+      case NewsSeverity.critical: return AppPalette.critical;
+      case NewsSeverity.high:     return AppPalette.danger;
+      case NewsSeverity.moderate: return AppPalette.warning;
       case NewsSeverity.info:     return AppPalette.textGrey;
     }
   }

@@ -306,7 +306,7 @@ class _StationPickerCard extends StatelessWidget {
             final cls = s.dangerClass;
             final dot = _dotColor(cls);
             return DropdownMenuItem(
-              value: s.id,
+              value: s.station,
               child: Row(
                 children: [
                   Container(
@@ -321,7 +321,7 @@ class _StationPickerCard extends StatelessWidget {
                   ),
                   Expanded(
                     child: Text(
-                      '${s.name}  •  ${s.river}',
+                      '${s.station}  •  ${s.river}',
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                           color: theme.textPrimary, fontSize: 14),
@@ -392,7 +392,7 @@ class _CurrentLevelCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(station.name,
+                    Text(station.station,
                         style: TextStyle(
                           color: theme.textPrimary,
                           fontSize: 18,
@@ -1199,6 +1199,6 @@ class _EmptyState extends StatelessWidget {
 /// and returns the last successfully resolved value, or null while loading.
 final predictionForStationProvider =
     Provider.family<FloodPrediction?, RiverStation>((ref, station) {
-  final asyncVal = ref.watch(predictionProvider(station.id));
-  return asyncVal.valueOrNull;
+  final asyncVal = ref.watch(predictionProvider(station.station));
+  return asyncVal.when(data: (d) => d, loading: () => null, error: (_, __) => null);
 });

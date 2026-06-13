@@ -243,7 +243,6 @@ FloodData _riverStationToFloodData(RiverStation s) {
     currentLevel:        s.current,
     warningLevel:        s.warning,
     dangerLevel:         s.danger,
-    safeLevel:           s.warning * 0.75,
     capacityPercent:     cap,
     riskLevel:           riskLevel,
     status:              s.isLive ? 'LIVE' : 'ESTIMATED',

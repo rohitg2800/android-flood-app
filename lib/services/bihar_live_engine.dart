@@ -385,7 +385,7 @@ class BiharLiveEngine {
             subtitle:    'River: ${s.river}',
             value:       '${s.currentLevel.toStringAsFixed(2)} m',
             dangerLevel: statusLabel,
-            fetchedAt:   fetchedAt,
+            fetchedAt:   fetchedAt ?? DateTime.now(),
             severity:    sev,
             raw: {
               'river':   s.river,
@@ -543,7 +543,7 @@ class BiharLiveEngine {
       subtitle:    s.river.isNotEmpty ? 'River: ${s.river}' : 'WRD Bihar',
       value:       '$level m',
       dangerLevel: status,
-      fetchedAt:   fetchedAt,
+      fetchedAt:   fetchedAt ?? DateTime.now(),
       severity:    sev,
       raw: {
         'river':   s.river,  'site':    s.site,
@@ -579,7 +579,7 @@ class BiharLiveEngine {
       value:       '$level m',
       dangerLevel: status,
       changeStr:   change,
-      fetchedAt:   fetchedAt,
+      fetchedAt:   fetchedAt ?? DateTime.now(),
       severity:    sev,
       raw: {
         'river':    r.river,    'station': r.stationName,
@@ -595,7 +595,7 @@ class BiharLiveEngine {
     final level     = fd.currentLevel.toStringAsFixed(2);
     final status    = fd.riskLevel;
     final fetchedAt = fd.lastUpdated;
-    final sev       = _severityGated(_riskToSeverity(status), fetchedAt);
+    final sev       = _severityGated(_riskToSeverity(status), fetchedAt ?? DateTime.now());
     return BiharFeedItem(
       id:          'india|${fd.city.toLowerCase().trim()}',
       kind:        FeedItemKind.riverGauge,
@@ -606,7 +606,7 @@ class BiharLiveEngine {
                        : fd.state,
       value:       '$level m',
       dangerLevel: status,
-      fetchedAt:   fetchedAt,
+      fetchedAt:   fetchedAt ?? DateTime.now(),
       severity:    sev,
       raw: {
         'city':    fd.city,        'state':   fd.state,
@@ -636,7 +636,7 @@ class BiharLiveEngine {
       subtitle:    'Kosi Barrage',
       value:       '${r.levelM.toStringAsFixed(2)} m',
       dangerLevel: status,
-      fetchedAt:   fetchedAt,
+      fetchedAt:   fetchedAt ?? DateTime.now(),
       severity:    sev,
       raw: {
         'river':   'Kosi',   'station': 'Birpur',
@@ -670,7 +670,7 @@ class BiharLiveEngine {
       subtitle:    st.river.isNotEmpty ? 'River: ${st.river}' : 'RT River',
       value:       '${st.current.toStringAsFixed(2)} m',
       dangerLevel: status,
-      fetchedAt:   fetchedAt,
+      fetchedAt:   fetchedAt ?? DateTime.now(),
       severity:    sev,
       raw: {
         'river':   st.river,    'station': st.station,
@@ -742,7 +742,7 @@ class BiharLiveEngine {
         subtitle:    subtitle,
         value:       val,
         dangerLevel: danger,
-        fetchedAt:   fetchedAt,
+        fetchedAt:   fetchedAt ?? DateTime.now(),
         severity:    sev,
         raw:         m,
       );
