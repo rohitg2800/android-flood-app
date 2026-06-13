@@ -111,7 +111,8 @@ class AccessibilityWrapper extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final a11y = ref.watch(accessibilityProvider).valueOrNull
+    // Fixed: Riverpod 3.x AsyncValue has no .valueOrNull — use .value
+    final a11y = ref.watch(accessibilityProvider).value
         ?? const AccessibilityState();
 
     Widget result = child;

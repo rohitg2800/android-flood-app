@@ -16,11 +16,12 @@ class ThemeCycleButton extends ConsumerWidget {
 
     final IconData icon;
     switch (appMode) {
-      case AppThemeMode.system:  icon = Icons.brightness_auto;  break;
-      case AppThemeMode.light:   icon = Icons.wb_sunny;         break;
-      case AppThemeMode.dark:    icon = Icons.nights_stay;      break;
-      case AppThemeMode.sunset:  icon = Icons.wb_twilight;      break;
-      case AppThemeMode.ocean:   icon = Icons.water;            break;
+      case AppThemeMode.system:      icon = Icons.brightness_auto;  break;
+      case AppThemeMode.light:       icon = Icons.wb_sunny;         break;
+      case AppThemeMode.dark:        icon = Icons.nights_stay;      break;
+      case AppThemeMode.sunset:      icon = Icons.wb_twilight;      break;
+      case AppThemeMode.ocean:       icon = Icons.water;            break;
+      case AppThemeMode.roboticDark: icon = Icons.memory;           break;
     }
 
     return Tooltip(

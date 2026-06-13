@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../constants/locale_constants.dart';
 import '../providers/locale_provider.dart';
 import '../theme/river_theme.dart';
 

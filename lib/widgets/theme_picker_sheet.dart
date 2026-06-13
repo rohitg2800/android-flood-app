@@ -1,5 +1,4 @@
 // lib/widgets/theme_picker_sheet.dart
-// setMode() -> set()  (ThemeModeNotifier exposes set(), not setMode())
 library;
 
 import 'package:flutter/material.dart';
@@ -58,7 +57,6 @@ class ThemePickerSheet extends ConsumerWidget {
               final isSelected = mode == current;
               return GestureDetector(
                 onTap: () {
-                  // Fixed: was setMode(), ThemeModeNotifier exposes set()
                   ref.read(themeModeProvider.notifier).set(mode);
                   Navigator.pop(context);
                 },
@@ -113,11 +111,12 @@ class ThemePickerSheet extends ConsumerWidget {
 
   IconData _iconFor(AppThemeMode mode) {
     switch (mode) {
-      case AppThemeMode.system: return Icons.brightness_auto_outlined;
-      case AppThemeMode.light:  return Icons.light_mode_outlined;
-      case AppThemeMode.dark:   return Icons.dark_mode_outlined;
-      case AppThemeMode.sunset: return Icons.wb_twilight_outlined;
-      case AppThemeMode.ocean:  return Icons.water_outlined;
+      case AppThemeMode.system:      return Icons.brightness_auto_outlined;
+      case AppThemeMode.light:       return Icons.light_mode_outlined;
+      case AppThemeMode.dark:        return Icons.dark_mode_outlined;
+      case AppThemeMode.sunset:      return Icons.wb_twilight_outlined;
+      case AppThemeMode.ocean:       return Icons.water_outlined;
+      case AppThemeMode.roboticDark: return Icons.memory_outlined;
     }
   }
 }
