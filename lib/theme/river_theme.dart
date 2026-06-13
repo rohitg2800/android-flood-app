@@ -176,11 +176,18 @@ class RiverColors extends ThemeExtension<RiverColors> {
   final Color navInactive;
   final Color scaffoldBg;
 
+  // ── Convenience aliases used across the codebase ──────────────────────────
+
   /// Alias: t.bgBase → cardBg
   Color get bgBase => cardBg;
 
+  /// Alias: t.bg → scaffoldBg  (used by theme_3d.dart Td3AppBar / Td3BottomNav)
+  Color get bg => scaffoldBg;
+
+  /// Alias: t.divider → stroke  (used by theme_3d.dart borders / Td3Chip)
+  Color get divider => stroke;
+
   /// Alias: t.danger → riverDanger
-  /// Used by live_stations_screen.dart and weather_screen.dart.
   Color get danger => riverDanger;
 
   static RiverColors of(BuildContext context) =>

@@ -8,9 +8,11 @@
 //   • Td3ProgressBar   — layered depth progress track
 //   • Td3StatTile      — KPI tile with raised number + depth glow
 //   • Td3Badge         — floating badge with hard drop-shadow
-//   • Td3AppBar        — SliverAppBar with layered bottom edge
+//   • Td3SectionHeader — uppercase section label (optional accentColor)
+//   • Td3Divider       — 1-px rule
+//   • Td3AppBar        — SliverAppBar with layered bottom edge (optional subtitle)
 //   • Td3BottomNav     — BottomNavBar with floating pill indicator
-//   • Td3InputField    — recessed 3-D input (added onChanged in v1.1)
+//   • Td3InputField    — recessed 3-D input (optional `required` flag)
 //   • Td3Painters      — CustomPainter helpers (gloss overlay, depth edge)
 library;
 
@@ -151,8 +153,6 @@ class Td3Card extends StatelessWidget {
       borderRadius: br,
       child: Stack(
         children: [
-          // Material(transparency) lets ListTile ink splashes paint correctly
-          // even when Td3Card's outer DecoratedBox has a background color.
           Material(
             type: MaterialType.transparency,
             child: Padding(
@@ -172,9 +172,6 @@ class Td3Card extends StatelessWidget {
       ),
     );
 
-    // Flutter requires uniform border colors when borderRadius is set on BoxDecoration.
-    // We remove the non-uniform Td3.depthBorder() from here and render it as two
-    // Positioned.fill overlay DecoratedBoxes — each with a uniform border color.
     content = Container(
       decoration: BoxDecoration(
         color: c,
@@ -184,7 +181,6 @@ class Td3Card extends StatelessWidget {
       child: Stack(
         children: [
           content,
-          // Top/left specular highlight — uniform, valid with borderRadius
           Positioned.fill(
             child: IgnorePointer(
               child: DecoratedBox(
@@ -198,7 +194,6 @@ class Td3Card extends StatelessWidget {
               ),
             ),
           ),
-          // Bottom/right depth shadow edge — uniform per-side pass
           Positioned.fill(
             child: IgnorePointer(
               child: DecoratedBox(
@@ -389,6 +384,8 @@ class Td3Chip extends StatelessWidget {
   final Color?   color;
   final bool     selected;
   final VoidCallback? onTap;
+  /// Optional override for the text font size (default 12).
+  final double?  fontSize;
 
   const Td3Chip({
     super.key,
@@ -397,6 +394,7 @@ class Td3Chip extends StatelessWidget {
     this.color,
     this.selected = false,
     this.onTap,
+    this.fontSize,
   });
 
   @override
@@ -405,6 +403,7 @@ class Td3Chip extends StatelessWidget {
     final c  = color ?? t.accent;
     final bg = selected ? c.withValues(alpha: 0.18) : t.cardBg;
     final br = BorderRadius.circular(24);
+    final fs = fontSize ?? 12;
 
     return GestureDetector(
       onTap: onTap,
@@ -440,7 +439,7 @@ class Td3Chip extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: fs,
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                 color: selected ? c : t.textSecondary,
               ),
@@ -459,6 +458,8 @@ class Td3Chip extends StatelessWidget {
 class Td3ProgressBar extends StatelessWidget {
   final double value;  // 0.0–1.0
   final Color? color;
+  /// Alias for [color] — callers may use either name.
+  final Color? fillColor;
   final double height;
   final String? label;
 
@@ -466,6 +467,7 @@ class Td3ProgressBar extends StatelessWidget {
     super.key,
     required this.value,
     this.color,
+    this.fillColor,
     this.height = 10,
     this.label,
   });
@@ -473,7 +475,8 @@ class Td3ProgressBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t  = RiverColors.of(context);
-    final c  = color ?? t.accent;
+    // fillColor takes precedence when both are supplied.
+    final c  = fillColor ?? color ?? t.accent;
     final v  = value.clamp(0.0, 1.0);
 
     return Column(
@@ -615,10 +618,14 @@ class Td3Badge extends StatelessWidget {
 
   const Td3Badge({
     super.key,
-    required this.text,
+    // Accept either `text:` or `label:` — they are identical in meaning.
+    String? text,
+    String? label,
     this.color,
     this.fontSize = 10,
-  });
+  })  : assert(text != null || label != null,
+            'Td3Badge requires either text or label'),
+        text = text ?? label!;
 
   @override
   Widget build(BuildContext context) {
@@ -655,7 +662,10 @@ class Td3Badge extends StatelessWidget {
 
 class Td3SectionHeader extends StatelessWidget {
   final String text;
-  const Td3SectionHeader(this.text, {super.key});
+  /// When provided, the header text uses this color instead of textSecondary.
+  final Color? accentColor;
+
+  const Td3SectionHeader(this.text, {super.key, this.accentColor});
 
   @override
   Widget build(BuildContext context) {
@@ -667,7 +677,7 @@ class Td3SectionHeader extends StatelessWidget {
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w700,
-          color: t.textSecondary,
+          color: accentColor ?? t.textSecondary,
           letterSpacing: 1.2,
         ),
       ),
@@ -698,6 +708,8 @@ class Td3Divider extends StatelessWidget {
 
 class Td3AppBar extends StatelessWidget {
   final String  title;
+  /// Optional subtitle shown below the title in smaller muted text.
+  final String? subtitle;
   final List<Widget>? actions;
   final Widget? leading;
   final bool    pinned;
@@ -706,6 +718,7 @@ class Td3AppBar extends StatelessWidget {
   const Td3AppBar({
     super.key,
     required this.title,
+    this.subtitle,
     this.actions,
     this.leading,
     this.pinned = true,
@@ -717,7 +730,7 @@ class Td3AppBar extends StatelessWidget {
     final t = RiverColors.of(context);
     return SliverAppBar(
       pinned:         pinned,
-      expandedHeight: expandedHeight,
+      expandedHeight: subtitle != null ? expandedHeight + 18 : expandedHeight,
       backgroundColor: t.bg,
       leading: leading,
       actions: actions,
@@ -743,14 +756,39 @@ class Td3AppBar extends StatelessWidget {
       ),
       flexibleSpace: FlexibleSpaceBar(
         titlePadding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 12),
-        title: Text(
-          title,
-          style: TextStyle(
-            color: t.textPrimary,
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
+        title: subtitle != null
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: t.textPrimary,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      height: 1.1,
+                    ),
+                  ),
+                  Text(
+                    subtitle!,
+                    style: TextStyle(
+                      color: t.textSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              )
+            : Text(
+                title,
+                style: TextStyle(
+                  color: t.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
         background: Container(color: t.bg),
       ),
     );
@@ -831,7 +869,6 @@ class Td3BottomNav extends StatelessWidget {
               }),
             ),
           ),
-          // Floating pill indicator
           AnimatedPositioned(
             duration: const Duration(milliseconds: 280),
             curve: Curves.easeOutCubic,
@@ -883,6 +920,9 @@ class Td3InputField extends StatefulWidget {
   final ValueChanged<String>?  onChanged;
   final TextInputType? keyboardType;
   final bool           obscureText;
+  /// When true, an asterisk is appended to the label to indicate a required field.
+  /// This is purely visual — no validation is performed by the widget itself.
+  final bool           required;
 
   const Td3InputField({
     super.key,
@@ -893,6 +933,7 @@ class Td3InputField extends StatefulWidget {
     this.onChanged,
     this.keyboardType,
     this.obscureText = false,
+    this.required = false,
   });
 
   @override
@@ -919,12 +960,13 @@ class _Td3InputFieldState extends State<Td3InputField> {
   Widget build(BuildContext context) {
     final t  = RiverColors.of(context);
     final br = BorderRadius.circular(12);
+    final labelText = widget.required ? '${widget.label} *' : widget.label;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          widget.label,
+          labelText,
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
@@ -1029,7 +1071,8 @@ class _GlossPainter extends CustomPainter {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Utility: lerp double
+// Utility: lerp double (kept for potential future use)
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ignore: unused_element
 double _lerpDouble(double a, double b, double t) => a + (b - a) * t;
