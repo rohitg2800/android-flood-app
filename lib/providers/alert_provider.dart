@@ -5,19 +5,19 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/flood_alert.dart' as fa;
-import '../models/threshold_alert.dart' as ta;
 import 'alerts_provider.dart';
 
-// Riverpod 3.x removed ChangeNotifierProvider.
-// Use a plain Provider that creates the ChangeNotifier, wires listeners,
-// and disposes it when the provider is destroyed.
+// alertsProvider is Provider<List<FloodAlert>> (from data_fetch_provider.dart).
+// We watch it directly — no ThresholdAlert bridge needed.
 final alertProvider = Provider<AlertProvider>((ref) {
   final notifier = AlertProvider();
 
-  ref.listen<AsyncValue<List<ta.ThresholdAlert>>>(
+  // Seed immediately with current value, then keep in sync.
+  notifier._onAlerts(ref.read(alertsProvider));
+
+  ref.listen<List<fa.FloodAlert>>(
     alertsProvider,
-    (_, next) => next.whenData(notifier._onAlerts),
-    fireImmediately: true,
+    (_, next) => notifier._onAlerts(next),
   );
 
   ref.onDispose(notifier.dispose);
@@ -54,36 +54,9 @@ class AlertProvider extends ChangeNotifier {
 
   bool get hasCritical => danger.isNotEmpty;
 
-  void _onAlerts(List<ta.ThresholdAlert> raw) {
-    _alerts = raw
-        .where((a) => a.level != ta.AlertLevel.normal)
-        .map(_toFloodAlert)
-        .toList()
+  void _onAlerts(List<fa.FloodAlert> alerts) {
+    _alerts = [...alerts]
       ..sort((a, b) => b.level.index.compareTo(a.level.index));
     notifyListeners();
   }
-
-  static fa.FloodAlert _toFloodAlert(ta.ThresholdAlert src) {
-    return fa.FloodAlert(
-      id:           src.id,
-      cityId:       src.cityId,
-      cityName:     src.cityName,
-      river:        src.river,
-      state:        src.state,
-      currentValue: src.currentValue,
-      dangerLevel:  src.dangerLevel,
-      warningLevel: src.warningLevel,
-      fillPercent:  src.fillPercent,
-      level:        _mapLevel(src.level),
-      issuedAt:     src.timestamp,
-    );
-  }
-
-  static fa.AlertLevel _mapLevel(ta.AlertLevel l) => switch (l) {
-    ta.AlertLevel.watch   => fa.AlertLevel.watch,
-    ta.AlertLevel.warning => fa.AlertLevel.warning,
-    ta.AlertLevel.danger  => fa.AlertLevel.danger,
-    ta.AlertLevel.extreme => fa.AlertLevel.extreme,
-    _                     => fa.AlertLevel.normal,
-  };
 }

@@ -46,7 +46,7 @@ class MonitorsScreen extends ConsumerWidget {
                         leading: Icon(Icons.water_rounded,
                             color: color, size: 24),
                         title: Text(
-                            d.cityName ?? d.stationId,
+                            d.city,
                             style: TextStyle(
                                 color: t.textPrimary,
                                 fontWeight: FontWeight.w600,

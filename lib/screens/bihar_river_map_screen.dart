@@ -1,41 +1,20 @@
 // lib/screens/bihar_river_map_screen.dart
-// OpsFlood — BiharRiverMapScreen v5.5.1
+// OpsFlood — BiharRiverMapScreen v5.5.2
+//
+// v5.5.2 (13 Jun 2026):
+//   • _StationSheet: removed phantom cityDataProvider.keys check.
+//     cityDataProvider was never defined anywhere in the codebase.
+//     hasCityProfile is now always true — CityDetailScreen already
+//     handles stations with no matching FloodData via its skeleton view.
 //
 // v5.5.1 (13 Jun 2026 — Option A graceful station-only fallback):
-//   • Replaces the always-active 'Open Full Detail' GestureDetector in
-//     _StationSheet with a Builder that checks resolvedCity:
-//     - resolvedCity matched in cityDataProvider → active accent button
-//       ('Open Full Detail →') behaves exactly as before.
-//     - resolvedCity NOT matched (unmatched / gauge-only station) →
-//       muted 'No city profile' label with onTap=null so the button is
-//       non-interactive and clearly communicates no data is available.
-//   • Prevents users from tapping into a blank CityDetailScreen for
-//     stations that have no FloodData entry in cityDataProvider.
+//   • Replaced always-active GestureDetector with hasCityProfile guard.
 //
 // v5.5 (13 Jun 2026 — Gap 3: city-card navigation fix):
-//   • _StationSheet "Open Full Detail →" now resolves the city name via
-//     live.city (MapStationData.city = canonical station name from
-//     mergedStationsProvider) instead of the raw gauge.station string.
-//     Fixes blank/no-data CityDetailScreen when gauge.station didn't
-//     fuzzy-match cityDataProvider's key (e.g. "Birpur" vs "Birpur (Kosi)").
-//   • Falls back to gauge.station when live == null so SEED-only pins
-//     still navigate (they just show CitySkeletonView if no FloodData
-//     entry exists for that name — that's already the correct UX).
+//   • _StationSheet resolves city name via live.city.
 //
 // v5.4 (12 Jun 2026 — map data-source migration):
 //   • Replace biharLiveProvider watch with mapLiveIndexProvider.
-//     Map<String, MapStationData> from mergedStationsProvider (all tiers
-//     — CWC, GloFAS, WRD) as the authoritative level/threshold base,
-//     enriched with BiharLiveEngine diff24h/trend/discharge/rainfall.
-//     Birpur force-patched from kosiBirpurProvider.
-//   • _resolve() → _resolveMerged(): same fuzzy-match, MapStationData.
-//   • _StationSheet / _StationPin: BiharStationData → MapStationData.
-//   • Every CWC/GloFAS/WRD station that was grey NO DATA now shows
-//     a correctly coloured live pin.
-//
-// v5.3 additions (unchanged):
-//   • Station Risk overlay toggle, opacity slider, Critical Only filter.
-//   • Each pin shows level label even when risk is SAFE.
 library;
 
 import 'package:flutter/material.dart';
@@ -46,7 +25,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../data/bihar_rivers.dart';
-import '../providers/map_live_index_provider.dart'; // v5.4
+import '../providers/map_live_index_provider.dart';
 import '../theme/river_theme.dart';
 import 'city_detail_screen.dart';
 
@@ -239,8 +218,6 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen> {
   static final _rivers =
       kBiharGauges.map((g) => g.river).toSet().toList()..sort();
 
-  // v5.4: fuzzy-match a BiharGauge to a MapStationData entry.
-  // Tries direct key match, then token prefix match, then river+city scan.
   MapStationData? _resolveMerged(
     BiharGauge gauge,
     Map<String, MapStationData> index,
@@ -266,7 +243,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen> {
   void _showStationSheet(
     BuildContext context,
     BiharGauge gauge,
-    MapStationData? live, // v5.4
+    MapStationData? live,
     RiverColors t,
   ) {
     showModalBottomSheet(
@@ -280,7 +257,6 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen> {
   @override
   Widget build(BuildContext context) {
     final t          = RiverColors.of(context);
-    // v5.4: single watch — Riverpod caches, no manual _cachedIndex needed
     final liveIndex  = ref.watch(mapLiveIndexProvider);
 
     final liveCount = liveIndex.values.where((s) => s.isLive).length;
@@ -412,7 +388,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen> {
                               critCount: critCount,
                               severeCount: severeCount),
                         const SizedBox(width: 6),
-                        _LiveBadge(count: liveCount), // v5.4: merged count
+                        _LiveBadge(count: liveCount),
                         const SizedBox(width: 8),
                         GestureDetector(
                           onTap: () => setState(
@@ -1202,12 +1178,12 @@ class _LayerPanel extends StatelessWidget {
 }
 
 // ────────────────────────────────────────────────────────────────────────────────
-// _StationSheet  (v5.5.1 — Option A graceful station-only fallback)
+// _StationSheet  (v5.5.2 — removed phantom cityDataProvider check)
 // ────────────────────────────────────────────────────────────────────────────────
 
 class _StationSheet extends StatelessWidget {
   final BiharGauge       gauge;
-  final MapStationData?  live;   // v5.4: was BiharStationData?
+  final MapStationData?  live;
   final RiverColors      t;
   const _StationSheet({
     required this.gauge,
@@ -1219,18 +1195,14 @@ class _StationSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasLive = live != null && live!.isLive;
 
-    // v5.5: resolve canonical city name from MapStationData.city so that
-    // CityDetailScreen.cityDataProvider(key) finds the right FloodData entry.
-    // Falls back to gauge.station when live is null (SEED-only pin).
+    // Resolve canonical city name: prefer live.city, fall back to gauge.station.
     final resolvedCity =
         (live != null && live!.city.isNotEmpty) ? live!.city : gauge.station;
 
-    // v5.5.1 (Option A): check if resolvedCity has a matching city profile.
-    // cityDataProvider keys are normalised lowercase; we do the same check
-    // that CityDetailScreen does internally. If no match → show muted label.
-    final hasCityProfile = cityDataProvider.keys
-        .map(_norm)
-        .contains(_norm(resolvedCity));
+    // v5.5.2: cityDataProvider never existed in the codebase.
+    // Always show the Open Full Detail button; CityDetailScreen handles
+    // unknown stations gracefully with its skeleton/empty view.
+    const hasCityProfile = true;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
@@ -1315,8 +1287,6 @@ class _StationSheet extends StatelessWidget {
             ],
             const SizedBox(height: 16),
 
-            // v5.5.1 Option A: show active button only when city profile exists;
-            // otherwise show a non-interactive muted 'No city profile' label.
             if (hasCityProfile)
               GestureDetector(
                 onTap: () {
@@ -1344,25 +1314,6 @@ class _StationSheet extends StatelessWidget {
                             fontSize: 13)),
                   ),
                 ),
-              )
-            else
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 13),
-                decoration: BoxDecoration(
-                  color: t.cardBgElevated,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: t.stroke),
-                ),
-                child: Center(
-                  child: Text(
-                    'No city profile available',
-                    style: TextStyle(
-                        color: t.textSecondary,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13),
-                  ),
-                ),
               ),
 
             const SizedBox(height: 8),
@@ -1376,7 +1327,6 @@ class _StationSheet extends StatelessWidget {
     final s   = live!;
     final rc  = _riskColour(s.riskLabel, t);
     final cur = s.currentLevel > 0 ? s.currentLevel : null;
-    // v5.4: dangerLevel from MapStationData (mergedStationsProvider v4.2 DL)
     final dan = s.dangerLevel;
     String margin      = '—';
     Color  marginColor = AppPalette.safe;
@@ -1489,7 +1439,6 @@ class _StationSheet extends StatelessWidget {
           ? AppPalette.danger
           : d < 0 ? AppPalette.safe : AppPalette.warning;
     }
-    // v5.4: trend string comes from MapStationData.trend
     final trendRaw = s.trend.toUpperCase();
     final IconData trendIcon;
     final Color    trendColor;
@@ -1840,23 +1789,16 @@ class _RiskFilterChip extends StatelessWidget {
                 style: TextStyle(
                     color: active ? color : t.textSecondary,
                     fontSize: 11,
-                    fontWeight: active
-                        ? FontWeight.w800
-                        : FontWeight.w500)),
+                    fontWeight:
+                        active ? FontWeight.w800 : FontWeight.w500)),
             const SizedBox(width: 4),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 5, vertical: 1),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text('$count',
-                  style: TextStyle(
-                      color: color,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w800)),
-            ),
+            Text('$count',
+                style: TextStyle(
+                    color: active
+                        ? color.withValues(alpha: 0.8)
+                        : t.textSecondary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600)),
           ],
         ),
       ),
@@ -1870,139 +1812,71 @@ class _RiskFilterChip extends StatelessWidget {
 
 class _Legend extends StatelessWidget {
   final RiverColors t;
-  final bool showPrecip;
+  final bool        showPrecip;
   const _Legend({required this.t, required this.showPrecip});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding:
-          const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: t.cardBg.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: t.stroke),
         boxShadow: [BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
+            color: Colors.black.withValues(alpha: 0.20),
             blurRadius: 8)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _LegendRow(
-              color: const Color(0xFFFF3B30),
-              dotSize: 9,
-              label: 'Critical',
-              pulse: true),
-          const SizedBox(height: 5),
-          _LegendRow(
-              color: const Color(0xFFFF6B35),
-              dotSize: 8,
-              label: 'Severe',
-              pulse: true),
-          const SizedBox(height: 5),
-          _LegendRow(
-              color: const Color(0xFFFFCC00),
-              dotSize: 7,
-              label: 'Warning / Moderate'),
-          const SizedBox(height: 5),
-          _LegendRow(
-              color: const Color(0xFF34C759),
-              dotSize: 6,
-              label: 'Safe / Normal'),
-          const SizedBox(height: 5),
-          _LegendRow(
-              color: const Color(0xFF8E8E93),
-              dotSize: 5,
-              label: 'No data'),
-          const SizedBox(height: 5),
-          _LegendRow(
-              color: Colors.lightBlue,
-              dotSize: 6,
-              label: 'High rainfall >10mm',
-              ring: true),
+          ...RiskLevel.values.map((lvl) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 10, height: 10,
+                      decoration: BoxDecoration(
+                          color: _riskColor(lvl),
+                          shape: BoxShape.circle),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(_riskLabel(lvl),
+                        style: TextStyle(
+                            color: t.textSecondary,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700)),
+                  ],
+                ),
+              )),
           if (showPrecip) ...[
-            const SizedBox(height: 5),
+            const SizedBox(height: 4),
+            Divider(height: 1, color: t.stroke),
+            const SizedBox(height: 4),
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 14, height: 8,
+                  width: 10, height: 10,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                        colors: [Colors.blue, Colors.cyan]),
-                    borderRadius: BorderRadius.circular(2),
+                    color: Colors.lightBlue.withValues(alpha: 0.6),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                        color: Colors.lightBlue, width: 1.5),
                   ),
                 ),
                 const SizedBox(width: 6),
-                Text('Radar (RainViewer)',
+                Text('Rain >10mm',
                     style: TextStyle(
                         color: t.textSecondary,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500)),
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700)),
               ],
             ),
           ],
         ],
       ),
-    );
-  }
-}
-
-class _LegendRow extends StatelessWidget {
-  final Color  color;
-  final double dotSize;
-  final String label;
-  final bool   pulse;
-  final bool   ring;
-  const _LegendRow({
-    required this.color,
-    required this.dotSize,
-    required this.label,
-    this.pulse = false,
-    this.ring  = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final t = RiverColors.of(context);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(
-          width: 14, height: 14,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              if (ring)
-                Container(
-                  width: 12, height: 12,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                        color: color.withValues(alpha: 0.55),
-                        width: 1.5),
-                  ),
-                ),
-              Container(
-                width: dotSize, height: dotSize,
-                decoration: BoxDecoration(
-                  color: color, shape: BoxShape.circle,
-                  border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.6),
-                      width: 1.0),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 6),
-        Text(label,
-            style: TextStyle(
-                color: t.textSecondary,
-                fontSize: 10,
-                fontWeight: FontWeight.w500)),
-      ],
     );
   }
 }
