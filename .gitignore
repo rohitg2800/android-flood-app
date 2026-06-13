@@ -73,3 +73,8 @@ android/keystore.properties
 .venv311/
 .python-version
 *.zip
+.venv/
+build_log.txt
+sprint4_migrate.py
+lib/l10n/app_localizations_bn.dart
+lib/l10n/app_localizations_or.dart
