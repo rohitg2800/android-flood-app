@@ -101,129 +101,132 @@ class AlertLog extends StatelessWidget {
                   ),
                 );
               },
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-                decoration: BoxDecoration(
-                  border: i < data.length - 1
-                      ? Border(bottom: BorderSide(color: t.stroke, width: 0.7))
-                      : null,
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Severity bar
-                    Container(
-                      width: 3,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: col,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Severity bar
+                        Container(
+                          width: 3,
+                          height: 52,
+                          decoration: BoxDecoration(
+                            color: col,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                child: Text(
-                                  d.city,
-                                  style: TextStyle(
-                                    color: t.textPrimary,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w800,
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      d.city,
+                                      style: TextStyle(
+                                        color: t.textPrimary,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                  if (stale)
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: 6),
+                                      child: Icon(
+                                        Icons.access_time_rounded,
+                                        size: 12,
+                                        color: const Color(0xFFFFA726),
+                                      ),
+                                    ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    _timeAgo(d.lastUpdated),
+                                    style: TextStyle(
+                                      color: stale
+                                          ? const Color(0xFFFFA726)
+                                          : t.textSecondary,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              if (stale)
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 6),
-                                  child: Icon(
-                                    Icons.access_time_rounded,
-                                    size: 12,
-                                    color: const Color(0xFFFFA726),
-                                  ),
-                                ),
-                              const SizedBox(width: 4),
+                              const SizedBox(height: 3),
                               Text(
-                                _timeAgo(d.lastUpdated),
+                                _subtitle(d),
                                 style: TextStyle(
-                                  color: stale
-                                      ? const Color(0xFFFFA726)
-                                      : t.textSecondary,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                    color: t.textSecondary, fontSize: 11),
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            _subtitle(d),
-                            style: TextStyle(
-                                color: t.textSecondary, fontSize: 11),
-                          ),
-                          const SizedBox(height: 6),
-                          Row(
-                            children: [
-                              AlertChip(
-                                label: '${d.currentLevel.toStringAsFixed(2)} m',
-                                color: col,
-                                icon: Icons.height,
-                              ),
-                              // Only show danger threshold when it was provided
-                              if (hasDanger) ...[
-                                const SizedBox(width: 5),
-                                AlertChip(
-                                  label:
-                                      '/${d.dangerLevel.toStringAsFixed(1)} m',
-                                  color: t.textSecondary,
-                                  icon: Icons.stream,
-                                ),
-                              ],
-                              if (d.effectiveRainfallMm > 0) ...[
-                                const SizedBox(width: 5),
-                                AlertChip(
-                                  label:
-                                      '${d.effectiveRainfallMm.toStringAsFixed(0)} mm',
-                                  color: const Color(0xFF42A5F5),
-                                  icon: Icons.water_drop_outlined,
-                                ),
-                              ],
-                              if (aboveWarning) ...[
-                                const SizedBox(width: 5),
-                                AlertChip(
-                                  label: '▲ warning',
-                                  color: const Color(0xFFFFA726),
-                                  icon: Icons.warning_amber_rounded,
-                                ),
-                              ],
-                              const Spacer(),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: col.withValues(alpha: 0.10),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  d.riskLevel,
-                                  style: TextStyle(
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  AlertChip(
+                                    label: '${d.currentLevel.toStringAsFixed(2)} m',
                                     color: col,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w800,
+                                    icon: Icons.height,
                                   ),
-                                ),
+                                  // Only show danger threshold when it was provided
+                                  if (hasDanger) ...[
+                                    const SizedBox(width: 5),
+                                    AlertChip(
+                                      label:
+                                          '/${d.dangerLevel.toStringAsFixed(1)} m',
+                                      color: t.textSecondary,
+                                      icon: Icons.stream,
+                                    ),
+                                  ],
+                                  if (d.effectiveRainfallMm > 0) ...[
+                                    const SizedBox(width: 5),
+                                    AlertChip(
+                                      label:
+                                          '${d.effectiveRainfallMm.toStringAsFixed(0)} mm',
+                                      color: const Color(0xFF42A5F5),
+                                      icon: Icons.water_drop_outlined,
+                                    ),
+                                  ],
+                                  if (aboveWarning) ...[
+                                    const SizedBox(width: 5),
+                                    AlertChip(
+                                      label: '▲ warning',
+                                      color: const Color(0xFFFFA726),
+                                      icon: Icons.warning_amber_rounded,
+                                    ),
+                                  ],
+                                  const Spacer(),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: col.withValues(alpha: 0.10),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      d.riskLevel,
+                                      style: TextStyle(
+                                        color: col,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                  // Bottom divider as a sibling widget — avoids borderRadius conflict
+                  if (i < data.length - 1)
+                    Divider(height: 0.7, thickness: 0.7, color: t.stroke),
+                ],
               ),
             );
           }).toList(),
