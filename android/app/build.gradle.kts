@@ -54,7 +54,7 @@ android {
 
     defaultConfig {
         applicationId = "com.equinox.flood"
-        minSdk    = 21
+        minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode   = 2
         versionName   = "1.1.0"
