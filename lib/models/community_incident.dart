@@ -42,7 +42,6 @@ extension IncidentTypeLabel on IncidentType {
     }
   }
 
-  // Alias so call-sites using .emoji keep working
   String get emoji => icon;
 }
 
@@ -58,74 +57,51 @@ class CommunityIncident extends HiveObject {
   @HiveField(7)  final DateTime      reportedAt;
   @HiveField(8)  final String        submittedBy;
   @HiveField(9)  final List<String>  photoUrls;
-  @HiveField(10) final bool          verified;
-  @HiveField(11) int                 upvotes;        // mutable so inc.upvotes++ works
-  @HiveField(12) final bool          isSynced;       // persisted sync flag
-  @HiveField(13) final String?       locationLabel;  // human-readable location
+  @HiveField(10) bool synced;
 
   CommunityIncident({
     required this.id,
     required this.type,
-    String?       headline,
+    required this.headline,
     required this.description,
     required this.lat,
-    double?       lng,
-    double?       lon,       // accept 'lon' as alias for 'lng'
+    required this.lng,
     required this.district,
     required this.reportedAt,
-    String?       submittedBy,
-    List<String>? photoUrls,
-    bool?         verified,
-    int?          upvotes,
-    bool          synced        = false,
-    this.locationLabel,
-  })  : headline    = headline    ?? description,
-        lng         = lng ?? lon  ?? 0.0,
-        submittedBy = submittedBy ?? 'anonymous',
-        photoUrls   = photoUrls   ?? const [],
-        verified    = verified    ?? false,
-        upvotes     = upvotes     ?? 0,
-        isSynced    = synced;
+    required this.submittedBy,
+    required this.photoUrls,
+    this.synced = false,
+  });
 
-  // ── Alias getters so existing call-sites keep working ─────────────────────
-  String       get title        => headline;
-  double       get latitude     => lat;
-  double       get longitude    => lng;
-  double       get lon          => lng;   // community_screen uses .lon
-  String       get reporterName => submittedBy;
-  List<String> get imageUrls    => photoUrls;
-  bool         get isVerified   => verified;
-  bool         get synced       => isSynced;
+  /// First photo URL, or null if no photos attached.
+  String? get imagePath => photoUrls.isNotEmpty ? photoUrls.first : null;
 
-  CommunityIncident copyWith({
-    String?       id,
-    IncidentType? type,
-    String?       headline,
-    String?       description,
-    double?       lat,
-    double?       lng,
-    String?       district,
-    DateTime?     reportedAt,
-    String?       submittedBy,
-    List<String>? photoUrls,
-    bool?         verified,
-    int?          upvotes,
-    bool?         synced,
-    String?       locationLabel,
-  }) => CommunityIncident(
-    id:            id            ?? this.id,
-    type:          type          ?? this.type,
-    headline:      headline      ?? this.headline,
-    description:   description   ?? this.description,
-    lat:           lat           ?? this.lat,
-    lng:           lng           ?? this.lng,
-    district:      district      ?? this.district,
-    reportedAt:    reportedAt    ?? this.reportedAt,
-    submittedBy:   submittedBy   ?? this.submittedBy,
-    photoUrls:     photoUrls     ?? this.photoUrls,
-    verified:      verified      ?? this.verified,
-    upvotes:       upvotes       ?? this.upvotes,
-    synced:        synced        ?? this.isSynced,
-    locationLabel: locationLabel ?? this.locationLabel,
-  );
+  Map<String, dynamic> toJson() => {
+    'id':           id,
+    'type':         type.name,
+    'headline':     headline,
+    'description':  description,
+    'lat':          lat,
+    'lng':          lng,
+    'district':     district,
+    'reported_at':  reportedAt.toIso8601String(),
+    'submitted_by': submittedBy,
+    'photo_urls':   photoUrls,
+    'synced':       synced,
+  };
+
+  factory CommunityIncident.fromJson(Map<String, dynamic> j) =>
+      CommunityIncident(
+        id:          j['id']           as String,
+        type:        IncidentType.values.byName(j['type'] as String? ?? 'other'),
+        headline:    j['headline']     as String? ?? '',
+        description: j['description']  as String? ?? '',
+        lat:         (j['lat'] as num).toDouble(),
+        lng:         (j['lng'] as num).toDouble(),
+        district:    j['district']     as String? ?? '',
+        reportedAt:  DateTime.parse(j['reported_at'] as String),
+        submittedBy: j['submitted_by'] as String? ?? '',
+        photoUrls:   List<String>.from(j['photo_urls'] as List? ?? []),
+        synced:      j['synced']       as bool? ?? false,
+      );
 }

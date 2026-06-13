@@ -1,17 +1,10 @@
 // lib/services/offline_rule_engine.dart
 // OpsFlood — Module 5: Community & Offline
 //
-// OfflineRuleEngine  (v2 — full rewrite of 525-byte stub)
+// OfflineRuleEngine  (v3 — fixed FloodAlert constructor to match alert_engine.dart v1.2)
 // ─────────────────────────────────────────────────────────────────────────
 // Evaluates CWC/WRD gauge readings against hard-coded threshold rules and
 // produces List<FloodAlert> WITHOUT any network dependency.
-//
-// Design goals:
-//   • Pure function — no side effects, easily unit-testable.
-//   • Runs inside a background Isolate (no Flutter binding required).
-//   • Falls back to this engine when ConnectivityService reports offline.
-//   • Mirrors the severity / type taxonomy of AlertEngine to keep the
-//     rest of the app oblivious to which engine produced the alert.
 //
 // Rule hierarchy (highest severity wins per station):
 //   1. level ≥ HFL              → emergency  / levelAboveHfl
@@ -21,106 +14,89 @@
 //   5. 24h rainfall ≥ 100 mm    → warning    / rainfallExtreme
 //   6. 24h rainfall ≥ 64.5 mm   → info       / rainfallHeavy
 
-import '../models/station_reading.dart';  // StationReading
-import 'alert_engine.dart';               // FloodAlert, AlertSeverity, AlertType
+import '../models/station_reading.dart';
+import 'alert_engine.dart';
 
 class OfflineRuleEngine {
   OfflineRuleEngine._();
   static final OfflineRuleEngine instance = OfflineRuleEngine._();
 
-  // ── Public entry point ───────────────────────────────────────────────
-
-  /// Evaluate [readings] and return a list of [FloodAlert]s sorted by
-  /// descending severity (emergency first).
   List<FloodAlert> evaluate(List<StationReading> readings) {
     final alerts = <FloodAlert>[];
-
     for (final r in readings) {
       final alert = _evalStation(r);
       if (alert != null) alerts.add(alert);
     }
-
-    // Sort: emergency > critical > warning > info
     alerts.sort((a, b) =>
-        _sevOrdinal(b.severity).compareTo(_sevOrdinal(a.severity)));
+        b.severity.priority.compareTo(a.severity.priority));
     return alerts;
   }
-
-  // ── Per-station evaluation ───────────────────────────────────────────
 
   FloodAlert? _evalStation(StationReading r) {
     final level  = r.currentLevel;
     final hfl    = r.hfl;
     final danger = r.dangerLevel;
     final warn   = r.warningLevel;
-    final ror    = r.rateOfRise;     // m/h, may be null
-    final rain   = r.rainfall24h;   // mm, may be null
+    final ror    = r.rateOfRiseMph;
+    final rain   = r.rainfall24hMm;
 
-    // — Rule 1: above HFL
-    if (level != null && hfl != null && level >= hfl) {
-      return _makeAlert(r, AlertSeverity.emergency, AlertType.levelAboveHfl,
-          threshold: hfl);
+    if (hfl > 0 && level >= hfl) {
+      return _makeAlert(r, AlertSeverity.emergency, AlertType.levelAboveHfl, hfl);
     }
-
-    // — Rule 2: above Danger
-    if (level != null && danger != null && level >= danger) {
-      return _makeAlert(r, AlertSeverity.critical, AlertType.levelAboveDanger,
-          threshold: danger);
+    if (danger > 0 && level >= danger) {
+      return _makeAlert(r, AlertSeverity.critical, AlertType.levelAboveDanger, danger);
     }
-
-    // — Rule 3: above Warning
-    if (level != null && warn != null && level >= warn) {
-      return _makeAlert(r, AlertSeverity.warning, AlertType.levelAboveWarning,
-          threshold: warn);
+    if (warn > 0 && level >= warn) {
+      return _makeAlert(r, AlertSeverity.warning, AlertType.levelAboveWarning, warn);
     }
-
-    // — Rule 4: rapid rise
     if (ror != null && ror >= 0.30) {
-      return _makeAlert(r, AlertSeverity.warning, AlertType.rapidRise);
+      return _makeAlert(r, AlertSeverity.warning, AlertType.rapidRise, warn);
     }
-
-    // — Rule 5: extreme rainfall
     if (rain != null && rain >= 100.0) {
-      return _makeAlert(r, AlertSeverity.warning, AlertType.rainfallExtreme);
+      return _makeAlert(r, AlertSeverity.warning, AlertType.rainfallExtreme, 100.0);
     }
-
-    // — Rule 6: heavy rainfall
     if (rain != null && rain >= 64.5) {
-      return _makeAlert(r, AlertSeverity.info, AlertType.rainfallHeavy);
+      return _makeAlert(r, AlertSeverity.info, AlertType.rainfallHeavy, 64.5);
     }
-
     return null;
   }
-
-  // ── Helpers ──────────────────────────────────────────────────────────
 
   FloodAlert _makeAlert(
     StationReading r,
     AlertSeverity  severity,
-    AlertType      type, {
-    double? threshold,
-  }) =>
-      FloodAlert(
-        id:             '${r.stationId}_offline_${type.name}',
-        station:        r.stationName,
-        river:          r.river,
-        district:       r.district,
-        severity:       severity,
-        type:           type,
-        currentLevel:   r.currentLevel,
-        thresholdLevel: threshold,
-        rateOfRise:     r.rateOfRise,
-        rainfall24h:    r.rainfall24h,
-        generatedAt:    DateTime.now(),
-        isOffline:      true,
-      );
+    AlertType      type,
+    double         threshold,
+  ) {
+    final now   = DateTime.now();
+    final id    = '${r.stationName.toLowerCase().replaceAll(' ', '_')}_offline_${type.name}';
+    final title = '${r.stationName}: ${type.displayName}';
+    final body  = '${r.stationName} on ${r.river} at '
+                  '${r.currentLevel.toStringAsFixed(2)} m '
+                  '(threshold: ${threshold.toStringAsFixed(2)} m). '
+                  '[OFFLINE rule-based alert]';
+    final action = severity == AlertSeverity.emergency
+        ? 'Evacuate immediately.'
+        : severity == AlertSeverity.critical
+            ? 'Issue Red Alert. Deploy rescue teams.'
+            : 'Monitor closely. Alert downstream districts.';
 
-  static int _sevOrdinal(AlertSeverity s) {
-    switch (s) {
-      case AlertSeverity.emergency: return 3;
-      case AlertSeverity.critical:  return 2;
-      case AlertSeverity.warning:   return 1;
-      case AlertSeverity.info:      return 0;
-    }
+    return FloodAlert(
+      id:             id,
+      type:           type,
+      severity:       severity,
+      title:          title,
+      body:           body,
+      stationName:    r.stationName,
+      river:          r.river,
+      district:       r.district,
+      state:          r.state,
+      currentLevel:   r.currentLevel,
+      thresholdLevel: threshold,
+      rateOfRiseMph:  r.rateOfRiseMph,
+      rainfall24hMm:  r.rainfall24hMm,
+      action:         action,
+      issuedAt:       now,
+      expiresAt:      now.add(const Duration(hours: 6)),
+    );
   }
 }
