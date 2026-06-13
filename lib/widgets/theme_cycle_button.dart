@@ -16,18 +16,19 @@ class ThemeCycleButton extends ConsumerWidget {
 
     final IconData icon;
     switch (appMode) {
-      case AppThemeMode.system:      icon = Icons.brightness_auto;  break;
-      case AppThemeMode.light:       icon = Icons.wb_sunny;         break;
-      case AppThemeMode.dark:        icon = Icons.nights_stay;      break;
-      case AppThemeMode.sunset:      icon = Icons.wb_twilight;      break;
-      case AppThemeMode.ocean:       icon = Icons.water;            break;
-      case AppThemeMode.roboticDark: icon = Icons.memory;           break;
+      case AppThemeMode.system:       icon = Icons.brightness_auto;      break;
+      case AppThemeMode.light:        icon = Icons.wb_sunny;              break;
+      case AppThemeMode.dark:         icon = Icons.nights_stay;           break;
+      case AppThemeMode.sunset:       icon = Icons.wb_twilight;           break;
+      case AppThemeMode.ocean:        icon = Icons.water;                 break;
+      case AppThemeMode.roboticDark:  icon = Icons.memory;                break;
+      case AppThemeMode.roboticLight: icon = Icons.developer_board;       break;
     }
 
     return Tooltip(
       message: 'Hold for theme picker',
       child: GestureDetector(
-        onTap:      () => notifier.cycle(),
+        onTap:       () => notifier.cycle(),
         onLongPress: () => showPremiumThemeSheet(context),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

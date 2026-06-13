@@ -6,7 +6,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/alerts_provider.dart';
+import '../providers/alerts_badge_provider.dart';
 
 class AlertBadge extends ConsumerWidget {
   final Widget child;

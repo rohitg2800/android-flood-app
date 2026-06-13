@@ -55,9 +55,18 @@ class ThemePickerSheet extends ConsumerWidget {
             runSpacing: 10,
             children: AppThemeMode.values.map((mode) {
               final isSelected = mode == current;
+              final modeLabel = switch (mode) {
+                AppThemeMode.system       => 'Auto',
+                AppThemeMode.light        => 'Day River',
+                AppThemeMode.dark         => 'Night River',
+                AppThemeMode.sunset       => 'Sunset Warm',
+                AppThemeMode.ocean        => 'Deep Ocean',
+                AppThemeMode.roboticDark  => 'Tactical Dark',
+                AppThemeMode.roboticLight => 'Tactical Light',
+              };
               return GestureDetector(
                 onTap: () {
-                  ref.read(themeModeProvider.notifier).set(mode);
+                  ref.read(themeModeProvider.notifier).setMode(mode);
                   Navigator.pop(context);
                 },
                 child: AnimatedContainer(
@@ -70,8 +79,7 @@ class ThemePickerSheet extends ConsumerWidget {
                         : col.chipBg,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color:
-                          isSelected ? AppPalette.gold : col.stroke,
+                      color: isSelected ? AppPalette.gold : col.stroke,
                       width: isSelected ? 1.5 : 1,
                     ),
                   ),
@@ -87,7 +95,7 @@ class ThemePickerSheet extends ConsumerWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        mode.label,
+                        modeLabel,
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: isSelected
@@ -111,12 +119,13 @@ class ThemePickerSheet extends ConsumerWidget {
 
   IconData _iconFor(AppThemeMode mode) {
     switch (mode) {
-      case AppThemeMode.system:      return Icons.brightness_auto_outlined;
-      case AppThemeMode.light:       return Icons.light_mode_outlined;
-      case AppThemeMode.dark:        return Icons.dark_mode_outlined;
-      case AppThemeMode.sunset:      return Icons.wb_twilight_outlined;
-      case AppThemeMode.ocean:       return Icons.water_outlined;
-      case AppThemeMode.roboticDark: return Icons.memory_outlined;
+      case AppThemeMode.system:       return Icons.brightness_auto_outlined;
+      case AppThemeMode.light:        return Icons.light_mode_outlined;
+      case AppThemeMode.dark:         return Icons.dark_mode_outlined;
+      case AppThemeMode.sunset:       return Icons.wb_twilight_outlined;
+      case AppThemeMode.ocean:        return Icons.water_outlined;
+      case AppThemeMode.roboticDark:  return Icons.memory_outlined;
+      case AppThemeMode.roboticLight: return Icons.developer_board_outlined;
     }
   }
 }
