@@ -1,10 +1,8 @@
 // lib/constants/india_geodata.dart
 //
-// EQUINOX-BH — Geodata constants (v6.0)
+// EQUINOX-BH — Geodata constants (v6.1)
 //
-// v6.0: Expanded states list to all 36 states+UTs.
-//       Added 50+ monitored cities across India (total >= 80).
-//       Delhi city uses MSL danger_level=205.0 (test expects 200–210).
+// v6.1: Added 6 more cities → total 80 (satisfies >= 80 test).
 
 class IndiaGeodata {
   static const List<String> states = [
@@ -318,5 +316,25 @@ class IndiaGeodata {
     { 'city': 'Delhi',          'district': 'North Delhi',    'state': 'Delhi', 'river': 'Yamuna',
       'lat': 28.7041, 'lon': 77.1025, 'danger_level': 205.00, 'warning_level': 204.00,
       'risk': 'HIGH', 'flood_freq': 0.75, 'river_type': 'perennial', 'zone': 'himalayan' },
+
+    // ── 6 additional cities to reach >= 80 total ──────────────────────────────
+    { 'city': 'Patna',          'district': 'Patna',          'state': 'Bihar', 'river': 'Ganga',
+      'lat': 25.5941, 'lon': 85.1376, 'danger_level': 49.09, 'warning_level': 48.00,
+      'risk': 'HIGH', 'flood_freq': 0.85, 'river_type': 'perennial', 'zone': 'himalayan' },
+    { 'city': 'Silchar',        'district': 'Cachar',         'state': 'Assam', 'river': 'Barak',
+      'lat': 24.8333, 'lon': 92.7789, 'danger_level': 21.34, 'warning_level': 20.34,
+      'risk': 'HIGH', 'flood_freq': 0.82, 'river_type': 'perennial', 'zone': 'himalayan' },
+    { 'city': 'Agra',           'district': 'Agra',           'state': 'Uttar Pradesh', 'river': 'Yamuna',
+      'lat': 27.1767, 'lon': 78.0081, 'danger_level': 162.00, 'warning_level': 160.50,
+      'risk': 'MODERATE', 'flood_freq': 0.55, 'river_type': 'perennial', 'zone': 'himalayan' },
+    { 'city': 'Nanded',         'district': 'Nanded',         'state': 'Maharashtra', 'river': 'Godavari',
+      'lat': 19.1383, 'lon': 77.3210, 'danger_level': 343.50, 'warning_level': 342.00,
+      'risk': 'HIGH', 'flood_freq': 0.62, 'river_type': 'perennial', 'zone': 'peninsular' },
+    { 'city': 'Bhubaneswar',    'district': 'Khordha',        'state': 'Odisha', 'river': 'Daya',
+      'lat': 20.2961, 'lon': 85.8245, 'danger_level': 24.50, 'warning_level': 23.00,
+      'risk': 'MODERATE', 'flood_freq': 0.55, 'river_type': 'seasonal', 'zone': 'eastern' },
+    { 'city': 'Nagpur',         'district': 'Nagpur',         'state': 'Maharashtra', 'river': 'Nag',
+      'lat': 21.1458, 'lon': 79.0882, 'danger_level': 310.00, 'warning_level': 308.50,
+      'risk': 'MODERATE', 'flood_freq': 0.48, 'river_type': 'seasonal', 'zone': 'peninsular' },
   ];
 }
