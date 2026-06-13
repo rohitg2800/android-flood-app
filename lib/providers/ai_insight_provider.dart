@@ -18,15 +18,15 @@ import '../providers/weather_provider.dart';
 import '../providers/kosi_birpur_provider.dart';
 import '../services/kosi_birpur_service.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────────
 // DataSourceHealth
-// ─────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────────
 
 enum DataSourceHealth { live, offline }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────────
 // RiverTrend — velocity + danger% per river/station pair
-// ─────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────────
 
 class RiverTrend {
   final String river;
@@ -42,12 +42,12 @@ class RiverTrend {
   });
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────────
 // AiInsight — rich model matching every field used by AiPredictionScreen
-// ─────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────────
 
 class AiInsight {
-  // ── Identity / status ─────────────────────────────────────────────────────
+  // ── Identity / status ────────────────────────────────────────────────────
   final String   overallRisk;    // 'LOW' | 'MODERATE' | 'HIGH' | 'EXTREME' | 'LOADING'
   final double   confidence;     // 0–100
   final int      stationCount;
@@ -57,10 +57,10 @@ class AiInsight {
   final double   dangerPercent;  // criticalCount / stationCount * 100
   final DateTime lastFetched;
 
-  // ── Source health ─────────────────────────────────────────────────────────
+  // ── Source health ────────────────────────────────────────────────────────
   final Map<String, DataSourceHealth> sources;
 
-  // ── Kosi @ Birpur ─────────────────────────────────────────────────────────
+  // ── Kosi @ Birpur ────────────────────────────────────────────────────────
   final double kosiLevel;   // metres AMSL (0 = unavailable)
   final double kosiDanger;  // 214.00 AMSL
 
@@ -86,7 +86,7 @@ class AiInsight {
   final double mlConfidence;
   final bool   mlBackendLive;
 
-  // ── Legacy / compat ───────────────────────────────────────────────────────
+  // ── Legacy / compat ─────────────────────────────────────────────────────────
   /// Kept so any old call site that used the v3 fields still compiles.
   String get summary      => overallRisk;
   String get riskLevel    => overallRisk;
@@ -162,9 +162,9 @@ class AiInsight {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────────
 // AiInsightNotifier
-// ─────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────────
 
 class AiInsightNotifier extends AsyncNotifier<AiInsight> {
   @override
@@ -175,7 +175,7 @@ class AiInsightNotifier extends AsyncNotifier<AiInsight> {
 
     if (stations.isEmpty) return AiInsight.empty();
 
-    // ── Station KPIs ────────────────────────────────────────────────────────
+    // ── Station KPIs ───────────────────────────────────────────────────────────
     int critical = 0, severe = 0;
     for (final s in stations) {
       if (s.dangerClass == DangerClass.extreme ||
@@ -188,7 +188,7 @@ class AiInsightNotifier extends AsyncNotifier<AiInsight> {
     final total  = stations.length;
     final alerts = critical + severe;
 
-    // ── Overall risk ─────────────────────────────────────────────────────────
+    // ── Overall risk ────────────────────────────────────────────────────────────
     final String overallRisk;
     if (critical >= 5 || (critical > 0 && critical / total > 0.15)) {
       overallRisk = 'EXTREME';
@@ -200,7 +200,7 @@ class AiInsightNotifier extends AsyncNotifier<AiInsight> {
       overallRisk = 'LOW';
     }
 
-    // ── Confidence (heuristic based on data completeness) ────────────────────
+    // ── Confidence (heuristic based on data completeness) ─────────────────────
     final hasCwc = stations.any((s) => s.dataSource?.contains('CWC') ?? false);
     final hasWrd = stations.any((s) => s.dataSource?.contains('WRD') ?? false);
     final hasWeather = weather.status == WeatherStatus.loaded;
@@ -212,13 +212,10 @@ class AiInsightNotifier extends AsyncNotifier<AiInsight> {
     if (kosiOk)    conf += 5;
     conf = conf.clamp(0, 99);
 
-    // ── FloodData list for station rows ──────────────────────────────────────
+    // ── FloodData list for station rows ─────────────────────────────────────────
     final floodList = stations.map(_toFloodData).toList();
 
-    // ── River trends ─────────────────────────────────────────────────────────
-    // Build per-river trends grouped by river name. Velocity is approximated
-    // from the capacity% as a synthetic rising/falling signal since we don't
-    // have a historical time-series in this sync path.
+    // ── River trends ────────────────────────────────────────────────────────────
     final riverMap = <String, List<RiverStation>>{};
     for (final s in stations) {
       riverMap.putIfAbsent(s.river, () => []).add(s);
@@ -231,7 +228,6 @@ class AiInsightNotifier extends AsyncNotifier<AiInsight> {
       final dangerPct = maxStn.danger > 0
           ? (maxStn.current / maxStn.danger * 100).clamp(0.0, 120.0)
           : maxStn.progressPct;
-      // Synthetic velocity: capacity% above 70 => rising, below 50 => falling
       final vel = dangerPct > 70 ? 0.08 : dangerPct > 50 ? 0.02 : -0.01;
       trends.add(RiverTrend(
         river:          entry.key,
@@ -242,7 +238,7 @@ class AiInsightNotifier extends AsyncNotifier<AiInsight> {
     }
     trends.sort((a, b) => b.dangerPct.compareTo(a.dangerPct));
 
-    // ── Kosi ─────────────────────────────────────────────────────────────────
+    // ── Kosi ────────────────────────────────────────────────────────────────────
     final kosiReading = kosiAsync.asData?.value;
     final kosiLevel  = kosiReading?.levelM  ?? 0.0;
     final kosiDanger = kosiReading?.dangerLevel ?? kBirpurDangerLevel;
@@ -255,7 +251,7 @@ class AiInsightNotifier extends AsyncNotifier<AiInsight> {
       'KOSI': kosiOk  ? DataSourceHealth.live : DataSourceHealth.offline,
     };
 
-    // ── Weather ───────────────────────────────────────────────────────────────
+    // ── Weather ─────────────────────────────────────────────────────────────────
     final tempC       = weather.tempC;
     final humidity    = weather.humidity.toDouble();
     final rainfallNow = weather.precipMm;
@@ -286,7 +282,7 @@ class AiInsightNotifier extends AsyncNotifier<AiInsight> {
       forecastRainTotal: rainTotal,
       modelVersion:     '3.2',
       mlConfidence:     conf,
-      mlBackendLive:    false, // backend not yet wired
+      mlBackendLive:    false,
     );
   }
 }
@@ -296,34 +292,21 @@ final aiInsightProvider =
   AiInsightNotifier.new,
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────────
 // Helper: RiverStation → FloodData
-// ─────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────────
 
 FloodData _toFloodData(RiverStation s) {
-  String risk;
-  switch (s.dangerClass) {
-    case DangerClass.extreme:     risk = 'CRITICAL'; break;
-    case DangerClass.severe:      risk = 'SEVERE';   break;
-    case DangerClass.aboveNormal: risk = 'MODERATE'; break;
-    default:                      risk = 'LOW';      break;
-  }
-  final cap = s.danger > 0
-      ? (s.current / s.danger * 100).clamp(0.0, 100.0)
-      : 0.0;
   return FloodData(
-    city:                s.station,
-    district:            '',
-    state:               s.state,
-    riverName:           s.river,
-    currentLevel:        s.current,
-    warningLevel:        s.warning,
-    dangerLevel:         s.danger,
-    safeLevel:           s.warning * 0.75,
-    capacityPercent:     cap,
-    riskLevel:           risk,
-    status:              s.isLive ? 'LIVE' : 'ESTIMATED',
-    effectiveRainfallMm: 0.0,
-    lastUpdated:         DateTime.now(),
+    stationId:    s.station,
+    stationName:  s.station,
+    river:        s.river,
+    district:     s.city,
+    currentLevel: s.current,
+    warningLevel: s.warning,
+    dangerLevel:  s.danger,
+    city:         s.station,
+    state:        s.state,
+    lastUpdated:  DateTime.now(),
   );
 }
