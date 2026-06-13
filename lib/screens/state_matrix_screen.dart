@@ -70,13 +70,13 @@ class _StateMatrixScreenState extends ConsumerState<StateMatrixScreen>
   }
 
   static const _regionColors = {
-    'PLAINS':    Color(0xFF2ECC71),
-    'COASTAL':   Color(0xFF00B4D8),
-    'HIMALAYAN': Color(0xFF9B59B6),
-    'NORTHEAST': Color(0xFFF39C12),
-    'ARID':      Color(0xFFE67E22),
-    'ISLAND':    Color(0xFF1ABC9C),
-    'URBAN_UT':  Color(0xFFE74C3C),
+    'PLAINS':    AppPalette.safe,
+    'COASTAL':   AppPalette.cyan,
+    'HIMALAYAN': AppPalette.critical,
+    'NORTHEAST': AppPalette.gold,
+    'ARID':      AppPalette.warning,
+    'ISLAND':    AppPalette.cyan,
+    'URBAN_UT':  AppPalette.danger,
   };
 
   Color _regionColor(String r) =>
@@ -168,7 +168,7 @@ class _StateMatrixScreenState extends ConsumerState<StateMatrixScreen>
                   width: 30, height: 30,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                        colors: [AppPalette.safe, Color(0xFF27AE60)]),
+                        colors: [AppPalette.safe, AppPalette.safe]),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(Icons.map_outlined,
@@ -476,12 +476,12 @@ class _StateMatrixScreenState extends ConsumerState<StateMatrixScreen>
         maxChildSize: 0.92,
         builder: (ctx2, ctrl) => Container(
           decoration: const BoxDecoration(
-            color: Color(0xFF060F1C),
+            color: AppPalette.abyss1,
             borderRadius:
                 BorderRadius.vertical(top: Radius.circular(24)),
             border: Border(
                 top: BorderSide(
-                    color: Color(0x2200C6FF), width: 1.5)),
+                    color: AppPalette.cyanGlow2, width: 1.5)),
           ),
           child: ListView(
             controller: ctrl,

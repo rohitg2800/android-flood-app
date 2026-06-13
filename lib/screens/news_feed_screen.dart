@@ -193,11 +193,11 @@ class _FilterBar extends ConsumerWidget {
 
   static const _kSources = <String, Color>{
     'IMD':   AppPalette.cyan,
-    'NDMA':  Color(0xFFF57C00),
+    'NDMA':  AppPalette.danger,
     'CWC':   AppPalette.safe,
     'WRIS':  AppPalette.gold,
-    'GDACS': Color(0xFFB39DDB),
-    'PIB':   Color(0xFF80CBC4),
+    'GDACS': AppPalette.textGrey,
+    'PIB':   AppPalette.cyan,
   };
 
   static String _severityLabel(NewsSeverity sv) {
@@ -211,9 +211,9 @@ class _FilterBar extends ConsumerWidget {
 
   static Color _severityColor(NewsSeverity sv) {
     switch (sv) {
-      case NewsSeverity.critical: return const Color(0xFFD32F2F);
-      case NewsSeverity.high:     return const Color(0xFFF57C00);
-      case NewsSeverity.moderate: return const Color(0xFFFBC02D);
+      case NewsSeverity.critical: return const AppPalette.critical;
+      case NewsSeverity.high:     return const AppPalette.danger;
+      case NewsSeverity.moderate: return const AppPalette.warning;
       case NewsSeverity.info:     return AppPalette.textGrey;
     }
   }
@@ -373,7 +373,7 @@ class _DayHeader extends StatelessWidget {
             ),
           ),
           const Expanded(child: Divider(
-            color: Color(0xFF2A3040), thickness: 1, indent: 8,
+            color: AppPalette.abyss3, thickness: 1, indent: 8,
           )),
         ],
       ),
@@ -388,18 +388,18 @@ class _NewsCard extends StatelessWidget {
 
   static const _kSourceColors = <String, Color>{
     'IMD':   AppPalette.cyan,
-    'NDMA':  Color(0xFFF57C00),
+    'NDMA':  AppPalette.danger,
     'CWC':   AppPalette.safe,
     'WRIS':  AppPalette.gold,
-    'GDACS': Color(0xFFB39DDB),
-    'PIB':   Color(0xFF80CBC4),
+    'GDACS': AppPalette.textGrey,
+    'PIB':   AppPalette.cyan,
   };
 
   Color get _sevColor {
     switch (item.severity) {
-      case NewsSeverity.critical: return const Color(0xFFD32F2F);
-      case NewsSeverity.high:     return const Color(0xFFF57C00);
-      case NewsSeverity.moderate: return const Color(0xFFFBC02D);
+      case NewsSeverity.critical: return const AppPalette.critical;
+      case NewsSeverity.high:     return const AppPalette.danger;
+      case NewsSeverity.moderate: return const AppPalette.warning;
       case NewsSeverity.info:     return AppPalette.textGrey;
     }
   }

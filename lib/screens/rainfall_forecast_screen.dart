@@ -101,10 +101,10 @@ class RainfallForecastScreen extends ConsumerWidget {
     final forecastAsync = ref.watch(_forecastProvider(district));
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FB),
+      backgroundColor: const AppPalette.abyss2,
       appBar: AppBar(
         title: const Text('Rainfall Forecast'),
-        backgroundColor: const Color(0xFF0D47A1),
+        backgroundColor: const AppPalette.oceanAccent,
         foregroundColor: Colors.white,
       ),
       body: Column(
@@ -132,18 +132,18 @@ class RainfallForecastScreen extends ConsumerWidget {
                         horizontal: 14, vertical: 4),
                     decoration: BoxDecoration(
                       color: selected
-                          ? const Color(0xFF0D47A1)
+                          ? const AppPalette.oceanAccent
                           : Colors.white,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                          color: const Color(0xFF0D47A1),
+                          color: const AppPalette.oceanAccent,
                           width: selected ? 0 : 1),
                     ),
                     child: Text(d,
                         style: TextStyle(
                             color: selected
                                 ? Colors.white
-                                : const Color(0xFF0D47A1),
+                                : const AppPalette.oceanAccent,
                             fontSize: 12,
                             fontWeight: FontWeight.w600)),
                   ),
@@ -241,10 +241,10 @@ class _RainBarChart extends StatelessWidget {
           barGroups: forecasts.asMap().entries.map((e) {
             final risk = e.value.floodRisk;
             final color = risk > 0.7
-                ? const Color(0xFFEF4444)
+                ? const AppPalette.critical
                 : risk > 0.4
-                    ? const Color(0xFFFF9800)
-                    : const Color(0xFF42A5F5);
+                    ? const AppPalette.warning
+                    : const AppPalette.cyan;
             return BarChartGroupData(
               x: e.key,
               barRods: [
@@ -281,11 +281,11 @@ class _DayCard extends StatelessWidget {
   };
 
   Color _iconColor(String cond) => switch (cond) {
-    'heavy_rain'    => const Color(0xFFEF4444),
-    'moderate_rain' => const Color(0xFF1565C0),
-    'light_rain'    => const Color(0xFF42A5F5),
+    'heavy_rain'    => const AppPalette.critical,
+    'moderate_rain' => const AppPalette.oceanAccent,
+    'light_rain'    => const AppPalette.cyan,
     'cloudy'        => Colors.grey,
-    _               => const Color(0xFFFFA726),
+    _               => const AppPalette.warning,
   };
 
   String _riskLabel(double r) =>
@@ -293,10 +293,10 @@ class _DayCard extends StatelessWidget {
     r > 0.4 ? 'Moderate' : 'Low';
 
   Color _riskColor(double r) =>
-    r > 0.8 ? const Color(0xFFEF4444) :
-    r > 0.6 ? const Color(0xFFFF9800) :
-    r > 0.4 ? const Color(0xFFFFEB3B) :
-    const Color(0xFF4CAF50);
+    r > 0.8 ? const AppPalette.critical :
+    r > 0.6 ? const AppPalette.warning :
+    r > 0.4 ? const AppPalette.warning :
+    const AppPalette.safe;
 
   @override
   Widget build(BuildContext context) {
@@ -334,12 +334,12 @@ class _DayCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _Stat(Icons.water_drop, '${forecast.rainMm.toInt()}mm',
-                      const Color(0xFF1565C0)),
+                      const AppPalette.oceanAccent),
                   _Stat(Icons.thermostat,
                       '${forecast.tempMax.toInt()}°/${forecast.tempMin.toInt()}°',
-                      const Color(0xFFFF6B35)),
+                      const AppPalette.danger),
                   _Stat(Icons.water, '${forecast.humidity}%',
-                      const Color(0xFF42A5F5)),
+                      const AppPalette.cyan),
                   _Stat(Icons.air, '${forecast.windKmh.toInt()}km/h',
                       Colors.grey),
                 ],

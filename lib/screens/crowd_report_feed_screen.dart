@@ -119,10 +119,10 @@ class CrowdReportFeedScreen extends ConsumerWidget {
     final filterType     = ref.watch(_filterTypeProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FB),
+      backgroundColor: const AppPalette.abyss2,
       appBar: AppBar(
         title: const Text('Community Reports'),
-        backgroundColor: const Color(0xFF0D47A1),
+        backgroundColor: const AppPalette.oceanAccent,
         foregroundColor: Colors.white,
         actions: [
           IconButton(
@@ -133,7 +133,7 @@ class CrowdReportFeedScreen extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showSubmitSheet(context, ref),
-        backgroundColor: const Color(0xFF0D47A1),
+        backgroundColor: const AppPalette.oceanAccent,
         icon: const Icon(Icons.add_a_photo, color: Colors.white),
         label: const Text('Report',
             style: TextStyle(color: Colors.white)),
@@ -224,10 +224,10 @@ class _ReportCard extends StatelessWidget {
   const _ReportCard({required this.report});
 
   Color _severityColor(String s) => switch (s) {
-    'critical' => const Color(0xFFEF4444),
-    'high'     => const Color(0xFFFF9800),
-    'medium'   => const Color(0xFFFFEB3B),
-    _          => const Color(0xFF4CAF50),
+    'critical' => const AppPalette.critical,
+    'high'     => const AppPalette.warning,
+    'medium'   => const AppPalette.warning,
+    _          => const AppPalette.safe,
   };
 
   String _typeLabel(String t) => switch (t) {
@@ -294,7 +294,7 @@ class _ReportCard extends StatelessWidget {
                     if (report.verified)
                       const Icon(Icons.verified,
                           size: 14,
-                          color: Color(0xFF1565C0)),
+                          color: AppPalette.oceanAccent),
                   ],
                 ),
                 const SizedBox(height: 6),
@@ -598,7 +598,7 @@ class _SubmitReportSheetState
             ElevatedButton(
               onPressed: _submitting ? null : _submit,
               style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0D47A1),
+                  backgroundColor: const AppPalette.oceanAccent,
                   padding:
                       const EdgeInsets.symmetric(vertical: 14)),
               child: _submitting

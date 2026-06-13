@@ -217,19 +217,19 @@ class _NotificationSettingsState
             spacing: 8, runSpacing: 8,
             children: [
               _TestButton(t: t, label: '🚨 Emergency',
-                  color: const Color(0xFFFF1744), channelId: 'flood_emergency',
+                  color: const AppPalette.critical, channelId: 'flood_emergency',
                   title: '🚨 EMERGENCY TEST',
                   body: 'Simulated HFL breach at Birpur, Kosi river'),
               _TestButton(t: t, label: '🔴 Critical',
-                  color: const Color(0xFFFF6D00), channelId: 'flood_critical',
+                  color: const AppPalette.danger, channelId: 'flood_critical',
                   title: '🔴 CRITICAL TEST',
                   body: 'Level above danger at Baltara, Gandak'),
               _TestButton(t: t, label: '⚠️ Warning',
-                  color: const Color(0xFFFFD600), channelId: 'flood_warning',
+                  color: const AppPalette.gold, channelId: 'flood_warning',
                   title: '⚠️ Warning TEST',
                   body: 'Rapid rise detected at Rosera, Bagmati'),
               _TestButton(t: t, label: 'ℹ️ Info',
-                  color: const Color(0xFF00E5FF), channelId: 'flood_info',
+                  color: const AppPalette.cyan, channelId: 'flood_info',
                   title: 'ℹ️ Advisory TEST',
                   body: 'Heavy rainfall (78 mm) near Darbhanga'),
             ],
@@ -267,10 +267,10 @@ class _NotificationSettingsState
 // ── Severity row ─────────────────────────────────────────────────────────────
 
 const _sevMeta = {
-  'emergency': ('🚨', 'Emergency', Color(0xFFFF1744)),
-  'critical':  ('🔴', 'Critical',  Color(0xFFFF6D00)),
-  'warning':   ('⚠️', 'Warning',   Color(0xFFFFD600)),
-  'info':      ('ℹ️', 'Advisory',  Color(0xFF00E5FF)),
+  'emergency': ('🚨', 'Emergency', AppPalette.critical),
+  'critical':  ('🔴', 'Critical',  AppPalette.danger),
+  'warning':   ('⚠️', 'Warning',   AppPalette.gold),
+  'info':      ('ℹ️', 'Advisory',  AppPalette.cyan),
 };
 
 class _SeverityRow extends StatelessWidget {

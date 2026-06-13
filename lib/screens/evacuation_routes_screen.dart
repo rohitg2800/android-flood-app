@@ -208,7 +208,7 @@ class _EvacuationRoutesScreenState
     return Scaffold(
       appBar: AppBar(
         title: const Text('🚫 Evacuation Routes'),
-        backgroundColor: const Color(0xFFB71C1C),
+        backgroundColor: const AppPalette.critical,
         foregroundColor: Colors.white,
       ),
       body: Column(
@@ -216,7 +216,7 @@ class _EvacuationRoutesScreenState
           // ─ Offline notice
           Container(
             width: double.infinity,
-            color: const Color(0xFF1B5E20),
+            color: const AppPalette.safe,
             padding: const EdgeInsets.symmetric(
                 horizontal: 12, vertical: 6),
             child: const Row(
@@ -296,8 +296,8 @@ class _RouteCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final open  = route.currentlyOpen;
     final color = open
-        ? const Color(0xFF4CAF50)
-        : const Color(0xFFFF1744);
+        ? const AppPalette.safe
+        : const AppPalette.critical;
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
@@ -356,7 +356,7 @@ class _RouteCard extends StatelessWidget {
                   leading: const Icon(
                       Icons.home_work_outlined,
                       size: 18,
-                      color: Color(0xFF1565C0)),
+                      color: AppPalette.oceanAccent),
                   title: Text(s.name,
                       style:
                           const TextStyle(fontSize: 12)),
@@ -367,7 +367,7 @@ class _RouteCard extends StatelessWidget {
                   trailing: IconButton(
                     icon: const Icon(Icons.directions,
                         size: 20,
-                        color: Color(0xFF1565C0)),
+                        color: AppPalette.oceanAccent),
                     tooltip: 'Get Directions',
                     onPressed: () => onOpenMaps(s),
                   ),
@@ -397,7 +397,7 @@ class _RouteCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(icon, size: 14,
-                color: const Color(0xFF78909C)),
+                color: const AppPalette.textGrey),
             const SizedBox(width: 6),
             Expanded(
                 child: Text(text,
@@ -422,7 +422,7 @@ class _EmergencyStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFF1A237E),
+      color: const AppPalette.oceanAccent,
       padding: const EdgeInsets.symmetric(
           horizontal: 8, vertical: 8),
       child: Row(
