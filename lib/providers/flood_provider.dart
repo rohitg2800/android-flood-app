@@ -7,12 +7,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/flood_data.dart';
 import 'flood_providers.dart';
 
-// Re-export so any file that imports flood_provider.dart
-// can use ChangeNotifierProvider without a separate import.
-export 'package:flutter_riverpod/flutter_riverpod.dart'
-    show ChangeNotifierProvider;
-
-final floodProvider = ChangeNotifierProvider<FloodProvider>((ref) {
+// Riverpod 3.x removed ChangeNotifierProvider.
+// Use a plain Provider that creates the ChangeNotifier, wires listeners,
+// and disposes it when the provider is destroyed.
+final floodProvider = Provider<FloodProvider>((ref) {
   final notifier = FloodProvider();
 
   ref.listen<List<FloodData>>(
@@ -32,6 +30,8 @@ final floodProvider = ChangeNotifierProvider<FloodProvider>((ref) {
     (_, t) => notifier._updateLastFetch(t),
     fireImmediately: true,
   );
+
+  ref.onDispose(notifier.dispose);
 
   return notifier;
 });

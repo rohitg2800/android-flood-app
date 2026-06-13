@@ -8,7 +8,10 @@ import '../models/flood_alert.dart' as fa;
 import '../models/threshold_alert.dart' as ta;
 import 'alerts_provider.dart';
 
-final alertProvider = ChangeNotifierProvider<AlertProvider>((ref) {
+// Riverpod 3.x removed ChangeNotifierProvider.
+// Use a plain Provider that creates the ChangeNotifier, wires listeners,
+// and disposes it when the provider is destroyed.
+final alertProvider = Provider<AlertProvider>((ref) {
   final notifier = AlertProvider();
 
   ref.listen<AsyncValue<List<ta.ThresholdAlert>>>(
@@ -16,6 +19,8 @@ final alertProvider = ChangeNotifierProvider<AlertProvider>((ref) {
     (_, next) => next.whenData(notifier._onAlerts),
     fireImmediately: true,
   );
+
+  ref.onDispose(notifier.dispose);
 
   return notifier;
 });
