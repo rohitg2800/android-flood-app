@@ -57,7 +57,6 @@ final FlutterLocalNotificationsPlugin _localNotifications =
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Guard: on hot-restart the native Firebase is already alive.
   if (Firebase.apps.isEmpty) {
     await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform);
@@ -68,58 +67,33 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ── .env ─────────────────────────────────────────────────────────────────
+  // ── CRITICAL PATH: only what is needed before the first frame ────────────
+
+  // 1. .env — fast local file read
   await dotenv.load(fileName: '.env').catchError((_) {});
 
-  // ── Firebase ──────────────────────────────────────────────────────────────
-  // try/catch swallows the [core/duplicate-app] exception that fires on
-  // hot-restart: the Android process is still alive, Firebase native is
-  // already initialised, but the Dart isolate restarts and calls initializeApp
-  // a second time.  Firebase.apps.isEmpty is true from Dart's perspective
-  // during a hot-restart so the guard alone is insufficient — the native
-  // layer throws before Dart can check.
+  // 2. Firebase — required before FCM background handler registration
   try {
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(
           options: DefaultFirebaseOptions.currentPlatform);
     }
   } catch (e) {
-    // Already initialised by a previous hot-restart — safe to ignore.
     debugPrint('[Firebase] already initialised: $e');
   }
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  // ── Local notifications ───────────────────────────────────────────────────
-  const androidSettings =
-      AndroidInitializationSettings('@mipmap/ic_launcher');
-  const iosSettings = DarwinInitializationSettings(
-    requestAlertPermission: true,
-    requestBadgePermission: true,
-    requestSoundPermission: true,
-  );
-  await _localNotifications.initialize(
-    const InitializationSettings(
-        android: androidSettings, iOS: iosSettings),
-    onDidReceiveNotificationResponse: _onNotificationTap,
-  );
-
-  // ── Module 7: Notification channels & FCM topics ─────────────────────────
-  await NotificationChannelService.instance.init();
-  await FcmTopicManager.instance.init();
-
-  // ── Hive ──────────────────────────────────────────────────────────────────
+  // 3. Hive — needed for CommunityIncident box used on community screen
   await Hive.initFlutter();
   Hive.registerAdapter(IncidentTypeAdapter());
   Hive.registerAdapter(CommunityIncidentAdapter());
   await Hive.openBox<CommunityIncident>('community_incidents');
 
-  // ── FIX: pre-load saved locale BEFORE runApp so localeProvider starts
-  //   with the correct Locale synchronously — no async race, no English flash,
-  //   no null AppLocalizations on the first frame. ───────────────────────────
+  // 4. Locale — must be synchronous before runApp to avoid English flash
   final prefs = await SharedPreferences.getInstance();
   final savedLangCode = prefs.getString('app_locale') ?? 'en';
 
-  // ── Orientation & status-bar ──────────────────────────────────────────────
+  // 5. Orientation & status-bar chrome
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
@@ -131,21 +105,7 @@ Future<void> main() async {
     ),
   );
 
-  // ── RTDAS threshold auto-sync (Layer 3) ───────────────────────────────────
-  unawaited(RtdasThresholdSyncService.instance.start());
-
-  // ── Data engine ───────────────────────────────────────────────────────────
-  DataFetchEngine.instance.start();
-
-  // ── Active alert rules engine ─────────────────────────────────────────────
-  ActiveAlertController.instance.start();
-
-  // ── Alert → Notification bridge ───────────────────────────────────────────
-  final Stream<FloodAlert> alertStream = DataFetchEngine.instance.alertStream
-      .map((snapshot) => AlertEngine.instance.evaluate(snapshot))
-      .expand((alerts) => alerts);
-  AlertNotificationBridge.instance.start(alertStream);
-
+  // ── Paint first frame NOW ─────────────────────────────────────────────────
   runApp(
     ProviderScope(
       overrides: [
@@ -154,6 +114,41 @@ Future<void> main() async {
       child: const FloodWatchApp(),
     ),
   );
+
+  // ── DEFERRED PATH: runs after the first frame is on screen ───────────────
+  // addPostFrameCallback fires once the engine has committed the first raster
+  // frame — UI is visible and no jank risk from these heavier operations.
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
+    // Local notifications — channel creation is disk/IPC, not user-visible yet
+    const androidSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    const iosSettings = DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
+    await _localNotifications.initialize(
+      const InitializationSettings(android: androidSettings, iOS: iosSettings),
+      onDidReceiveNotificationResponse: _onNotificationTap,
+    );
+
+    // Notification channels & FCM topics — network calls, fully deferrable
+    unawaited(NotificationChannelService.instance.init());
+    unawaited(FcmTopicManager.instance.init());
+
+    // RTDAS threshold sync — background network, never blocks UI
+    unawaited(RtdasThresholdSyncService.instance.start());
+
+    // Data engine & alert controller
+    DataFetchEngine.instance.start();
+    ActiveAlertController.instance.start();
+
+    // Alert → notification bridge
+    final Stream<FloodAlert> alertStream = DataFetchEngine.instance.alertStream
+        .map((snapshot) => AlertEngine.instance.evaluate(snapshot))
+        .expand((alerts) => alerts);
+    AlertNotificationBridge.instance.start(alertStream);
+  });
 }
 
 void _onNotificationTap(NotificationResponse response) {
