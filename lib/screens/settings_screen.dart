@@ -101,23 +101,27 @@ class _ThemePickerSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef innerRef) {
     final t    = RiverColors.of(context);
     final mode = innerRef.watch(themeModeProvider);
-    return Container(
+    // Use Material instead of Container(color:) so ListTile ink splashes
+    // can paint on Material rather than being hidden by a DecoratedBox.
+    return Material(
       color: t.cardBg,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: AppThemeMode.values.map((m) => ListTile(
-          title: Text(m.name,
-              style: TextStyle(
-                  color: m == mode ? t.accent : t.textPrimary)),
-          trailing: m == mode
-              ? Icon(Icons.check_rounded, color: t.accent)
-              : null,
-          onTap: () {
-            innerRef.read(themeModeProvider.notifier).setMode(m);
-            Navigator.pop(context);
-          },
-        )).toList(),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: AppThemeMode.values.map((m) => ListTile(
+            title: Text(m.name,
+                style: TextStyle(
+                    color: m == mode ? t.accent : t.textPrimary)),
+            trailing: m == mode
+                ? Icon(Icons.check_rounded, color: t.accent)
+                : null,
+            onTap: () {
+              innerRef.read(themeModeProvider.notifier).setMode(m);
+              Navigator.pop(context);
+            },
+          )).toList(),
+        ),
       ),
     );
   }
