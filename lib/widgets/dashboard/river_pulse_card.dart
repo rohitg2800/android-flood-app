@@ -157,7 +157,11 @@ class _RiverPulseCardState extends ConsumerState<RiverPulseCard>
 }
 
 // ── _TerminalHeader ───────────────────────────────────────────────────────────────
-// Mimics a terminal title bar with station ID and live dot
+// Mimics a terminal title bar with station ID and live dot.
+// FIX: Replaced Border(bottom: BorderSide(...)) + BorderRadius.only(top) combo
+// which caused 'A borderRadius can only be given on borders with uniform colors'
+// Flutter assertion. Now uses a uniform border (none) on the BoxDecoration and
+// a separate 1px divider Container as the bottom separator — fully legal.
 class _TerminalHeader extends StatelessWidget {
   const _TerminalHeader({
     required this.rc,
@@ -170,47 +174,58 @@ class _TerminalHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-      decoration: BoxDecoration(
-        color:        rc.surfaceHigh,
-        borderRadius: BorderRadius.only(
-          topLeft:  rc.cardRadius.topLeft,
-          topRight: rc.cardRadius.topRight,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+          decoration: BoxDecoration(
+            color:        rc.surfaceHigh,
+            // Only uniform border (or none) is allowed with borderRadius.
+            // The bottom divider is rendered as a separate child Container below.
+            borderRadius: BorderRadius.only(
+              topLeft:  rc.cardRadius.topLeft,
+              topRight: rc.cardRadius.topRight,
+            ),
+          ),
+          child: Row(
+            children: [
+              // Live pulse dot
+              _LiveDot(color: station.isLive ? rc.safe : rc.textMuted),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  station.station.toUpperCase(),
+                  style: rc.labelSm.copyWith(color: rc.textPrimary),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              // Risk chip
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 3),
+                decoration: rc.chipBox.copyWith(
+                  color: lvlColor.withOpacity(0.12),
+                  border: Border.all(
+                      color: lvlColor.withOpacity(0.40), width: 1),
+                ),
+                child: Text(
+                  _dcLabel(station.dangerClass),
+                  style: rc.labelXs.copyWith(
+                      color: lvlColor,
+                      letterSpacing: 1.0),
+                ),
+              ),
+            ],
+          ),
         ),
-        border: Border(
-            bottom: BorderSide(color: rc.divider, width: 1)),
-      ),
-      child: Row(
-        children: [
-          // Live pulse dot
-          _LiveDot(color: station.isLive ? rc.safe : rc.textMuted),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              station.station.toUpperCase(),
-              style: rc.labelSm.copyWith(color: rc.textPrimary),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          // Risk chip
-          Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 8, vertical: 3),
-            decoration: rc.chipBox.copyWith(
-              color: lvlColor.withOpacity(0.12),
-              border: Border.all(
-                  color: lvlColor.withOpacity(0.40), width: 1),
-            ),
-            child: Text(
-              _dcLabel(station.dangerClass),
-              style: rc.labelXs.copyWith(
-                  color: lvlColor,
-                  letterSpacing: 1.0),
-            ),
-          ),
-        ],
-      ),
+        // Bottom divider — rendered as a separate child to avoid the
+        // non-uniform border + borderRadius illegal combination.
+        Container(
+          height: 1,
+          color:  rc.divider,
+        ),
+      ],
     );
   }
 
