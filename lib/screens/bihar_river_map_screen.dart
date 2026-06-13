@@ -49,6 +49,7 @@ import '../data/bihar_rivers.dart';
 import '../providers/map_live_index_provider.dart'; // v5.4
 import '../theme/river_theme.dart';
 import 'city_detail_screen.dart';
+import '../providers/flood_providers.dart';
 
 // ────────────────────────────────────────────────────────────────────────────────
 // Severity system  (5 levels)
@@ -1205,7 +1206,7 @@ class _LayerPanel extends StatelessWidget {
 // _StationSheet  (v5.5.1 — Option A graceful station-only fallback)
 // ────────────────────────────────────────────────────────────────────────────────
 
-class _StationSheet extends StatelessWidget {
+class _StationSheet extends ConsumerWidget {
   final BiharGauge       gauge;
   final MapStationData?  live;   // v5.4: was BiharStationData?
   final RiverColors      t;
@@ -1216,7 +1217,7 @@ class _StationSheet extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final hasLive = live != null && live!.isLive;
 
     // v5.5: resolve canonical city name from MapStationData.city so that
@@ -1228,9 +1229,8 @@ class _StationSheet extends StatelessWidget {
     // v5.5.1 (Option A): check if resolvedCity has a matching city profile.
     // cityDataProvider keys are normalised lowercase; we do the same check
     // that CityDetailScreen does internally. If no match → show muted label.
-    final hasCityProfile = cityDataProvider.keys
-        .map(_norm)
-        .contains(_norm(resolvedCity));
+    final cityMap = ref.watch(cityLookupMapProvider);
+    final hasCityProfile = cityMap.containsKey(_norm(resolvedCity));
 
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),

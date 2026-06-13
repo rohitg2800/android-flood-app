@@ -81,13 +81,13 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
 
     // Auto-select first station on first load
     if (_selectedStationId == null && stations.isNotEmpty) {
-      _selectedStationId = stations.first.id;
+      _selectedStationId = stations.first.station;
     }
 
     final station = stations.isEmpty
         ? null
         : stations.firstWhere(
-            (s) => s.id == _selectedStationId,
+            (s) => s.station == _selectedStationId,
             orElse: () => stations.first,
           );
 
@@ -321,7 +321,7 @@ class _StationPickerCard extends StatelessWidget {
                   ),
                   Expanded(
                     child: Text(
-                      '${s.station}  •  ${s.river}',
+                      '${s.name}  •  ${s.river}',
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                           color: theme.textPrimary, fontSize: 14),
@@ -392,7 +392,7 @@ class _CurrentLevelCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(station.station,
+                    Text(station.name,
                         style: TextStyle(
                           color: theme.textPrimary,
                           fontSize: 18,
@@ -1200,5 +1200,5 @@ class _EmptyState extends StatelessWidget {
 final predictionForStationProvider =
     Provider.family<FloodPrediction?, RiverStation>((ref, station) {
   final asyncVal = ref.watch(predictionProvider(station.station));
-  return asyncVal.when(data: (d) => d, loading: () => null, error: (_, __) => null);
+  return asyncVal.valueOrNull;
 });

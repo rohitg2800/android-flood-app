@@ -201,7 +201,7 @@ class LiveCityData {
       currentLevel:        level,
       warningLevel:        warningLevel,
       dangerLevel:         dangerLevel,
-      capacityPercent:     capPct,
+      safeLevel:           warningLevel * 0.8,
       riskLevel:           riskLevel ?? 'LOW',
       status:              'LIVE',
       effectiveRainfallMm: rainfall24h ?? 0.0,

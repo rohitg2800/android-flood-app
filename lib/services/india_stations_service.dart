@@ -161,7 +161,7 @@ class IndiaStationsService {
       currentLevel:        current,
       warningLevel:        warning,
       dangerLevel:         danger,
-      capacityPercent:     cap,
+      safeLevel:           safe,
       riskLevel:           risk,
       status:              raw['data_source']?.toString() ?? 'BACKEND',
       imdSeverity:         'GREEN',
