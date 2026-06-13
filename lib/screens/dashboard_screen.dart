@@ -160,9 +160,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 : city.riskLevel == 'HIGH'
                     ? t.riverWarning
                     : t.riverNormal;
+            // FloodData.city is the display name (was: cityName / stationId)
             return ListTile(
               dense: true,
-              title: Text(city.cityName ?? city.stationId,
+              title: Text(city.city,
                   style: TextStyle(
                       color: t.textPrimary, fontSize: 13)),
               trailing: Icon(Icons.chevron_right_rounded,
@@ -171,7 +172,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   context,
                   MaterialPageRoute(
                       builder: (_) => CityDetailScreen(
-                          cityName: city.cityName ?? city.stationId))),
+                          cityName: city.city))),
             );
           }),
         ],
@@ -196,9 +197,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                     fontWeight: FontWeight.w700,
                     fontSize: 14)),
           ),
+          // FloodData.city is the station display name (was: s.stationId)
           ...stations.map((s) => ListTile(
                 dense: true,
-                title: Text(s.stationId,
+                title: Text(s.city,
                     style: TextStyle(color: t.textPrimary, fontSize: 13)),
                 trailing: Icon(Icons.circle,
                     color: t.accent, size: 8),

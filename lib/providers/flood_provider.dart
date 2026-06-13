@@ -7,6 +7,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/flood_data.dart';
 import 'flood_providers.dart';
 
+// Re-export so any file that imports flood_provider.dart
+// can use ChangeNotifierProvider without a separate import.
+export 'package:flutter_riverpod/flutter_riverpod.dart'
+    show ChangeNotifierProvider;
+
 final floodProvider = ChangeNotifierProvider<FloodProvider>((ref) {
   final notifier = FloodProvider();
 
