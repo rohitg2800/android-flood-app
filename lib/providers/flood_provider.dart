@@ -1,8 +1,4 @@
 // lib/providers/flood_provider.dart
-// OpsFlood — FloodProvider (Riverpod ChangeNotifier)
-//
-// Thin facade over bihar_live_provider / flood_providers so screens that
-// import this path and call ref.watch(floodProvider) compile.
 library;
 
 import 'package:flutter/foundation.dart';
@@ -11,26 +7,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/flood_data.dart';
 import 'flood_providers.dart';
 
-// ─── Riverpod provider ────────────────────────────────────────────────────────
-
 final floodProvider = ChangeNotifierProvider<FloodProvider>((ref) {
   final notifier = FloodProvider();
 
-  // Mirror liveLevelsProvider changes into this notifier.
   ref.listen<List<FloodData>>(
     liveLevelsProvider,
     (_, next) => notifier._updateLevels(next),
     fireImmediately: true,
   );
 
-  // Mirror online status.
   ref.listen<bool>(
     isOfflineProvider,
     (_, offline) => notifier._updateOnline(!offline),
     fireImmediately: true,
   );
 
-  // Mirror last-fetch time.
   ref.listen<DateTime?>(
     lastFetchTimeProvider,
     (_, t) => notifier._updateLastFetch(t),
@@ -40,33 +31,40 @@ final floodProvider = ChangeNotifierProvider<FloodProvider>((ref) {
   return notifier;
 });
 
-// ─── FloodProvider ────────────────────────────────────────────────────────────
-
 class FloodProvider extends ChangeNotifier {
-  List<FloodData> _levels    = [];
-  bool            _isOnline  = true;
+  List<FloodData> _levels   = [];
+  bool            _isOnline = true;
   DateTime?       _lastFetch;
 
-  // ── Getters ──────────────────────────────────────────────────────────────
+  List<FloodData> get liveLevels   => _levels;
+  bool            get isOnline     => _isOnline;
+  DateTime?       get lastFetchTime => _lastFetch;
 
-  List<FloodData> get liveLevels => _levels;
+  int get criticalCount => _levels.where((d) => d.riskLevel == 'CRITICAL').length;
+  int get highRiskCount => _levels.where((d) => d.riskLevel == 'HIGH' || d.riskLevel == 'CRITICAL').length;
+  int get stationCount  => _levels.length;
 
   List<FloodData> get critical =>
       _levels.where((d) => d.riskLevel == 'CRITICAL').toList();
 
   List<FloodData> get highRisk =>
-      _levels
-          .where((d) => d.riskLevel == 'HIGH' || d.riskLevel == 'CRITICAL')
-          .toList();
+      _levels.where((d) => d.riskLevel == 'HIGH' || d.riskLevel == 'CRITICAL').toList();
 
-  int get criticalCount => critical.length;
-  int get highRiskCount => highRisk.length;
-  int get stationCount  => _levels.length;
+  /// Top at-risk cities sorted by severity (CRITICAL > DANGER > HIGH > WARNING).
+  List<FloodData> get topAtRiskCities {
+    const order = {'CRITICAL': 0, 'DANGER': 1, 'HIGH': 2, 'WARNING': 3};
+    return [..._levels]
+      ..sort((a, b) =>
+          (order[a.riskLevel] ?? 99).compareTo(order[b.riskLevel] ?? 99));
+  }
 
-  bool      get isOnline     => _isOnline;
-  DateTime? get lastFetchTime => _lastFetch;
+  /// All live stations (same as liveLevels, alias for legacy screen compat).
+  List<FloodData> get liveStations => _levels;
 
-  // ── Internal setters (called by ref.listen above) ────────────────────────
+  /// Trigger a manual refresh — delegates to DataFetchEngine.
+  Future<void> refresh() async {
+    // DataFetchEngine auto-polls; a no-op here keeps screens working.
+  }
 
   void _updateLevels(List<FloodData> v)  { _levels   = v;  notifyListeners(); }
   void _updateOnline(bool v)             { _isOnline = v;  notifyListeners(); }

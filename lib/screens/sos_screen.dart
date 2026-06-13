@@ -1,35 +1,32 @@
-// lib/screens/sos_screen.dart  — 3-D UI rebuild
+// lib/screens/sos_screen.dart
 library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/river_theme.dart';
 import '../theme/theme_3d.dart';
 
-class SosScreen extends StatefulWidget {
+class SosScreen extends ConsumerStatefulWidget {
   const SosScreen({super.key});
 
+  static const String route = '/sos';
+
   @override
-  State<SosScreen> createState() => _SosScreenState();
+  ConsumerState<SosScreen> createState() => _SosScreenState();
 }
 
-class _SosScreenState extends State<SosScreen>
+class _SosScreenState extends ConsumerState<SosScreen>
     with SingleTickerProviderStateMixin {
-  bool _sent     = false;
-  bool _sending  = false;
-
   late AnimationController _pulse;
-  late Animation<double>   _scale;
+  bool _triggered = false;
 
   @override
   void initState() {
     super.initState();
     _pulse = AnimationController(
-        vsync: this,
-        duration: const Duration(milliseconds: 900))
-      ..repeat(reverse: true);
-    _scale = Tween<double>(begin: 0.97, end: 1.03)
-        .animate(CurvedAnimation(parent: _pulse, curve: Curves.easeInOut));
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
   }
 
   @override
@@ -38,229 +35,131 @@ class _SosScreenState extends State<SosScreen>
     super.dispose();
   }
 
-  Future<void> _triggerSOS() async {
-    HapticFeedback.heavyImpact();
-    setState(() => _sending = true);
-    await Future.delayed(const Duration(seconds: 2));
-    HapticFeedback.heavyImpact();
-    setState(() { _sending = false; _sent = true; });
-  }
-
   @override
   Widget build(BuildContext context) {
     final t = RiverColors.of(context);
     return Scaffold(
       backgroundColor: t.scaffoldBg,
-      body: CustomScrollView(
-        slivers: [
-          Td3AppBar(
-            title: 'Emergency SOS',
-            subtitle: 'Flood emergency response',
-            leading: IconButton(
-              icon: Icon(Icons.arrow_back_ios_new_rounded,
-                  color: t.textPrimary, size: 18),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
-          SliverFillRemaining(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Pulsing SOS button
-                  if (!_sent) ...[
-                    ScaleTransition(
-                      scale: _scale,
-                      child: GestureDetector(
-                        onTap: _sending ? null : _triggerSOS,
-                        child: Container(
-                          width: 180,
-                          height: 180,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: RadialGradient(
-                              colors: [
-                                t.danger.withValues(alpha: 0.30),
-                                t.danger.withValues(alpha: 0.08),
-                              ],
-                            ),
-                            border: Border.all(
-                                color: t.danger.withValues(alpha: 0.55),
-                                width: 2),
-                            boxShadow: [
-                              BoxShadow(
-                                  color: t.danger.withValues(alpha: 0.45),
-                                  blurRadius: 40,
-                                  spreadRadius: 4),
-                              BoxShadow(
-                                  color: t.danger.withValues(alpha: 0.25),
-                                  blurRadius: 80,
-                                  spreadRadius: 10),
-                            ],
-                          ),
-                          child: Center(
-                            child: _sending
-                                ? CircularProgressIndicator(
-                                    color: t.danger, strokeWidth: 3)
-                                : Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.sos_rounded,
-                                          color: t.danger, size: 52),
-                                      Text(
-                                        'HOLD TO SEND',
-                                        style: TextStyle(
-                                            color: t.danger,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w900,
-                                            letterSpacing: 1.2),
-                                      ),
-                                    ],
-                                  ),
-                          ),
-                        ),
-                      ),
+      appBar: AppBar(
+        title: Text('SOS Emergency',
+            style: TextStyle(color: t.textPrimary)),
+        backgroundColor: t.navBg,
+        iconTheme: IconThemeData(color: t.riverDanger),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedBuilder(
+                animation: _pulse,
+                builder: (_, __) => Container(
+                  width: 160,
+                  height: 160,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(colors: [
+                      t.riverDanger.withValues(alpha: 0.30 * _pulse.value),
+                      t.riverDanger.withValues(alpha: 0.08 * _pulse.value),
+                    ]),
+                    border: Border.all(
+                        color: t.riverDanger.withValues(alpha: 0.55),
+                        width: 2),
+                  ),
+                  child: GestureDetector(
+                    onTap: _onSosTap,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.sos_rounded,
+                            color: t.riverDanger, size: 52),
+                        const SizedBox(height: 6),
+                        Text('SEND SOS',
+                            style: TextStyle(
+                                color: t.riverDanger,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 14)),
+                      ],
                     ),
-                    const SizedBox(height: 32),
-                    Td3Card(
-                      accentColor: t.danger,
-                      elevation: Td3.elevMid,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text(
-                          'Tap the SOS button to alert flood rescue teams and share your location.',
-                          style: TextStyle(
-                              color: t.textPrimary,
-                              fontSize: 13,
-                              height: 1.5),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                  ] else ...[
-                    Td3Card(
-                      accentColor: t.safe,
-                      elevation: Td3.elevHigh,
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Column(
-                          children: [
-                            Icon(Icons.check_circle_rounded,
-                                color: t.safe, size: 64),
-                            const SizedBox(height: 16),
-                            Text(
-                              'SOS Sent!',
-                              style: TextStyle(
-                                  color: t.safe,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w900),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Rescue teams have been alerted. Stay calm and stay in place.',
-                              style: TextStyle(
-                                  color: t.textPrimary,
-                                  fontSize: 13,
-                                  height: 1.5),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 20),
-                            Td3Button(
-                              label: 'Send Another SOS',
-                              icon: Icons.sos_rounded,
-                              color: t.danger,
-                              onTap: () => setState(() => _sent = false),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-
-                  const SizedBox(height: 32),
-
-                  // Emergency contacts
-                  const Td3SectionHeader('Emergency Contacts'),
-                  const SizedBox(height: 10),
-                  _ContactTile(
-                      label: 'NDRF Bihar',
-                      number: '0612-2506070',
-                      color: RiverColors.of(context).danger),
-                  const SizedBox(height: 8),
-                  _ContactTile(
-                      label: 'SDRF Control Room',
-                      number: '0612-2217305',
-                      color: RiverColors.of(context).warning),
-                  const SizedBox(height: 8),
-                  _ContactTile(
-                      label: 'National Helpline',
-                      number: '1078',
-                      color: RiverColors.of(context).info),
-                ],
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(height: 32),
+              if (_triggered)
+                Td3Card(
+                  elevation: Td3.elevMid,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        Icon(Icons.check_circle_rounded,
+                            color: t.riverNormal, size: 40),
+                        const SizedBox(height: 8),
+                        Text('SOS Sent',
+                            style: TextStyle(
+                                color: t.riverNormal,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 16)),
+                        const SizedBox(height: 4),
+                        Text('Emergency services have been notified.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                                color: t.textSecondary, fontSize: 13)),
+                      ],
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 24),
+              _InfoRow(
+                  icon: Icons.warning_amber_rounded,
+                  color: t.riverDanger,
+                  text: 'Tap SOS only in genuine flood emergency.'),
+              _InfoRow(
+                  icon: Icons.info_rounded,
+                  color: t.riverWarning,
+                  text: 'Authorities will be alerted with your location.'),
+              _InfoRow(
+                  icon: Icons.phone_rounded,
+                  color: t.accent,
+                  text: 'NDRF Helpline: 011-24363260'),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
+
+  void _onSosTap() {
+    setState(() => _triggered = true);
+    _pulse.stop();
+  }
 }
 
-class _ContactTile extends StatelessWidget {
-  final String label;
-  final String number;
-  final Color  color;
-  const _ContactTile({
-    required this.label,
-    required this.number,
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({
+    required this.icon,
     required this.color,
+    required this.text,
   });
+  final IconData icon;
+  final Color    color;
+  final String   text;
 
   @override
   Widget build(BuildContext context) {
-    return Td3Card(
-      accentColor: color,
-      elevation: Td3.elevLow,
-      child: Padding(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child:
-                  Icon(Icons.phone_rounded, color: color, size: 18),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label,
-                      style: TextStyle(
-                          color: RiverColors.of(context).textPrimary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700)),
-                  Text(number,
-                      style: TextStyle(
-                          color: color,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w900)),
-                ],
-              ),
-            ),
-            Td3Badge(
-                label: 'CALL',
-                color: color,
-                icon: Icons.call_rounded,
-                fontSize: 8),
-          ],
-        ),
+    final t = RiverColors.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+              child: Text(text,
+                  style: TextStyle(
+                      color: t.textSecondary, fontSize: 13))),
+        ],
       ),
     );
   }

@@ -1,28 +1,32 @@
-// lib/screens/alerts_screen.dart  — 3-D UI rebuild
+// lib/screens/alerts_screen.dart
 library;
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/river_theme.dart';
 import '../theme/theme_3d.dart';
 import '../providers/alert_provider.dart';
 import '../models/flood_alert.dart';
 
-class AlertsScreen extends StatefulWidget {
+class AlertsScreen extends ConsumerStatefulWidget {
   const AlertsScreen({super.key});
 
+  static const String route = '/alerts';
+
   @override
-  State<AlertsScreen> createState() => _AlertsScreenState();
+  ConsumerState<AlertsScreen> createState() => _AlertsScreenState();
 }
 
-class _AlertsScreenState extends State<AlertsScreen>
+class _AlertsScreenState extends ConsumerState<AlertsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tab;
+  int _tabIndex = 0;
 
   @override
   void initState() {
     super.initState();
     _tab = TabController(length: 3, vsync: this);
+    _tab.addListener(() => setState(() => _tabIndex = _tab.index));
   }
 
   @override
@@ -34,209 +38,154 @@ class _AlertsScreenState extends State<AlertsScreen>
   @override
   Widget build(BuildContext context) {
     final t  = RiverColors.of(context);
-    final ap = context.watch<AlertProvider>();
+    final ap = ref.watch(alertProvider);
+
+    final items = _tabIndex == 0
+        ? ap.all
+        : _tabIndex == 1
+            ? ap.danger
+            : ap.warnings;
 
     return Scaffold(
       backgroundColor: t.scaffoldBg,
-      body: NestedScrollView(
-        headerSliverBuilder: (ctx, _) => [
+      body: CustomScrollView(
+        slivers: [
           Td3AppBar(
             title: 'Flood Alerts',
-            subtitle: '${ap.activeAlerts.length} active',
-            leading: Navigator.canPop(ctx)
-                ? IconButton(
-                    icon: Icon(Icons.arrow_back_ios_new_rounded,
-                        color: t.textPrimary, size: 18),
-                    onPressed: () => Navigator.pop(ctx),
-                  )
-                : null,
+            subtitle: '${ap.totalCount} active alerts',
             actions: [
-              Padding(
-                padding: const EdgeInsets.only(right: 14),
-                child: Td3Badge(
-                  label: '${ap.dangerCount} DANGER',
-                  color: t.danger,
-                  icon: Icons.warning_rounded,
-                  fontSize: 8,
-                ),
-              ),
+              _tab3D(context, 0, 'ALL',    ap.totalCount,  t.accent),
+              _tab3D(context, 1, 'DANGER', ap.dangerCount, t.riverDanger),
+              _tab3D(context, 2, 'WARN',   ap.warningCount, t.riverWarning),
+              const SizedBox(width: 8),
             ],
           ),
+          if (items.isEmpty)
+            SliverFillRemaining(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.check_circle_outline_rounded,
+                        size: 56, color: t.riverNormal),
+                    const SizedBox(height: 12),
+                    Text('No alerts',
+                        style: TextStyle(color: t.textSecondary)),
+                  ],
+                ),
+              ),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.all(16),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (ctx, i) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _AlertCard(alert: items[i]),
+                  ),
+                  childCount: items.length,
+                ),
+              ),
+            ),
         ],
-        body: Column(
-          children: [
-            // Tab bar
-            Container(
-              color: t.cardBg,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              child: Row(
-                children: [
-                  _tab3D(context, 0, 'ALL', ap.activeAlerts.length, t.accent),
-                  const SizedBox(width: 8),
-                  _tab3D(context, 1, 'DANGER', ap.dangerCount, t.danger),
-                  const SizedBox(width: 8),
-                  _tab3D(context, 2, 'WARNING', ap.warningCount, t.warning),
-                ],
-              ),
-            ),
-            const Td3Divider(),
-            // List
-            Expanded(
-              child: TabBarView(
-                controller: _tab,
-                children: [
-                  _AlertList(alerts: ap.activeAlerts),
-                  _AlertList(
-                      alerts: ap.activeAlerts
-                          .where((a) => a.level == AlertLevel.danger)
-                          .toList()),
-                  _AlertList(
-                      alerts: ap.activeAlerts
-                          .where((a) => a.level == AlertLevel.warning)
-                          .toList()),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
 
   Widget _tab3D(
       BuildContext ctx, int idx, String label, int count, Color color) {
-    final selected = _tab.index == idx;
+    final active = _tabIndex == idx;
     return GestureDetector(
-      onTap: () => setState(() => _tab.animateTo(idx)),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: selected
-            ? BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    color.withValues(alpha: 0.18),
-                    color.withValues(alpha: 0.08)
-                  ],
-                ),
-                border: Td3.depthBorder(
-                  topColor: color.withValues(alpha: 0.30),
-                  bottomColor: Td3.edgeMid,
-                ),
-                boxShadow: Td3.cardShadow(color, elev: Td3.elevLow),
-              )
-            : null,
-        child: Row(
-          children: [
-            Text(label,
-                style: TextStyle(
-                    color: selected ? color : RiverColors.of(ctx).textSecondary,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.5)),
-            const SizedBox(width: 4),
-            if (count > 0)
-              Td3Chip(
-                  label: '$count', color: color, fontSize: 9),
-          ],
+      onTap: () => _tab.animateTo(idx),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        margin: const EdgeInsets.only(left: 4),
+        decoration: BoxDecoration(
+          color: active
+              ? color.withValues(alpha: 0.18)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+              color: active ? color : Colors.transparent, width: 1),
         ),
+        child: Text('$label $count',
+            style: TextStyle(
+                color: active ? color : RiverColors.of(ctx).textSecondary,
+                fontSize: 11,
+                fontWeight: FontWeight.w700)),
       ),
     );
   }
 }
 
-class _AlertList extends StatelessWidget {
-  final List<FloodAlert> alerts;
-  const _AlertList({required this.alerts});
+// ── Alert card ───────────────────────────────────────────────────────────────
+
+class _AlertCard extends StatelessWidget {
+  const _AlertCard({required this.alert});
+  final FloodAlert alert;
 
   @override
   Widget build(BuildContext context) {
-    final t = RiverColors.of(context);
-    if (alerts.isEmpty) {
-      return Center(
-          child: Text('No alerts',
-              style: TextStyle(color: t.textSecondary)));
-    }
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: alerts.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
-      itemBuilder: (ctx, i) {
-        final a = alerts[i];
-        final color = a.level == AlertLevel.danger ? t.danger : t.warning;
-        return Td3Card(
-          accentColor: color,
-          elevation: Td3.elevMid,
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    final t     = RiverColors.of(context);
+    final color = alert.level == AlertLevel.danger ||
+            alert.level == AlertLevel.extreme
+        ? t.riverDanger
+        : t.riverWarning;
+
+    return Td3Card(
+      elevation: Td3.elevMid,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    a.level == AlertLevel.danger
-                        ? Icons.warning_rounded
-                        : Icons.error_outline_rounded,
-                    color: color,
-                    size: 18,
-                  ),
-                ),
-                const SizedBox(width: 12),
+                Icon(Icons.location_city_rounded,
+                    color: color, size: 16),
+                const SizedBox(width: 6),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(a.site,
-                                style: TextStyle(
-                                    color: t.textPrimary,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700)),
-                          ),
-                          Td3Chip(
-                              label: a.level.name.toUpperCase(),
-                              color: color,
-                              fontSize: 9),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(a.river,
-                          style: TextStyle(
-                              color: t.textSecondary,
-                              fontSize: 11)),
-                      const SizedBox(height: 6),
-                      Td3ProgressBar(
-                        value: a.levelPercent,
-                        fillColor: color,
-                        height: 6,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${a.currentLevel.toStringAsFixed(2)} m  /  danger at ${a.dangerLevel.toStringAsFixed(2)} m',
-                        style: TextStyle(
-                            color: t.textSecondary,
-                            fontSize: 10),
-                      ),
-                    ],
+                  child: Text(alert.cityName,
+                      style: TextStyle(
+                          color: t.textPrimary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14)),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(6),
                   ),
+                  child: Text(alert.level.label,
+                      style: TextStyle(
+                          color: color,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5)),
                 ),
               ],
             ),
-          ),
-        );
-      },
+            const SizedBox(height: 10),
+            LinearProgressIndicator(
+              value: alert.fillPercent.clamp(0.0, 1.0),
+              backgroundColor:
+                  t.cardBgElevated,
+              valueColor: AlwaysStoppedAnimation(color),
+              borderRadius: BorderRadius.circular(4),
+              minHeight: 6,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '${alert.currentValue.toStringAsFixed(2)} m  /  danger at ${alert.dangerLevel.toStringAsFixed(2)} m',
+              style: TextStyle(
+                  color: t.textSecondary, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

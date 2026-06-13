@@ -1,11 +1,6 @@
 // lib/providers/alert_provider.dart
-// OpsFlood — AlertProvider (Riverpod ChangeNotifier)
-//
-// Facade over the existing alertsProvider (alerts_provider.dart) that
-// exposes FloodAlert objects so screens importing this path compile.
 library;
 
-import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -13,12 +8,9 @@ import '../models/flood_alert.dart' as fa;
 import '../models/threshold_alert.dart' as ta;
 import 'alerts_provider.dart';
 
-// ─── Riverpod provider ────────────────────────────────────────────────────────
-
 final alertProvider = ChangeNotifierProvider<AlertProvider>((ref) {
   final notifier = AlertProvider();
 
-  // Keep in sync with the canonical alertsProvider stream.
   ref.listen<AsyncValue<List<ta.ThresholdAlert>>>(
     alertsProvider,
     (_, next) => next.whenData(notifier._onAlerts),
@@ -28,22 +20,15 @@ final alertProvider = ChangeNotifierProvider<AlertProvider>((ref) {
   return notifier;
 });
 
-// ─── AlertProvider ────────────────────────────────────────────────────────────
-
 class AlertProvider extends ChangeNotifier {
   List<fa.FloodAlert> _alerts = [];
 
-  // ── Getters ──────────────────────────────────────────────────────────────
-
-  /// All non-normal alerts, sorted most-severe first.
   List<fa.FloodAlert> get all => _alerts;
 
   List<fa.FloodAlert> get danger =>
-      _alerts
-          .where((a) =>
-              a.level == fa.AlertLevel.danger ||
-              a.level == fa.AlertLevel.extreme)
-          .toList();
+      _alerts.where((a) =>
+          a.level == fa.AlertLevel.danger ||
+          a.level == fa.AlertLevel.extreme).toList();
 
   List<fa.FloodAlert> get warnings =>
       _alerts.where((a) => a.level == fa.AlertLevel.warning).toList();
@@ -55,9 +40,14 @@ class AlertProvider extends ChangeNotifier {
   int  get warningCount => warnings.length;
   int  get watchCount   => watches.length;
   int  get totalCount   => _alerts.length;
-  bool get hasCritical  => danger.isNotEmpty;
 
-  // ── Internal ──────────────────────────────────────────────────────────────
+  /// Stations currently at normal / watch level (not warning or above).
+  int  get normalCount  =>
+      _alerts.where((a) =>
+          a.level == fa.AlertLevel.normal ||
+          a.level == fa.AlertLevel.watch).length;
+
+  bool get hasCritical => danger.isNotEmpty;
 
   void _onAlerts(List<ta.ThresholdAlert> raw) {
     _alerts = raw

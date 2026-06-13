@@ -1,5 +1,4 @@
 // lib/screens/main_shell.dart
-// OpsFlood — Main Shell with Td3BottomNav + Td3AppBar (3-D UI)
 library;
 
 import 'package:flutter/material.dart';
@@ -14,6 +13,8 @@ import 'settings_screen.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
+
+  static const String route = '/shell';
 
   @override
   State<MainShell> createState() => _MainShellState();
@@ -62,14 +63,15 @@ class _MainShellState extends State<MainShell>
   @override
   Widget build(BuildContext context) {
     final t = RiverColors.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness:
-            t.isDark ? Brightness.light : Brightness.dark,
+            isDark ? Brightness.light : Brightness.dark,
         systemNavigationBarColor: t.cardBg,
         systemNavigationBarIconBrightness:
-            t.isDark ? Brightness.light : Brightness.dark,
+            isDark ? Brightness.light : Brightness.dark,
       ),
     );
     return Scaffold(
