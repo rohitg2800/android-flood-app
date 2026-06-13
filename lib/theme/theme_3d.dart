@@ -12,7 +12,7 @@
 //   • Td3Divider       — 1-px rule
 //   • Td3AppBar        — SliverAppBar with layered bottom edge (optional subtitle)
 //   • Td3BottomNav     — BottomNavBar with floating pill indicator
-//   • Td3InputField    — recessed 3-D input (optional `required` flag)
+//   • Td3InputField    — recessed 3-D input (optional `required` + `readOnly` flags)
 //   • Td3Painters      — CustomPainter helpers (gloss overlay, depth edge)
 library;
 
@@ -923,6 +923,8 @@ class Td3InputField extends StatefulWidget {
   /// When true, an asterisk is appended to the label to indicate a required field.
   /// This is purely visual — no validation is performed by the widget itself.
   final bool           required;
+  /// When true, the field is not editable (mirrors TextField.readOnly).
+  final bool           readOnly;
 
   const Td3InputField({
     super.key,
@@ -934,6 +936,7 @@ class Td3InputField extends StatefulWidget {
     this.keyboardType,
     this.obscureText = false,
     this.required = false,
+    this.readOnly = false,
   });
 
   @override
@@ -1008,6 +1011,7 @@ class _Td3InputFieldState extends State<Td3InputField> {
             onChanged:      widget.onChanged,
             keyboardType:   widget.keyboardType,
             obscureText:    widget.obscureText,
+            readOnly:       widget.readOnly,
             style: TextStyle(color: t.textPrimary, fontSize: 14),
             decoration: InputDecoration(
               hintText:      widget.hint,
