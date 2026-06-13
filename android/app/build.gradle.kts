@@ -14,11 +14,6 @@ if (localPropertiesFile.exists()) {
     localPropertiesFile.inputStream().use { localProperties.load(it) }
 }
 
-// ── Keystore signing ────────────────────────────────────────────
-// Place keystore at android/keystore.jks and set 4 keys in
-// android/keystore.properties (do NOT commit that file):
-//   storeFile=keystore.jks  storePassword=...  keyAlias=...  keyPassword=...
-// Falls back to debug keystore if the file is missing.
 val keystorePropertiesFile = rootProject.file("keystore.properties")
 val useReleaseKeystore = keystorePropertiesFile.exists()
 
@@ -62,6 +57,18 @@ android {
     }
 
     buildTypes {
+        // ── DEBUG ──────────────────────────────────────────────────────────
+        // ProfileInstaller fires on every cold debug launch and blocks boot
+        // for 1-3 minutes trying to write a baseline profile that has ZERO
+        // effect in debug (non-AOT JIT) mode.  Disable it completely here.
+        debug {
+            // Suppress the D/ProfileInstaller "Installing profile" stall.
+            // The resValue bool is read by the custom InitializationProvider
+            // below; AGP also uses it to skip profile compilation.
+            resValue("bool", "enable_app_startup", "false")
+        }
+
+        // ── RELEASE ────────────────────────────────────────────────────────
         release {
             signingConfig = if (useReleaseKeystore)
                 signingConfigs.getByName("release")
@@ -82,6 +89,12 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:33.0.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("androidx.multidex:multidex:2.0.1")
+
+    // ── Baseline Profile / ProfileInstaller ───────────────────────────────
+    // Only include profileinstaller in release. In debug it fires on every
+    // cold launch and stalls boot for 1-3 min with no benefit (debug is JIT,
+    // not AOT — profiles do nothing).
+    releaseImplementation("androidx.profileinstaller:profileinstaller:1.3.1")
 }
 
 flutter {
