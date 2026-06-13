@@ -1,4 +1,4 @@
-// lib/services/alert_share_service.dart  v2.1  (share_plus ^10 compat)
+// lib/services/alert_share_service.dart  v2.2  (share_plus ^10 compat)
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -27,7 +27,8 @@ class AlertShareService {
       instance.buildMessage(alert).english;
   static String buildHindiMessage(FloodAlert alert) =>
       instance.buildMessage(alert).hindi;
-  static Future<void> shareViaWhatsApp(FloodAlert alert) =>
+  // Fix: return Future<bool> so callers can use the result
+  static Future<bool> shareViaWhatsApp(FloodAlert alert) =>
       instance._shareViaWhatsApp(alert);
   static Future<void> shareGeneric({required String message}) =>
       Share.share(message);

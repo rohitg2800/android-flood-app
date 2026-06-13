@@ -14,7 +14,7 @@ class AlertBadge extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final count = ref.watch(alertBadgeCountProvider);
+    final count = ref.watch(criticalAlertCountProvider);
     if (count == 0) return child;
     return Badge(
       label: Text(count > 99 ? '99+' : '$count'),

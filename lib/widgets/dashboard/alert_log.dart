@@ -15,7 +15,9 @@ class AlertLog extends StatelessWidget {
 
   static const _staleHours = 3;
 
-  String _timeAgo(DateTime ts) {
+  // Fix: accept DateTime? and fall back to DateTime.now() when null
+  String _timeAgo(DateTime? ts) {
+    if (ts == null) return 'unknown';
     final diff = DateTime.now().difference(ts);
     if (diff.inMinutes < 1)  return 'just now';
     if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
@@ -23,8 +25,12 @@ class AlertLog extends StatelessWidget {
     return '${diff.inDays}d ago';
   }
 
-  bool _isStale(FloodData d) =>
-      DateTime.now().difference(d.lastUpdated).inHours >= _staleHours;
+  // Fix: lastUpdated is DateTime? — use null-safe comparison
+  bool _isStale(FloodData d) {
+    final ts = d.lastUpdated;
+    if (ts == null) return true;
+    return DateTime.now().difference(ts).inHours >= _staleHours;
+  }
 
   /// Subtitle: "RiverName · State" or just "State" when riverName is absent.
   /// Avoids the duplicate "Bihar · Bihar" shown when riverName falls back to state.
