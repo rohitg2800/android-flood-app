@@ -1,16 +1,9 @@
 // lib/screens/predict_screen_impl.dart
-// EQUINOX-BR05 — LSTM Flood Prediction Screen  (v1.0)
+// EQUINOX-BR05 — LSTM Flood Prediction Screen  (v1.1)
 //
-// Features:
-//   • Station picker (all Bihar stations from mergedStationsProvider)
-//   • Live current level + danger/warning threshold chips
-//   • 24h / 48h / 72h forecast cards with animated level bars
-//   • Hourly sparkline chart (fl_chart LineChart)
-//   • FloodEngine risk score + severity badge
-//   • Model confidence meter
-//   • Trend arrow + outlook text
-//   • Pull-to-refresh
-//   • AppPalette tokens only — zero raw hex
+// v1.1 fixes:
+//   • station.name → station.station  (RiverStation has no .name field)
+//   • AsyncValue.valueOrNull → .when() (riverpod 3.x compat)
 library;
 
 import 'dart:math' as math;
@@ -305,7 +298,7 @@ class _StationPickerCard extends StatelessWidget {
           items: stations.map((s) {
             final cls = s.dangerClass;
             final dot = _dotColor(cls);
-            return DropdownMenuItem(
+            return DropdownMenuItem<String>(
               value: s.station,
               child: Row(
                 children: [
@@ -321,7 +314,7 @@ class _StationPickerCard extends StatelessWidget {
                   ),
                   Expanded(
                     child: Text(
-                      '${s.name}  •  ${s.river}',
+                      '${s.station}  •  ${s.river}',
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                           color: theme.textPrimary, fontSize: 14),
@@ -392,7 +385,7 @@ class _CurrentLevelCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(station.name,
+                    Text(station.station,
                         style: TextStyle(
                           color: theme.textPrimary,
                           fontSize: 18,
@@ -948,8 +941,8 @@ class _ModelMetaCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Outlook',
-                    style: const TextStyle(
+                const Text('Outlook',
+                    style: TextStyle(
                         color: AppPalette.textGrey,
                         fontSize: 11,
                         letterSpacing: 0.8)),
@@ -1196,9 +1189,13 @@ class _EmptyState extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// Wraps predictionProvider (FutureProvider.family<FloodPrediction, String>)
-/// and returns the last successfully resolved value, or null while loading.
+/// and returns the resolved value, or null while loading/error.
 final predictionForStationProvider =
     Provider.family<FloodPrediction?, RiverStation>((ref, station) {
   final asyncVal = ref.watch(predictionProvider(station.station));
-  return asyncVal.valueOrNull;
+  return asyncVal.when(
+    data:    (d)    => d,
+    loading: ()     => null,
+    error:   (_, __) => null,
+  );
 });
