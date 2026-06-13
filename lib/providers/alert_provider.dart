@@ -4,7 +4,9 @@ library;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../models/flood_alert.dart' as fa;
+// FloodAlert here comes from alert_engine.dart (re-exported by alerts_provider.dart).
+// Do NOT import models/flood_alert.dart — it defines a second FloodAlert class
+// that is incompatible with the type returned by alertsProvider.
 import 'alerts_provider.dart';
 
 // alertsProvider is Provider<List<FloodAlert>> (from data_fetch_provider.dart).
@@ -15,7 +17,7 @@ final alertProvider = Provider<AlertProvider>((ref) {
   // Seed immediately with current value, then keep in sync.
   notifier._onAlerts(ref.read(alertsProvider));
 
-  ref.listen<List<fa.FloodAlert>>(
+  ref.listen<List<FloodAlert>>(
     alertsProvider,
     (_, next) => notifier._onAlerts(next),
   );
@@ -26,37 +28,38 @@ final alertProvider = Provider<AlertProvider>((ref) {
 });
 
 class AlertProvider extends ChangeNotifier {
-  List<fa.FloodAlert> _alerts = [];
+  List<FloodAlert> _alerts = [];
 
-  List<fa.FloodAlert> get all => _alerts;
+  List<FloodAlert> get all => _alerts;
 
-  List<fa.FloodAlert> get danger =>
+  /// Danger = critical or emergency severity.
+  List<FloodAlert> get danger =>
       _alerts.where((a) =>
-          a.level == fa.AlertLevel.danger ||
-          a.level == fa.AlertLevel.extreme).toList();
+          a.severity == AlertSeverity.critical ||
+          a.severity == AlertSeverity.emergency).toList();
 
-  List<fa.FloodAlert> get warnings =>
-      _alerts.where((a) => a.level == fa.AlertLevel.warning).toList();
+  /// Warnings = warning severity.
+  List<FloodAlert> get warnings =>
+      _alerts.where((a) => a.severity == AlertSeverity.warning).toList();
 
-  List<fa.FloodAlert> get watches =>
-      _alerts.where((a) => a.level == fa.AlertLevel.watch).toList();
+  /// Watches = info severity.
+  List<FloodAlert> get watches =>
+      _alerts.where((a) => a.severity == AlertSeverity.info).toList();
 
-  int  get dangerCount  => danger.length;
-  int  get warningCount => warnings.length;
-  int  get watchCount   => watches.length;
-  int  get totalCount   => _alerts.length;
+  int get dangerCount  => danger.length;
+  int get warningCount => warnings.length;
+  int get watchCount   => watches.length;
+  int get totalCount   => _alerts.length;
 
-  /// Stations currently at normal / watch level (not warning or above).
-  int  get normalCount  =>
-      _alerts.where((a) =>
-          a.level == fa.AlertLevel.normal ||
-          a.level == fa.AlertLevel.watch).length;
+  /// Stations currently at normal / info level (not warning or above).
+  int get normalCount =>
+      _alerts.where((a) => a.severity == AlertSeverity.info).length;
 
   bool get hasCritical => danger.isNotEmpty;
 
-  void _onAlerts(List<fa.FloodAlert> alerts) {
+  void _onAlerts(List<FloodAlert> alerts) {
     _alerts = [...alerts]
-      ..sort((a, b) => b.level.index.compareTo(a.level.index));
+      ..sort((a, b) => b.severity.priority.compareTo(a.severity.priority));
     notifyListeners();
   }
 }
