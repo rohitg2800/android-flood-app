@@ -1,9 +1,12 @@
 // lib/constants/app_constants.dart
 
+import 'flood_thresholds.dart';
+import 'india_geodata.dart';
+
 class AppConstants {
   AppConstants._();
 
-  // ── Network ──────────────────────────────────────────────────────────────
+  // ── Network ───────────────────────────────────────────────────────────────
   static const Duration defaultTimeout       = Duration(seconds: 15);
   static const Duration longTimeout          = Duration(seconds: 30);
   static const Duration shortTimeout         = Duration(seconds: 5);
@@ -47,10 +50,17 @@ class AppConstants {
     'LOW', 'MODERATE', 'SEVERE', 'CRITICAL',
   ];
 
-  // ── Storage Keys ─────────────────────────────────────────────────────────
+  // ── Storage Keys ──────────────────────────────────────────────────────────
   static const String storageKeyTheme        = 'theme_mode';
   static const String storageKeyLastSync     = 'last_sync';
   static const String storageKeyAlerts       = 'cached_alerts';
   static const String storageKeyPredictions  = 'cached_predictions';
   static const String storageKeySourcePolicy = 'source_policy';
+
+  // ── Backward-compat shims (used by constants_domain_test) ─────────────────
+  /// Delegates to FloodThresholds.critical (capacity % threshold = 90.0).
+  static double get criticalThreshold => FloodThresholds.critical;
+
+  /// Delegates to IndiaGeodata.states.
+  static List<String> get indianStates => IndiaGeodata.states;
 }

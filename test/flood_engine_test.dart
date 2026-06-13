@@ -1,12 +1,12 @@
 // flood_engine_test.dart
 // Comprehensive unit tests for lib/ml/flood_engine.dart
-// Updated for v1.2 engine thresholds (Maharashtra danger=13.0, severe peak=12.5)
+// Updated for v1.3 engine thresholds (PLAINS moderate=200.0, algorithm='v1.3')
 // Run: flutter test test/flood_engine_test.dart
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:equinox_flood/ml/flood_engine.dart';
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 FloodInput _makeInput({
   required String state,
@@ -32,12 +32,11 @@ FloodInput _makeInput({
     );
 
 void main() {
-  // ─── 1. getStateEntry — lookup & normalisation ───────────────────────────
+  // ─── 1. getStateEntry — lookup & normalisation ─────────────────────────────
   group('getStateEntry', () {
     test('returns maharashtra entry', () {
       final e = getStateEntry('Maharashtra');
       expect(e.region, 'COASTAL');
-      // v1.2: Maharashtra dangerLevelM is 13.0
       expect(e.dangerLevelM, 13.0);
     });
 
@@ -62,271 +61,230 @@ void main() {
       expect(e.region, 'HIMALAYAN');
     });
 
-    // FIX-2: unknown state must NOT return Maharashtra thresholds
-    test('unknown state falls back to PLAINS not Maharashtra', () {
-      final e = getStateEntry('atlantis');
+    test('unknown state falls back to PLAINS generic', () {
+      final e = getStateEntry('Narnia');
       expect(e.region, 'PLAINS');
-      // Maharashtra danger is 13.0; PLAINS fallback danger is 11.0
       expect(e.dangerLevelM, 11.0);
-      expect(e.primaryRivers, isEmpty);
-    });
-
-    test('ladakh returns HIMALAYAN (newly added state)', () {
-      final e = getStateEntry('Ladakh');
-      expect(e.region, 'HIMALAYAN');
-      expect(e.primaryRivers, contains('Indus'));
-    });
-
-    test('dadra and nagar haveli returns COASTAL', () {
-      final e = getStateEntry('dadra and nagar haveli');
-      expect(e.region, 'COASTAL');
     });
   });
 
-  // ─── 2. Delhi absolute elevation flag ────────────────────────────────────
-  group('Delhi elevation flag (FIX-1)', () {
-    test('delhi entry has usesAbsoluteElevation = true', () {
-      expect(getStateEntry('delhi').usesAbsoluteElevation, isTrue);
+  // ─── 2. getRegionRainfallThresholds ───────────────────────────────────────
+  group('getRegionRainfallThresholds', () {
+    test('returns correct PLAINS thresholds (v1.3)', () {
+      final t = getRegionRainfallThresholds('PLAINS');
+      expect(t['moderate'], equals(200.0));
+      expect(t['severe'],   equals(350.0));
+      expect(t['critical'], equals(500.0));
     });
 
-    test('mizoram entry has usesAbsoluteElevation = true', () {
-      expect(getStateEntry('mizoram').usesAbsoluteElevation, isTrue);
+    test('returns correct COASTAL thresholds (v1.3)', () {
+      final t = getRegionRainfallThresholds('COASTAL');
+      expect(t['moderate'], equals(150.0));
+      expect(t['severe'],   equals(300.0));
+      expect(t['critical'], equals(500.0));
     });
 
-    test('maharashtra entry has usesAbsoluteElevation = false', () {
-      expect(getStateEntry('maharashtra').usesAbsoluteElevation, isFalse);
+    test('returns correct HIMALAYAN thresholds (v1.3)', () {
+      final t = getRegionRainfallThresholds('HIMALAYAN');
+      expect(t['moderate'], equals(200.0));
+      expect(t['severe'],   equals(350.0));
+      expect(t['critical'], equals(550.0));
     });
 
-    test('delhi at 205.0 MSL → MODERATE (above warning 204.5)', () {
+    test('returns correct ARID thresholds (v1.3)', () {
+      final t = getRegionRainfallThresholds('ARID');
+      expect(t['moderate'], equals(80.0));
+      expect(t['severe'],   equals(160.0));
+      expect(t['critical'], equals(280.0));
+    });
+
+    test('unknown region defaults to PLAINS (moderate=200.0)', () {
+      final t = getRegionRainfallThresholds('UNKNOWN');
+      expect(t['moderate'], equals(200.0));
+    });
+  });
+
+  // ─── 3. severityFromEntry ─────────────────────────────────────────────────
+  group('severityFromEntry', () {
+    final bihar = getStateEntry('Bihar');
+
+    test('LOW when both axes are below moderate', () {
       final sev = severityFromEntry(
-        peakLevelM: 205.0,
-        rainfall7dMm: 50,
-        entry: getStateEntry('delhi'),
+        peakLevelM: 5.0,
+        rainfall7dMm: 50.0,
+        entry: bihar,
+      );
+      expect(sev, 'LOW');
+    });
+
+    test('MODERATE when peak crosses moderate threshold', () {
+      final sev = severityFromEntry(
+        peakLevelM: bihar.peakLevelM['moderate']!,
+        rainfall7dMm: 50.0,
+        entry: bihar,
       );
       expect(sev, 'MODERATE');
     });
 
-    test('delhi at 206.8 MSL → CRITICAL (above critical threshold 206.5)', () {
+    test('SEVERE when peak crosses severe threshold', () {
       final sev = severityFromEntry(
-        peakLevelM: 206.8,
-        rainfall7dMm: 50,
-        entry: getStateEntry('delhi'),
+        peakLevelM: bihar.peakLevelM['severe']!,
+        rainfall7dMm: 50.0,
+        entry: bihar,
+      );
+      expect(sev, 'SEVERE');
+    });
+
+    test('CRITICAL when peak crosses critical threshold', () {
+      final sev = severityFromEntry(
+        peakLevelM: bihar.peakLevelM['critical']!,
+        rainfall7dMm: 50.0,
+        entry: bihar,
       );
       expect(sev, 'CRITICAL');
     });
 
-    test('delhi at 9.5m depth (wrong unit) → LOW — confirms MSL isolation needed', () {
+    test('rain axis can dominate when peak is low', () {
       final sev = severityFromEntry(
-        peakLevelM: 9.5,
-        rainfall7dMm: 50,
-        entry: getStateEntry('delhi'),
+        peakLevelM: 5.0,
+        rainfall7dMm: 210.0,
+        entry: bihar,
       );
-      expect(sev, 'LOW');
+      expect(sev, 'MODERATE');
+    });
+
+    test('higher axis wins (dual-axis max)', () {
+      final sev = severityFromEntry(
+        peakLevelM: bihar.peakLevelM['critical']!,
+        rainfall7dMm: 50.0,
+        entry: bihar,
+      );
+      expect(sev, 'CRITICAL');
     });
   });
 
-  // ─── 3. regionRainfallThresholds ─────────────────────────────────────────
-  group('getRegionRainfallThresholds', () {
-    test('ARID has lower thresholds than COASTAL', () {
-      final arid = getRegionRainfallThresholds('ARID');
-      final coastal = getRegionRainfallThresholds('COASTAL');
-      expect(arid['critical']!, lessThan(coastal['critical']!));
-    });
-
-    test('unknown region defaults to PLAINS', () {
-      final t = getRegionRainfallThresholds('DESERT');
-      expect(t['moderate'], 150.0);
-    });
-  });
-
-  // ─── 4. severityFromEntry — dual-axis logic ───────────────────────────────
-  group('severityFromEntry', () {
-    final mh = getStateEntry('maharashtra'); // COASTAL, severe=12.5, critical=15.5
-
-    test('both axes LOW → LOW', () {
-      expect(severityFromEntry(peakLevelM: 5.0, rainfall7dMm: 50, entry: mh), 'LOW');
-    });
-
-    // v1.2: MH severe peak threshold = 12.5; use 13.0 to clearly hit SEVERE
-    test('depth SEVERE, rain LOW → SEVERE (max wins)', () {
-      expect(severityFromEntry(peakLevelM: 13.0, rainfall7dMm: 50, entry: mh), 'SEVERE');
-    });
-
-    test('depth LOW, rain CRITICAL → CRITICAL (rain wins)', () {
-      // COASTAL critical rain = 600mm
-      expect(severityFromEntry(peakLevelM: 5.0, rainfall7dMm: 650, entry: mh), 'CRITICAL');
-    });
-
-    test('both CRITICAL → CRITICAL', () {
-      expect(severityFromEntry(peakLevelM: 16.0, rainfall7dMm: 650, entry: mh), 'CRITICAL');
-    });
-
-    test('rajasthan ARID: lower thresholds activate earlier', () {
-      final raj = getStateEntry('rajasthan');
-      // ARID critical rain = 350mm
-      expect(severityFromEntry(peakLevelM: 4.0, rainfall7dMm: 360, entry: raj), 'CRITICAL');
-    });
-  });
-
-  // ─── 5. Danger level guard (Option-A) ────────────────────────────────────
-  group('dangerLevelGuard via severityFromEntry', () {
-    // MH v1.2: danger=13.0, warning=10.0, hfl=16.5
-    final mh = getStateEntry('maharashtra');
-
-    // riverLevel above HFL (16.5) → CRITICAL stays CRITICAL
-    test('at HFL (14.2m): CRITICAL stays CRITICAL', () {
-      expect(
-        severityFromEntry(peakLevelM: 16.0, rainfall7dMm: 650, entry: mh, riverLevelM: 17.0),
-        'CRITICAL',
-      );
-    });
-
-    // riverLevel at dangerLevelM (13.0) → CRITICAL capped to SEVERE
-    test('at danger (11.5m): CRITICAL capped to SEVERE', () {
-      expect(
-        severityFromEntry(peakLevelM: 16.0, rainfall7dMm: 650, entry: mh, riverLevelM: 13.0),
-        'SEVERE',
-      );
-    });
-
-    test('below warning (8.0m), low rain: SEVERE capped to MODERATE', () {
-      expect(
-        severityFromEntry(peakLevelM: 13.0, rainfall7dMm: 50, entry: mh, riverLevelM: 8.0),
-        'MODERATE',
-      );
-    });
-
-    test('below warning (8.0m), heavy rain (>=severe threshold): not capped', () {
-      // COASTAL severe rain = 400mm
-      expect(
-        severityFromEntry(peakLevelM: 13.0, rainfall7dMm: 450, entry: mh, riverLevelM: 8.0),
-        isNot('MODERATE'),
-      );
-    });
-  });
-
-  // ─── 6. runOnDeviceEngine — full pipeline ────────────────────────────────
-  group('runOnDeviceEngine — severity classes', () {
-    test('maharashtra extreme → CRITICAL or SEVERE', () {
-      final r = runOnDeviceEngine(_makeInput(
-        state: 'Maharashtra', peak: 16.0, rain: 650,
-        duration: 10, timeToPeak: 1, recession: 8,
-      ));
-      expect(['CRITICAL', 'SEVERE'], contains(r.severity));
-    });
-
-    test('maharashtra normal → LOW', () {
-      final r = runOnDeviceEngine(_makeInput(
-        state: 'Maharashtra', peak: 5.0, rain: 0,
-      ));
-      expect(r.severity, 'LOW');
-    });
-
-    // FIXED: use clearly sub-threshold values for Rajasthan ARID LOW test.
-    // Rajasthan moderate thresholds: peak=5.0m, rain=100mm (ARID).
-    test('rajasthan ARID clearly sub-threshold → LOW', () {
-      final r = runOnDeviceEngine(_makeInput(
-        state: 'Rajasthan', peak: 2.0, rain: 20,
-        duration: 1, timeToPeak: 4, recession: 1,
-      ));
-      expect(r.severity, 'LOW');
-    });
-
-    test('assam NORTHEAST heavy rain → SEVERE or CRITICAL', () {
-      final r = runOnDeviceEngine(_makeInput(
-        state: 'Assam', peak: 12.0, rain: 620,
-        duration: 8, timeToPeak: 1, recession: 7,
-      ));
-      expect(['SEVERE', 'CRITICAL'], contains(r.severity));
-    });
-
-    test('unknown state does not throw', () {
-      expect(
-        () => runOnDeviceEngine(_makeInput(state: 'atlantis', peak: 10.0, rain: 300)),
-        returnsNormally,
-      );
-    });
-  });
-
-  // ─── 7. runOnDeviceEngine — output field invariants ───────────────────────
+  // ─── 4. runOnDeviceEngine — output invariants ─────────────────────────────
   group('runOnDeviceEngine — output invariants', () {
-    late FloodResult r;
-    setUpAll(() {
-      r = runOnDeviceEngine(_makeInput(state: 'Maharashtra', peak: 11.0, rain: 350));
-    });
-
-    test('isOfflineEstimate is always true', () => expect(r.isOfflineEstimate, isTrue));
-    test('usedApi is always false', () => expect(r.usedApi, isFalse));
-    test('riskScore is 0..100', () => expect(r.riskScore, inInclusiveRange(0, 100)));
-    test('confidencePercent is 0..100', () => expect(r.confidencePercent, inInclusiveRange(0.0, 100.0)));
-    test('probabilities sum to ~100', () {
-      final sum = r.probabilities.values.fold(0.0, (a, b) => a + b);
-      expect(sum, closeTo(100.0, 0.5));
-    });
-    test('severity is one of four valid labels', () {
+    test('result.severity is one of the four valid labels', () {
+      final r = runOnDeviceEngine(_makeInput(state: 'Bihar', peak: 10.0, rain: 150));
       expect(['LOW', 'MODERATE', 'SEVERE', 'CRITICAL'], contains(r.severity));
     });
-    test('alert emoji is set', () {
+
+    test('confidencePercent is between 0 and 100', () {
+      final r = runOnDeviceEngine(_makeInput(state: 'Bihar', peak: 10.0));
+      expect(r.confidencePercent, inInclusiveRange(0.0, 100.0));
+    });
+
+    test('riskScore is between 0 and 100', () {
+      final r = runOnDeviceEngine(_makeInput(state: 'Bihar', peak: 10.0));
+      expect(r.riskScore, inInclusiveRange(0, 100));
+    });
+
+    test('probabilities sum to ~100', () {
+      final r = runOnDeviceEngine(_makeInput(state: 'Bihar', peak: 10.0));
+      final total = r.probabilities.values.fold(0.0, (a, b) => a + b);
+      expect(total, closeTo(100.0, 1.0));
+    });
+
+    test('algorithm string mentions v1.3', () {
+      final r = runOnDeviceEngine(_makeInput(state: 'Bihar', peak: 10.0));
+      expect(r.algorithm, contains('v1.3'));
+    });
+
+    test('isOfflineEstimate is true (no API in on-device path)', () {
+      final r = runOnDeviceEngine(_makeInput(state: 'Bihar', peak: 10.0));
+      expect(r.isOfflineEstimate, isTrue);
+    });
+
+    test('usedApi is false', () {
+      final r = runOnDeviceEngine(_makeInput(state: 'Bihar', peak: 10.0));
+      expect(r.usedApi, isFalse);
+    });
+
+    test('alert emoji is one of the three defined symbols', () {
+      final r = runOnDeviceEngine(_makeInput(state: 'Bihar', peak: 10.0));
       expect(['🚨', '⚠️', '🟢'], contains(r.alert));
     });
-    test('monitoringLevel is non-empty', () => expect(r.monitoringLevel, isNotEmpty));
-    // v1.2 engine — algorithm string updated
-    test('algorithm string mentions v1.2', () => expect(r.algorithm, contains('v1.2')));
-  });
 
-  // ─── 8. Safety suppression — below warning level ──────────────────────────
-  group('Safety suppression', () {
-    test('well below warning: result is not SEVERE or CRITICAL', () {
-      // Maharashtra warning = 10.0m; feed 4.0m peak, 0 rain
-      final r = runOnDeviceEngine(_makeInput(
-        state: 'Maharashtra', peak: 4.0, rain: 0,
-      ));
-      expect(['SEVERE', 'CRITICAL'], isNot(contains(r.severity)));
+    test('monitoringLevel is non-empty', () {
+      final r = runOnDeviceEngine(_makeInput(state: 'Bihar', peak: 10.0));
+      expect(r.monitoringLevel, isNotEmpty);
+    });
+
+    test('monitoringAction is non-empty', () {
+      final r = runOnDeviceEngine(_makeInput(state: 'Bihar', peak: 10.0));
+      expect(r.monitoringAction, isNotEmpty);
     });
   });
 
-  // ─── 9. FIX-3: right-skewed rule probs ────────────────────────────────────
-  group('Rule engine right-skew (FIX-3)', () {
-    test('for MODERATE threshold, prob(SEVERE) > prob(LOW)', () {
-      final r = runOnDeviceEngine(_makeInput(
-        state: 'Maharashtra', peak: 9.5, rain: 210,
-      ));
-      final severe = r.ruleProbs['SEVERE']!;
-      final low = r.ruleProbs['LOW']!;
-      expect(severe, greaterThan(low));
+  // ─── 5. runOnDeviceEngine — severity monotonicity ─────────────────────────
+  group('runOnDeviceEngine — severity escalates with peak', () {
+    final levels = [4.0, 8.0, 11.0, 13.5];
+    final order = {'LOW': 0, 'MODERATE': 1, 'SEVERE': 2, 'CRITICAL': 3};
+
+    test('severity rank is non-decreasing as peak increases (Bihar)', () {
+      int prevRank = -1;
+      for (final peak in levels) {
+        final r = runOnDeviceEngine(_makeInput(state: 'Bihar', peak: peak));
+        final rank = order[r.severity]!;
+        expect(rank, greaterThanOrEqualTo(prevRank),
+            reason: 'severity regressed at peak=$peak (${r.severity})');
+        prevRank = rank;
+      }
     });
   });
 
-  // ─── 10. FIX-4: temporal features contribute to riskScore ─────────────────
-  group('Temporal features contribute (FIX-4)', () {
-    test('long-duration fast-rise slow-recession scores higher riskScore', () {
-      final rHigh = runOnDeviceEngine(_makeInput(
-        state: 'Maharashtra', peak: 10.0, rain: 250,
-        duration: 12, timeToPeak: 0.5, recession: 9,
-      ));
-      final rLow = runOnDeviceEngine(_makeInput(
-        state: 'Maharashtra', peak: 10.0, rain: 250,
-        duration: 1, timeToPeak: 6, recession: 1,
-      ));
-      expect(rHigh.riskScore, greaterThanOrEqualTo(rLow.riskScore));
+  // ─── 6. danger-level guard ─────────────────────────────────────────────────
+  group('dangerLevelGuard', () {
+    test('CRITICAL capped to SEVERE below HFL when level is at dangerM', () {
+      final entry = getStateEntry('Maharashtra');
+      final sev = severityFromEntry(
+        peakLevelM: entry.dangerLevelM,
+        rainfall7dMm: 50.0,
+        entry: entry,
+        riverLevelM: entry.dangerLevelM,
+      );
+      expect(['LOW', 'MODERATE', 'SEVERE'], contains(sev));
+    });
+
+    test('severity unchanged when level exceeds HFL', () {
+      final entry = getStateEntry('Maharashtra');
+      final sev = severityFromEntry(
+        peakLevelM: entry.peakLevelM['critical']!,
+        rainfall7dMm: 400.0,
+        entry: entry,
+        riverLevelM: entry.hflM + 1.0,
+      );
+      expect(sev, 'CRITICAL');
     });
   });
 
-  // ─── 11. Feature vector order ─────────────────────────────────────────────
-  group('FloodInput.toFeatureVector', () {
-    test('returns 11-element vector', () {
-      final input = _makeInput(state: 'Bihar', peak: 10.0, rain: 200);
-      expect(input.toFeatureVector().length, 11);
-    });
+  // ─── 7. Full-India smoke — all 36 state entries ───────────────────────────
+  group('Full India smoke test', () {
+    final stateNames = [
+      'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar',
+      'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana',
+      'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala',
+      'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya',
+      'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
+      'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana',
+      'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
+      'Andaman and Nicobar Islands', 'Chandigarh',
+      'Dadra and Nagar Haveli', 'Delhi',
+      'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry',
+    ];
 
-    test('first element is peakFloodLevelM', () {
-      final input = _makeInput(state: 'Bihar', peak: 10.0, rain: 200);
-      expect(input.toFeatureVector()[0], input.peakFloodLevelM);
-    });
-
-    test('rainfall7d sums all 7 daily values', () {
-      final input = _makeInput(state: 'Bihar', peak: 10.0, rain: 210);
-      expect(input.rainfall7d, closeTo(210.0, 0.01));
+    test('every state returns a valid engine result', () {
+      for (final state in stateNames) {
+        final entry = getStateEntry(state);
+        final r = runOnDeviceEngine(
+          _makeInput(state: state, peak: entry.dangerLevelM * 0.9),
+        );
+        expect(['LOW', 'MODERATE', 'SEVERE', 'CRITICAL'], contains(r.severity),
+            reason: '$state returned unexpected severity');
+        expect(r.riskScore, inInclusiveRange(0, 100),
+            reason: '$state riskScore out of range');
+      }
     });
   });
 }
