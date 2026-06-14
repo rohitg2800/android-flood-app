@@ -1,41 +1,18 @@
 // lib/screens/bihar_river_map_screen.dart
-// OpsFlood — BiharRiverMapScreen v5.5.1
+// OpsFlood — BiharRiverMapScreen v5.6
+//
+// v5.6 (14 Jun 2026 — Phase 4B wire):
+//   • Adds BiharDistrictHeatmap as a layer in FlutterMap children
+//     (renders behind station pins, on top of tile/precip layers).
+//   • Adds _showHeatmap bool state + toggle row inside _LayerPanel
+//     OVERLAYS section ("District Heatmap" with a 🗺 icon).
+//   • Passes mergedStationsProvider watch to BiharDistrictHeatmap so
+//     district colours update live with every Riverpod refresh cycle.
+//   • No other logic changed.
 //
 // v5.5.1 (13 Jun 2026 — Option A graceful station-only fallback):
-//   • Replaces the always-active 'Open Full Detail' GestureDetector in
-//     _StationSheet with a Builder that checks resolvedCity:
-//     - resolvedCity matched in cityDataProvider → active accent button
-//       ('Open Full Detail →') behaves exactly as before.
-//     - resolvedCity NOT matched (unmatched / gauge-only station) →
-//       muted 'No city profile' label with onTap=null so the button is
-//       non-interactive and clearly communicates no data is available.
-//   • Prevents users from tapping into a blank CityDetailScreen for
-//     stations that have no FloodData entry in cityDataProvider.
-//
-// v5.5 (13 Jun 2026 — Gap 3: city-card navigation fix):
-//   • _StationSheet "Open Full Detail →" now resolves the city name via
-//     live.city (MapStationData.city = canonical station name from
-//     mergedStationsProvider) instead of the raw gauge.station string.
-//     Fixes blank/no-data CityDetailScreen when gauge.station didn't
-//     fuzzy-match cityDataProvider's key (e.g. "Birpur" vs "Birpur (Kosi)").
-//   • Falls back to gauge.station when live == null so SEED-only pins
-//     still navigate (they just show CitySkeletonView if no FloodData
-//     entry exists for that name — that's already the correct UX).
-//
-// v5.4 (12 Jun 2026 — map data-source migration):
-//   • Replace biharLiveProvider watch with mapLiveIndexProvider.
-//     Map<String, MapStationData> from mergedStationsProvider (all tiers
-//     — CWC, GloFAS, WRD) as the authoritative level/threshold base,
-//     enriched with BiharLiveEngine diff24h/trend/discharge/rainfall.
-//     Birpur force-patched from kosiBirpurProvider.
-//   • _resolve() → _resolveMerged(): same fuzzy-match, MapStationData.
-//   • _StationSheet / _StationPin: BiharStationData → MapStationData.
-//   • Every CWC/GloFAS/WRD station that was grey NO DATA now shows
-//     a correctly coloured live pin.
-//
-// v5.3 additions (unchanged):
-//   • Station Risk overlay toggle, opacity slider, Critical Only filter.
-//   • Each pin shows level label even when risk is SAFE.
+//   • Non-interactive 'No city profile' label for unmatched stations.
+// v5.5 / v5.4 / v5.3 — see earlier changelogs.
 library;
 
 import 'package:flutter/material.dart';
@@ -46,10 +23,12 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../data/bihar_rivers.dart';
-import '../providers/map_live_index_provider.dart'; // v5.4
+import '../providers/map_live_index_provider.dart';
+import '../providers/merged_stations_provider.dart';  // Phase 4B
 import '../theme/river_theme.dart';
 import 'city_detail_screen.dart';
 import '../providers/flood_providers.dart';
+import '../widgets/map/bihar_district_heatmap.dart'; // Phase 4B
 
 // ────────────────────────────────────────────────────────────────────────────────
 // Severity system  (5 levels)
@@ -235,13 +214,12 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen> {
   double     _precipOpacity     = 0.65;
   bool       _showStations      = true;
   double     _stationOpacity    = 1.0;
+  bool       _showHeatmap       = true;   // Phase 4B
   bool       _layerPanelOpen    = false;
 
   static final _rivers =
       kBiharGauges.map((g) => g.river).toSet().toList()..sort();
 
-  // v5.4: fuzzy-match a BiharGauge to a MapStationData entry.
-  // Tries direct key match, then token prefix match, then river+city scan.
   MapStationData? _resolveMerged(
     BiharGauge gauge,
     Map<String, MapStationData> index,
@@ -267,7 +245,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen> {
   void _showStationSheet(
     BuildContext context,
     BiharGauge gauge,
-    MapStationData? live, // v5.4
+    MapStationData? live,
     RiverColors t,
   ) {
     showModalBottomSheet(
@@ -281,8 +259,8 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen> {
   @override
   Widget build(BuildContext context) {
     final t          = RiverColors.of(context);
-    // v5.4: single watch — Riverpod caches, no manual _cachedIndex needed
     final liveIndex  = ref.watch(mapLiveIndexProvider);
+    final mergedStations = ref.watch(mergedStationsProvider); // Phase 4B
 
     final liveCount = liveIndex.values.where((s) => s.isLive).length;
 
@@ -324,6 +302,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen> {
               ),
             ),
             children: [
+              // ── Base tile ─────────────────────────────────────────────
               TileLayer(
                 urlTemplate:          _tileStyle.urlTemplate,
                 subdomains:           _tileStyle.subdomains,
@@ -336,6 +315,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen> {
                       'https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
                   userAgentPackageName: 'com.rohitg.floodwatch',
                 ),
+              // ── Precipitation overlay ─────────────────────────────────
               if (_showPrecip)
                 Opacity(
                   opacity: _precipOpacity,
@@ -347,6 +327,14 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen> {
                     ),
                   ),
                 ),
+              // ── District heatmap (Phase 4B) ───────────────────────────
+              // Rendered below station pins so pins always stay on top.
+              BiharDistrictHeatmap(
+                stations:      mergedStations,
+                mapController: _mapCtrl,
+                visible:       _showHeatmap,
+              ),
+              // ── Station risk pins ─────────────────────────────────────
               if (_showStations)
                 Opacity(
                   opacity: _stationOpacity,
@@ -413,7 +401,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen> {
                               critCount: critCount,
                               severeCount: severeCount),
                         const SizedBox(width: 6),
-                        _LiveBadge(count: liveCount), // v5.4: merged count
+                        _LiveBadge(count: liveCount),
                         const SizedBox(width: 8),
                         GestureDetector(
                           onTap: () => setState(
@@ -468,6 +456,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen> {
                       precipOpacity:        _precipOpacity,
                       showStations:         _showStations,
                       stationOpacity:       _stationOpacity,
+                      showHeatmap:          _showHeatmap,       // Phase 4B
                       critCount:            critCount,
                       severeCount:          severeCount,
                       dangerTotal:          dangerTotal,
@@ -480,6 +469,8 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen> {
                           setState(() => _showStations = !_showStations),
                       onStationOpacity:     (v) =>
                           setState(() => _stationOpacity = v),
+                      onHeatmapToggle:      () =>              // Phase 4B
+                          setState(() => _showHeatmap = !_showHeatmap),
                       onCriticalOnly:       () => setState(() {
                         _filterRisk    = RiskLevel.critical;
                         _layerPanelOpen = false;
@@ -853,7 +844,7 @@ class _PulsingRingState extends State<_PulsingRing>
 }
 
 // ────────────────────────────────────────────────────────────────────────────────
-// _LayerPanel
+// _LayerPanel  (v5.6: adds District Heatmap toggle row)
 // ────────────────────────────────────────────────────────────────────────────────
 
 class _LayerPanel extends StatelessWidget {
@@ -863,6 +854,7 @@ class _LayerPanel extends StatelessWidget {
   final double      precipOpacity;
   final bool        showStations;
   final double      stationOpacity;
+  final bool        showHeatmap;          // Phase 4B
   final int         critCount;
   final int         severeCount;
   final int         dangerTotal;
@@ -871,6 +863,7 @@ class _LayerPanel extends StatelessWidget {
   final ValueChanged<double>     onOpacityChanged;
   final VoidCallback             onStationsToggle;
   final ValueChanged<double>     onStationOpacity;
+  final VoidCallback             onHeatmapToggle;  // Phase 4B
   final VoidCallback             onCriticalOnly;
 
   const _LayerPanel({
@@ -880,6 +873,7 @@ class _LayerPanel extends StatelessWidget {
     required this.precipOpacity,
     required this.showStations,
     required this.stationOpacity,
+    required this.showHeatmap,
     required this.critCount,
     required this.severeCount,
     required this.dangerTotal,
@@ -888,6 +882,7 @@ class _LayerPanel extends StatelessWidget {
     required this.onOpacityChanged,
     required this.onStationsToggle,
     required this.onStationOpacity,
+    required this.onHeatmapToggle,
     required this.onCriticalOnly,
   });
 
@@ -958,6 +953,7 @@ class _LayerPanel extends StatelessWidget {
                   fontWeight: FontWeight.w800, letterSpacing: 1.5)),
           const SizedBox(height: 8),
 
+          // ── Station Risk toggle ──────────────────────────────────────
           GestureDetector(
             onTap: onStationsToggle,
             child: AnimatedContainer(
@@ -1103,6 +1099,63 @@ class _LayerPanel extends StatelessWidget {
 
           const SizedBox(height: 8),
 
+          // ── District Heatmap toggle (Phase 4B) ───────────────────────
+          GestureDetector(
+            onTap: onHeatmapToggle,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: showHeatmap
+                    ? AppPalette.warning.withValues(alpha: 0.10)
+                    : t.cardBgElevated,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                    color: showHeatmap ? AppPalette.warning : t.stroke,
+                    width: showHeatmap ? 1.5 : 1.0),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.map_outlined,
+                      size: 13,
+                      color: showHeatmap
+                          ? AppPalette.warning
+                          : t.textSecondary),
+                  const SizedBox(width: 6),
+                  Text('District Heatmap',
+                      style: TextStyle(
+                          color: showHeatmap
+                              ? AppPalette.warning
+                              : t.textSecondary,
+                          fontSize: 11,
+                          fontWeight: showHeatmap
+                              ? FontWeight.w800
+                              : FontWeight.w500)),
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 5, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppPalette.warning.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                          color: AppPalette.warning.withValues(alpha: 0.35)),
+                    ),
+                    child: const Text('38 DISTRICTS',
+                        style: TextStyle(
+                            color: AppPalette.warning,
+                            fontSize: 8,
+                            fontWeight: FontWeight.w900)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          // ── Precipitation toggle ─────────────────────────────────────
           GestureDetector(
             onTap: onPrecipToggle,
             child: AnimatedContainer(
@@ -1203,12 +1256,12 @@ class _LayerPanel extends StatelessWidget {
 }
 
 // ────────────────────────────────────────────────────────────────────────────────
-// _StationSheet  (v5.5.1 — Option A graceful station-only fallback)
+// _StationSheet  (v5.5.1 — unchanged)
 // ────────────────────────────────────────────────────────────────────────────────
 
 class _StationSheet extends ConsumerWidget {
   final BiharGauge       gauge;
-  final MapStationData?  live;   // v5.4: was BiharStationData?
+  final MapStationData?  live;
   final RiverColors      t;
   const _StationSheet({
     required this.gauge,
@@ -1219,16 +1272,8 @@ class _StationSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hasLive = live != null && live!.isLive;
-
-    // v5.5: resolve canonical city name from MapStationData.city so that
-    // CityDetailScreen.cityDataProvider(key) finds the right FloodData entry.
-    // Falls back to gauge.station when live is null (SEED-only pin).
     final resolvedCity =
         (live != null && live!.city.isNotEmpty) ? live!.city : gauge.station;
-
-    // v5.5.1 (Option A): check if resolvedCity has a matching city profile.
-    // cityDataProvider keys are normalised lowercase; we do the same check
-    // that CityDetailScreen does internally. If no match → show muted label.
     final cityMap = ref.watch(cityLookupMapProvider);
     final hasCityProfile = cityMap.containsKey(_norm(resolvedCity));
 
@@ -1314,9 +1359,6 @@ class _StationSheet extends ConsumerWidget {
               _sourceRow(),
             ],
             const SizedBox(height: 16),
-
-            // v5.5.1 Option A: show active button only when city profile exists;
-            // otherwise show a non-interactive muted 'No city profile' label.
             if (hasCityProfile)
               GestureDetector(
                 onTap: () {
@@ -1364,7 +1406,6 @@ class _StationSheet extends ConsumerWidget {
                   ),
                 ),
               ),
-
             const SizedBox(height: 8),
           ],
         ),
@@ -1376,7 +1417,6 @@ class _StationSheet extends ConsumerWidget {
     final s   = live!;
     final rc  = _riskColour(s.riskLabel, t);
     final cur = s.currentLevel > 0 ? s.currentLevel : null;
-    // v5.4: dangerLevel from MapStationData (mergedStationsProvider v4.2 DL)
     final dan = s.dangerLevel;
     String margin      = '—';
     Color  marginColor = AppPalette.safe;
@@ -1489,7 +1529,6 @@ class _StationSheet extends ConsumerWidget {
           ? AppPalette.danger
           : d < 0 ? AppPalette.safe : AppPalette.warning;
     }
-    // v5.4: trend string comes from MapStationData.trend
     final trendRaw = s.trend.toUpperCase();
     final IconData trendIcon;
     final Color    trendColor;
