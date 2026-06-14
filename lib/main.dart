@@ -41,12 +41,9 @@ import 'screens/export_screen.dart';
 import 'screens/notification_settings_screen.dart';
 import 'screens/incident_report_screen.dart';
 import 'screens/crowd_report_feed_screen.dart';
-import 'screens/evacuation_routes_screen.dart'; // ← already imported
-// ── Phase 9 ──────────────────────────────────────────────────────────────────
+import 'screens/evacuation_routes_screen.dart';
 import 'screens/ai_prediction_screen.dart';
-// ── Phase 10 ─────────────────────────────────────────────────────────────────
 import 'screens/india_river_explorer_screen.dart';
-// ── Analytics / Forecast ─────────────────────────────────────────────────────
 import 'screens/rainfall_forecast_screen.dart';
 import 'screens/historical_analytics_screen.dart';
 import 'screens/analytics_dashboard_screen.dart';
@@ -64,10 +61,14 @@ import 'theme/robotic_theme.dart';
 import 'providers/theme_provider.dart';
 import 'providers/locale_provider.dart';
 import 'services/data_fetch_engine.dart';
-import 'app_router.dart'; // Routes constants
+import 'app_router.dart';
 
 final FlutterLocalNotificationsPlugin _localNotifications =
     FlutterLocalNotificationsPlugin();
+
+/// Global navigator key — used by notification tap handlers that fire
+/// outside of the widget tree (background / terminated state).
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -76,6 +77,124 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
         options: DefaultFirebaseOptions.currentPlatform);
   }
   debugPrint('[FCM BG] ${message.notification?.title}');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Notification payload / title parsing helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Extract a clean station name from any notification title or payload.
+///
+/// Handles all known title formats produced by AlertNotificationBridge:
+///   '🚨 EMERGENCY: Gandhighat'
+///   '🔴 CRITICAL: Triveni'
+///   '⚠️ Warning: Hathidah'
+///   'ℹ️ Advisory: Buxar'
+/// And also raw FCM titles pushed from server:
+///   'Triveni: DANGER LEVEL BREACHED'
+///   'Gandhighat: WARNING LEVEL BREACHED'
+String _parseStation(String? raw) {
+  if (raw == null || raw.trim().isEmpty) return '';
+
+  // Remove leading emoji + spaces
+  final stripped = raw.replaceAll(
+      RegExp(r'^[\u{1F600}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\s]+',
+          unicode: true),
+      '');
+
+  // Pattern A — "TYPE: Station"  e.g. "CRITICAL: Triveni"
+  final colonIdx = stripped.indexOf(':');
+  if (colonIdx > 0) {
+    final before = stripped.substring(0, colonIdx).trim().toUpperCase();
+    final after  = stripped.substring(colonIdx + 1).trim();
+
+    const alertKeywords = {
+      'EMERGENCY', 'CRITICAL', 'WARNING', 'ADVISORY', 'INFO',
+      'DANGER', 'ALERT',
+    };
+
+    // If the part BEFORE the colon is an alert keyword → station is AFTER
+    if (alertKeywords.contains(before)) return after;
+
+    // If the part AFTER the colon contains alert keywords → station is BEFORE
+    final afterUpper = after.toUpperCase();
+    if (alertKeywords.any((k) => afterUpper.contains(k))) return before;
+
+    // Default: take the shorter side as the station name
+    return before.length <= after.length ? before : after;
+  }
+
+  return stripped.trim();
+}
+
+/// Navigate to the best screen for this notification.
+/// Called from both local-notification tap and FCM tap handlers.
+void _navigateFromNotification({
+  String? payload,   // alert.id from local notification
+  String? title,     // notification title (fallback)
+  String? body,      // notification body (unused for now)
+}) {
+  final nav = navigatorKey.currentState;
+  if (nav == null) {
+    // App not yet fully built — retry once after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _navigateFromNotification(payload: payload, title: title, body: body);
+    });
+    return;
+  }
+
+  debugPrint('[Notif] navigate  payload=$payload  title=$title');
+
+  // ── 1. Try payload first (alert.id format: "stationId_severity_timestamp") ──
+  String stationName = '';
+  if (payload != null && payload.isNotEmpty) {
+    // alert.id is typically built as "<station>_<severity>_<epoch>" in AlertEngine
+    // Extract the station part (everything before the first underscore if numeric)
+    final parts = payload.split('_');
+    if (parts.length >= 2) {
+      // Last part is usually epoch (all digits), second-last is severity keyword
+      // Take everything that is NOT the severity / epoch suffix
+      final severityWords = {'danger', 'warning', 'critical', 'emergency', 'info', 'advisory'};
+      final stationParts = <String>[];
+      for (final p in parts) {
+        if (severityWords.contains(p.toLowerCase())) break;
+        if (RegExp(r'^\d{10,}$').hasMatch(p)) break; // epoch timestamp
+        stationParts.add(p);
+      }
+      stationName = stationParts.join(' ').trim();
+    }
+    // Fallback: use full payload as station if it looks like a name
+    if (stationName.isEmpty && !payload.contains('_')) {
+      stationName = payload.trim();
+    }
+  }
+
+  // ── 2. Fall back to parsing the title ──
+  if (stationName.isEmpty) {
+    stationName = _parseStation(title);
+  }
+
+  debugPrint('[Notif] resolved station: "$stationName"');
+
+  if (stationName.isNotEmpty) {
+    // Navigate to the live station detail with the station name.
+    // CwcStationDetailScreen expects a CwcStation object, but we only
+    // have the name here. Route to /alerts with a filter argument instead,
+    // which is always safe and shows the alert in context.
+    nav.pushNamed(
+      Routes.alerts,
+      arguments: stationName,
+    );
+  } else {
+    // Unknown payload — just open Alerts tab
+    nav.pushNamed(Routes.alerts);
+  }
+}
+
+// ── Local notification tap (app foregrounded or open) ───────────────────────
+void _onNotificationTap(NotificationResponse response) {
+  debugPrint('[Notif] tapped payload=${response.payload}');
+  _navigateFromNotification(payload: response.payload);
 }
 
 Future<void> main() async {
@@ -122,6 +241,7 @@ Future<void> main() async {
   );
 
   WidgetsBinding.instance.addPostFrameCallback((_) async {
+    // ── Local notifications init ────────────────────────────────────────
     const androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
@@ -133,6 +253,55 @@ Future<void> main() async {
       const InitializationSettings(android: androidSettings, iOS: iosSettings),
       onDidReceiveNotificationResponse: _onNotificationTap,
     );
+
+    // ── FCM: app launched from a terminated-state notification ──────────
+    final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+    if (initialMessage != null) {
+      debugPrint('[FCM] launched from notification: ${initialMessage.notification?.title}');
+      _navigateFromNotification(
+        payload: initialMessage.data['alertId'] as String?,
+        title:   initialMessage.notification?.title,
+        body:    initialMessage.notification?.body,
+      );
+    }
+
+    // ── FCM: app in background, user taps notification ─────────────────
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      debugPrint('[FCM] onMessageOpenedApp: ${message.notification?.title}');
+      _navigateFromNotification(
+        payload: message.data['alertId'] as String?,
+        title:   message.notification?.title,
+        body:    message.notification?.body,
+      );
+    });
+
+    // ── FCM: app in foreground — show as local notification ────────────
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      final notif = message.notification;
+      if (notif == null) return;
+      debugPrint('[FCM FG] ${notif.title}');
+      // Re-fire as local notification so the user still sees it
+      _localNotifications.show(
+        message.hashCode & 0x7FFFFFFF,
+        notif.title,
+        notif.body,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            _severityChannelFromData(message.data),
+            'Flood Alerts',
+            importance: Importance.max,
+            priority:   Priority.high,
+            icon:       '@mipmap/ic_launcher',
+          ),
+          iOS: const DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
+        ),
+        payload: message.data['alertId'] as String? ?? notif.title,
+      );
+    });
 
     unawaited(NotificationChannelService.instance.init());
     unawaited(FcmTopicManager.instance.init());
@@ -148,9 +317,14 @@ Future<void> main() async {
   });
 }
 
-void _onNotificationTap(NotificationResponse response) {
-  final payload = response.payload ?? '';
-  debugPrint('[Notif] tapped: $payload');
+/// Map FCM data payload severity field → local notification channel ID.
+String _severityChannelFromData(Map<String, dynamic> data) {
+  switch ((data['severity'] as String? ?? '').toLowerCase()) {
+    case 'emergency': return 'flood_emergency';
+    case 'critical':  return 'flood_critical';
+    case 'warning':   return 'flood_warning';
+    default:          return 'flood_info';
+  }
 }
 
 class FloodWatchApp extends ConsumerWidget {
@@ -189,6 +363,7 @@ class FloodWatchApp extends ConsumerWidget {
     return MaterialApp(
       title:                      'FloodWatch',
       debugShowCheckedModeBanner: false,
+      navigatorKey:               navigatorKey,   // ← wires up global navigation
       theme:                      lightSlot,
       darkTheme:                  darkSlot,
       themeMode:                  themeNotifier.flutterMode,
@@ -226,8 +401,11 @@ class FloodWatchApp extends ConsumerWidget {
           case DashboardScreen.route:
             return _fade(const DashboardScreen());
           case Routes.alerts:
-          case AlertsScreen.route:
-            return _fade(const AlertsScreen());
+          case AlertsScreen.route: {
+            // Accept an optional station-name string argument to pre-filter alerts
+            final stationFilter = settings.arguments as String?;
+            return _fade(AlertsScreen(stationFilter: stationFilter));
+          }
           case Routes.monitors:
           case MonitorsScreen.route:
             return _fade(const MonitorsScreen());
@@ -240,12 +418,8 @@ class FloodWatchApp extends ConsumerWidget {
           case Routes.sos:
           case SosScreen.route:
             return _fade(const SosScreen());
-          // ── FIX: evacuation was missing from main.dart onGenerateRoute ──
-          // Routes.evacuation = '/evacuation'
-          // Old EvacuationRoutesScreen.route was '/evacuation-routes' (mismatch!)
-          // Now both are '/evacuation'. Both cases kept for safety.
-          case Routes.evacuation:          // '/evacuation'  ← the one called everywhere
-          case '/evacuation-routes':       // legacy fallback
+          case Routes.evacuation:
+          case '/evacuation-routes':
             return _fade(const EvacuationRoutesScreen());
           case Routes.weather:
           case WeatherScreen.route:
