@@ -1,17 +1,22 @@
-// lib/providers/real_time_river_provider.dart  v8.6
+// lib/providers/real_time_river_provider.dart  v8.7
+//
+// v8.7 (14 Jun 2026) — Fix Riverpod 3.x pausedActiveSubscriptionCount crash
+//
+//   ROOT CAUSE:
+//   realTimeRiverProvider was FutureProvider.autoDispose.
+//   mergedStationsProvider is a plain Provider (persistent) that watches it.
+//   On a TickerMode change (navigation / screen off), autoDispose called
+//   ref.invalidateSelf() while mergedStationsProvider held a paused
+//   subscription → Riverpod 3.x asserted:
+//     'Expected pausedActiveSubscriptionCount to be 1, but was 2'
+//
+//   FIX: plain FutureProvider (non-autoDispose) + ref.keepAlive().
+//   A provider watched by a persistent parent Provider must never autoDispose.
 //
 // v8.6 (13 Jun 2026) — current-level plausibility guard for Birpur
-//
-//   BUG: kosiBirpurProvider could return levelM=212.05 or 210.80 m and it
-//   went straight into birpurStation.current with no sanity check.
-//   _birpurDlPlausible only guards the DataFetch fallback branch (DL check),
-//   not the primary kosiBirpurProvider branch (level check).
-//
-//   FIX: add _birpurLevelPlausible(double level) => level > 0 && level <= 80.
-//   Birpur gauge is ~74 m MSL; HFL is 76.02 m.  Anything above 80 m is a
-//   discharge value (m³/s or cumec) mis-read as a water-level (m MSL).
-//   When the reading fails this check, fall through to the SEED sentinel
-//   (current=0.0, shows '——' / NORMAL) instead of showing 210/212 m.
+//   _birpurLevelPlausible: level > 0 && level <= 80 m.
+//   Birpur gauge ~74 m MSL; HFL 76.02 m. Anything > 80 m is a discharge
+//   value mis-read as water level → fall through to SEED sentinel.
 //
 library;
 
@@ -153,9 +158,18 @@ final wrdRiverStationsProvider =
 
 // ───────────────────────────────────────────────────────────────────────────────────
 // 3. realTimeRiverProvider — WRD-only alias for map screen
+//
+// v8.7: MUST NOT be autoDispose.
+//   mergedStationsProvider (plain Provider, persistent) watches this provider.
+//   If this provider auto-disposes while mergedStationsProvider holds a paused
+//   subscription, Riverpod 3.x asserts pausedActiveSubscriptionCount mismatch.
+//   Fix: plain FutureProvider + ref.keepAlive().
 // ───────────────────────────────────────────────────────────────────────────────────
 final realTimeRiverProvider =
-    FutureProvider.autoDispose<List<RiverStation>>((ref) async {
+    FutureProvider<List<RiverStation>>((ref) async {
+  // v8.7: must never auto-dispose — watched by persistent mergedStationsProvider.
+  ref.keepAlive();
+
   final async = ref.watch(wrdStationsProvider);
 
   if (async.isLoading || async.asData?.value == null) {
@@ -207,8 +221,6 @@ final mergedStationsProvider = Provider<List<RiverStation>>((ref) {
   final RiverStation birpurStation;
   final birpurReading = birpurAsync.asData?.value; // KosiBirpurReading?
 
-  // v8.6: treat a reading as valid only if levelM is in 0–80 m range.
-  // Values like 210.80 / 212.05 are cumec discharge mis-labelled as metres.
   final bool readingPlausible =
       birpurReading != null && _birpurLevelPlausible(birpurReading.levelM);
 
@@ -229,8 +241,6 @@ final mergedStationsProvider = Provider<List<RiverStation>>((ref) {
       isLive: birpurReading.source != 'SEED',
     );
   } else {
-    // kosiBirpurProvider returned null, is loading, or gave an implausible
-    // level (> 80 m) — try DataFetch with tightened DL plausibility guard
     if (birpurReading != null && !_birpurLevelPlausible(birpurReading.levelM)) {
       if (kDebugMode) {
         debugPrint(
@@ -253,7 +263,7 @@ final mergedStationsProvider = Provider<List<RiverStation>>((ref) {
       state:       'Bihar',
       river:       'Kosi',
       station:     'Birpur',
-      current:     0.0,          // shows '——' / NORMAL; no fake 210/212 m
+      current:     0.0,
       warning:     _kBirpurWarning,
       danger:      _kBirpurDanger,
       hfl:         _kBirpurHfl,
@@ -284,7 +294,7 @@ final mergedStationsProvider = Provider<List<RiverStation>>((ref) {
 
   if (kDebugMode && allDfStations.length != dfStations.length) {
     debugPrint(
-      '[Merged v8.6] dropped ${allDfStations.length - dfStations.length} '
+      '[Merged v8.7] dropped ${allDfStations.length - dfStations.length} '
       'non-Bihar/duplicate stations from DataFetch tier',
     );
   }
@@ -320,7 +330,7 @@ final mergedStationsProvider = Provider<List<RiverStation>>((ref) {
 
   if (kDebugMode) {
     debugPrint(
-      '[Merged v8.6] ${liveEngineRS.length} LiveEngine'
+      '[Merged v8.7] ${liveEngineRS.length} LiveEngine'
       ' + ${cwcLiveRS.length} CWC-live'
       ' + ${cwcSeedFiltered.length} CWC-seed'
       ' + ${dfStations.length} DataFetch(Bihar)'
