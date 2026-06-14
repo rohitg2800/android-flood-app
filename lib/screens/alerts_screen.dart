@@ -1,11 +1,11 @@
-// lib/screens/alerts_screen.dart  nav-v1 fix
-// Wired: tap alert -> CityDetailScreen (by cityName arg), map button, SOS FAB.
-// FIX: AlertProvider exposes .all not .alerts
+// lib/screens/alerts_screen.dart  nav-v1 fix2
+// FIX: import alerts_provider.dart so AlertSeverity is in scope.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/river_theme.dart';
 import '../theme/theme_3d.dart';
 import '../providers/alert_provider.dart';
+import '../providers/alerts_provider.dart'; // FIX: exports AlertSeverity
 import '../app_router.dart';
 
 class AlertsScreen extends ConsumerWidget {
@@ -16,7 +16,7 @@ class AlertsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t      = RiverColors.of(context);
     final ap     = ref.watch(alertProvider);
-    final alerts = ap.all;   // FIX: was ap.alerts, correct getter is .all
+    final alerts = ap.all;
 
     return Scaffold(
       backgroundColor: t.scaffoldBg,
@@ -56,13 +56,14 @@ class AlertsScreen extends ConsumerWidget {
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (ctx, i) {
-                    final a     = alerts[i];
-                    final color = a.severity == AlertSeverity.critical ||
-                            a.severity == AlertSeverity.emergency
-                        ? t.riverDanger
-                        : a.severity == AlertSeverity.warning
-                            ? t.riverWarning
-                            : t.riverNormal;
+                    final a = alerts[i];
+                    final color =
+                        a.severity == AlertSeverity.critical ||
+                                a.severity == AlertSeverity.emergency
+                            ? t.riverDanger
+                            : a.severity == AlertSeverity.warning
+                                ? t.riverWarning
+                                : t.riverNormal;
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 10),
                       child: Td3Card(
@@ -86,8 +87,8 @@ class AlertsScreen extends ConsumerWidget {
                             decoration: BoxDecoration(
                               color: color.withOpacity(0.15),
                               borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                  color: color.withOpacity(0.5)),
+                              border:
+                                  Border.all(color: color.withOpacity(0.5)),
                             ),
                             child: Text(
                               a.severity.name.toUpperCase(),
@@ -98,7 +99,7 @@ class AlertsScreen extends ConsumerWidget {
                           ),
                           onTap: () => Navigator.of(context).pushNamed(
                             Routes.cityDetail,
-                            arguments: a.title, // station/city name
+                            arguments: a.title,
                           ),
                         ),
                       ),
