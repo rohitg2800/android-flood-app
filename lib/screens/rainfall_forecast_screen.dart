@@ -1,10 +1,6 @@
 // lib/screens/rainfall_forecast_screen.dart
 // OpsFlood — Module 14: Rainfall Forecast Screen
-//
-// fix (2026-06-13): All `const AppPalette.xyz` expressions replaced with
-// plain `AppPalette.xyz` field accesses. AppPalette has no const constructor,
-// so `const AppPalette.x` is a constructor-call syntax and causes
-// "Expected to find '('" parse errors wherever a Color is expected.
+// FIX 2026-06-14: explicit riverpod import moved to top; StateProvider resolved
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,13 +14,13 @@ import '../theme/river_theme.dart';
 
 class DayForecast {
   final DateTime date;
-  final double rainMm;
-  final double tempMax;
-  final double tempMin;
-  final int humidity;
-  final double windKmh;
-  final double floodRisk;
-  final String condition;
+  final double   rainMm;
+  final double   tempMax;
+  final double   tempMin;
+  final int      humidity;
+  final double   windKmh;
+  final double   floodRisk;
+  final String   condition;
   const DayForecast({
     required this.date,
     required this.rainMm,
@@ -38,48 +34,40 @@ class DayForecast {
 }
 
 // ---------------------------------------------------------------------------
-// Sample provider (replace with IMD/OpenWeather call)
+// Providers
 // ---------------------------------------------------------------------------
 
 final _forecastProvider =
-    FutureProvider.family<List<DayForecast>, String>(
-        (_, district) async {
-  await Future.delayed(const Duration(milliseconds: 400));
+    FutureProvider.family<List<DayForecast>, String>((_, district) async {
+  await Future<void>.delayed(const Duration(milliseconds: 400));
   final now = DateTime.now();
   return [
     DayForecast(date: now,
         rainMm: 42, tempMax: 33, tempMin: 26,
-        humidity: 88, windKmh: 18, floodRisk: 0.72,
-        condition: 'heavy_rain'),
+        humidity: 88, windKmh: 18, floodRisk: 0.72, condition: 'heavy_rain'),
     DayForecast(date: now.add(const Duration(days: 1)),
         rainMm: 65, tempMax: 31, tempMin: 25,
-        humidity: 92, windKmh: 22, floodRisk: 0.85,
-        condition: 'heavy_rain'),
+        humidity: 92, windKmh: 22, floodRisk: 0.85, condition: 'heavy_rain'),
     DayForecast(date: now.add(const Duration(days: 2)),
         rainMm: 28, tempMax: 32, tempMin: 25,
-        humidity: 83, windKmh: 15, floodRisk: 0.60,
-        condition: 'moderate_rain'),
+        humidity: 83, windKmh: 15, floodRisk: 0.60, condition: 'moderate_rain'),
     DayForecast(date: now.add(const Duration(days: 3)),
         rainMm: 12, tempMax: 34, tempMin: 26,
-        humidity: 74, windKmh: 12, floodRisk: 0.40,
-        condition: 'light_rain'),
+        humidity: 74, windKmh: 12, floodRisk: 0.40, condition: 'light_rain'),
     DayForecast(date: now.add(const Duration(days: 4)),
         rainMm: 5,  tempMax: 35, tempMin: 27,
-        humidity: 68, windKmh: 10, floodRisk: 0.25,
-        condition: 'cloudy'),
+        humidity: 68, windKmh: 10, floodRisk: 0.25, condition: 'cloudy'),
     DayForecast(date: now.add(const Duration(days: 5)),
         rainMm: 0,  tempMax: 36, tempMin: 27,
-        humidity: 62, windKmh: 8,  floodRisk: 0.15,
-        condition: 'clear'),
+        humidity: 62, windKmh: 8,  floodRisk: 0.15, condition: 'clear'),
     DayForecast(date: now.add(const Duration(days: 6)),
         rainMm: 8,  tempMax: 35, tempMin: 26,
-        humidity: 70, windKmh: 11, floodRisk: 0.30,
-        condition: 'light_rain'),
+        humidity: 70, windKmh: 11, floodRisk: 0.30, condition: 'light_rain'),
   ];
 });
 
-final _selectedDistrictProvider =
-    StateProvider<String>((_) => 'Patna');
+// StateProvider requires flutter_riverpod (imported above)
+final _selectedDistrictProvider = StateProvider<String>((_) => 'Patna');
 
 // ---------------------------------------------------------------------------
 // Screen
@@ -96,7 +84,7 @@ class RainfallForecastScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final district = ref.watch(_selectedDistrictProvider);
+    final district    = ref.watch(_selectedDistrictProvider);
     final forecastAsync = ref.watch(_forecastProvider(district));
 
     return Scaffold(
@@ -115,15 +103,13 @@ class RainfallForecastScreen extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(
                   horizontal: 12, vertical: 8),
               itemCount: _districts.length,
-              separatorBuilder: (_, __) =>
-                  const SizedBox(width: 8),
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
               itemBuilder: (_, i) {
-                final d = _districts[i];
+                final d        = _districts[i];
                 final selected = d == district;
                 return GestureDetector(
-                  onTap: () => ref
-                      .read(_selectedDistrictProvider.notifier)
-                      .state = d,
+                  onTap: () =>
+                      ref.read(_selectedDistrictProvider.notifier).state = d,
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     padding: const EdgeInsets.symmetric(
@@ -151,24 +137,22 @@ class RainfallForecastScreen extends ConsumerWidget {
           ),
           Expanded(
             child: forecastAsync.when(
-              loading: () => const Center(
-                  child: CircularProgressIndicator()),
-              error: (e, _) => Center(
-                  child: Text('Failed to load: $e')),
-              data: (forecasts) =>
-                  RefreshIndicator(
-                    onRefresh: () =>
-                        ref.refresh(_forecastProvider(district).future),
-                    child: ListView(
-                      padding: const EdgeInsets.all(12),
-                      children: [
-                        _RainBarChart(forecasts: forecasts),
-                        const SizedBox(height: 12),
-                        ...forecasts
-                            .map((f) => _DayCard(forecast: f)),
-                      ],
-                    ),
-                  ),
+              loading: () =>
+                  const Center(child: CircularProgressIndicator()),
+              error:   (e, _) =>
+                  Center(child: Text('Failed to load: $e')),
+              data: (forecasts) => RefreshIndicator(
+                onRefresh: () =>
+                    ref.refresh(_forecastProvider(district).future),
+                child: ListView(
+                  padding: const EdgeInsets.all(12),
+                  children: [
+                    _RainBarChart(forecasts: forecasts),
+                    const SizedBox(height: 12),
+                    ...forecasts.map((f) => _DayCard(forecast: f)),
+                  ],
+                ),
+              ),
             ),
           ),
         ],
@@ -196,7 +180,8 @@ class _RainBarChart extends StatelessWidget {
         boxShadow: [
           BoxShadow(
               color: Colors.black.withOpacity(0.05),
-              blurRadius: 6, offset: const Offset(0, 2))
+              blurRadius: 6,
+              offset: const Offset(0, 2)),
         ],
       ),
       child: BarChart(
@@ -237,7 +222,7 @@ class _RainBarChart extends StatelessWidget {
           borderData: FlBorderData(show: false),
           gridData: const FlGridData(show: false),
           barGroups: forecasts.asMap().entries.map((e) {
-            final risk = e.value.floodRisk;
+            final risk  = e.value.floodRisk;
             final color = risk > 0.7
                 ? AppPalette.critical
                 : risk > 0.4
@@ -287,14 +272,14 @@ class _DayCard extends StatelessWidget {
   };
 
   String _riskLabel(double r) =>
-    r > 0.8 ? 'Critical' : r > 0.6 ? 'High' :
-    r > 0.4 ? 'Moderate' : 'Low';
+      r > 0.8 ? 'Critical' : r > 0.6 ? 'High' :
+      r > 0.4 ? 'Moderate' : 'Low';
 
   Color _riskColor(double r) =>
-    r > 0.8 ? AppPalette.critical :
-    r > 0.6 ? AppPalette.warning :
-    r > 0.4 ? AppPalette.warning :
-    AppPalette.safe;
+      r > 0.8 ? AppPalette.critical :
+      r > 0.6 ? AppPalette.warning  :
+      r > 0.4 ? AppPalette.warning  :
+      AppPalette.safe;
 
   @override
   Widget build(BuildContext context) {
@@ -312,15 +297,13 @@ class _DayCard extends StatelessWidget {
                 children: [
                   Text(DateFormat('EEE').format(forecast.date),
                       style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12)),
+                          fontWeight: FontWeight.bold, fontSize: 12)),
                   Text(DateFormat('d MMM').format(forecast.date),
                       style: const TextStyle(
                           fontSize: 10, color: Colors.grey)),
                   const SizedBox(height: 4),
                   Icon(_icon(forecast.condition),
-                      color: _iconColor(forecast.condition),
-                      size: 28),
+                      color: _iconColor(forecast.condition), size: 28),
                 ],
               ),
             ),
@@ -329,15 +312,10 @@ class _DayCard extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _Stat(Icons.water_drop, '${forecast.rainMm.toInt()}mm',
-                      AppPalette.oceanAccent),
-                  _Stat(Icons.thermostat,
-                      '${forecast.tempMax.toInt()}°/${forecast.tempMin.toInt()}°',
-                      AppPalette.danger),
-                  _Stat(Icons.water, '${forecast.humidity}%',
-                      AppPalette.cyan),
-                  _Stat(Icons.air, '${forecast.windKmh.toInt()}km/h',
-                      Colors.grey),
+                  _Stat(Icons.water_drop,  '${forecast.rainMm.toInt()}mm',    AppPalette.oceanAccent),
+                  _Stat(Icons.thermostat,  '${forecast.tempMax.toInt()}°/${forecast.tempMin.toInt()}°', AppPalette.danger),
+                  _Stat(Icons.water,       '${forecast.humidity}%',           AppPalette.cyan),
+                  _Stat(Icons.air,         '${forecast.windKmh.toInt()}km/h', Colors.grey),
                 ],
               ),
             ),
@@ -346,12 +324,10 @@ class _DayCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(
                   horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: _riskColor(forecast.floodRisk)
-                    .withOpacity(0.15),
+                color: _riskColor(forecast.floodRisk).withOpacity(0.15),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                    color: _riskColor(forecast.floodRisk),
-                    width: 1),
+                    color: _riskColor(forecast.floodRisk), width: 1),
               ),
               child: Text(
                 _riskLabel(forecast.floodRisk),
@@ -370,9 +346,10 @@ class _DayCard extends StatelessWidget {
 
 class _Stat extends StatelessWidget {
   final IconData icon;
-  final String value;
-  final Color color;
+  final String   value;
+  final Color    color;
   const _Stat(this.icon, this.value, this.color);
+
   @override
   Widget build(BuildContext context) => Column(
         mainAxisSize: MainAxisSize.min,
@@ -380,8 +357,8 @@ class _Stat extends StatelessWidget {
           Icon(icon, size: 14, color: color),
           const SizedBox(height: 2),
           Text(value,
-              style:
-                  const TextStyle(fontSize: 10, fontWeight: FontWeight.w600)),
+              style: const TextStyle(
+                  fontSize: 10, fontWeight: FontWeight.w600)),
         ],
       );
 }

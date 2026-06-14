@@ -1,13 +1,13 @@
 // lib/screens/ai_prediction_screen.dart
 // OpsFlood — Phase 9: AI Flood Prediction Screen
-// FIX: removed `const` from TabBarView children list — PredictScreenImpl
-//      is not a const-constructible widget, so the list must be non-const.
+// FIX: _PredictTab now embeds PredictScreen (the actual class in
+//      predict_screen_impl.dart). There is no class named PredictScreenImpl.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/river_theme.dart';
 import '../theme/theme_3d.dart';
-import 'predict_screen_impl.dart';
+import 'predict_screen_impl.dart';   // exports: PredictScreen
 
 class AiPredictionScreen extends ConsumerStatefulWidget {
   static const String route = '/ai-prediction';
@@ -63,15 +63,15 @@ class _AiPredictionScreenState extends ConsumerState<AiPredictionScreen>
           labelStyle: const TextStyle(
               fontSize: 12, fontWeight: FontWeight.w700),
           tabs: const [
-            Tab(icon: Icon(Icons.tune, size: 16), text: 'Predict'),
-            Tab(icon: Icon(Icons.bar_chart, size: 16), text: 'Forecast'),
+            Tab(icon: Icon(Icons.tune, size: 16),       text: 'Predict'),
+            Tab(icon: Icon(Icons.bar_chart, size: 16),  text: 'Forecast'),
             Tab(icon: Icon(Icons.info_outline, size: 16), text: 'Model Info'),
           ],
         ),
       ),
       body: TabBarView(
         controller: _tabs,
-        // ⚠️ NOT const — PredictScreenImpl has no const constructor
+        // ⚠️ NOT const — PredictScreen is a ConsumerStatefulWidget
         children: [
           _PredictTab(),
           const _ForecastTab(),
@@ -83,11 +83,14 @@ class _AiPredictionScreenState extends ConsumerState<AiPredictionScreen>
 }
 
 // ── Tab 1: Predict ────────────────────────────────────────────────────────────
+// Wraps PredictScreen (the LSTM predictor) inside the tab without an AppBar
+// conflict. PredictScreen uses a SliverAppBar so it scrolls naturally.
 
 class _PredictTab extends StatelessWidget {
   const _PredictTab();
+
   @override
-  Widget build(BuildContext context) => PredictScreenImpl();
+  Widget build(BuildContext context) => PredictScreen();
 }
 
 // ── Tab 2: 7-Day Forecast ─────────────────────────────────────────────────────
@@ -152,10 +155,10 @@ class _ForecastTab extends StatelessWidget {
 }
 
 class _ForecastDay {
-  final String  day;
-  final int     risk;
-  final String  label;
-  final Color   color;
+  final String   day;
+  final int      risk;
+  final String   label;
+  final Color    color;
   final IconData icon;
   const _ForecastDay(this.day, this.risk, this.label, this.color, this.icon);
 }
@@ -419,13 +422,13 @@ class _FeatureTable extends StatelessWidget {
   const _FeatureTable({required this.theme});
 
   static const List<List<String>> _rows = [
-    ['River gauge level (m)',       'CWC RTDAS',   'Hourly'],
-    ['24h rainfall accumulation',   'IMD gridded', '3-hourly'],
-    ['Soil moisture index',         'ISRO SMAP',   'Daily'],
-    ['Upstream discharge (m³/s)',   'CWC stations','Hourly'],
-    ['Embankment breach history',   'SDMA Bihar',  'Event-based'],
-    ['Temperature / humidity',      'IMD AWS',     '3-hourly'],
-    ['Tidal backwater effect',      'CWPRS model', '6-hourly'],
+    ['River gauge level (m)',     'CWC RTDAS',   'Hourly'],
+    ['24h rainfall accumulation', 'IMD gridded', '3-hourly'],
+    ['Soil moisture index',       'ISRO SMAP',   'Daily'],
+    ['Upstream discharge (m³/s)', 'CWC stations','Hourly'],
+    ['Embankment breach history', 'SDMA Bihar',  'Event-based'],
+    ['Temperature / humidity',    'IMD AWS',     '3-hourly'],
+    ['Tidal backwater effect',    'CWPRS model', '6-hourly'],
   ];
 
   @override
@@ -441,8 +444,7 @@ class _FeatureTable extends StatelessWidget {
         },
         children: [
           TableRow(
-            decoration: BoxDecoration(
-                color: t.accent.withOpacity(0.1)),
+            decoration: BoxDecoration(color: t.accent.withOpacity(0.1)),
             children: ['Feature', 'Source', 'Cadence']
                 .map((h) => Padding(
                       padding: const EdgeInsets.symmetric(
