@@ -116,9 +116,9 @@ class DistrictBottomSheet extends StatelessWidget {
                         Text(
                           stations.isEmpty
                               ? 'No stations'
-                              : '${stations.length} station${stations.length == 1 ? "" : "s"}'
-                                '${aboveDanger > 0 ? "  •  $aboveDanger above danger" : "}'
-                                '${aboveWarn > 0 && aboveDanger == 0 ? "  •  $aboveWarn above warning" : "}',
+                              : '${stations.length} station${stations.length == 1 ? '' : 's'}'
+                                '${aboveDanger > 0 ? '  \u2022  $aboveDanger above danger' : ''}'
+                                '${aboveWarn > 0 && aboveDanger == 0 ? '  \u2022  $aboveWarn above warning' : ''}',
                           style: const TextStyle(
                               color: AppPalette.textGrey, fontSize: 12),
                         ),
