@@ -100,6 +100,9 @@ extension SeverityExt on Severity {
 }
 
 class IncidentDraft {
+  // Explicit default constructor — required because we also declare a factory.
+  IncidentDraft();
+
   IncidentType? type;
   Severity severity = Severity.high;
   String district = '';
@@ -265,11 +268,11 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
 
   void _syncControllers() {
     _draft
-      ..block        = _blockCtrl.text.trim()
-      ..village      = _villageCtrl.text.trim()
-      ..description  = _descCtrl.text.trim()
-      ..reporterName = _nameCtrl.text.trim()
-      ..reporterPhone= _phoneCtrl.text.trim();
+      ..block         = _blockCtrl.text.trim()
+      ..village       = _villageCtrl.text.trim()
+      ..description   = _descCtrl.text.trim()
+      ..reporterName  = _nameCtrl.text.trim()
+      ..reporterPhone = _phoneCtrl.text.trim();
   }
 
   void _goToStep(int s) {
@@ -354,8 +357,6 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
     );
   }
 
-  // ── Step indicator ──────────────────────────────────────────────────────────
-
   Widget _buildStepper(RiverColors t) {
     return Container(
       color: t.navBg,
@@ -372,9 +373,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                   Expanded(
                     child: Container(
                       height: 2,
-                      color: done
-                          ? t.accent
-                          : t.divider.withOpacity(0.4),
+                      color: done ? t.accent : t.divider.withOpacity(0.4),
                     ),
                   ),
               ],
@@ -384,8 +383,6 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
       ),
     );
   }
-
-  // ── Step 1: Type & Severity ─────────────────────────────────────────────────
 
   Widget _buildStep1(RiverColors t) {
     return SingleChildScrollView(
@@ -409,9 +406,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   decoration: BoxDecoration(
-                    color: selected
-                        ? type.color.withOpacity(0.18)
-                        : t.cardBg,
+                    color: selected ? type.color.withOpacity(0.18) : t.cardBg,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: selected ? type.color : t.divider.withOpacity(0.5),
@@ -430,9 +425,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 10,
-                          fontWeight: selected
-                              ? FontWeight.w700
-                              : FontWeight.w500,
+                          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                           color: selected ? type.color : t.textSecondary,
                         ),
                       ),
@@ -470,16 +463,12 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                               color: sel ? s.color : t.textSecondary,
                               size: 18),
                           const SizedBox(height: 4),
-                          Text(
-                            s.label,
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: sel
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                              color: sel ? s.color : t.textSecondary,
-                            ),
-                          ),
+                          Text(s.label,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
+                                color: sel ? s.color : t.textSecondary,
+                              )),
                         ],
                       ),
                     ),
@@ -492,8 +481,6 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
       ),
     );
   }
-
-  // ── Step 2: Location ────────────────────────────────────────────────────────
 
   Widget _buildStep2(RiverColors t) {
     return SingleChildScrollView(
@@ -517,8 +504,8 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide(color: t.divider.withOpacity(0.5)),
               ),
-              border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10)),
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               filled: true,
               fillColor: t.cardBg,
             ),
@@ -585,8 +572,6 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
     );
   }
 
-  // ── Step 3: Description & Media ─────────────────────────────────────────────
-
   Widget _buildStep3(RiverColors t) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -646,8 +631,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                       _draft.photoCount == 0
                           ? 'Tap to attach photos'
                           : '${_draft.photoCount} photo(s) attached',
-                      style:
-                          TextStyle(color: t.textSecondary, fontSize: 13),
+                      style: TextStyle(color: t.textSecondary, fontSize: 13),
                     ),
                   ],
                 ),
@@ -677,8 +661,6 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
       ),
     );
   }
-
-  // ── Step 4: Review & Submit ─────────────────────────────────────────────────
 
   Widget _buildStep4(RiverColors t) {
     _syncControllers();
@@ -807,8 +789,6 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
     );
   }
 
-  // ── Nav bar ─────────────────────────────────────────────────────────────────
-
   Widget _buildNavBar(RiverColors t) {
     return Container(
       padding: EdgeInsets.fromLTRB(
@@ -866,8 +846,6 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
       default: return true;
     }
   }
-
-  // ── Success ─────────────────────────────────────────────────────────────────
 
   Widget _buildSuccess(RiverColors t) {
     return Scaffold(
@@ -966,11 +944,11 @@ class _StepDot extends StatelessWidget {
     final Color bg;
     final Color fg;
     if (done) {
-      bg = t.accent;          fg = Colors.white;
+      bg = t.accent;         fg = Colors.white;
     } else if (active) {
-      bg = Colors.deepOrange;  fg = Colors.white;
+      bg = Colors.deepOrange; fg = Colors.white;
     } else {
-      bg = t.cardBg;           fg = t.textSecondary;
+      bg = t.cardBg;          fg = t.textSecondary;
     }
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
@@ -980,9 +958,7 @@ class _StepDot extends StatelessWidget {
         color: bg,
         shape: BoxShape.circle,
         border: Border.all(
-            color: active
-                ? Colors.deepOrange
-                : t.divider.withOpacity(0.5),
+            color: active ? Colors.deepOrange : t.divider.withOpacity(0.5),
             width: 1.5),
       ),
       child: Center(
