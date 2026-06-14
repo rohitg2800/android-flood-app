@@ -181,6 +181,7 @@ class Td3Card extends StatelessWidget {
       child: Stack(
         children: [
           content,
+          // Top-edge highlight: uniform colour → borderRadius is safe.
           Positioned.fill(
             child: IgnorePointer(
               child: DecoratedBox(
@@ -194,22 +195,35 @@ class Td3Card extends StatelessWidget {
               ),
             ),
           ),
-          Positioned.fill(
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: br,
-                  border: Border(
-                    bottom: BorderSide(color: Td3.edgeMid, width: 1.0),
-                    right: BorderSide(
-                      color: Td3.edgeDark.withAlpha(0x22),
-                      width: 0.5,
+          // Depth-edge shadow overlay.
+          // Flutter REQUIRES all Border sides to share the same colour when
+          // borderRadius is set.  We therefore use a uniform semi-transparent
+          // black border + a subtle bottom BoxShadow to replicate the old
+          // asymmetric effect without triggering the assertion.
+          if (showDepthEdge)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: br,
+                    border: Border.all(
+                      // Single uniform colour — darkest edge value, low alpha.
+                      color: const Color(0x22000000),
+                      width: 0.75,
                     ),
+                    // Bottom shadow replaces the old heavier BorderSide.bottom.
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x1A000000),
+                        blurRadius: 0,
+                        spreadRadius: 0,
+                        offset: Offset(0, 1),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
