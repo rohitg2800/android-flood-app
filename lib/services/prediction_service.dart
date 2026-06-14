@@ -8,12 +8,16 @@
 ///
 /// STATE MATRIX: delegated entirely to PipelineService.entryForState()
 /// which is fetched from /api/state-severity at startup (1-hour TTL).
+///
+/// FIX: base URL now uses AppConfig.baseUrl (railway.app) instead of
+/// AppConstants.baseUrl (opsflood-api.onrender.com) — consistent with
+/// every other service in the app.
 library;
 
 import 'dart:convert';
 import 'dart:math' as math;
 import 'package:http/http.dart' as http;
-import '../constants/constants.dart';
+import '../config/app_config.dart';
 import 'pipeline_service.dart';
 
 // Public type alias used by predict.dart
@@ -121,11 +125,13 @@ class PredictionServiceImpl {
       PipelineService.instance.entryForState(state);
 
   // ── Backend /predict/v2 ───────────────────────────────────────────────────
+  // FIX: was AppConstants.baseUrl (onrender.com) — now AppConfig.baseUrl
+  //      (railway.app) matching BackendApiService and AppConfig endpoints.
   Future<FloodPrediction> backendPredict(
       PredictionInput input, {double? liveLevel}) async {
     final response = await _client
         .post(
-          Uri.parse('${AppConstants.baseUrl}/predict/v2'),
+          Uri.parse('${AppConfig.baseUrl}/predict/v2'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode(input.toJson()),
         )
