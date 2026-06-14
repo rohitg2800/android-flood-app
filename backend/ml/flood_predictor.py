@@ -9,8 +9,10 @@
 #   fc2:      Linear(256,128) + GELU
 #   out:      Linear(128,72)
 #
-# Normalisation: per-station RobustScaler (all 11 features together)
-# Output denorm: scaler.inverse_transform on level_m column (col 0)
+# CSV format: level_m stored as raw_metres / danger_level  (0-1 normalised)
+# RobustScaler was fit on these 0-1 values.
+# Input:  raw_metres / danger  -> RobustScaler.transform
+# Output: RobustScaler raw (out * scale_[0] + center_[0]) * danger  -> metres
 from __future__ import annotations
 
 import json
@@ -26,7 +28,6 @@ import numpy as np
 MODEL_DIR  = Path(os.getenv('MODEL_DIR',  Path(__file__).parent / 'saved_models'))
 SCALER_DIR = Path(os.getenv('SCALER_DIR', Path(__file__).parent / 'scalers'))
 
-# 11 features in order (matches FEATURES list in model_train.py)
 FEATURES = [
     'level_m', 'rain_1h', 'rain_3d', 'rain_7d', 'upstream_level',
     'forecast_mm', 'soil_moisture', 'discharge_m3s',
@@ -98,7 +99,7 @@ def _build_model():
             h1, _ = self.bilstm1(x)
             h1     = self.drop1(h1)
             a,  _  = self.attn(h1, h1, h1)
-            h1     = self.norm1(h1 + a)          # residual connection
+            h1     = self.norm1(h1 + a)          # residual
             h2, _ = self.bilstm2(h1)
             h2     = self.drop2(h2)
             h2     = h2[:, -1, :]                # last timestep
@@ -174,8 +175,9 @@ class FloodPredictor:
     ) -> list:
         import torch
 
-        upstream_v  = upstream if upstream is not None else current
-        level_win   = self._build_history_window(current, r3d, history)
+        danger      = self.threshold['danger']
+        upstream_v  = (upstream if upstream is not None else current)
+        level_win   = self._build_history_window(current, r3d, history)  # raw metres
 
         doy      = now.timetuple().tm_yday
         hour     = now.hour
@@ -183,18 +185,19 @@ class FloodPredictor:
         day_cos  = math.cos(2 * math.pi * doy / 365)
         hour_sin = math.sin(2 * math.pi * hour / 24)
 
-        # Build raw feature matrix (SEQ_LEN, 11) then scale with station scaler
+        # CSV stores level_m as raw_metres/danger (0-1 range).
+        # Replicate exactly: divide by danger before feeding to RobustScaler.
         raw_seq = np.array(
             [
                 [
-                    level_win[t],     # level_m
-                    r3d / 72.0,       # rain_1h  (approx from 3d total)
-                    r3d,              # rain_3d
-                    r7d,              # rain_7d
-                    upstream_v,       # upstream_level
-                    imd_fcst,         # forecast_mm
-                    0.261,            # soil_moisture (station median from scaler center_)
-                    1.94,             # discharge_m3s (station median)
+                    level_win[t] / danger,   # level_m  (normalised fraction)
+                    r3d / 72.0,              # rain_1h
+                    r3d,                     # rain_3d
+                    r7d,                     # rain_7d
+                    upstream_v / danger,     # upstream_level (same normalisation)
+                    imd_fcst,                # forecast_mm
+                    0.261,                   # soil_moisture  (training median)
+                    1.94,                    # discharge_m3s  (training median)
                     day_sin,
                     day_cos,
                     hour_sin,
@@ -209,12 +212,13 @@ class FloodPredictor:
 
         self._model.eval()
         with torch.no_grad():
-            out = self._model(x).squeeze(0).numpy()  # (72,)
+            out = self._model(x).squeeze(0).numpy()  # (72,)  scaled level_m fractions
 
-        # De-normalise: model output is scaled level_m — inverse via col 0 of scaler
-        dummy          = np.zeros((FORECAST_H, N_FEATURES), dtype=np.float64)
-        dummy[:, 0]    = out
-        levels         = self._scaler.inverse_transform(dummy)[:, 0]
+        # Direct inverse of RobustScaler for col 0 only:
+        #   raw_fraction = out * scale_[0] + center_[0]
+        #   metres       = raw_fraction * danger
+        c0, s0 = float(self._scaler.center_[0]), float(self._scaler.scale_[0])
+        levels = (out * s0 + c0) * danger  # (72,) in metres
 
         return [
             {
@@ -232,6 +236,7 @@ class FloodPredictor:
         rainfall_3d_mm: float,
         history: Optional[List[float]],
     ) -> List[float]:
+        """Returns SEQ_LEN raw-metre readings (oldest first, newest=current_level)."""
         if history and len(history) >= SEQ_LEN:
             return list(history[-SEQ_LEN:])
         rate    = 0.025 if rainfall_3d_mm > 100 else 0.008
@@ -264,7 +269,6 @@ class FloodPredictor:
             import torch
             import joblib as jl
 
-            # Normalise station name for file lookup
             sname    = station.replace(' ', '_')
             pt_path  = MODEL_DIR  / f'{station}_bilstm.pt'
             sc_path  = SCALER_DIR / f'{station}_scaler.joblib'
@@ -276,14 +280,14 @@ class FloodPredictor:
             if not pt_path.exists():
                 return None, None, None
 
-            bundle  = torch.load(str(pt_path), map_location='cpu', weights_only=False)
-            model   = _build_model()
+            bundle = torch.load(str(pt_path), map_location='cpu', weights_only=False)
+            model  = _build_model()
             model.load_state_dict(bundle['model_state'])
             model.eval()
 
             scaler = jl.load(str(sc_path)) if sc_path.exists() else None
             config = bundle.get('config', {})
-            print(f'\u2705 FloodPredictor: loaded {station} (bilstm + scaler={sc_path.exists()})')
+            print(f'\u2705 FloodPredictor: loaded {station} (scaler={sc_path.exists()})')
             return model, scaler, config
 
         except Exception as exc:
