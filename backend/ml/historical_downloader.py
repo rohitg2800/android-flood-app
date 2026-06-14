@@ -1,6 +1,6 @@
 # backend/ml/historical_downloader.py
 # =============================================================================
-# OpsFlood  v1.0  —  5-Year Historical Data Downloader
+# OpsFlood  v1.1  —  5-Year Historical Data Downloader
 # =============================================================================
 #
 # Uses the same FREE APIs already used by cwc_scraper.py:
@@ -8,7 +8,7 @@
 #   1. Open-Meteo GloFAS Flood API  (river discharge, daily, up to 5 years)
 #      https://flood-api.open-meteo.com/v1/flood
 #      - No API key, no IP block, works from anywhere
-#      - daily river_discharge (m³/s) with past_days up to 1826 (5 years)
+#      - daily river_discharge (m3/s) with start_date/end_date range
 #
 #   2. Open-Meteo Archive API  (hourly rainfall, 2000-present)
 #      https://archive-api.open-meteo.com/v1/archive
@@ -34,7 +34,6 @@
 from __future__ import annotations
 
 import argparse
-import math
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -62,11 +61,10 @@ CSV_COLS = [
 
 # =============================================================================
 # STATION REGISTRY
-# Combines cwc_scraper.py CITY_COORDS (93 cities)
-# + Bihar-specific gauge stations with precise coordinates
+# 40 Bihar CWC gauge stations + 17 other major Indian flood cities
 # =============================================================================
 STATIONS: List[Dict] = [
-    # ── Bihar CWC Gauge Stations (precise coordinates)
+    # -- Bihar CWC Gauge Stations (precise coordinates)
     {'name': 'Triveni',        'lat': 27.08, 'lon': 84.95, 'river': 'Gandak',       'state': 'Bihar'},
     {'name': 'Gandhighat',     'lat': 25.60, 'lon': 85.18, 'river': 'Ganga',        'state': 'Bihar'},
     {'name': 'Hathidah',       'lat': 25.38, 'lon': 85.84, 'river': 'Ganga',        'state': 'Bihar'},
@@ -107,35 +105,37 @@ STATIONS: List[Dict] = [
     {'name': 'Sripalpur',      'lat': 25.35, 'lon': 85.05, 'river': 'Punpun',       'state': 'Bihar'},
     {'name': 'Jainagar',       'lat': 26.59, 'lon': 86.23, 'river': 'Kamla',        'state': 'Bihar'},
     {'name': 'Dhengraghat',    'lat': 25.88, 'lon': 87.67, 'river': 'Mahananda',    'state': 'Bihar'},
-    # ── Other major Indian flood cities from cwc_scraper.py
-    {'name': 'Kolkata',        'lat': 22.57, 'lon': 88.36, 'river': 'Hooghly',       'state': 'West Bengal'},
-    {'name': 'Guwahati',       'lat': 26.14, 'lon': 91.74, 'river': 'Brahmaputra',   'state': 'Assam'},
-    {'name': 'Dibrugarh',      'lat': 27.48, 'lon': 94.91, 'river': 'Brahmaputra',   'state': 'Assam'},
-    {'name': 'Varanasi',       'lat': 25.32, 'lon': 83.01, 'river': 'Ganga',         'state': 'Uttar Pradesh'},
-    {'name': 'Gorakhpur',      'lat': 26.76, 'lon': 83.37, 'river': 'Rapti',         'state': 'Uttar Pradesh'},
-    {'name': 'Cuttack',        'lat': 20.46, 'lon': 85.88, 'river': 'Mahanadi',      'state': 'Odisha'},
-    {'name': 'Sambalpur',      'lat': 21.47, 'lon': 83.97, 'river': 'Mahanadi',      'state': 'Odisha'},
-    {'name': 'Kochi',          'lat': 9.93,  'lon': 76.26, 'river': 'Periyar',       'state': 'Kerala'},
-    {'name': 'Alappuzha',      'lat': 9.49,  'lon': 76.33, 'river': 'Pamba',         'state': 'Kerala'},
-    {'name': 'Rajahmundry',    'lat': 17.00, 'lon': 81.78, 'river': 'Godavari',      'state': 'Andhra Pradesh'},
-    {'name': 'Vijayawada',     'lat': 16.51, 'lon': 80.64, 'river': 'Krishna',       'state': 'Andhra Pradesh'},
-    {'name': 'Srinagar',       'lat': 34.08, 'lon': 74.80, 'river': 'Jhelum',        'state': 'Jammu and Kashmir'},
-    {'name': 'Haridwar',       'lat': 29.95, 'lon': 78.16, 'river': 'Ganga',         'state': 'Uttarakhand'},
-    {'name': 'Delhi',          'lat': 28.61, 'lon': 77.23, 'river': 'Yamuna',        'state': 'Delhi'},
-    {'name': 'Jabalpur',       'lat': 23.18, 'lon': 79.94, 'river': 'Narmada',       'state': 'Madhya Pradesh'},
-    {'name': 'Surat',          'lat': 21.17, 'lon': 72.83, 'river': 'Tapi',          'state': 'Gujarat'},
-    {'name': 'Kolhapur',       'lat': 16.70, 'lon': 74.24, 'river': 'Panchganga',    'state': 'Maharashtra'},
-    {'name': 'Nashik',         'lat': 19.99, 'lon': 73.79, 'river': 'Godavari',      'state': 'Maharashtra'},
+    # -- Other major Indian flood cities
+    {'name': 'Kolkata',        'lat': 22.57, 'lon': 88.36, 'river': 'Hooghly',      'state': 'West Bengal'},
+    {'name': 'Guwahati',       'lat': 26.14, 'lon': 91.74, 'river': 'Brahmaputra',  'state': 'Assam'},
+    {'name': 'Dibrugarh',      'lat': 27.48, 'lon': 94.91, 'river': 'Brahmaputra',  'state': 'Assam'},
+    {'name': 'Varanasi',       'lat': 25.32, 'lon': 83.01, 'river': 'Ganga',        'state': 'Uttar Pradesh'},
+    {'name': 'Gorakhpur',      'lat': 26.76, 'lon': 83.37, 'river': 'Rapti',        'state': 'Uttar Pradesh'},
+    {'name': 'Cuttack',        'lat': 20.46, 'lon': 85.88, 'river': 'Mahanadi',     'state': 'Odisha'},
+    {'name': 'Sambalpur',      'lat': 21.47, 'lon': 83.97, 'river': 'Mahanadi',     'state': 'Odisha'},
+    {'name': 'Kochi',          'lat': 9.93,  'lon': 76.26, 'river': 'Periyar',      'state': 'Kerala'},
+    {'name': 'Alappuzha',      'lat': 9.49,  'lon': 76.33, 'river': 'Pamba',        'state': 'Kerala'},
+    {'name': 'Rajahmundry',    'lat': 17.00, 'lon': 81.78, 'river': 'Godavari',     'state': 'Andhra Pradesh'},
+    {'name': 'Vijayawada',     'lat': 16.51, 'lon': 80.64, 'river': 'Krishna',      'state': 'Andhra Pradesh'},
+    {'name': 'Srinagar',       'lat': 34.08, 'lon': 74.80, 'river': 'Jhelum',       'state': 'Jammu and Kashmir'},
+    {'name': 'Haridwar',       'lat': 29.95, 'lon': 78.16, 'river': 'Ganga',        'state': 'Uttarakhand'},
+    {'name': 'Delhi',          'lat': 28.61, 'lon': 77.23, 'river': 'Yamuna',       'state': 'Delhi'},
+    {'name': 'Jabalpur',       'lat': 23.18, 'lon': 79.94, 'river': 'Narmada',      'state': 'Madhya Pradesh'},
+    {'name': 'Surat',          'lat': 21.17, 'lon': 72.83, 'river': 'Tapi',         'state': 'Gujarat'},
+    {'name': 'Kolhapur',       'lat': 16.70, 'lon': 74.24, 'river': 'Panchganga',   'state': 'Maharashtra'},
+    {'name': 'Nashik',         'lat': 19.99, 'lon': 73.79, 'river': 'Godavari',     'state': 'Maharashtra'},
 ]
 
 # =============================================================================
-# OPEN-METEO GLOFAS — DAILY DISCHARGE
-# past_days max = 92 for free tier; for full 5yr use date range
+# API ENDPOINTS
 # =============================================================================
 GLOFAS_URL  = 'https://flood-api.open-meteo.com/v1/flood'
 ARCHIVE_URL = 'https://archive-api.open-meteo.com/v1/archive'
 
 
+# =============================================================================
+# FETCH FUNCTIONS
+# =============================================================================
 def _fetch_glofas_history(
     lat: float, lon: float,
     start: date, end: date,
@@ -163,8 +163,7 @@ def _fetch_glofas_history(
             'date':          pd.to_datetime(times),
             'discharge_m3s': [float(x) if x is not None else np.nan for x in disq],
         })
-        df = df.dropna(subset=['discharge_m3s'])
-        return df
+        return df.dropna(subset=['discharge_m3s'])
     except Exception as e:
         print(f'  [GloFAS] ({lat},{lon}): {e}')
         return None
@@ -194,12 +193,11 @@ def _fetch_rainfall_history(
         soil   = hourly.get('soil_moisture_0_to_7cm', [])
         if not times:
             return None
-        df = pd.DataFrame({
+        return pd.DataFrame({
             'timestamp':    pd.to_datetime(times),
             'rain_1h':      [float(x) if x is not None else 0.0 for x in precip],
             'soil_moisture':[float(x) if x is not None else 0.3 for x in soil],
         })
-        return df
     except Exception as e:
         print(f'  [Archive] ({lat},{lon}): {e}')
         return None
@@ -210,7 +208,7 @@ def _fetch_rainfall_history(
 # =============================================================================
 def _discharge_to_level(discharge: pd.Series) -> pd.Series:
     """
-    Convert river discharge (m³/s) to approximate water level (m).
+    Convert river discharge (m3/s) to approximate water level (m).
     Manning proxy: level = (Q / 50) ^ 0.6
     Same formula used in cwc_scraper.py for consistency.
     """
@@ -219,64 +217,63 @@ def _discharge_to_level(discharge: pd.Series) -> pd.Series:
 
 def _build_features(
     station: Dict,
-    glofas_df: pd.DataFrame,       # daily: date, discharge_m3s
-    rain_df: Optional[pd.DataFrame],  # hourly: timestamp, rain_1h, soil_moisture
+    glofas_df: pd.DataFrame,
+    rain_df: Optional[pd.DataFrame],
 ) -> pd.DataFrame:
     """
     Combines GloFAS daily discharge with hourly rainfall to produce
     one row per hour with all 11 features model_train.py expects.
     """
-    # ── Upsample GloFAS daily → hourly by forward-filling
-    glofas_df = glofas_df.set_index('date').sort_index()
-    # Create hourly index spanning full date range
-    h_start = pd.Timestamp(glofas_df.index.min())
-    h_end   = pd.Timestamp(glofas_df.index.max()) + pd.Timedelta(hours=23)
+    # -- Upsample GloFAS daily -> hourly
+    glofas_df  = glofas_df.set_index('date').sort_index()
+    h_start    = pd.Timestamp(glofas_df.index.min())
+    h_end      = pd.Timestamp(glofas_df.index.max()) + pd.Timedelta(hours=23)
     hourly_idx = pd.date_range(h_start, h_end, freq='h')
 
-    # Resample: each day's discharge applies to all 24 hours of that day
     dis_hourly = (
         glofas_df['discharge_m3s']
         .reindex(hourly_idx, method='ffill')
         .interpolate(method='linear')
-        .fillna(method='bfill')
+        .bfill()                           # pandas >= 2.0 safe
     )
 
     df = pd.DataFrame({'timestamp': hourly_idx, 'discharge_m3s': dis_hourly.values})
 
-    # ── Merge hourly rainfall
+    # -- Merge hourly rainfall
     if rain_df is not None and not rain_df.empty:
         rain_df = rain_df.set_index('timestamp').sort_index()
-        df = df.set_index('timestamp')
-        df['rain_1h']      = rain_df['rain_1h'].reindex(df.index, method='nearest').fillna(0.0)
-        df['soil_moisture']= rain_df['soil_moisture'].reindex(df.index, method='nearest').fillna(0.3)
+        df      = df.set_index('timestamp')
+        df['rain_1h']       = rain_df['rain_1h'].reindex(df.index, method='nearest').fillna(0.0)
+        df['soil_moisture'] = rain_df['soil_moisture'].reindex(df.index, method='nearest').fillna(0.3)
         df = df.reset_index()
     else:
-        # Estimate from discharge seasonality if no rainfall data
         doy = df['timestamp'].dt.dayofyear
-        df['rain_1h']       = (3 * np.sin(2*np.pi*doy/365 - 1.0)**6).clip(0).round(4)
-        df['soil_moisture'] = (0.3 + 0.4 * np.sin(2*np.pi*doy/365 - 1.0)).clip(0,1).round(4)
+        df['rain_1h']       = (3 * np.sin(2 * np.pi * doy / 365 - 1.0) ** 6).clip(0).round(4)
+        df['soil_moisture'] = (0.3 + 0.4 * np.sin(2 * np.pi * doy / 365 - 1.0)).clip(0, 1).round(4)
 
-    # ── Derived features
-    rain_s          = pd.Series(df['rain_1h'].values)
-    df['rain_3d']   = rain_s.rolling(72,  min_periods=1).sum().values.round(4)
-    df['rain_7d']   = rain_s.rolling(168, min_periods=1).sum().values.round(4)
-    df['level_m']   = _discharge_to_level(df['discharge_m3s'])
+    # -- Rolling rain windows
+    rain_s        = pd.Series(df['rain_1h'].values)
+    df['rain_3d'] = rain_s.rolling(72,  min_periods=1).sum().values.round(4)
+    df['rain_7d'] = rain_s.rolling(168, min_periods=1).sum().values.round(4)
 
-    # upstream_level: add small positive offset (upstream is typically higher)
+    # -- Level from discharge
+    df['level_m'] = _discharge_to_level(df['discharge_m3s'])
+
+    # -- Upstream level proxy
     df['upstream_level'] = (df['level_m'] + np.random.uniform(0.2, 1.5, len(df))).round(4)
 
-    # forecast_mm: use next 24h rolling sum as proxy for forecast
+    # -- Forecast: next-24h rain sum (shifted back)
     df['forecast_mm'] = rain_s.rolling(24, min_periods=1).sum().shift(-24).fillna(0).values.round(4)
 
-    # Cyclic time features
-    doy              = df['timestamp'].dt.dayofyear
-    hour             = df['timestamp'].dt.hour
-    df['day_sin']    = np.sin(2*np.pi*doy/365).round(6)
-    df['day_cos']    = np.cos(2*np.pi*doy/365).round(6)
-    df['hour_sin']   = np.sin(2*np.pi*hour/24).round(6)
+    # -- Cyclic time features
+    doy           = df['timestamp'].dt.dayofyear
+    hour          = df['timestamp'].dt.hour
+    df['day_sin'] = np.sin(2 * np.pi * doy / 365).round(6)
+    df['day_cos'] = np.cos(2 * np.pi * doy / 365).round(6)
+    df['hour_sin']= np.sin(2 * np.pi * hour / 24).round(6)
 
-    # Format timestamp as ISO string
-    df['timestamp']  = df['timestamp'].dt.strftime('%Y-%m-%dT%H:%M:%S')
+    # -- Format timestamp
+    df['timestamp'] = df['timestamp'].dt.strftime('%Y-%m-%dT%H:%M:%S')
 
     return df[CSV_COLS].dropna()
 
@@ -294,25 +291,23 @@ def download_station(
     Downloads historical data for one station and saves to data/raw/<name>.csv.
     Returns (station_name, rows_added).
     """
-    name = station['name']
-    lat  = station['lat']
-    lon  = station['lon']
-
+    name     = station['name']
+    lat      = station['lat']
+    lon      = station['lon']
     end_dt   = date.today()
     start_dt = end_dt - timedelta(days=365 * years)
 
     if verbose:
-        print(f'  Downloading {name} ({lat},{lon}) '
-              f'{start_dt} → {end_dt} ...')
+        print(f'  Downloading {name} ({lat},{lon}) {start_dt} -> {end_dt} ...')
 
-    # ── GloFAS discharge
+    # -- GloFAS discharge
     glofas_df = _fetch_glofas_history(lat, lon, start_dt, end_dt)
     if glofas_df is None or glofas_df.empty:
         if verbose:
             print(f'  [SKIP] {name}: No GloFAS data returned')
         return name, 0
 
-    # ── Hourly rainfall (do in 1-year chunks to avoid timeout)
+    # -- Hourly rainfall in 1-year chunks to avoid timeout
     rain_frames = []
     chunk_start = start_dt
     while chunk_start < end_dt:
@@ -325,43 +320,44 @@ def download_station(
 
     rain_df = pd.concat(rain_frames) if rain_frames else None
 
-    # ── Build feature matrix
+    # -- Build feature matrix
     df = _build_features(station, glofas_df, rain_df)
-
     if df.empty:
         if verbose:
             print(f'  [SKIP] {name}: Empty after feature build')
         return name, 0
 
-    # ── Save / merge
-    safe_name = name.replace('/', '_').replace(' ', '_')
-    path      = RAW_DIR / f'{safe_name}.csv'
+    # -- Save / merge
+    safe_name  = name.replace('/', '_').replace(' ', '_')
+    path       = RAW_DIR / f'{safe_name}.csv'
     rows_added = len(df)
 
     if merge and path.exists():
         try:
-            existing  = pd.read_csv(path)
+            existing    = pd.read_csv(path)
             existing_ts = set(existing['timestamp'].values)
-            new_rows  = df[~df['timestamp'].isin(existing_ts)]
+            new_rows    = df[~df['timestamp'].isin(existing_ts)]
             if not new_rows.empty:
-                combined = pd.concat([existing, new_rows], ignore_index=True)
-                combined = combined.drop_duplicates('timestamp').sort_values('timestamp')
+                combined = (
+                    pd.concat([existing, new_rows], ignore_index=True)
+                    .drop_duplicates('timestamp')
+                    .sort_values('timestamp')
+                )
                 combined[CSV_COLS].to_csv(path, index=False)
                 rows_added = len(new_rows)
                 if verbose:
-                    print(f'  ✓ {name}: +{rows_added} new rows '
-                          f'(total {len(combined):,})')
+                    print(f'  + {name}: +{rows_added} new rows (total {len(combined):,})')
             else:
                 if verbose:
-                    print(f'  ✓ {name}: already up to date ({len(existing):,} rows)')
+                    print(f'  = {name}: already up to date ({len(existing):,} rows)')
                 rows_added = 0
         except Exception as e:
-            print(f'  [WARN] merge failed for {name}: {e} — overwriting')
+            print(f'  [WARN] merge failed for {name}: {e} -- overwriting')
             df[CSV_COLS].to_csv(path, index=False)
     else:
         df[CSV_COLS].to_csv(path, index=False)
         if verbose:
-            print(f'  ✓ {name}: {rows_added:,} rows → {path.name}')
+            print(f'  OK {name}: {rows_added:,} rows -> {path.name}')
 
     return name, rows_added
 
@@ -378,7 +374,7 @@ def download_all(
     targets = stations or STATIONS
     print(f'\nOpsFlood Historical Downloader')
     print(f'  Stations : {len(targets)}')
-    print(f'  Period   : {years} years ({date.today() - timedelta(days=365*years)} → today)')
+    print(f'  Period   : {years} years ({date.today() - timedelta(days=365*years)} -> today)')
     print(f'  Workers  : {workers} parallel')
     print(f'  Output   : {RAW_DIR}\n')
 
@@ -398,12 +394,14 @@ def download_all(
                 results.append({'station': st['name'], 'rows': 0, 'error': str(e)})
                 print(f'  [ERROR] {st["name"]}: {e}')
 
-    # ── Summary
-    ok       = [r for r in results if r['rows'] > 0]
-    total    = sum(r['rows'] for r in ok)
-    print(f'\n{═ Done {═ "="*50}')
+    # -- Summary (plain ASCII only)
+    ok    = [r for r in results if r['rows'] > 0]
+    total = sum(r['rows'] for r in ok)
+    sep   = '=' * 55
+    print(f'\n{sep}')
     print(f'  Downloaded : {len(ok)}/{len(targets)} stations')
-    print(f'  Total rows : {total:,}  (~{total/len(ok):.0f} rows/station)' if ok else '')
+    if ok:
+        print(f'  Total rows : {total:,}  (~{total // len(ok):,} rows/station)')
     print(f'  Output     : {RAW_DIR}')
     print(f'\nNext step: python -m backend.ml.model_train --station all --plot')
 
@@ -423,11 +421,11 @@ def show_status():
     total_rows = 0
     for p in csvs:
         try:
-            df     = pd.read_csv(p, usecols=['timestamp'])
-            n      = len(df)
-            frm    = str(df['timestamp'].iloc[0])[:10]  if n else ''
-            to     = str(df['timestamp'].iloc[-1])[:10] if n else ''
-            ready  = '✓' if n >= 500 else f'need {500-n}'
+            df    = pd.read_csv(p, usecols=['timestamp'])
+            n     = len(df)
+            frm   = str(df['timestamp'].iloc[0])[:10]  if n else ''
+            to    = str(df['timestamp'].iloc[-1])[:10] if n else ''
+            ready = 'OK' if n >= 500 else f'need {500 - n}'
             total_rows += n
             print(f'{p.stem:<35} {n:>8}  {frm:<12}  {to:<12}  {ready}')
         except Exception as e:
@@ -441,21 +439,21 @@ def show_status():
 # =============================================================================
 def main():
     ap = argparse.ArgumentParser(
-        description='OpsFlood Historical Data Downloader — 5-year GloFAS + IMD rainfall'
+        description='OpsFlood Historical Data Downloader -- 5-year GloFAS + rainfall'
     )
-    ap.add_argument('--download',  action='store_true',
+    ap.add_argument('--download', action='store_true',
                     help='Download all stations')
-    ap.add_argument('--station',   default='',
+    ap.add_argument('--station',  default='',
                     help='Download a single station by name')
-    ap.add_argument('--years',     type=int, default=5,
+    ap.add_argument('--years',    type=int, default=5,
                     help='Years of history to fetch (default 5)')
-    ap.add_argument('--merge',     action='store_true', default=True,
+    ap.add_argument('--merge',    action='store_true', default=True,
                     help='Merge with existing CSVs (default true)')
-    ap.add_argument('--no-merge',  action='store_false', dest='merge',
+    ap.add_argument('--no-merge', action='store_false', dest='merge',
                     help='Overwrite existing CSVs')
-    ap.add_argument('--workers',   type=int, default=6,
+    ap.add_argument('--workers',  type=int, default=6,
                     help='Parallel download workers (default 6)')
-    ap.add_argument('--status',    action='store_true',
+    ap.add_argument('--status',   action='store_true',
                     help='Show existing CSV coverage')
     args = ap.parse_args()
 
@@ -467,7 +465,6 @@ def main():
         matches = [s for s in STATIONS
                    if s['name'].lower() == args.station.lower()]
         if not matches:
-            # fuzzy match
             matches = [s for s in STATIONS
                        if args.station.lower() in s['name'].lower()]
         if not matches:
