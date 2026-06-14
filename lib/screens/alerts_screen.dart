@@ -1,16 +1,12 @@
-// lib/screens/alerts_screen.dart  v2.0
+// lib/screens/alerts_screen.dart  v2.1
 //
-// v2.0 (14 Jun 2026) — Full UI rebuild
+// v2.1 (14 Jun 2026) — Notification deep-link filter
 //
 //   Changes:
-//     • Watches alertsProvider (FloodAlert list from Riverpod) for
-//       the alert FEED, keeping the same data source.
-//     • Header KPI strip: critical / danger / warning counts.
-//     • Severity-sorted card list with colour-coded left border, pulse
-//       dot for live stations, level progress bar, and quick-nav to
-//       CityDetailScreen.
-//     • Empty state: animated check + "All clear" copy.
-//     • SOS FAB retained.
+//     • Converted ConsumerWidget → ConsumerStatefulWidget
+//     • Added optional `stationFilter` constructor param
+//     • When opened from a notification tap, auto-filters to that station
+//     • v2.0 UI fully retained (KPI strip, cards, SOS FAB, empty state)
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/river_theme.dart';
@@ -19,9 +15,30 @@ import '../providers/alert_provider.dart';
 import '../providers/alerts_provider.dart';
 import '../app_router.dart';
 
-class AlertsScreen extends ConsumerWidget {
+class AlertsScreen extends ConsumerStatefulWidget {
   static const String route = Routes.alerts;
-  const AlertsScreen({super.key});
+
+  /// When non-null (set by notification tap handler in main.dart),
+  /// the screen pre-filters to show only alerts matching this station name.
+  final String? stationFilter;
+
+  const AlertsScreen({super.key, this.stationFilter});
+
+  @override
+  ConsumerState<AlertsScreen> createState() => _AlertsScreenState();
+}
+
+class _AlertsScreenState extends ConsumerState<AlertsScreen> {
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    // Pre-populate search when opened from a notification
+    if (widget.stationFilter != null && widget.stationFilter!.isNotEmpty) {
+      _searchQuery = widget.stationFilter!.toLowerCase();
+    }
+  }
 
   // ── severity palette ───────────────────────────────────────────────────────
   static Color _severityColor(AlertSeverity s, RiverColors t) {
@@ -58,10 +75,20 @@ class AlertsScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final t      = RiverColors.of(context);
     final ap     = ref.watch(alertProvider);
-    final alerts = ap.all;
+
+    // Apply station filter when coming from notification tap
+    final allAlerts = ap.all;
+    final alerts = _searchQuery.isEmpty
+        ? allAlerts
+        : allAlerts
+            .where((a) =>
+                (a.station as String).toLowerCase().contains(_searchQuery) ||
+                (a.title   as String).toLowerCase().contains(_searchQuery) ||
+                (a.river   as String).toLowerCase().contains(_searchQuery))
+            .toList();
 
     final criticalCount = alerts.where((a) =>
         a.severity == AlertSeverity.critical ||
@@ -77,10 +104,29 @@ class AlertsScreen extends ConsumerWidget {
           // ── App bar ──────────────────────────────────────────────────────
           Td3AppBar(
             title: 'Flood Alerts',
-            subtitle: alerts.isEmpty
-                ? 'No active alerts'
-                : '${alerts.length} active  ·  $criticalCount critical',
+            subtitle: _searchQuery.isNotEmpty
+                ? 'Showing: $_searchQuery  (${alerts.length} alert${alerts.length == 1 ? '' : 's'})'
+                : alerts.isEmpty
+                    ? 'No active alerts'
+                    : '${alerts.length} active  ·  $criticalCount critical',
             actions: [
+              // Clear filter chip when filtering from notification
+              if (_searchQuery.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: ActionChip(
+                    label: Text(
+                      '✕  $_searchQuery',
+                      style: TextStyle(
+                          color: t.accent,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700),
+                    ),
+                    backgroundColor: t.accent.withOpacity(0.12),
+                    side: BorderSide(color: t.accent.withOpacity(0.4)),
+                    onPressed: () => setState(() => _searchQuery = ''),
+                  ),
+                ),
               IconButton(
                 icon: Icon(Icons.map_outlined, color: t.accent),
                 tooltip: 'Bihar Map',
@@ -127,7 +173,12 @@ class AlertsScreen extends ConsumerWidget {
           if (alerts.isEmpty)
             SliverFillRemaining(
               hasScrollBody: false,
-              child: _EmptyState(theme: t),
+              child: _EmptyState(
+                theme: t,
+                filterActive: _searchQuery.isNotEmpty,
+                stationName: _searchQuery,
+                onClearFilter: () => setState(() => _searchQuery = ''),
+              ),
             )
 
           // ── Alert cards ──────────────────────────────────────────────────
@@ -221,7 +272,7 @@ class _KpiChip extends StatelessWidget {
 
 // ── Alert card ────────────────────────────────────────────────────────────────
 class _AlertCard extends StatelessWidget {
-  final dynamic     alert;        // FloodAlert
+  final dynamic     alert;
   final RiverColors theme;
   final Color       severityColor;
   final IconData    severityIcon;
@@ -243,7 +294,6 @@ class _AlertCard extends StatelessWidget {
     final lvl       = alert.currentLevel as double;
     final dl        = alert.thresholdLevel as double;
     final progress  = dl > 0 ? (lvl / dl).clamp(0.0, 1.0) : 0.0;
-    final isCritical = severityColor == const Color(0xFFFF1744);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -289,7 +339,6 @@ class _AlertCard extends StatelessWidget {
                         // Title row
                         Row(
                           children: [
-                            // Pulse dot for live
                             _PulseDot(color: severityColor),
                             const SizedBox(width: 6),
                             Expanded(
@@ -302,7 +351,6 @@ class _AlertCard extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            // Severity badge
                             Container(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 7, vertical: 3),
@@ -326,7 +374,6 @@ class _AlertCard extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 4),
-                        // River + level
                         Text(
                           '${alert.river}  ·  ${lvl.toStringAsFixed(2)} m'
                           '${dl > 0 ? "  (DL ${dl.toStringAsFixed(2)} m)" : ""}',
@@ -335,7 +382,6 @@ class _AlertCard extends StatelessWidget {
                               fontSize: 12),
                         ),
                         const SizedBox(height: 8),
-                        // Progress bar
                         ClipRRect(
                           borderRadius: BorderRadius.circular(4),
                           child: LinearProgressIndicator(
@@ -386,7 +432,7 @@ class _AlertCard extends StatelessWidget {
   }
 }
 
-// ── Animated pulse dot (live indicator) ──────────────────────────────────────
+// ── Animated pulse dot ────────────────────────────────────────────────────────
 class _PulseDot extends StatefulWidget {
   final Color color;
   const _PulseDot({required this.color});
@@ -440,7 +486,16 @@ class _PulseDotState extends State<_PulseDot>
 // ── Empty state ───────────────────────────────────────────────────────────────
 class _EmptyState extends StatelessWidget {
   final RiverColors theme;
-  const _EmptyState({required this.theme});
+  final bool        filterActive;
+  final String      stationName;
+  final VoidCallback? onClearFilter;
+
+  const _EmptyState({
+    required this.theme,
+    this.filterActive = false,
+    this.stationName  = '',
+    this.onClearFilter,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -455,23 +510,50 @@ class _EmptyState extends StatelessWidget {
               color: t.riverNormal.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.check_circle_outline_rounded,
-                size: 56, color: t.riverNormal),
+            child: Icon(
+              filterActive
+                  ? Icons.search_off_rounded
+                  : Icons.check_circle_outline_rounded,
+              size: 56,
+              color: t.riverNormal,
+            ),
           ),
           const SizedBox(height: 16),
-          Text('All Clear',
-              style: TextStyle(
-                  color: t.textPrimary,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700)),
+          Text(
+            filterActive ? 'No alerts for "$stationName"' : 'All Clear',
+            style: TextStyle(
+                color: t.textPrimary,
+                fontSize: 20,
+                fontWeight: FontWeight.w700),
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: 6),
-          Text('No active flood alerts at this time.',
-              style: TextStyle(
-                  color: t.textSecondary, fontSize: 13)),
-          const SizedBox(height: 4),
-          Text('Levels are within safe ranges.',
-              style: TextStyle(
-                  color: t.textSecondary, fontSize: 12)),
+          Text(
+            filterActive
+                ? 'This station has no active alerts right now.'
+                : 'No active flood alerts at this time.',
+            style: TextStyle(color: t.textSecondary, fontSize: 13),
+            textAlign: TextAlign.center,
+          ),
+          if (filterActive && onClearFilter != null) ...[
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: onClearFilter,
+              icon: const Icon(Icons.clear_rounded),
+              label: const Text('Show all alerts'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: t.accent,
+                side: BorderSide(color: t.accent),
+              ),
+            ),
+          ] else ...[
+            const SizedBox(height: 4),
+            Text(
+              'Levels are within safe ranges.',
+              style:
+                  TextStyle(color: t.textSecondary, fontSize: 12),
+            ),
+          ],
         ],
       ),
     );
