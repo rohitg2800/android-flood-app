@@ -11,6 +11,7 @@
 //   • Source breakdown footer: "155 LiveEngine · 14 DataFetch · 1 Birpur = 170"
 //     derived directly from mergedStationsProvider slice counts.
 //   • AppBar subtitle shows total merged count.
+// fix: null-coalesce String? dataSource / lastUpdated at every call-site.
 //
 library;
 
@@ -71,7 +72,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     ref.read(floodProvider).refresh();
   }
 
-  // ── Source label helpers ──────────────────────────────────────────────────
+  // ── Source label helpers ────────────────────────────────────────────────
   String _sourceLabel(String src) {
     if (src.contains('LIVE_ENGINE') || src.contains('LiveEngine') ||
         src.contains('BIHAR_LIVE_ENGINE')) return 'LiveEngine';
@@ -95,27 +96,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final t       = RiverColors.of(context);
-    final fp      = ref.watch(floodProvider);
-    final ap      = ref.watch(alertProvider);
-    final merged  = ref.watch(mergedStationsProvider);
+    final t      = RiverColors.of(context);
+    final fp     = ref.watch(floodProvider);
+    final ap     = ref.watch(alertProvider);
+    final merged = ref.watch(mergedStationsProvider);
 
     // ── Counts from merged list ──────────────────────────────────────────────
-    final totalCount    = merged.length;
-    final liveCount     = merged.where((s) => s.isLive).length;
-    final extremeCount  = merged.where((s) => s.dangerClass == DangerClass.extreme).length;
-    final severeCount   = merged.where((s) =>
-        s.dangerClass == DangerClass.severe ||
-        s.dangerClass == DangerClass.extreme).length;
-    final warningCount  = merged.where((s) => s.dangerClass == DangerClass.aboveNormal).length;
-    final normalCount   = merged.where((s) => s.dangerClass == DangerClass.normal).length;
+    final totalCount   = merged.length;
+    final liveCount    = merged.where((s) => s.isLive).length;
+    final extremeCount = merged
+        .where((s) => s.dangerClass == DangerClass.extreme).length;
+    final severeCount  = merged
+        .where((s) =>
+            s.dangerClass == DangerClass.severe ||
+            s.dangerClass == DangerClass.extreme)
+        .length;
+    final warningCount = merged
+        .where((s) => s.dangerClass == DangerClass.aboveNormal).length;
+    final normalCount  = merged
+        .where((s) => s.dangerClass == DangerClass.normal).length;
 
-    // ── Source breakdown ─────────────────────────────────────────────────────
-    final liveEngineStations = merged.where((s) => _sourceLabel(s.dataSource) == 'LiveEngine').toList();
-    final dataFetchStations  = merged.where((s) => _sourceLabel(s.dataSource) == 'DataFetch').toList();
-    final wrdStations        = merged.where((s) => _sourceLabel(s.dataSource) == 'WRD').toList();
-    final cwcStations        = merged.where((s) => _sourceLabel(s.dataSource) == 'CWC').toList();
-    final seedStations       = merged.where((s) => _sourceLabel(s.dataSource) == 'SEED').toList();
+    // ── Source breakdown (null-coalesce dataSource) ──────────────────────
+    final leCount   = merged.where((s) => _sourceLabel(s.dataSource ?? '') == 'LiveEngine').length;
+    final cwcCount  = merged.where((s) => _sourceLabel(s.dataSource ?? '') == 'CWC').length;
+    final dfCount   = merged.where((s) => _sourceLabel(s.dataSource ?? '') == 'DataFetch').length;
+    final wrdCount  = merged.where((s) => _sourceLabel(s.dataSource ?? '') == 'WRD').length;
+    final seedCount = merged.where((s) => _sourceLabel(s.dataSource ?? '') == 'SEED').length;
 
     return Scaffold(
       backgroundColor: t.scaffoldBg,
@@ -140,13 +146,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               padding: const EdgeInsets.all(16),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  // ── Status summary row ──
                   _buildSummaryRow(t, extremeCount, severeCount, warningCount, normalCount),
                   const SizedBox(height: 12),
-                  // ── Source breakdown bar ──
-                  _buildSourceBreakdown(t, merged, liveEngineStations.length,
-                      cwcStations.length, dataFetchStations.length,
-                      wrdStations.length, seedStations.length, totalCount),
+                  _buildSourceBreakdown(
+                      t, totalCount, leCount, cwcCount, dfCount, wrdCount, seedCount),
                   const SizedBox(height: 16),
                   _buildQuickActions(context, t),
                   const SizedBox(height: 16),
@@ -162,7 +165,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     );
   }
 
-  // ── Summary row ──────────────────────────────────────────────────────────
+  // ── Summary row ─────────────────────────────────────────────────────────
   Widget _buildSummaryRow(RiverColors t, int extreme, int severe,
       int warning, int normal) {
     return Row(
@@ -214,8 +217,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   }
 
   // ── Source breakdown banner ───────────────────────────────────────────────
-  Widget _buildSourceBreakdown(RiverColors t, List<RiverStation> merged,
-      int le, int cwc, int df, int wrd, int seed, int total) {
+  Widget _buildSourceBreakdown(RiverColors t, int total,
+      int le, int cwc, int df, int wrd, int seed) {
     return Td3Card(
       elevation: Td3.elevLow,
       child: Padding(
@@ -225,7 +228,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           children: [
             Row(
               children: [
-                // pulsing dot
                 _PulseDot(color: const Color(0xFF00E676)),
                 const SizedBox(width: 6),
                 Text(
@@ -239,10 +241,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               ],
             ),
             const SizedBox(height: 8),
-            // Proportional segmented bar
-            _SourceBar(total: total, le: le, cwc: cwc, df: df, wrd: wrd, seed: seed),
+            _SourceBar(
+                total: total, le: le, cwc: cwc, df: df, wrd: wrd, seed: seed),
             const SizedBox(height: 8),
-            // Legend row
             Wrap(
               spacing: 10,
               runSpacing: 4,
@@ -263,21 +264,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   // ── Quick Actions grid ────────────────────────────────────────────────────
   Widget _buildQuickActions(BuildContext context, RiverColors t) {
     const actions = [
-      _QA('AI Predictor',     Icons.auto_graph,              Color(0xFF7B2FF7), AiPredictionScreen.route),
-      _QA('Rainfall',         Icons.cloudy_snowing,          Color(0xFF00B0FF), RainfallForecastScreen.route),
-      _QA('River Map',        Icons.map_outlined,            Colors.blue,       BiharRiverMapScreen.route),
-      _QA('Evacuation',       Icons.directions_run,          Colors.deepOrange, EvacuationRoutesScreen.route),
-      _QA('Report',           Icons.report_problem_outlined, Colors.red,        IncidentReportScreen.route),
-      _QA('Crowd Feed',       Icons.dynamic_feed_outlined,   Colors.teal,       CrowdReportFeedScreen.route),
-      _QA('River Explorer',   Icons.water_outlined,          Color(0xFF00E5FF), IndiaRiverExplorerScreen.route),
-      _QA('Community',        Icons.people_outline,          Colors.green,      CommunityScreen.route),
+      _QA('AI Predictor',   Icons.auto_graph,              Color(0xFF7B2FF7), AiPredictionScreen.route),
+      _QA('Rainfall',       Icons.cloudy_snowing,          Color(0xFF00B0FF), RainfallForecastScreen.route),
+      _QA('River Map',      Icons.map_outlined,            Colors.blue,       BiharRiverMapScreen.route),
+      _QA('Evacuation',     Icons.directions_run,          Colors.deepOrange, EvacuationRoutesScreen.route),
+      _QA('Report',         Icons.report_problem_outlined, Colors.red,        IncidentReportScreen.route),
+      _QA('Crowd Feed',     Icons.dynamic_feed_outlined,   Colors.teal,       CrowdReportFeedScreen.route),
+      _QA('River Explorer', Icons.water_outlined,          Color(0xFF00E5FF), IndiaRiverExplorerScreen.route),
+      _QA('Community',      Icons.people_outline,          Colors.green,      CommunityScreen.route),
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Quick Actions',
             style: TextStyle(
-                color: t.textPrimary, fontWeight: FontWeight.w700, fontSize: 14)),
+                color: t.textPrimary,
+                fontWeight: FontWeight.w700,
+                fontSize: 14)),
         const SizedBox(height: 10),
         GridView.count(
           crossAxisCount: 4,
@@ -301,13 +304,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   // ── At-Risk Cities ────────────────────────────────────────────────────────
   Widget _buildAtRiskCities(
       BuildContext context, RiverColors t, List<RiverStation> merged) {
-    // top 8 by riskScore, exclude NORMAL + SEED-only stations
     final atRisk = merged
         .where((s) => s.dangerClass != DangerClass.normal)
         .take(8)
         .toList();
     if (atRisk.isEmpty) return const SizedBox.shrink();
-
     return Td3Card(
       elevation: Td3.elevMid,
       child: Column(
@@ -317,7 +318,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
             child: Row(
               children: [
-                Icon(Icons.location_city_rounded, color: t.riverDanger, size: 16),
+                Icon(Icons.location_city_rounded,
+                    color: t.riverDanger, size: 16),
                 const SizedBox(width: 6),
                 Text('At-Risk Cities',
                     style: TextStyle(
@@ -326,15 +328,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                         fontSize: 14)),
                 const Spacer(),
                 Text('${atRisk.length} stations',
-                    style: TextStyle(color: t.textSecondary, fontSize: 11)),
+                    style:
+                        TextStyle(color: t.textSecondary, fontSize: 11)),
               ],
             ),
           ),
           const SizedBox(height: 4),
-          ...atRisk.map((s) => _AtRiskTile(station: s, theme: t,
-              onTap: () => Navigator.push(context,
-                  MaterialPageRoute(
-                      builder: (_) => CityDetailScreen(cityName: s.city))))),
+          ...atRisk.map((s) => _AtRiskTile(
+                station: s,
+                theme: t,
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) =>
+                            CityDetailScreen(cityName: s.city))),
+              )),
           const SizedBox(height: 6),
         ],
       ),
@@ -346,7 +354,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       BuildContext context, RiverColors t, List<RiverStation> merged) {
     final live = merged.where((s) => s.isLive).take(12).toList();
     if (live.isEmpty) return const SizedBox.shrink();
-
     return Td3Card(
       elevation: Td3.elevMid,
       child: Column(
@@ -388,7 +395,8 @@ class _AtRiskTile extends StatelessWidget {
   final RiverStation station;
   final RiverColors  theme;
   final VoidCallback onTap;
-  const _AtRiskTile({required this.station, required this.theme, required this.onTap});
+  const _AtRiskTile(
+      {required this.station, required this.theme, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -396,19 +404,20 @@ class _AtRiskTile extends StatelessWidget {
     final s  = station;
     final dc = s.dangerClass;
 
-    Color barColor;
+    Color  barColor;
     String label;
     switch (dc) {
-      case DangerClass.extreme:    barColor = const Color(0xFFFF1744); label = 'EXTREME';    break;
-      case DangerClass.severe:     barColor = const Color(0xFFFF6D00); label = 'DANGER';     break;
-      case DangerClass.aboveNormal:barColor = const Color(0xFFFFD740); label = 'WARNING';    break;
-      default:                     barColor = const Color(0xFF69F0AE); label = 'NORMAL';     break;
+      case DangerClass.extreme:     barColor = const Color(0xFFFF1744); label = 'EXTREME'; break;
+      case DangerClass.severe:      barColor = const Color(0xFFFF6D00); label = 'DANGER';  break;
+      case DangerClass.aboveNormal: barColor = const Color(0xFFFFD740); label = 'WARNING'; break;
+      default:                      barColor = const Color(0xFF69F0AE); label = 'NORMAL';  break;
     }
 
-    // level fraction clamped 0–1 (relative to HFL)
-    final max    = s.hfl   > 0 ? s.hfl   : (s.danger > 0 ? s.danger + 2 : 1.0);
-    final frac   = (s.current / max).clamp(0.0, 1.0);
-    final dFrac  = (s.danger  / max).clamp(0.0, 1.0);
+    final max   = s.hfl    > 0 ? s.hfl    : (s.danger > 0 ? s.danger + 2 : 1.0);
+    final frac  = (s.current / max).clamp(0.0, 1.0);
+    final dFrac = (s.danger  / max).clamp(0.0, 1.0);
+    // null-coalesce String? fields
+    final srcLabel = s.dataSource ?? '';
 
     return InkWell(
       onTap: onTap,
@@ -428,22 +437,26 @@ class _AtRiskTile extends StatelessWidget {
                               color: t.textPrimary,
                               fontSize: 13,
                               fontWeight: FontWeight.w600)),
-                      Text('${s.river}  ·  ${s.dataSource}',
+                      Text('${s.river}  ·  $srcLabel',
                           style: TextStyle(
                               color: t.textSecondary, fontSize: 10)),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 7, vertical: 2),
                   decoration: BoxDecoration(
                     color: barColor.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: barColor.withOpacity(0.5)),
+                    border:
+                        Border.all(color: barColor.withOpacity(0.5)),
                   ),
                   child: Text(label,
                       style: TextStyle(
-                          color: barColor, fontSize: 9, fontWeight: FontWeight.w800)),
+                          color: barColor,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800)),
                 ),
                 const SizedBox(width: 4),
                 Text(
@@ -451,26 +464,24 @@ class _AtRiskTile extends StatelessWidget {
                       ? '${s.current.toStringAsFixed(2)} m'
                       : '——',
                   style: TextStyle(
-                      color: barColor, fontSize: 12, fontWeight: FontWeight.w700),
+                      color: barColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700),
                 ),
               ],
             ),
             const SizedBox(height: 5),
-            // Graphical level bar
             LayoutBuilder(builder: (ctx, constraints) {
               final w = constraints.maxWidth;
               return Stack(
                 children: [
-                  // background track
                   Container(
-                    height: 5,
-                    width: w,
+                    height: 5, width: w,
                     decoration: BoxDecoration(
                       color: t.divider.withOpacity(0.4),
                       borderRadius: BorderRadius.circular(3),
                     ),
                   ),
-                  // filled level
                   Container(
                     height: 5,
                     width: w * frac,
@@ -479,15 +490,11 @@ class _AtRiskTile extends StatelessWidget {
                       borderRadius: BorderRadius.circular(3),
                     ),
                   ),
-                  // danger threshold tick
                   if (dFrac > 0)
                     Positioned(
                       left: (w * dFrac).clamp(0, w - 1.5),
                       child: Container(
-                        width: 1.5,
-                        height: 5,
-                        color: t.riverDanger,
-                      ),
+                          width: 1.5, height: 5, color: t.riverDanger),
                     ),
                 ],
               );
@@ -496,10 +503,15 @@ class _AtRiskTile extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Current: ${s.current > 0 ? s.current.toStringAsFixed(2) : "——"} m',
-                    style: TextStyle(color: t.textSecondary, fontSize: 9)),
-                Text('DL: ${s.danger.toStringAsFixed(2)} m',
-                    style: TextStyle(color: t.riverDanger.withOpacity(0.8), fontSize: 9)),
+                Text(
+                  'Current: ${s.current > 0 ? s.current.toStringAsFixed(2) : "——"} m',
+                  style: TextStyle(
+                      color: t.textSecondary, fontSize: 9)),
+                Text(
+                  'DL: ${s.danger.toStringAsFixed(2)} m',
+                  style: TextStyle(
+                      color: t.riverDanger.withOpacity(0.8),
+                      fontSize: 9)),
               ],
             ),
           ],
@@ -515,12 +527,13 @@ class _AtRiskTile extends StatelessWidget {
 class _LiveStationTile extends StatelessWidget {
   final RiverStation station;
   final RiverColors  theme;
-  const _LiveStationTile({required this.station, required this.theme});
+  const _LiveStationTile(
+      {required this.station, required this.theme});
 
   String _srcLabel(String src) {
     if (src.contains('LIVE_ENGINE') || src.contains('LiveEngine') ||
         src.contains('BIHAR_LIVE_ENGINE')) return 'LE';
-    if (src.contains('WRD'))   return 'WRD';
+    if (src.contains('WRD'))                            return 'WRD';
     if (src.contains('CWC') || src.contains('BEFIQR')) return 'CWC';
     return 'DF';
   }
@@ -539,6 +552,7 @@ class _LiveStationTile extends StatelessWidget {
     final t  = theme;
     final s  = station;
     final dc = s.dangerClass;
+
     Color levelColor;
     switch (dc) {
       case DangerClass.extreme:     levelColor = const Color(0xFFFF1744); break;
@@ -549,14 +563,16 @@ class _LiveStationTile extends StatelessWidget {
 
     final max   = s.hfl   > 0 ? s.hfl   : (s.danger > 0 ? s.danger + 2 : 1.0);
     final frac  = (s.current / max).clamp(0.0, 1.0);
-    final sc    = _srcLabel(s.dataSource);
-    final scCol = _srcColor(s.dataSource);
+    // null-coalesce String? fields
+    final src   = s.dataSource  ?? '';
+    final time  = s.lastUpdated ?? '--:--';
+    final sc    = _srcLabel(src);
+    final scCol = _srcColor(src);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       child: Row(
         children: [
-          // source badge
           Container(
             width: 30,
             padding: const EdgeInsets.symmetric(vertical: 2),
@@ -568,7 +584,9 @@ class _LiveStationTile extends StatelessWidget {
             child: Text(sc,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                    color: scCol, fontSize: 9, fontWeight: FontWeight.w800)),
+                    color: scCol,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800)),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -586,7 +604,9 @@ class _LiveStationTile extends StatelessWidget {
                               fontWeight: FontWeight.w600)),
                     ),
                     Text(
-                      s.current > 0 ? '${s.current.toStringAsFixed(2)} m' : '——',
+                      s.current > 0
+                          ? '${s.current.toStringAsFixed(2)} m'
+                          : '——',
                       style: TextStyle(
                           color: levelColor,
                           fontSize: 11,
@@ -601,15 +621,17 @@ class _LiveStationTile extends StatelessWidget {
                     value: frac,
                     minHeight: 3,
                     backgroundColor: t.divider.withOpacity(0.3),
-                    valueColor: AlwaysStoppedAnimation<Color>(levelColor),
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(levelColor),
                   ),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 8),
-          Text(s.lastUpdated,
-              style: TextStyle(color: t.textSecondary, fontSize: 10)),
+          Text(time,
+              style: TextStyle(
+                  color: t.textSecondary, fontSize: 10)),
         ],
       ),
     );
@@ -645,15 +667,12 @@ class _SourceBar extends StatelessWidget {
     });
   }
 
-  Widget _seg(double w, double frac, Color c) => Container(
-        width: w * frac,
-        height: 6,
-        color: c,
-      );
+  Widget _seg(double w, double frac, Color c) =>
+      Container(width: w * frac, height: 6, color: c);
 }
 
 class _SourceLegend extends StatelessWidget {
-  final Color color;
+  final Color  color;
   final String label;
   const _SourceLegend({required this.color, required this.label});
 
@@ -661,8 +680,11 @@ class _SourceLegend extends StatelessWidget {
   Widget build(BuildContext context) => Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(width: 8, height: 8,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+          Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                  color: color, shape: BoxShape.circle)),
           const SizedBox(width: 3),
           Text(label,
               style: TextStyle(
@@ -718,15 +740,15 @@ class _PulseDotState extends State<_PulseDot>
 // Quick Action model & tile
 // ─────────────────────────────────────────────────────────────────────────────
 class _QA {
-  final String label;
+  final String   label;
   final IconData icon;
-  final Color color;
-  final String route;
+  final Color    color;
+  final String   route;
   const _QA(this.label, this.icon, this.color, this.route);
 }
 
 class _QuickActionTile extends StatelessWidget {
-  final _QA qa;
+  final _QA        qa;
   final RiverColors theme;
   final VoidCallback onTap;
   const _QuickActionTile(
@@ -746,7 +768,8 @@ class _QuickActionTile extends StatelessWidget {
             decoration: BoxDecoration(
               color: qa.color.withOpacity(0.15),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: qa.color.withOpacity(0.5), width: 1),
+              border:
+                  Border.all(color: qa.color.withOpacity(0.5), width: 1),
             ),
             child: Icon(qa.icon, color: qa.color, size: 24),
           ),
@@ -780,11 +803,11 @@ class _StatChip extends StatelessWidget {
     this.onTap,
   });
 
-  final String  label;
-  final String  value;
-  final Color   valueColor;
+  final String   label;
+  final String   value;
+  final Color    valueColor;
   final IconData icon;
-  final Color   iconColor;
+  final Color    iconColor;
   final VoidCallback? onTap;
 
   @override
