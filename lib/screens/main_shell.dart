@@ -1,29 +1,34 @@
 // lib/screens/main_shell.dart
+// PHASE 2 — ConsumerStatefulWidget + critical alert listener
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/river_theme.dart';
 import '../theme/theme_3d.dart';
+import '../providers/alerts_provider.dart';
+import '../utils/haptic_service.dart';
+import 'critical_alert_screen.dart';
 import 'dashboard_screen.dart';
 import 'monitors_screen.dart';
 import 'alerts_screen.dart';
 import 'map_screen.dart';
 import 'settings_screen.dart';
 
-class MainShell extends StatefulWidget {
-  // No initialTab — tab is managed internally via IndexedStack.
+class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key});
-
   static const String route = '/shell';
 
   @override
-  State<MainShell> createState() => _MainShellState();
+  ConsumerState<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends State<MainShell>
-    with SingleTickerProviderStateMixin {
+class _MainShellState extends ConsumerState<MainShell> {
   int _index = 0;
+
+  // Tracks alert IDs already shown this session — prevents re-firing same alert.
+  final Set<String> _shownAlertIds = {};
 
   static const _screens = [
     DashboardScreen(),
@@ -63,8 +68,42 @@ class _MainShellState extends State<MainShell>
 
   @override
   Widget build(BuildContext context) {
-    final t = RiverColors.of(context);
+    final t      = RiverColors.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // ── CRITICAL ALERT LISTENER ──────────────────────────────────────────────
+    ref.listen<AlertsState>(alertsProvider, (prev, next) {
+      final criticals = next.all.where(
+        (a) =>
+            a.severity == AlertSeverity.critical ||
+            a.severity == AlertSeverity.emergency,
+      ).toList();
+
+      for (final alert in criticals) {
+        final uid =
+            '${alert.title}_${alert.currentLevel.toStringAsFixed(1)}';
+        if (_shownAlertIds.contains(uid)) continue;
+        _shownAlertIds.add(uid);
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          HapticService.forSeverity(HapticSeverity.critical);
+          showCriticalAlertOverlay(
+            context,
+            stationName:  alert.title,
+            riverName:    alert.riverName ?? 'River',
+            currentLevel: alert.currentLevel,
+            dangerLevel:  alert.thresholdLevel,
+            district:     alert.district ?? '',
+            onViewMap: () => setState(() => _index = 3),
+            onEvacuate: () => setState(() => _index = 2),
+          );
+        });
+        break; // show one at a time; next fires on next state change
+      }
+    });
+
+    // ── System UI ─────────────────────────────────────────────────────────────
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -75,6 +114,7 @@ class _MainShellState extends State<MainShell>
             isDark ? Brightness.light : Brightness.dark,
       ),
     );
+
     return Scaffold(
       backgroundColor: t.scaffoldBg,
       body: IndexedStack(
