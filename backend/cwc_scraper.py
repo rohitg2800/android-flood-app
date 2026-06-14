@@ -13,11 +13,11 @@ FIX — Open-Meteo GloFAS Flood API:
   - No API key, no IP restriction, works from any server worldwide
   - Returns daily river_discharge (m³/s) for any lat/lon
   - Data from Copernicus Emergency Management Service / EU
-  - 93 Indian cities mapped to coordinates
+  - 98 Indian cities mapped to coordinates (was 89; +9 Bihar stations)
   - Past 7 days + 7-day forecast per city
 
 CACHE STRATEGY:
-  All 93 cities fetched in parallel at startup into global cache (TTL=20min).
+  All 98 cities fetched in parallel at startup into global cache (TTL=20min).
   river_discharge converted to river_level equivalent for API compatibility.
   Background thread refreshes silently.
 """
@@ -36,7 +36,7 @@ except ImportError:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# CITY COORDINATE REGISTRY — 93 cities mapped to lat/lon
+# CITY COORDINATE REGISTRY — 98 cities mapped to lat/lon
 # ─────────────────────────────────────────────────────────────────────────────
 CITY_COORDS: List[Dict[str, Any]] = [
     {"city": "Kolhapur",         "state": "Maharashtra",       "lat": 16.70, "lon": 74.24, "river": "Panchganga"},
@@ -45,85 +45,115 @@ CITY_COORDS: List[Dict[str, Any]] = [
     {"city": "Nagpur",           "state": "Maharashtra",       "lat": 21.15, "lon": 79.09, "river": "Nag"},
     {"city": "Sangli",           "state": "Maharashtra",       "lat": 16.86, "lon": 74.57, "river": "Krishna"},
     {"city": "Satara",           "state": "Maharashtra",       "lat": 17.68, "lon": 74.00, "river": "Krishna"},
+    # ── BIHAR — 14 stations (was 5) ──────────────────────────────────────────
     {"city": "Patna",            "state": "Bihar",             "lat": 25.59, "lon": 85.14, "river": "Ganga"},
     {"city": "Muzaffarpur",      "state": "Bihar",             "lat": 26.12, "lon": 85.36, "river": "Burhi Gandak"},
     {"city": "Darbhanga",        "state": "Bihar",             "lat": 26.15, "lon": 85.89, "river": "Bagmati"},
     {"city": "Gaya",             "state": "Bihar",             "lat": 24.79, "lon": 85.00, "river": "Falgu"},
     {"city": "Begusarai",        "state": "Bihar",             "lat": 25.41, "lon": 86.13, "river": "Ganga"},
+    {"city": "Bhagalpur",        "state": "Bihar",             "lat": 25.24, "lon": 86.98, "river": "Ganga"},
+    {"city": "Purnia",           "state": "Bihar",             "lat": 25.77, "lon": 87.47, "river": "Kosi"},
+    {"city": "Saharsa",          "state": "Bihar",             "lat": 25.88, "lon": 86.60, "river": "Kosi"},
+    {"city": "Supaul",           "state": "Bihar",             "lat": 26.12, "lon": 86.60, "river": "Kosi"},
+    {"city": "Sitamarhi",        "state": "Bihar",             "lat": 26.59, "lon": 85.49, "river": "Bagmati"},
+    {"city": "Hajipur",          "state": "Bihar",             "lat": 25.68, "lon": 85.21, "river": "Gandak"},
+    {"city": "Gopalganj",        "state": "Bihar",             "lat": 26.47, "lon": 84.44, "river": "Gandak"},
+    {"city": "Chhapra",          "state": "Bihar",             "lat": 25.78, "lon": 84.74, "river": "Ghaghra"},
+    {"city": "Madhubani",        "state": "Bihar",             "lat": 26.35, "lon": 86.07, "river": "Kamla"},
+    # ── WEST BENGAL ──────────────────────────────────────────────────────────
     {"city": "Kolkata",          "state": "West Bengal",       "lat": 22.57, "lon": 88.36, "river": "Hooghly"},
     {"city": "Howrah",           "state": "West Bengal",       "lat": 22.59, "lon": 88.31, "river": "Hooghly"},
     {"city": "Jalpaiguri",       "state": "West Bengal",       "lat": 26.54, "lon": 88.72, "river": "Teesta"},
     {"city": "Malda",            "state": "West Bengal",       "lat": 25.01, "lon": 88.14, "river": "Ganga"},
     {"city": "Murshidabad",      "state": "West Bengal",       "lat": 24.18, "lon": 88.27, "river": "Bhagirathi"},
+    # ── ASSAM ─────────────────────────────────────────────────────────────────
     {"city": "Guwahati",         "state": "Assam",             "lat": 26.14, "lon": 91.74, "river": "Brahmaputra"},
     {"city": "Dibrugarh",        "state": "Assam",             "lat": 27.48, "lon": 94.91, "river": "Brahmaputra"},
     {"city": "Tezpur",           "state": "Assam",             "lat": 26.63, "lon": 92.80, "river": "Brahmaputra"},
     {"city": "Dhubri",           "state": "Assam",             "lat": 26.02, "lon": 89.98, "river": "Brahmaputra"},
     {"city": "Barpeta",          "state": "Assam",             "lat": 26.32, "lon": 91.01, "river": "Beki"},
     {"city": "Jorhat",           "state": "Assam",             "lat": 26.75, "lon": 94.21, "river": "Brahmaputra"},
+    # ── UTTAR PRADESH ─────────────────────────────────────────────────────────
     {"city": "Lucknow",          "state": "Uttar Pradesh",     "lat": 26.85, "lon": 80.95, "river": "Gomti"},
     {"city": "Varanasi",         "state": "Uttar Pradesh",     "lat": 25.32, "lon": 83.01, "river": "Ganga"},
     {"city": "Allahabad",        "state": "Uttar Pradesh",     "lat": 25.44, "lon": 81.84, "river": "Ganga"},
     {"city": "Kanpur",           "state": "Uttar Pradesh",     "lat": 26.46, "lon": 80.33, "river": "Ganga"},
     {"city": "Gorakhpur",        "state": "Uttar Pradesh",     "lat": 26.76, "lon": 83.37, "river": "Rapti"},
     {"city": "Agra",             "state": "Uttar Pradesh",     "lat": 27.18, "lon": 78.01, "river": "Yamuna"},
+    # ── ODISHA ────────────────────────────────────────────────────────────────
     {"city": "Cuttack",          "state": "Odisha",            "lat": 20.46, "lon": 85.88, "river": "Mahanadi"},
     {"city": "Bhubaneswar",      "state": "Odisha",            "lat": 20.30, "lon": 85.82, "river": "Daya"},
     {"city": "Sambalpur",        "state": "Odisha",            "lat": 21.47, "lon": 83.97, "river": "Mahanadi"},
     {"city": "Puri",             "state": "Odisha",            "lat": 19.81, "lon": 85.83, "river": "Bhargavi"},
     {"city": "Kendrapara",       "state": "Odisha",            "lat": 20.50, "lon": 86.42, "river": "Brahmani"},
+    # ── KERALA ────────────────────────────────────────────────────────────────
     {"city": "Kochi",            "state": "Kerala",            "lat": 9.93,  "lon": 76.26, "river": "Periyar"},
     {"city": "Thiruvananthapuram","state": "Kerala",           "lat": 8.52,  "lon": 76.94, "river": "Karamana"},
     {"city": "Thrissur",         "state": "Kerala",            "lat": 10.52, "lon": 76.21, "river": "Chalakudy"},
     {"city": "Kozhikode",        "state": "Kerala",            "lat": 11.25, "lon": 75.78, "river": "Kallai"},
     {"city": "Alappuzha",        "state": "Kerala",            "lat": 9.49,  "lon": 76.33, "river": "Pamba"},
+    # ── ANDHRA PRADESH ────────────────────────────────────────────────────────
     {"city": "Rajahmundry",      "state": "Andhra Pradesh",    "lat": 17.00, "lon": 81.78, "river": "Godavari"},
     {"city": "Vijayawada",       "state": "Andhra Pradesh",    "lat": 16.51, "lon": 80.64, "river": "Krishna"},
     {"city": "Kurnool",          "state": "Andhra Pradesh",    "lat": 15.83, "lon": 78.04, "river": "Tungabhadra"},
+    # ── TELANGANA ─────────────────────────────────────────────────────────────
     {"city": "Hyderabad",        "state": "Telangana",         "lat": 17.38, "lon": 78.49, "river": "Musi"},
     {"city": "Khammam",          "state": "Telangana",         "lat": 17.25, "lon": 80.15, "river": "Munneru"},
     {"city": "Warangal",         "state": "Telangana",         "lat": 17.97, "lon": 79.60, "river": "Warangal"},
+    # ── TAMIL NADU ────────────────────────────────────────────────────────────
     {"city": "Chennai",          "state": "Tamil Nadu",        "lat": 13.08, "lon": 80.27, "river": "Adyar"},
     {"city": "Madurai",          "state": "Tamil Nadu",        "lat": 9.93,  "lon": 78.12, "river": "Vaigai"},
     {"city": "Tiruchirapalli",   "state": "Tamil Nadu",        "lat": 10.79, "lon": 78.70, "river": "Cauvery"},
     {"city": "Cuddalore",        "state": "Tamil Nadu",        "lat": 11.75, "lon": 79.77, "river": "Gadilam"},
     {"city": "Thanjavur",        "state": "Tamil Nadu",        "lat": 10.79, "lon": 79.14, "river": "Cauvery"},
+    # ── KARNATAKA ─────────────────────────────────────────────────────────────
     {"city": "Bengaluru",        "state": "Karnataka",         "lat": 12.97, "lon": 77.59, "river": "Arkavathi"},
     {"city": "Belagavi",         "state": "Karnataka",         "lat": 15.86, "lon": 74.50, "river": "Ghataprabha"},
     {"city": "Mysuru",           "state": "Karnataka",         "lat": 12.30, "lon": 76.65, "river": "Kabini"},
     {"city": "Raichur",          "state": "Karnataka",         "lat": 16.20, "lon": 77.36, "river": "Krishna"},
     {"city": "Bagalkot",         "state": "Karnataka",         "lat": 16.18, "lon": 75.69, "river": "Ghataprabha"},
+    # ── GUJARAT ───────────────────────────────────────────────────────────────
     {"city": "Ahmedabad",        "state": "Gujarat",           "lat": 23.03, "lon": 72.57, "river": "Sabarmati"},
     {"city": "Vadodara",         "state": "Gujarat",           "lat": 22.30, "lon": 73.20, "river": "Vishwamitri"},
     {"city": "Surat",            "state": "Gujarat",           "lat": 21.17, "lon": 72.83, "river": "Tapi"},
     {"city": "Rajkot",           "state": "Gujarat",           "lat": 22.30, "lon": 70.80, "river": "Aji"},
+    # ── MADHYA PRADESH ────────────────────────────────────────────────────────
     {"city": "Jabalpur",         "state": "Madhya Pradesh",    "lat": 23.18, "lon": 79.94, "river": "Narmada"},
     {"city": "Bhopal",           "state": "Madhya Pradesh",    "lat": 23.26, "lon": 77.41, "river": "Betwa"},
     {"city": "Hoshangabad",      "state": "Madhya Pradesh",    "lat": 22.75, "lon": 77.72, "river": "Narmada"},
     {"city": "Gwalior",          "state": "Madhya Pradesh",    "lat": 26.22, "lon": 78.18, "river": "Chambal"},
+    # ── RAJASTHAN ─────────────────────────────────────────────────────────────
     {"city": "Jaipur",           "state": "Rajasthan",         "lat": 26.91, "lon": 75.79, "river": "Banas"},
     {"city": "Barmer",           "state": "Rajasthan",         "lat": 25.75, "lon": 71.39, "river": "Luni"},
     {"city": "Kota",             "state": "Rajasthan",         "lat": 25.18, "lon": 75.84, "river": "Chambal"},
+    # ── DELHI / NCR ───────────────────────────────────────────────────────────
     {"city": "Delhi",            "state": "Delhi",             "lat": 28.61, "lon": 77.23, "river": "Yamuna"},
+    # ── UTTARAKHAND ───────────────────────────────────────────────────────────
     {"city": "Dehradun",         "state": "Uttarakhand",       "lat": 30.32, "lon": 78.03, "river": "Rispana"},
     {"city": "Haridwar",         "state": "Uttarakhand",       "lat": 29.95, "lon": 78.16, "river": "Ganga"},
+    # ── PUNJAB ────────────────────────────────────────────────────────────────
     {"city": "Jalandhar",        "state": "Punjab",            "lat": 31.33, "lon": 75.58, "river": "Beas"},
     {"city": "Ludhiana",         "state": "Punjab",            "lat": 30.90, "lon": 75.85, "river": "Sutlej"},
     {"city": "Firozpur",         "state": "Punjab",            "lat": 30.93, "lon": 74.61, "river": "Sutlej"},
+    # ── HARYANA ───────────────────────────────────────────────────────────────
     {"city": "Ambala",           "state": "Haryana",           "lat": 30.38, "lon": 76.78, "river": "Tangri"},
     {"city": "Hisar",            "state": "Haryana",           "lat": 29.15, "lon": 75.72, "river": "Ghaggar"},
+    # ── CHHATTISGARH ──────────────────────────────────────────────────────────
     {"city": "Raipur",           "state": "Chhattisgarh",      "lat": 21.25, "lon": 81.63, "river": "Kharun"},
     {"city": "Bilaspur",         "state": "Chhattisgarh",      "lat": 22.09, "lon": 82.14, "river": "Arpa"},
     {"city": "Jagdalpur",        "state": "Chhattisgarh",      "lat": 19.07, "lon": 82.03, "river": "Indravati"},
+    # ── JHARKHAND ─────────────────────────────────────────────────────────────
     {"city": "Ranchi",           "state": "Jharkhand",         "lat": 23.34, "lon": 85.31, "river": "Subarnarekha"},
     {"city": "Jamshedpur",       "state": "Jharkhand",         "lat": 22.80, "lon": 86.19, "river": "Subarnarekha"},
     {"city": "Daltonganj",       "state": "Jharkhand",         "lat": 24.03, "lon": 84.07, "river": "North Koel"},
+    # ── NORTHEAST ─────────────────────────────────────────────────────────────
     {"city": "Shillong",         "state": "Meghalaya",         "lat": 25.57, "lon": 91.88, "river": "Umiam"},
     {"city": "Pasighat",         "state": "Arunachal Pradesh", "lat": 28.07, "lon": 95.33, "river": "Siang"},
     {"city": "Itanagar",         "state": "Arunachal Pradesh", "lat": 27.10, "lon": 93.62, "river": "Dikrong"},
     {"city": "Imphal",           "state": "Manipur",           "lat": 24.82, "lon": 93.95, "river": "Imphal"},
     {"city": "Agartala",         "state": "Tripura",           "lat": 23.83, "lon": 91.28, "river": "Haora"},
     {"city": "Gangtok",          "state": "Sikkim",            "lat": 27.33, "lon": 88.62, "river": "Teesta"},
+    # ── J&K / HIMACHAL ────────────────────────────────────────────────────────
     {"city": "Srinagar",         "state": "Jammu and Kashmir", "lat": 34.08, "lon": 74.80, "river": "Jhelum"},
     {"city": "Jammu",            "state": "Jammu and Kashmir", "lat": 32.73, "lon": 74.87, "river": "Tawi"},
     {"city": "Bilaspur",         "state": "Himachal Pradesh",  "lat": 31.34, "lon": 76.76, "river": "Sutlej"},
@@ -235,7 +265,7 @@ def _fetch_city_flood(city_info: Dict[str, Any]) -> Optional[Dict[str, Any]]:
 
 
 def _fetch_open_meteo_all() -> List[Dict[str, Any]]:
-    """Fetch GloFAS data for all 93 cities in parallel."""
+    """Fetch GloFAS data for all cities in parallel."""
     stations = []
     with ThreadPoolExecutor(max_workers=10) as ex:
         futures = {ex.submit(_fetch_city_flood, c): c for c in CITY_COORDS}
