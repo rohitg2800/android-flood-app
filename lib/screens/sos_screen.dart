@@ -1,15 +1,8 @@
-// lib/screens/sos_screen.dart  v2.0
+// lib/screens/sos_screen.dart  v2.1
 //
-// v2.0 (14 Jun 2026) — Full district-aware SOS screen
-//
-//   NEW:
-//     • Shows district-specific contacts at the top when GPS resolves
-//       to a Bihar district (via districtFromLatLng bounding-box lookup).
-//     • District selector bottom sheet — user can manually pick any of
-//       the 38 Bihar districts to see that district's emergency contacts.
-//     • Section headers: "Your District" / "Select District" / "National".
-//     • call() now handles failure and shows a SnackBar if tel: cannot open.
-//     • SosState gains detected district field (passed through from SosSuccess).
+// v2.1 (14 Jun 2026) — Riverpod 3.x compat
+//   FIX: StateProvider<String?> removed in Riverpod 3.x.
+//        Replaced with NotifierProvider + _DistrictNotifier.
 library;
 
 import 'dart:async';
@@ -31,8 +24,15 @@ final _connectivityProvider = StreamProvider<bool>((_) =>
         .onConnectivityChanged
         .map((r) => !r.contains(ConnectivityResult.none)));
 
-// ── Selected-district provider (local to screen) ─────────────────────────────
-final _selectedDistrictProvider = StateProvider<String?>((ref) => null);
+// ── Selected-district provider (Riverpod 3.x — NotifierProvider) ─────────────
+class _DistrictNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+  void set(String? v) => state = v;
+}
+
+final _selectedDistrictProvider =
+    NotifierProvider<_DistrictNotifier, String?>(_DistrictNotifier.new);
 
 // ─────────────────────────────────────────────────────────────────────────────
 class SosScreen extends ConsumerStatefulWidget {
@@ -95,8 +95,7 @@ class _SosScreenState extends ConsumerState<SosScreen>
   }
 
   void _showDistrictPicker(BuildContext context, RiverColors t) {
-    final districts = kDistrictContacts.keys.toList()
-      ..sort();
+    final districts = kDistrictContacts.keys.toList()..sort();
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: t.navBg,
@@ -122,7 +121,7 @@ class _SosScreenState extends ConsumerState<SosScreen>
                   ),
                   TextButton(
                     onPressed: () {
-                      ref.read(_selectedDistrictProvider.notifier).state = null;
+                      ref.read(_selectedDistrictProvider.notifier).set(null);
                       Navigator.pop(context);
                     },
                     child: Text('Clear', style: TextStyle(color: t.accent)),
@@ -133,12 +132,16 @@ class _SosScreenState extends ConsumerState<SosScreen>
             Expanded(
               child: ListView.builder(
                 controller: sc,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 8),
                 itemCount: districts.length,
                 itemBuilder: (_, i) {
                   final d = districts[i];
-                  final label = d.split(' ')
-                      .map((w) => w.isEmpty ? '' : '${w[0].toUpperCase()}${w.substring(1)}')
+                  final label = d
+                      .split(' ')
+                      .map((w) => w.isEmpty
+                          ? ''
+                          : '${w[0].toUpperCase()}${w.substring(1)}')
                       .join(' ');
                   return ListTile(
                     title: Text(label,
@@ -148,7 +151,9 @@ class _SosScreenState extends ConsumerState<SosScreen>
                     trailing: Icon(Icons.chevron_right_rounded,
                         color: t.textSecondary),
                     onTap: () {
-                      ref.read(_selectedDistrictProvider.notifier).state = d;
+                      ref
+                          .read(_selectedDistrictProvider.notifier)
+                          .set(d);
                       Navigator.pop(context);
                     },
                   );
@@ -168,14 +173,14 @@ class _SosScreenState extends ConsumerState<SosScreen>
     final online  = ref.watch(_connectivityProvider).value ?? true;
     final selDist = ref.watch(_selectedDistrictProvider);
 
-    // After a successful SOS, auto-populate district from GPS result
     final detectedDistrict = state.district ?? selDist;
     final districtContacts = detectedDistrict != null
         ? contactsForDistrict(detectedDistrict)
         : <EmergencyContact>[];
 
     final districtLabel = detectedDistrict != null
-        ? detectedDistrict.split(' ')
+        ? detectedDistrict
+              .split(' ')
               .map((w) => '${w[0].toUpperCase()}${w.substring(1)}')
               .join(' ')
         : null;
@@ -193,8 +198,7 @@ class _SosScreenState extends ConsumerState<SosScreen>
         iconTheme: IconThemeData(color: t.riverDanger),
         actions: [
           IconButton(
-            icon: Icon(Icons.location_city_rounded,
-                color: t.accent),
+            icon: Icon(Icons.location_city_rounded, color: t.accent),
             tooltip: 'Select District',
             onPressed: () => _showDistrictPicker(context, t),
           ),
@@ -217,7 +221,8 @@ class _SosScreenState extends ConsumerState<SosScreen>
             Material(
               color: Colors.orange.shade700,
               child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Row(
                   children: [
                     Icon(Icons.wifi_off, color: Colors.white, size: 16),
@@ -241,7 +246,7 @@ class _SosScreenState extends ConsumerState<SosScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── SOS button (centred) ────────────────────────────────
+                  // ── SOS button ──────────────────────────────────────────
                   Center(
                     child: _SosButton(
                       pulse:       _pulse,
@@ -254,7 +259,8 @@ class _SosScreenState extends ConsumerState<SosScreen>
                   const SizedBox(height: 10),
                   Center(
                     child: AnimatedOpacity(
-                      opacity: state.phase == SosPhase.idle ? 1 : 0,
+                      opacity:
+                          state.phase == SosPhase.idle ? 1 : 0,
                       duration: const Duration(milliseconds: 300),
                       child: Text(
                         'Hold for 3 seconds to send SOS',
@@ -278,8 +284,8 @@ class _SosScreenState extends ConsumerState<SosScreen>
                           ? '$districtLabel District'
                           : 'Your District',
                     ),
-                    ...districtContacts.map(
-                        (c) => _ContactCard(contact: c)),
+                    ...districtContacts
+                        .map((c) => _ContactCard(contact: c)),
                     const SizedBox(height: 4),
                   ],
 
@@ -288,7 +294,8 @@ class _SosScreenState extends ConsumerState<SosScreen>
                     Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: OutlinedButton.icon(
-                        onPressed: () => _showDistrictPicker(context, t),
+                        onPressed: () =>
+                            _showDistrictPicker(context, t),
                         icon: Icon(Icons.location_city_rounded,
                             color: t.accent, size: 16),
                         label: Text(
@@ -300,7 +307,8 @@ class _SosScreenState extends ConsumerState<SosScreen>
                           side: BorderSide(
                               color: t.accent.withValues(alpha: 0.5)),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10)),
+                              borderRadius:
+                                  BorderRadius.circular(10)),
                           padding: const EdgeInsets.symmetric(
                               horizontal: 14, vertical: 10),
                         ),
@@ -313,8 +321,8 @@ class _SosScreenState extends ConsumerState<SosScreen>
                     color: t.accent,
                     label: 'National & State',
                   ),
-                  ...kNationalContacts.map(
-                      (c) => _ContactCard(contact: c)),
+                  ...kNationalContacts
+                      .map((c) => _ContactCard(contact: c)),
 
                   const SizedBox(height: 24),
                   _InfoRow(
@@ -330,7 +338,8 @@ class _SosScreenState extends ConsumerState<SosScreen>
                   _InfoRow(
                     icon:  Icons.info_rounded,
                     color: t.accent,
-                    text:  'Tap the city icon in the toolbar to pick your district.',
+                    text:
+                        'Tap the city icon in the toolbar to pick your district.',
                   ),
                 ],
               ),
@@ -347,7 +356,10 @@ class _SectionHeader extends StatelessWidget {
   final IconData icon;
   final Color    color;
   final String   label;
-  const _SectionHeader({required this.icon, required this.color, required this.label});
+  const _SectionHeader(
+      {required this.icon,
+      required this.color,
+      required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -373,9 +385,9 @@ class _SectionHeader extends StatelessWidget {
 class _SosButton extends StatelessWidget {
   final AnimationController pulse;
   final AnimationController holdArc;
-  final SosPhase phase;
-  final VoidCallback onHoldStart;
-  final VoidCallback onHoldEnd;
+  final SosPhase            phase;
+  final VoidCallback        onHoldStart;
+  final VoidCallback        onHoldEnd;
 
   const _SosButton({
     required this.pulse,
@@ -388,14 +400,16 @@ class _SosButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t        = RiverColors.of(context);
-    final isActive = phase == SosPhase.idle || phase == SosPhase.confirming;
+    final isActive =
+        phase == SosPhase.idle || phase == SosPhase.confirming;
 
     return GestureDetector(
       onLongPressStart:  isActive ? (_) => onHoldStart() : null,
       onLongPressEnd:    isActive ? (_) => onHoldEnd()   : null,
       onLongPressCancel: isActive ? onHoldEnd            : null,
       child: SizedBox(
-        width: 180, height: 180,
+        width: 180,
+        height: 180,
         child: AnimatedBuilder(
           animation: Listenable.merge([pulse, holdArc]),
           builder: (_, __) => CustomPaint(
@@ -419,7 +433,9 @@ class _SosButton extends StatelessWidget {
                           : 0.08 * pulse.value),
                 ]),
                 border: Border.all(
-                    color: t.riverDanger.withValues(alpha: 0.55), width: 2),
+                    color:
+                        t.riverDanger.withValues(alpha: 0.55),
+                    width: 2),
               ),
               child: _ButtonContent(phase: phase, t: t),
             ),
@@ -460,7 +476,8 @@ class _ButtonContent extends StatelessWidget {
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_rounded, color: t.riverDanger, size: 44),
+            Icon(Icons.error_rounded,
+                color: t.riverDanger, size: 44),
             const SizedBox(height: 4),
             Text('FAILED',
                 style: TextStyle(
@@ -501,13 +518,15 @@ class _SosArcPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     if (arcProgress <= 0) return;
-    final rect  = Rect.fromLTWH(6, 6, size.width - 12, size.height - 12);
+    final rect = Rect.fromLTWH(
+        6, 6, size.width - 12, size.height - 12);
     final paint = Paint()
       ..color       = dangerColor
       ..style       = PaintingStyle.stroke
       ..strokeWidth = 5
       ..strokeCap   = StrokeCap.round;
-    canvas.drawArc(rect, -math.pi / 2, 2 * math.pi * arcProgress, false, paint);
+    canvas.drawArc(
+        rect, -math.pi / 2, 2 * math.pi * arcProgress, false, paint);
   }
 
   @override
@@ -526,8 +545,10 @@ class _StatusCard extends ConsumerWidget {
 
     if (state.phase == SosPhase.sent) {
       final distLabel = state.district != null
-          ? state.district!.split(' ')
-                .map((w) => '${w[0].toUpperCase()}${w.substring(1)}')
+          ? state.district!
+                .split(' ')
+                .map((w) =>
+                    '${w[0].toUpperCase()}${w.substring(1)}')
                 .join(' ')
           : null;
       return Td3Card(
@@ -552,7 +573,8 @@ class _StatusCard extends ConsumerWidget {
                         '${distLabel != null ? "\n$distLabel District, Bihar" : ""}'
                     : 'Emergency services notified. Location unavailable.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: t.textSecondary, fontSize: 13),
+                style:
+                    TextStyle(color: t.textSecondary, fontSize: 13),
               ),
             ],
           ),
@@ -567,7 +589,8 @@ class _StatusCard extends ConsumerWidget {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              Icon(Icons.error_rounded, color: t.riverDanger, size: 40),
+              Icon(Icons.error_rounded,
+                  color: t.riverDanger, size: 40),
               const SizedBox(height: 8),
               Text('SOS Failed',
                   style: TextStyle(
@@ -579,7 +602,8 @@ class _StatusCard extends ConsumerWidget {
                 state.errorMessage ??
                     'Unknown error. Call NDRF: 011-24363260 directly.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: t.textSecondary, fontSize: 13),
+                style:
+                    TextStyle(color: t.textSecondary, fontSize: 13),
               ),
             ],
           ),
@@ -601,7 +625,8 @@ class _ContactCard extends ConsumerWidget {
     final t = RiverColors.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(
+          horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: t.cardBg,
         borderRadius: BorderRadius.circular(12),
@@ -642,7 +667,8 @@ class _ContactCard extends ConsumerWidget {
                   SnackBar(
                     content: Text(
                       'Cannot open dialler. Dial ${contact.phone} manually.',
-                      style: const TextStyle(color: Colors.white),
+                      style:
+                          const TextStyle(color: Colors.white),
                     ),
                     backgroundColor: Colors.red.shade700,
                     duration: const Duration(seconds: 4),
@@ -691,7 +717,8 @@ class _InfoRow extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(text,
-                style: TextStyle(color: t.textSecondary, fontSize: 13)),
+                style: TextStyle(
+                    color: t.textSecondary, fontSize: 13)),
           ),
         ],
       ),
