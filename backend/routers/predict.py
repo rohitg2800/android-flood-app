@@ -6,10 +6,17 @@ Fix (v2-wired):
   now instantiate FloodPredictor(station) directly from ml/flood_predictor.py and
   call .predict() so the BiLSTM / physics model is always used.
   The old hardcoded MODERATE fallback is only kept as a last-resort except guard.
+
+New (river-severity):
+  GET /api/river-severity — bulk endpoint that reads the live-levels cache
+  (WRD Bihar + GloFAS), runs FloodPredictor per city, and returns a
+  severity-ranked list.  Flutter map/list calls ONE URL for all cities.
 """
 
 import importlib.util as _importlib_util
 import asyncio
+import concurrent.futures
+from typing import Any, Dict, List, Optional
 from fastapi import APIRouter
 from pydantic import BaseModel
 
@@ -47,7 +54,7 @@ class FloodPredictionInput(BaseModel):
     station: str | None = None
 
 
-# ── FloodPredictor import (lazy, so import errors don't crash the router) ─────
+# ── FloodPredictor import (lazy) ─────────────────────────────────────────────
 def _get_flood_predictor_cls():
     try:
         if _importlib_util.find_spec("backend") is not None:
@@ -64,11 +71,6 @@ def _run_flood_predictor(
     data_source: str,
     effective_entry: dict | None,
 ) -> dict:
-    """
-    Instantiate FloodPredictor for the requested station and call .predict().
-    Maps the result to the /predict/v2 response schema.
-    Falls back to the hardcoded MODERATE block only on complete failure.
-    """
     FloodPredictor = _get_flood_predictor_cls()
     if FloodPredictor is None:
         raise RuntimeError("FloodPredictor could not be imported")
@@ -88,7 +90,6 @@ def _run_flood_predictor(
         rainfall_7d_mm=rainfall_7d,
     )
 
-    # Derive severity from danger-level ratio using effective_entry thresholds.
     danger_level = float(
         (effective_entry or {}).get("danger_level_m")
         or raw.get("danger_level")
@@ -120,7 +121,6 @@ def _run_flood_predictor(
     model_ver   = raw.get("model_version", "v1.0-physics")
     algorithm   = "BiLSTM" if "lstm" in model_ver else "Physics-Trend"
 
-    # Simple probability spread around the chosen severity.
     _sev_order = ["LOW", "MODERATE", "SEVERE", "CRITICAL"]
     _sev_idx   = _sev_order.index(severity)
     probs: dict[str, float] = {s: 0.0 for s in _sev_order}
@@ -157,10 +157,100 @@ def _run_flood_predictor(
     }
 
 
-# ============= HELPERS =============
+# ── Shared helper: severity from a live-levels record ──────────────────────────────
+def _severity_from_live_record(record: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Given one record from _build_all_levels(), run FloodPredictor and
+    return a dict with predicted_severity + supporting fields.
+    Used by both /api/river-severity and live_levels._attach_predicted_severity().
+    """
+    FloodPredictor = _get_flood_predictor_cls()
+
+    city         = str(record.get("city") or record.get("station") or "").strip()
+    state        = str(record.get("state") or "").strip()
+    river_level  = float(record.get("current_level") or 0.0)
+    danger_m     = float(record.get("danger_level")  or 50.0)
+    warning_m    = float(record.get("warning_level") or danger_m * 0.85)
+    discharge    = float(record.get("river_discharge") or record.get("flow_rate") or 0.0)
+    # Rainfall proxies: use telemetry fields when available
+    rain_1h      = float(record.get("rainfall_1h_mm") or 0.0)
+    # Approximate 3d / 7d from discharge trend when rainfall not stored
+    rain_3d      = rain_1h * 24 * 3 if rain_1h > 0 else discharge * 0.008
+    rain_7d      = rain_1h * 24 * 7 if rain_1h > 0 else discharge * 0.018
+
+    default_out = {
+        "predicted_severity":  None,
+        "risk_score":          None,
+        "confidence_percent":  None,
+        "will_breach_danger":  None,
+        "peak_level_72h":      None,
+        "algorithm":           None,
+        "model_version":       None,
+    }
+
+    if not city or river_level == 0.0:
+        return default_out
+
+    try:
+        if FloodPredictor is None:
+            raise RuntimeError("FloodPredictor unavailable")
+        predictor = FloodPredictor(city)
+        raw = predictor.predict(
+            current_level=river_level,
+            rainfall_3d_mm=rain_3d,
+            rainfall_7d_mm=rain_7d,
+        )
+        peak       = float(raw.get("peak_level") or river_level)
+        will_breach = bool(raw.get("will_breach_danger", False))
+        confidence  = float(raw.get("confidence_pct", 65.0))
+        model_ver   = str(raw.get("model_version", "v1.0-physics"))
+        algo        = "BiLSTM" if "lstm" in model_ver else "Physics-Trend"
+
+        # Use model danger if station is in GAUGE_THRESHOLDS, else record's danger_m
+        eff_danger  = float(raw.get("danger_level") or danger_m)
+        ratio       = river_level / eff_danger if eff_danger > 0 else 0.0
+
+        if ratio >= 1.0:   sev, score = "CRITICAL", 100
+        elif ratio >= 0.90: sev, score = "SEVERE",   int(ratio * 100)
+        elif ratio >= 0.70: sev, score = "MODERATE", int(ratio * 100)
+        else:               sev, score = "LOW",      int(ratio * 100)
+
+        # Override to CRITICAL when model says breach imminent
+        if will_breach and sev not in ("CRITICAL", "SEVERE"):
+            sev   = "SEVERE"
+            score = max(score, 90)
+
+        return {
+            "predicted_severity": sev,
+            "risk_score":         score,
+            "confidence_percent": confidence,
+            "will_breach_danger": will_breach,
+            "peak_level_72h":     round(peak, 3),
+            "algorithm":          algo,
+            "model_version":      model_ver,
+        }
+    except Exception as exc:
+        print(f"[river-severity] predictor failed for {city}: {exc}")
+        # Graceful fallback using threshold ratio from live record
+        ratio = river_level / danger_m if danger_m > 0 else 0.0
+        if ratio >= 1.0:   sev, score = "CRITICAL", 100
+        elif ratio >= 0.90: sev, score = "SEVERE",   int(ratio * 100)
+        elif ratio >= 0.70: sev, score = "MODERATE", int(ratio * 100)
+        else:               sev, score = "LOW",      int(ratio * 100)
+        return {
+            "predicted_severity": sev,
+            "risk_score":         score,
+            "confidence_percent": 55.0,
+            "will_breach_danger": sev in ("CRITICAL", "SEVERE"),
+            "peak_level_72h":     None,
+            "algorithm":          "Threshold-Ratio-Fallback",
+            "model_version":      "fallback",
+        }
+
+
+# ── Helpers ─────────────────────────────────────────────────────────────────
 
 def persist_prediction_record(input_data, result):
-    """Persist prediction record to storage."""
     try:
         input_payload = model_to_dict(input_data)
         station_name = str(input_payload.get("station") or "").strip() or None
@@ -214,7 +304,6 @@ def persist_prediction_record(input_data, result):
 
 @router.get("/model-artifacts")
 async def get_model_artifacts(predictor=None):
-    """Get available model artifacts."""
     ignored_legacy_artifacts = discover_legacy_artifacts_outside_store()
     if predictor:
         predictor.refresh_artifact_catalog()
@@ -247,7 +336,6 @@ async def get_model_artifacts(predictor=None):
 
 @router.get("/model-artifacts/{state_name}")
 async def get_model_artifacts_for_state(state_name: str, predictor=None):
-    """Get model artifacts for a specific state."""
     if predictor:
         return {
             "status": "success",
@@ -256,14 +344,8 @@ async def get_model_artifacts_for_state(state_name: str, predictor=None):
     return {"status": "success", "state": state_name, "message": "Predictor not initialized"}
 
 
-# ============= MODEL METRICS ENDPOINT =============
-
 @router.get("/model-metrics")
 async def get_model_metrics(predictor=None):
-    """
-    Return model quality metrics for the active bundle.
-    Used by the Flutter Dashboard to display a model confidence card.
-    """
     if predictor and hasattr(predictor, "get_metrics"):
         try:
             metrics = predictor.get_metrics()
@@ -293,7 +375,6 @@ async def get_model_metrics(predictor=None):
 
 @router.get("/state-severity-matrix")
 async def get_state_severity_matrix():
-    """Get state severity matrix."""
     return {
         "status": "success",
         "states": STATE_SEVERITY_MATRIX,
@@ -303,12 +384,129 @@ async def get_state_severity_matrix():
 
 @router.get("/state-severity-matrix/{state_name}")
 async def get_state_severity_matrix_for_state(state_name: str):
-    """Get severity matrix for a specific state."""
     return {
         "status": "success",
         "state": state_name,
         "matrix": get_state_severity_entry(state_name),
         "note": "CWC-calibrated thresholds with Option-A danger_level_override_guard active.",
+    }
+
+
+# ============= BULK RIVER SEVERITY ENDPOINT =============
+
+@router.get("/api/river-severity")
+async def get_river_severity(
+    state: Optional[str] = None,
+    district: Optional[str] = None,
+    river: Optional[str] = None,
+    min_risk_score: int = 0,
+    limit: int = 200,
+):
+    """
+    Bulk flood severity predictions for ALL live-level stations.
+
+    Reads the same WRD Bihar + GloFAS + Matrix cache as /api/live-levels,
+    runs FloodPredictor per city in a thread pool, and returns a
+    severity-ranked list ready for the Flutter map/list screen.
+
+    Fields per city:
+      city, state, river_name, district,
+      current_level, danger_level, warning_level,
+      predicted_severity, risk_score, confidence_percent,
+      will_breach_danger, peak_level_72h,
+      algorithm, model_version,
+      capacity_percent, trend, lat, lon, data_source, timestamp
+    """
+    # Import here to avoid circular imports — live_levels is a sibling router
+    try:
+        if _importlib_util.find_spec("backend") is not None:
+            from backend.routers.live_levels import _build_all_levels
+        else:
+            from routers.live_levels import _build_all_levels  # type: ignore
+    except Exception as e:
+        return {"status": "error", "message": f"Could not load live_levels: {e}", "data": []}
+
+    all_records = _build_all_levels()
+
+    # Apply filters
+    if state:
+        norm = state.strip().lower()
+        all_records = [r for r in all_records if norm in r.get("state", "").lower()]
+    if district:
+        dn = district.strip().lower()
+        all_records = [r for r in all_records if dn in (r.get("district") or "").lower()]
+    if river:
+        rn = river.strip().lower()
+        all_records = [r for r in all_records if rn in r.get("river_name", "").lower()]
+
+    # Run predictor per city in thread pool (non-blocking)
+    loop = asyncio.get_event_loop()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=16) as pool:
+        futures = [
+            loop.run_in_executor(pool, _severity_from_live_record, rec)
+            for rec in all_records
+        ]
+        sev_results = await asyncio.gather(*futures)
+
+    results: List[Dict[str, Any]] = []
+    for rec, sev in zip(all_records, sev_results):
+        score = sev.get("risk_score") or 0
+        if score < min_risk_score:
+            continue
+        results.append({
+            # Identity
+            "city":              rec.get("city"),
+            "state":             rec.get("state"),
+            "river_name":        rec.get("river_name"),
+            "district":          rec.get("district"),
+            "station":           rec.get("station"),
+            "lat":               rec.get("lat"),
+            "lon":               rec.get("lon"),
+            # Live levels
+            "current_level":     rec.get("current_level"),
+            "danger_level":      rec.get("danger_level"),
+            "warning_level":     rec.get("warning_level"),
+            "capacity_percent":  rec.get("capacity_percent"),
+            "trend":             rec.get("trend"),
+            # ML prediction
+            "predicted_severity":  sev.get("predicted_severity"),
+            "risk_score":          sev.get("risk_score"),
+            "confidence_percent":  sev.get("confidence_percent"),
+            "will_breach_danger":  sev.get("will_breach_danger"),
+            "peak_level_72h":      sev.get("peak_level_72h"),
+            "algorithm":           sev.get("algorithm"),
+            "model_version":       sev.get("model_version"),
+            # Provenance
+            "data_source":     rec.get("data_source"),
+            "timestamp":       rec.get("timestamp"),
+        })
+
+    # Sort: highest risk first
+    _sev_rank = {"CRITICAL": 4, "SEVERE": 3, "MODERATE": 2, "LOW": 1, None: 0}
+    results.sort(
+        key=lambda x: (
+            _sev_rank.get(x.get("predicted_severity"), 0),
+            x.get("risk_score") or 0,
+        ),
+        reverse=True,
+    )
+    results = results[:limit]
+
+    critical_count  = sum(1 for r in results if r["predicted_severity"] == "CRITICAL")
+    severe_count    = sum(1 for r in results if r["predicted_severity"] == "SEVERE")
+    moderate_count  = sum(1 for r in results if r["predicted_severity"] == "MODERATE")
+    low_count       = sum(1 for r in results if r["predicted_severity"] == "LOW")
+
+    from .dependencies import current_timestamp_iso
+    return {
+        "status":         "success",
+        "total":          len(results),
+        "critical_count": critical_count,
+        "severe_count":   severe_count,
+        "moderate_count": moderate_count,
+        "low_count":      low_count,
+        "timestamp":      current_timestamp_iso(),
+        "data":           results,
     }
 
 
@@ -318,7 +516,6 @@ async def get_state_severity_matrix_for_state(state_name: str):
 async def predict_flood_legacy(
     input_data: FloodPredictionInput, predictor=None, cwc_scraper=None
 ):
-    """Predict flood risk — legacy endpoint (no pipeline auto-fill)."""
     try:
         source_policy = get_source_policy_payload()
         data_source = str(source_policy["prediction_data_source"])
@@ -388,10 +585,6 @@ async def predict_flood_legacy(
 async def predict_flood_v2(
     input_data: FloodPredictionInput, predictor=None, cwc_scraper=None
 ):
-    """
-    Auto-fill prediction v2: pipeline-first, CWC-second, manual-third.
-    When predictor=None, uses FloodPredictor from ml/flood_predictor.py directly.
-    """
     try:
         source_policy = get_source_policy_payload()
         data_source = str(source_policy["prediction_data_source"])
@@ -399,7 +592,6 @@ async def predict_flood_v2(
         autofill_applied = False
         pipeline_meta: dict | None = None
 
-        # ── Step 1: Pipeline auto-fill ────────────────────────────────────────
         input_dict = model_to_dict(input_data)
         enriched = pipeline_autofill_predict_input(
             input_dict,
@@ -422,7 +614,6 @@ async def predict_flood_v2(
                 except (TypeError, ValueError):
                     river_level_m = None
 
-        # ── Step 2: CWC live override ─────────────────────────────────────────
         if cwc_scraper and river_level_m is None:
             try:
                 station_query = input_data.station or input_data.state
@@ -442,7 +633,6 @@ async def predict_flood_v2(
             except Exception as e:
                 print(f"\u26a0\ufe0f V2 CWC auto-fill failed: {e}")
 
-        # ── Step 2b: Build effective state entry ──────────────────────────────
         _telemetry_payload: dict | None = None
         try:
             if _importlib_util.find_spec("backend") is not None:
@@ -466,7 +656,6 @@ async def predict_flood_v2(
             station_telemetry=_best_node,
         )
 
-        # ── Step 3: Run inference ─────────────────────────────────────────────
         if predictor:
             result = await asyncio.to_thread(
                 predictor.predict_flood,
@@ -514,7 +703,6 @@ async def predict_flood_v2(
 
 @router.get("/prediction-history")
 async def get_prediction_history(state: str | None = None, limit: int = 50):
-    """Get recent prediction history."""
     records = operational_store.list_predictions(limit=limit, state_name=state)
     return {
         "status": "success",

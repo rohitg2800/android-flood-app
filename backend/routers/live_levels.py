@@ -8,6 +8,13 @@ Data priority order:
                              — other states: best discharge per state
   3. STATE_SEVERITY_MATRIX fallback — states with no live data
 
+Severity (Step B):
+  Every record returned by _build_all_levels_with_severity() carries:
+    predicted_severity, risk_score, confidence_percent,
+    will_breach_danger, peak_level_72h, algorithm, model_version
+  injected by _attach_predicted_severity() which calls FloodPredictor
+  per city in a thread pool.
+
 Risk thresholds (Bihar ASL gauges, aligned with WRD Bihar definitions):
   CRITICAL  — above_dl >= 0       (at or above danger level)
   HIGH      — above_dl in [-3, 0) (within WRD WARNING zone, <3 m below DL)
@@ -18,6 +25,8 @@ Risk thresholds (Bihar ASL gauges, aligned with WRD Bihar definitions):
 from fastapi import APIRouter
 from typing import Any, Dict, List, Optional
 import sys
+import concurrent.futures
+import asyncio
 
 from .dependencies import (
     STATE_SEVERITY_MATRIX,
@@ -42,7 +51,6 @@ def _get_glofas_cache() -> List[Dict[str, Any]]:
                     return cache
     except Exception:
         pass
-    # Fallback: read directly from cwc_scraper cache
     try:
         for mod_name in ("backend.cwc_scraper", "cwc_scraper"):
             mod = sys.modules.get(mod_name)
@@ -127,7 +135,6 @@ def _capacity_from_asl_levels(
 
 
 def _capacity_from_glofas_station(s: Dict[str, Any], base_safe: float, base_danger: float) -> float:
-    """Derive capacity% for a GloFAS (cwc_scraper) station record."""
     river_level  = float(s.get("river_level")  or s.get("current_level_m") or 0.0)
     warning_lv   = float(s.get("warning_level") or s.get("warning_level_m") or base_safe)
     danger_lv    = float(s.get("danger_level")  or s.get("danger_level_m")  or base_danger)
@@ -307,22 +314,27 @@ def _build_levels_from_wrd_bihar(
             "change_24h_m":         change_24h,
             "trend":                trend,
             "wrd_status":           wrd_status,
+            # Severity fields — filled by _attach_predicted_severity
+            "predicted_severity":   None,
+            "risk_score":           None,
+            "confidence_percent":   None,
+            "will_breach_danger":   None,
+            "peak_level_72h":       None,
+            "algorithm":            None,
+            "model_version":        None,
         })
 
     return result
 
 
 # ---------------------------------------------------------------------------
-# GloFAS Bihar — ALL per-city stations (not collapsed to one per state)
+# GloFAS Bihar — ALL per-city stations
 # ---------------------------------------------------------------------------
 
 def _build_levels_from_glofas_bihar(
     glofas_cache: List[Dict[str, Any]],
     wrd_city_names: set,
 ) -> List[Dict[str, Any]]:
-    """Convert every Bihar entry in glofas_cache to a live-levels record.
-    Skips cities already covered by WRD Bihar.
-    """
     now_iso = current_timestamp_iso()
     base    = _BASE_LEVELS.get("bihar", {"safe": 4.0, "warning": 6.0, "danger": 8.0})
     result: List[Dict[str, Any]] = []
@@ -337,10 +349,7 @@ def _build_levels_from_glofas_bihar(
         if not city:
             continue
         city_key = city.lower()
-        if city_key in seen_cities:
-            continue
-        # Skip if already provided by WRD (exact name match)
-        if city_key in wrd_city_names:
+        if city_key in seen_cities or city_key in wrd_city_names:
             continue
         seen_cities.add(city_key)
 
@@ -382,6 +391,14 @@ def _build_levels_from_glofas_bihar(
             "lon":              lon,
             "data_source":      "OPEN_METEO_GLOFAS",
             "timestamp":        last_upd,
+            # Severity fields — filled by _attach_predicted_severity
+            "predicted_severity":   None,
+            "risk_score":           None,
+            "confidence_percent":   None,
+            "will_breach_danger":   None,
+            "peak_level_72h":       None,
+            "algorithm":            None,
+            "model_version":        None,
         })
 
     result.sort(key=lambda x: x["capacity_percent"], reverse=True)
@@ -389,7 +406,7 @@ def _build_levels_from_glofas_bihar(
 
 
 # ---------------------------------------------------------------------------
-# GloFAS other states — best discharge per state (unchanged behaviour)
+# GloFAS other states — best discharge per state
 # ---------------------------------------------------------------------------
 
 def _build_station_record(
@@ -439,6 +456,14 @@ def _build_station_record(
         "data_source":      "OPEN_METEO_GLOFAS",
         "timestamp":        ts,
         "_discharge":       discharge,
+        # Severity fields
+        "predicted_severity":   None,
+        "risk_score":           None,
+        "confidence_percent":   None,
+        "will_breach_danger":   None,
+        "peak_level_72h":       None,
+        "algorithm":            None,
+        "model_version":        None,
     }
 
 
@@ -446,7 +471,6 @@ def _build_levels_from_glofas_other_states(
     glofas_cache: List[Dict],
     exclude_state_keys: set,
 ) -> tuple:
-    """Best-discharge-per-state for all non-Bihar states."""
     now_iso = current_timestamp_iso()
     best_by_state: Dict[str, Dict[str, Any]] = {}
 
@@ -511,6 +535,13 @@ def _build_levels_from_matrix(exclude_state_keys: set) -> List[Dict[str, Any]]:
             "flow_rate":        None,
             "data_source":      "STATE_SEVERITY_MATRIX",
             "timestamp":        now_iso,
+            "predicted_severity":   None,
+            "risk_score":           None,
+            "confidence_percent":   None,
+            "will_breach_danger":   None,
+            "peak_level_72h":       None,
+            "algorithm":            None,
+            "model_version":        None,
         })
 
     result.sort(key=lambda x: x["capacity_percent"], reverse=True)
@@ -518,14 +549,16 @@ def _build_levels_from_matrix(exclude_state_keys: set) -> List[Dict[str, Any]]:
 
 
 # ---------------------------------------------------------------------------
-# Master merge — Bihar gets per-city expansion, other states best-per-state
+# Master merge — raw levels (no severity yet)
 # ---------------------------------------------------------------------------
 
 def _build_all_levels() -> List[Dict[str, Any]]:
-    covered: set       = set()
+    """Returns raw live-level records WITHOUT predicted_severity filled in.
+    Call _build_all_levels_with_severity() from async route handlers instead.
+    """
+    covered: set = set()
     all_levels: List[Dict[str, Any]] = []
 
-    # --- 1. WRD Bihar (real PDF gauge data) ---
     wrd_stations   = _get_wrd_bihar_stations()
     wrd_city_names: set = set()
     if wrd_stations:
@@ -537,15 +570,13 @@ def _build_all_levels() -> List[Dict[str, Any]]:
     else:
         print("[live_levels] \u26a0\ufe0f  WRD Bihar cache empty")
 
-    # --- 2. GloFAS Bihar — ALL per-city stations ---
     glofas_cache = _get_glofas_cache()
     if glofas_cache:
         bihar_glofas = _build_levels_from_glofas_bihar(glofas_cache, wrd_city_names)
         all_levels.extend(bihar_glofas)
-        covered.add("bihar")  # ensure excluded from other-state pass
+        covered.add("bihar")
         print(f"[live_levels] \u2705 GloFAS Bihar cities: {len(bihar_glofas)}")
 
-        # --- 3. GloFAS other states — best per state ---
         other_levels, other_covered = _build_levels_from_glofas_other_states(
             glofas_cache, exclude_state_keys=covered
         )
@@ -555,14 +586,51 @@ def _build_all_levels() -> List[Dict[str, Any]]:
     else:
         print("[live_levels] \u26a0\ufe0f  GloFAS cache empty")
 
-    # --- 4. Matrix fallback for any remaining states ---
     matrix_levels = _build_levels_from_matrix(exclude_state_keys=covered)
     all_levels.extend(matrix_levels)
     print(f"[live_levels] Matrix fallback: {len(matrix_levels)} states")
 
-    # Sort: highest risk / capacity first
     all_levels.sort(key=lambda x: x["capacity_percent"], reverse=True)
     return all_levels
+
+
+# ---------------------------------------------------------------------------
+# Step B — Attach predicted_severity to every record (async, thread pool)
+# ---------------------------------------------------------------------------
+
+def _attach_predicted_severity_sync(record: Dict[str, Any]) -> Dict[str, Any]:
+    """Synchronous wrapper — called inside thread pool."""
+    try:
+        # Lazy import to avoid circular dependency at module load time
+        import importlib.util as _iu
+        if _iu.find_spec("backend") is not None:
+            from backend.routers.predict import _severity_from_live_record
+        else:
+            from routers.predict import _severity_from_live_record  # type: ignore
+        sev = _severity_from_live_record(record)
+    except Exception as exc:
+        print(f"[live_levels] severity attach failed for {record.get('city')}: {exc}")
+        sev = {
+            "predicted_severity": None, "risk_score": None,
+            "confidence_percent": None, "will_breach_danger": None,
+            "peak_level_72h": None, "algorithm": None, "model_version": None,
+        }
+    out = dict(record)
+    out.update(sev)
+    return out
+
+
+async def _build_all_levels_with_severity() -> List[Dict[str, Any]]:
+    """Builds all levels then enriches each record with ML severity in parallel."""
+    raw_levels = _build_all_levels()
+    loop = asyncio.get_event_loop()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=16) as pool:
+        futures = [
+            loop.run_in_executor(pool, _attach_predicted_severity_sync, rec)
+            for rec in raw_levels
+        ]
+        enriched = await asyncio.gather(*futures)
+    return list(enriched)
 
 
 # ---------------------------------------------------------------------------
@@ -572,11 +640,15 @@ def _build_all_levels() -> List[Dict[str, Any]]:
 @router.get("/api/live-levels")
 async def get_live_levels(
     state: Optional[str] = None,
-    limit: int = 200,       # raised from 100 — Bihar alone is 115+
+    limit: int = 200,
     river: Optional[str] = None,
     district: Optional[str] = None,
+    with_severity: bool = True,   # set False to skip ML inference for speed
 ):
-    levels = _build_all_levels()
+    if with_severity:
+        levels = await _build_all_levels_with_severity()
+    else:
+        levels = _build_all_levels()
 
     if state:
         norm   = state.strip().lower()
@@ -595,118 +667,4 @@ async def get_live_levels(
     matrix_count = len(levels) - wrd_count - glofas_count
     bihar_count  = sum(1 for l in levels if l.get("state", "").lower() == "bihar")
 
-    if wrd_count > 0 and glofas_count > 0:
-        data_source = "WRD+GLOFAS+MATRIX"
-    elif wrd_count > 0:
-        data_source = "WRD+MATRIX"
-    elif glofas_count > 0:
-        data_source = "GLOFAS+MATRIX"
-    else:
-        data_source = "OPSFLOOD_MATRIX"
-
-    return {
-        "status":       "success",
-        "data_source":  data_source,
-        "wrd_count":    wrd_count,
-        "glofas_count": glofas_count,
-        "matrix_count": matrix_count,
-        "bihar_count":  bihar_count,
-        "total":        len(levels),
-        "timestamp":    current_timestamp_iso(),
-        "data":         levels,
-    }
-
-
-@router.get("/api/live-levels/bihar")
-async def get_live_levels_bihar(
-    district: Optional[str] = None,
-    river: Optional[str] = None,
-    source: Optional[str] = None,   # "wrd" | "glofas" | None = all
-    limit: int = 200,
-):
-    """Dedicated Bihar endpoint — returns ALL per-city stations sorted by risk."""
-    levels = _build_all_levels()
-    bihar  = [l for l in levels if l.get("state", "").lower() == "bihar"]
-
-    if district:
-        dn    = district.strip().lower()
-        bihar = [l for l in bihar if dn in (l.get("district") or "").lower()]
-    if river:
-        rn    = river.strip().lower()
-        bihar = [l for l in bihar if rn in l.get("river_name", "").lower()]
-    if source:
-        src   = source.strip().upper()
-        if src == "WRD":
-            bihar = [l for l in bihar if "WRD" in l.get("data_source", "")]
-        elif src == "GLOFAS":
-            bihar = [l for l in bihar if l.get("data_source") == "OPEN_METEO_GLOFAS"]
-
-    wrd_count    = sum(1 for l in bihar if "WRD" in l.get("data_source", ""))
-    glofas_count = sum(1 for l in bihar if l.get("data_source") == "OPEN_METEO_GLOFAS")
-
-    return {
-        "status":       "success",
-        "state":        "Bihar",
-        "total":        len(bihar[:limit]),
-        "wrd_count":    wrd_count,
-        "glofas_count": glofas_count,
-        "timestamp":    current_timestamp_iso(),
-        "data":         bihar[:limit],
-    }
-
-
-@router.get("/api/critical-alerts")
-async def get_critical_alerts(
-    state: Optional[str] = None,
-    severity: Optional[str] = None,
-):
-    levels  = _build_all_levels()
-    now_iso = current_timestamp_iso()
-    alerts  = []
-
-    for item in levels:
-        risk = item["risk_level"]
-        if risk not in ("HIGH", "CRITICAL"):
-            continue
-        if state    and state.strip().lower()    not in item["state"].lower():  continue
-        if severity and severity.strip().upper() != risk:                       continue
-
-        above_dl = item.get("above_below_danger_m")
-        alerts.append({
-            "id":             f"{item['city']}_{item['state']}_alert".replace(" ", "_"),
-            "city":           item["city"],
-            "state":          item["state"],
-            "severity":       risk,
-            "title":          f"{item['city']} flood alert",
-            "message":        (
-                f"{item.get('river_name', 'River')} is "
-                + (f"{abs(above_dl):.2f}m ABOVE danger level" if above_dl and above_dl > 0
-                   else f"within {abs(above_dl):.2f}m of danger level" if above_dl
-                   else f"at {item['capacity_percent']:.0f}% of danger level")
-                + f" \u2014 {risk.lower()} risk."
-            ),
-            "river_name":           item.get("river_name", ""),
-            "district":             item.get("district"),
-            "current_level":        item["current_level"],
-            "danger_level":         item["danger_level"],
-            "hfl_m":                item.get("hfl_m"),
-            "above_below_danger_m": above_dl,
-            "change_24h_m":         item.get("change_24h_m"),
-            "trend":                item.get("trend"),
-            "capacity_percent":     item["capacity_percent"],
-            "data_source":          item.get("data_source", "UNKNOWN"),
-            "timestamp":            now_iso,
-            "resolved":             False,
-            "recommendation": (
-                "Immediate evacuation. Contact NDRF."
-                if risk == "CRITICAL" else
-                "Alert district admin. Pre-position rescue teams."
-            ),
-        })
-
-    return {
-        "status":    "success",
-        "total":     len(alerts),
-        "timestamp": now_iso,
-        "data":      alerts,
-    }
+    if wrd_
