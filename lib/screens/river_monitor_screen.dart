@@ -1,15 +1,5 @@
-// lib/screens/river_monitor_screen.dart  (v4.0 — 3D theme)
+// lib/screens/river_monitor_screen.dart  (v4.1 — Phase 2: RiverGauge3D)
 // Bihar Flood Ops — River Monitor Screen
-//
-// v3.x → v4.0:
-//   • Migrated to Td3 3D theme system
-//   • AppBar → Td3AppBar (SliverAppBar via CustomScrollView)
-//   • River cards → Td3Card
-//   • Summary chips → Td3Chip
-//   • Level progress bars → Td3ProgressBar
-//   • Risk labels → Td3Badge
-//   • Section headers → Td3SectionHeader
-//   • All colours via RiverColors
 
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -19,6 +9,7 @@ import '../models/flood_data.dart';
 import '../providers/flood_providers.dart';
 import '../theme/river_theme.dart';
 import '../theme/theme_3d.dart';
+import '../widgets/river_gauge_3d.dart'; // Phase 2
 
 class RiverMonitorScreen extends ConsumerStatefulWidget {
   const RiverMonitorScreen({super.key});
@@ -101,8 +92,7 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen> {
                   controller: _searchCtrl,
                   style: TextStyle(color: t.textPrimary, fontSize: 14),
                   decoration: InputDecoration(
-                    hintText:
-                        'Search city, district, state or river…',
+                    hintText: 'Search city, district, state or river…',
                     hintStyle:
                         TextStyle(color: t.textSecondary, fontSize: 13),
                     prefixIcon:
@@ -250,18 +240,17 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// River Card (3D)
+// River Card — Phase 2: RiverGauge3D on left, info on right
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _RiverCard extends StatelessWidget {
-  final FloodData    data;
-  final RiverColors  t;
+  final FloodData   data;
+  final RiverColors t;
   const _RiverCard({required this.data, required this.t});
 
   @override
   Widget build(BuildContext context) {
     final riskColor = _riskToColor(data.riskLevel, t);
-    final fillPct   = data.fillPercent ?? 0.0;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -269,83 +258,101 @@ class _RiverCard extends StatelessWidget {
         accentColor: riskColor,
         elevation: Td3.elevHigh,
         padding: const EdgeInsets.all(14),
-        child: Column(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header row
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            // ── LEFT: 3D Cylinder Gauge ─────────────────────────────
+            RiverGauge3D(
+              level:        data.currentLevel  ?? 0.0,
+              dangerLevel:  data.dangerLevel   ?? 10.0,
+              warningLevel: data.warningLevel  ?? 8.0,
+              size: 72,
+              label: data.riverName,
+            ),
+            const SizedBox(width: 14),
+
+            // ── RIGHT: Info ─────────────────────────────────────────
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // City + badge
+                  Row(
                     children: [
-                      Text(
-                        data.city,
-                        style: TextStyle(
-                          color: t.textPrimary,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 15,
+                      Expanded(
+                        child: Text(
+                          data.city,
+                          style: TextStyle(
+                            color: t.textPrimary,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15,
+                          ),
                         ),
                       ),
-                      if ((data.riverName ?? '').isNotEmpty)
-                        Text(
-                          data.riverName!,
-                          style: TextStyle(
-                              color: t.textSecondary, fontSize: 12),
-                        ),
+                      Td3Badge(
+                        label: data.riskLevel.toUpperCase(),
+                        color: riskColor,
+                      ),
                     ],
                   ),
-                ),
-                Td3Badge(
-                  label: data.riskLevel.toUpperCase(),
-                  color: riskColor,
-                ),
-              ],
-            ),
 
-            const SizedBox(height: 10),
+                  if ((data.riverName ?? '').isNotEmpty) ...[  
+                    const SizedBox(height: 2),
+                    Text(
+                      data.riverName!,
+                      style: TextStyle(
+                          color: t.textSecondary, fontSize: 12),
+                    ),
+                  ],
 
-            // Fill progress
-            Row(
-              children: [
-                Text('Fill', style: TextStyle(color: t.textSecondary, fontSize: 11)),
-                const Spacer(),
-                Text(
-                  '${fillPct.toStringAsFixed(1)}%',
-                  style: TextStyle(
-                      color: riskColor,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Td3ProgressBar(
-              value: (fillPct / 100).clamp(0.0, 1.0),
-              fillColor: riskColor,
-              height: 8,
-            ),
+                  const SizedBox(height: 10),
 
-            const SizedBox(height: 10),
+                  // Stat chips
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 4,
+                    children: [
+                      if (data.currentLevel != null)
+                        _statChip(t, 'Level',
+                            '${data.currentLevel!.toStringAsFixed(2)} m',
+                            riskColor),
+                      if (data.dangerLevel != null)
+                        _statChip(t, 'Danger',
+                            '${data.dangerLevel!.toStringAsFixed(2)} m',
+                            t.textSecondary),
+                      if (data.district.isNotEmpty)
+                        _statChip(t, 'District', data.district,
+                            t.textSecondary),
+                    ],
+                  ),
 
-            // Stat row
-            Row(
-              children: [
-                if (data.currentLevel != null)
-                  _statLabel('Level', '${data.currentLevel!.toStringAsFixed(2)} m', t),
-                if (data.dangerLevel != null) ...[
-                  const SizedBox(width: 16),
-                  _statLabel('Danger', '${data.dangerLevel!.toStringAsFixed(2)} m', t),
-                ],
-                if (data.district.isNotEmpty) ...[
-                  const Spacer(),
-                  Text(
-                    data.district,
-                    style:
-                        TextStyle(color: t.textSecondary, fontSize: 11),
+                  const SizedBox(height: 8),
+
+                  // Fill bar
+                  Row(
+                    children: [
+                      Text('Fill',
+                          style: TextStyle(
+                              color: t.textSecondary, fontSize: 10)),
+                      const Spacer(),
+                      Text(
+                        '${(data.fillPercent ?? 0.0).toStringAsFixed(1)}%',
+                        style: TextStyle(
+                            color: riskColor,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Td3ProgressBar(
+                    value: ((data.fillPercent ?? 0.0) / 100)
+                        .clamp(0.0, 1.0),
+                    fillColor: riskColor,
+                    height: 5,
                   ),
                 ],
-              ],
+              ),
             ),
           ],
         ),
@@ -353,17 +360,20 @@ class _RiverCard extends StatelessWidget {
     );
   }
 
-  Widget _statLabel(String label, String value, RiverColors t) {
+  Widget _statChip(
+      RiverColors t, String label, String value, Color vColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label,
-            style:
-                TextStyle(color: t.textSecondary, fontSize: 10)),
+            style: TextStyle(
+                color: t.textSecondary,
+                fontSize: 9,
+                letterSpacing: 0.5)),
         Text(value,
             style: TextStyle(
-                color: t.textPrimary,
-                fontSize: 13,
+                color: vColor,
+                fontSize: 12,
                 fontWeight: FontWeight.w700)),
       ],
     );
@@ -414,8 +424,7 @@ class _EmptyState extends StatelessWidget {
               query.isNotEmpty
                   ? 'Try a different search term'
                   : 'Pull down to refresh',
-              style:
-                  TextStyle(color: t.textSecondary, fontSize: 13),
+              style: TextStyle(color: t.textSecondary, fontSize: 13),
             ),
           ],
         ),

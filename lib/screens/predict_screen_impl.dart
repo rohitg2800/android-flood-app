@@ -1,9 +1,11 @@
 // lib/screens/predict_screen_impl.dart
-// EQUINOX-BR05 — LSTM Flood Prediction Screen  (v1.1)
+// EQUINOX-BR05 — LSTM Flood Prediction Screen  (v1.2 — Phase 2: ActionAdviceCard)
 //
 // v1.1 fixes:
 //   • station.name → station.station  (RiverStation has no .name field)
 //   • AsyncValue.valueOrNull → .when() (riverpod 3.x compat)
+// v1.2 adds:
+//   • _ActionAdviceCard — plain-language emergency advice below model meta
 library;
 
 import 'dart:math' as math;
@@ -65,6 +67,15 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
   void dispose() {
     _pulseCtrl.dispose();
     super.dispose();
+  }
+
+  // ── Derive severity label from prediction progress percentage ──────────────
+  String _severityFromPrediction(FloodPrediction p) {
+    final pct = p.progressPct.clamp(0.0, 100.0);
+    if (pct >= 100) return 'CRITICAL';
+    if (pct >= 80)  return 'SEVERE';
+    if (pct >= 60)  return 'MODERATE';
+    return 'LOW';
   }
 
   @override
@@ -149,6 +160,12 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
                         ),
                         const SizedBox(height: 16),
                         _ModelMetaCard(prediction: prediction, theme: t),
+                        const SizedBox(height: 16),
+                        // ── Phase 2: Action Advice Card ────────────────
+                        _ActionAdviceCard(
+                          severity: _severityFromPrediction(prediction),
+                          theme: t,
+                        ),
                       ],
                     ]),
                   ),
@@ -378,7 +395,6 @@ class _CurrentLevelCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Station name + river
           Row(
             children: [
               Expanded(
@@ -402,7 +418,6 @@ class _CurrentLevelCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          // Level value
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -433,7 +448,6 @@ class _CurrentLevelCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          // Progress bar
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
             child: LinearProgressIndicator(
@@ -445,7 +459,6 @@ class _CurrentLevelCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          // Threshold chips
           Row(
             children: [
               _ThresholdChip(
@@ -726,7 +739,6 @@ class _SparklineCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 4),
-          // Legend
           Row(
             children: [
               _LegendDot(color: AppPalette.cyan, label: 'Predicted'),
@@ -787,7 +799,6 @@ class _SparklineCard extends StatelessWidget {
                   ),
                 ),
                 lineBarsData: [
-                  // Danger threshold
                   LineChartBarData(
                     spots: dangerSpots,
                     isCurved: false,
@@ -796,7 +807,6 @@ class _SparklineCard extends StatelessWidget {
                     dotData: const FlDotData(show: false),
                     dashArray: [6, 4],
                   ),
-                  // Warning threshold
                   LineChartBarData(
                     spots: warnSpots,
                     isCurved: false,
@@ -805,7 +815,6 @@ class _SparklineCard extends StatelessWidget {
                     dotData: const FlDotData(show: false),
                     dashArray: [4, 4],
                   ),
-                  // Predicted level
                   LineChartBarData(
                     spots: spots,
                     isCurved: true,
@@ -830,10 +839,9 @@ class _SparklineCard extends StatelessWidget {
                   touchTooltipData: LineTouchTooltipData(
                     getTooltipColor: (_) => AppPalette.abyss3,
                     getTooltipItems: (spots) => spots.map((s) {
-                      if (s.barIndex != 2) return null;
                       return LineTooltipItem(
                         '${s.y.toStringAsFixed(2)} m',
-                        const TextStyle(
+                        TextStyle(
                             color: AppPalette.cyan,
                             fontWeight: FontWeight.bold,
                             fontSize: 12),
@@ -857,162 +865,191 @@ class _SparklineCard extends StatelessWidget {
 class _ModelMetaCard extends StatelessWidget {
   final FloodPrediction prediction;
   final RiverColors     theme;
-
-  const _ModelMetaCard({
-    required this.prediction,
-    required this.theme,
-  });
+  const _ModelMetaCard({required this.prediction, required this.theme});
 
   @override
   Widget build(BuildContext context) {
-    final conf      = prediction.confidencePct.clamp(0.0, 100.0);
-    final riskScore = prediction.riskScore.clamp(0.0, 100.0);
-    final confColor = conf >= 75
-        ? AppPalette.safe
-        : conf >= 50
-            ? AppPalette.warning
-            : AppPalette.danger;
-
     return Container(
       decoration: AppPalette.glassMorph(
-          borderColor: AppPalette.abyssStroke, radius: 20),
-      padding: const EdgeInsets.all(20),
+          borderColor: AppPalette.abyssStroke, radius: 16),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.model_training_rounded,
-                  color: AppPalette.gold, size: 18),
+              const Icon(Icons.analytics_outlined,
+                  color: AppPalette.gold, size: 16),
               const SizedBox(width: 8),
               Text('Model Analysis',
                   style: TextStyle(
                       color: theme.textPrimary,
-                      fontSize: 14,
+                      fontSize: 13,
                       fontWeight: FontWeight.w700)),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppPalette.gold.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                      color: AppPalette.gold.withValues(alpha: 0.4)),
-                ),
-                child: Text(
-                  prediction.modelVersion,
+            ],
+          ),
+          const SizedBox(height: 12),
+          _metaRow('Confidence',
+              '${(prediction.confidence * 100).toStringAsFixed(0)}%'),
+          _metaRow('Risk Score',
+              prediction.riskScore.toStringAsFixed(2)),
+          _metaRow('Model',     prediction.modelVersion),
+          _metaRow('Updated',
+              prediction.updatedAt.toLocal().toString().substring(0, 16)),
+        ],
+      ),
+    );
+  }
+
+  Widget _metaRow(String label, String value) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 3),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 100,
+              child: Text(label,
                   style: const TextStyle(
-                      color: AppPalette.gold,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600),
+                      color: AppPalette.textGrey, fontSize: 12)),
+            ),
+            Text(value,
+                style: TextStyle(
+                    color: theme.textPrimary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600)),
+          ],
+        ),
+      );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Action Advice Card  (Phase 2)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _ActionAdviceCard extends StatelessWidget {
+  final String      severity;
+  final RiverColors theme;
+
+  const _ActionAdviceCard({
+    required this.severity,
+    required this.theme,
+  });
+
+  static const _advice = {
+    'CRITICAL': (
+      icon: '🚨',
+      title: 'IMMEDIATE EVACUATION REQUIRED',
+      body:
+          'Danger level exceeded. Move to designated high-ground shelters immediately. '
+          'Do NOT attempt to cross flooded roads or bridges. '
+          'Bihar SDRF: 0612-2217305  |  NDRF: 011-24363260.',
+      color: Color(0xFFE53935),
+    ),
+    'SEVERE': (
+      icon: '⚠️',
+      title: 'PREPARE TO EVACUATE — 6 h window',
+      body:
+          'Levels rising critically. Move valuables to upper floors. '
+          'Prepare go-bag: documents, medicines, 3 days of food and water. '
+          'Await evacuation advisory. Avoid river banks.',
+      color: Color(0xFFFB8C00),
+    ),
+    'MODERATE': (
+      icon: '🟡',
+      title: 'STAY ALERT — Monitor every 30 min',
+      body:
+          'Elevated but below danger threshold. Avoid crossing streams. '
+          'Keep emergency kit ready. Monitor IMD alerts for upstream rainfall.',
+      color: Color(0xFFFDD835),
+    ),
+    'LOW': (
+      icon: '✅',
+      title: 'NORMAL CONDITIONS',
+      body:
+          'Levels within safe range. Continue routine monitoring. '
+          'Check forecast during heavy rain spells.',
+      color: Color(0xFF43A047),
+    ),
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final entry = _advice[severity] ?? _advice['LOW']!;
+    final color = entry.color;
+
+    return Container(
+      decoration: AppPalette.glassMorph(
+        borderColor: color.withValues(alpha: 0.45),
+        radius: 16,
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(entry.icon, style: const TextStyle(fontSize: 20)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  entry.title,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.4,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          // Confidence meter
-          _MetricRow(
-            label: 'Confidence',
-            valueText: '${conf.toStringAsFixed(1)}%',
-            value: conf / 100,
-            color: confColor,
-            theme: theme,
-          ),
-          const SizedBox(height: 12),
-          // Risk score
-          _MetricRow(
-            label: 'Risk Score',
-            valueText: riskScore.toStringAsFixed(0),
-            value: riskScore / 100,
-            color: _riskColor(riskScore),
-            theme: theme,
-          ),
-          const SizedBox(height: 16),
-          // Outlook text
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppPalette.abyss3.withValues(alpha: 0.6),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppPalette.abyssStroke),
+          const SizedBox(height: 10),
+          Divider(color: color.withValues(alpha: 0.25), height: 1),
+          const SizedBox(height: 10),
+          Text(
+            entry.body,
+            style: TextStyle(
+              color: theme.textPrimary.withValues(alpha: 0.88),
+              fontSize: 13,
+              height: 1.55,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Outlook',
-                    style: TextStyle(
-                        color: AppPalette.textGrey,
-                        fontSize: 11,
-                        letterSpacing: 0.8)),
-                const SizedBox(height: 4),
-                Text(
-                  prediction.outlook,
-                  style: TextStyle(
-                    color: theme.textPrimary,
-                    fontSize: 13,
-                    height: 1.5,
-                  ),
-                ),
-              ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Always follow official CWC / NDRF advisories.',
+            style: TextStyle(
+              color: AppPalette.textGrey,
+              fontSize: 11,
+              fontStyle: FontStyle.italic,
             ),
           ),
         ],
       ),
     );
   }
-
-  Color _riskColor(double score) {
-    if (score >= 70) return AppPalette.critical;
-    if (score >= 45) return AppPalette.danger;
-    if (score >= 20) return AppPalette.warning;
-    return AppPalette.safe;
-  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Sub-widgets
+//  Small helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _TrendBadge extends StatelessWidget {
-  final String trend;
+  final PredictionTrend trend;
   const _TrendBadge({required this.trend});
 
   @override
   Widget build(BuildContext context) {
-    final up    = trend.toLowerCase().contains('ris') ||
-                  trend.toLowerCase().contains('up');
-    final down  = trend.toLowerCase().contains('fall') ||
-                  trend.toLowerCase().contains('down');
-    final color = up ? AppPalette.critical : down ? AppPalette.safe : AppPalette.warning;
-    final icon  = up
-        ? Icons.trending_up_rounded
-        : down
-            ? Icons.trending_down_rounded
-            : Icons.trending_flat_rounded;
-
+    final (icon, color) = switch (trend) {
+      PredictionTrend.rising  => (Icons.trending_up_rounded,   AppPalette.danger),
+      PredictionTrend.falling => (Icons.trending_down_rounded, AppPalette.safe),
+      PredictionTrend.stable  => (Icons.trending_flat_rounded, AppPalette.warning),
+    };
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(8),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 14),
-          const SizedBox(width: 4),
-          Text(
-            trend,
-            style: TextStyle(
-                color: color,
-                fontSize: 12,
-                fontWeight: FontWeight.w600),
-          ),
-        ],
-      ),
+      child: Icon(icon, color: color, size: 18),
     );
   }
 }
@@ -1032,64 +1069,26 @@ class _ThresholdChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
-      child: Text(
-        '$label: ${value.toStringAsFixed(2)} m',
-        style: TextStyle(
-            color: color,
-            fontSize: 11,
-            fontWeight: FontWeight.w600),
-      ),
-    );
-  }
-}
-
-class _MetricRow extends StatelessWidget {
-  final String     label;
-  final String     valueText;
-  final double     value;
-  final Color      color;
-  final RiverColors theme;
-
-  const _MetricRow({
-    required this.label,
-    required this.valueText,
-    required this.value,
-    required this.color,
-    required this.theme,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: RichText(
+        text: TextSpan(
           children: [
-            Text(label,
-                style: const TextStyle(
-                    color: AppPalette.textGrey, fontSize: 13)),
-            Text(valueText,
+            TextSpan(
+                text: '$label  ',
+                style: TextStyle(
+                    color: AppPalette.textGrey, fontSize: 11)),
+            TextSpan(
+                text: '${value.toStringAsFixed(2)} m',
                 style: TextStyle(
                     color: color,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold)),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700)),
           ],
         ),
-        const SizedBox(height: 6),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: LinearProgressIndicator(
-            value: value,
-            minHeight: 6,
-            backgroundColor: AppPalette.abyss4.withValues(alpha: 0.5),
-            valueColor: AlwaysStoppedAnimation<Color>(color),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -1105,53 +1104,16 @@ class _LegendDot extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 10,
-          height: 3,
+          width: 8,
+          height: 8,
           decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(2),
-          ),
+              color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 4),
         Text(label,
             style: const TextStyle(
-                color: AppPalette.textGrey, fontSize: 11)),
+                color: AppPalette.textGrey, fontSize: 10)),
       ],
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  Loading / Empty states
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _LoadingState extends StatelessWidget {
-  final RiverColors        theme;
-  final Animation<double>  pulseAnim;
-  const _LoadingState({required this.theme, required this.pulseAnim});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 60),
-        child: Column(
-          children: [
-            AnimatedBuilder(
-              animation: pulseAnim,
-              builder: (_, __) => Opacity(
-                opacity: pulseAnim.value,
-                child: const Icon(Icons.auto_graph_rounded,
-                    color: AppPalette.gold, size: 48),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text('Running LSTM model…',
-                style: TextStyle(
-                    color: theme.textSecondary, fontSize: 14)),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -1164,19 +1126,16 @@ class _EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 60),
+        padding: const EdgeInsets.all(48),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.water_outlined,
-                color: AppPalette.textGrey, size: 48),
+            Icon(Icons.water_outlined,
+                size: 56, color: AppPalette.textGrey),
             const SizedBox(height: 16),
-            Text('No stations available.',
+            Text('No stations available',
                 style: TextStyle(
-                    color: theme.textSecondary, fontSize: 14)),
-            const SizedBox(height: 4),
-            const Text('Check your connection and pull to refresh.',
-                style: TextStyle(
-                    color: AppPalette.textGrey, fontSize: 12)),
+                    color: theme.textSecondary, fontSize: 15)),
           ],
         ),
       ),
@@ -1184,18 +1143,35 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  predictionForStationProvider — bridges FutureProvider.family to sync
-// ─────────────────────────────────────────────────────────────────────────────
+class _LoadingState extends StatelessWidget {
+  final RiverColors       theme;
+  final Animation<double> pulseAnim;
+  const _LoadingState({required this.theme, required this.pulseAnim});
 
-/// Wraps predictionProvider (FutureProvider.family<FloodPrediction, String>)
-/// and returns the resolved value, or null while loading/error.
-final predictionForStationProvider =
-    Provider.family<FloodPrediction?, RiverStation>((ref, station) {
-  final asyncVal = ref.watch(predictionProvider(station.station));
-  return asyncVal.when(
-    data:    (d)    => d,
-    loading: ()     => null,
-    error:   (_, __) => null,
-  );
-});
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(48),
+        child: AnimatedBuilder(
+          animation: pulseAnim,
+          builder: (_, __) => Opacity(
+            opacity: pulseAnim.value,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(
+                    valueColor:
+                        AlwaysStoppedAnimation(AppPalette.cyan)),
+                const SizedBox(height: 16),
+                Text('Loading prediction…',
+                    style: TextStyle(
+                        color: theme.textSecondary, fontSize: 14)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

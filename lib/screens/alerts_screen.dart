@@ -1,4 +1,5 @@
 // lib/screens/alerts_screen.dart
+// Phase 2 — OpsDepthCard wired on alert cards with severity glow
 library;
 
 import 'package:flutter/material.dart';
@@ -10,6 +11,7 @@ import '../providers/alert_provider.dart';
 // Do NOT import models/flood_alert.dart here — it defines a second
 // incompatible FloodAlert class that causes type-mismatch build errors.
 import '../providers/alerts_provider.dart';
+import '../widgets/ops_depth_card.dart'; // Phase 2
 
 class AlertsScreen extends ConsumerStatefulWidget {
   const AlertsScreen({super.key});
@@ -128,11 +130,9 @@ class _AlertCard extends StatelessWidget {
   const _AlertCard({required this.alert});
   final FloodAlert alert;
 
-  /// Map AlertSeverity → theme colour.
   Color _severityColor(RiverColors t) {
     switch (alert.severity) {
       case AlertSeverity.emergency:
-        return t.riverDanger;
       case AlertSeverity.critical:
         return t.riverDanger;
       case AlertSeverity.warning:
@@ -142,8 +142,18 @@ class _AlertCard extends StatelessWidget {
     }
   }
 
-  /// Progress value: how far currentLevel is above threshold, clamped 0-1.
-  /// 0 = at threshold, 1 = 100 % above threshold (or more).
+  OpsDepthLevel _elevFromSeverity(AlertSeverity s) {
+    switch (s) {
+      case AlertSeverity.emergency:
+      case AlertSeverity.critical:
+        return OpsDepthLevel.critical;
+      case AlertSeverity.warning:
+        return OpsDepthLevel.high;
+      case AlertSeverity.info:
+        return OpsDepthLevel.mid;
+    }
+  }
+
   double get _progress {
     if (alert.thresholdLevel <= 0) return 0;
     return (alert.exceedancePct / 100).clamp(0.0, 1.0);
@@ -154,72 +164,66 @@ class _AlertCard extends StatelessWidget {
     final t     = RiverColors.of(context);
     final color = _severityColor(t);
 
-    return Td3Card(
-      elevation: Td3.elevMid,
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                // Type icon (emoji from AlertTypeExt)
-                Text(alert.type.icon,
-                    style: const TextStyle(fontSize: 16)),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    alert.title,
-                    style: TextStyle(
-                        color: t.textPrimary,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14),
-                  ),
+    return OpsDepthCard(
+      elevation: _elevFromSeverity(alert.severity),
+      borderColor: color,
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(alert.type.icon,
+                  style: const TextStyle(fontSize: 16)),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  alert.title,
+                  style: TextStyle(
+                      color: t.textPrimary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14),
                 ),
-                // Severity badge
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    alert.severity.label,
-                    style: TextStyle(
-                        color: color,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5),
-                  ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(6),
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            // Alert body text
-            Text(
-              alert.body,
-              style: TextStyle(color: t.textSecondary, fontSize: 12),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 10),
-            // Exceedance progress bar
-            LinearProgressIndicator(
-              value: _progress,
-              backgroundColor: t.cardBgElevated,
-              valueColor: AlwaysStoppedAnimation(color),
-              borderRadius: BorderRadius.circular(4),
-              minHeight: 6,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              '${alert.currentLevel.toStringAsFixed(2)} m  /  threshold at ${alert.thresholdLevel.toStringAsFixed(2)} m',
-              style: TextStyle(
-                  color: t.textSecondary, fontSize: 12),
-            ),
-          ],
-        ),
+                child: Text(
+                  alert.severity.label,
+                  style: TextStyle(
+                      color: color,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            alert.body,
+            style: TextStyle(color: t.textSecondary, fontSize: 12),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 10),
+          LinearProgressIndicator(
+            value: _progress,
+            backgroundColor: t.cardBgElevated,
+            valueColor: AlwaysStoppedAnimation(color),
+            borderRadius: BorderRadius.circular(4),
+            minHeight: 6,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${alert.currentLevel.toStringAsFixed(2)} m  /  threshold at ${alert.thresholdLevel.toStringAsFixed(2)} m',
+            style: TextStyle(color: t.textSecondary, fontSize: 12),
+          ),
+        ],
       ),
     );
   }
