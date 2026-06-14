@@ -1,11 +1,13 @@
-// lib/services/live_fetch_engine.dart  (v4.1 — TrendCard wired)
+// lib/services/live_fetch_engine.dart  (v4.2 — river severity wired)
 //
-// v4.0 → v4.1 changes:
-//   • StationTrendStore.instance.append() called at end of _fetchAllCities()
-//     for every city that has a non-zero currentLevel in _cache.
-//   • trendForCity() now delegates to StationTrendStore.instance.get(city)
-//     instead of returning const [].
-//   All other logic is unchanged from v4.0.
+// v4.1 → v4.2 changes:
+//   • LiveCityData: add predictedSeverity, riskScore, confidencePercent,
+//     willBreachDanger, peakLevel72h fields + updated copyWith
+//   • toFloodData() passes all 5 new fields to FloodData
+//   • _fetchAllCities(): after WRD+GloFAS+rain assembly, calls
+//     GET /api/live-levels (with_severity=true) once for ALL cities;
+//     merges ML fields (predicted_severity, risk_score, etc.) per city.
+//   • _buildCriticalAlerts(): enriched with ML severity fields.
 
 import 'dart:async';
 
@@ -142,7 +144,7 @@ class SourceHealth {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// LiveCityData
+// LiveCityData  (v4.2)
 // ─────────────────────────────────────────────────────────────────────────────
 class LiveCityData {
   final double?   currentLevel;
@@ -153,6 +155,13 @@ class LiveCityData {
   final String?   riskLevel;
   final DateTime  lastUpdated;
 
+  // v4.2 ML fields
+  final String?  predictedSeverity;
+  final int?     riskScore;
+  final double?  confidencePercent;
+  final bool?    willBreachDanger;
+  final double?  peakLevel72h;
+
   const LiveCityData({
     this.currentLevel,
     required this.warningLevel,
@@ -161,11 +170,18 @@ class LiveCityData {
     this.rainfall24h,
     this.riskLevel,
     required this.lastUpdated,
+    // v4.2
+    this.predictedSeverity,
+    this.riskScore,
+    this.confidencePercent,
+    this.willBreachDanger,
+    this.peakLevel72h,
   });
 
   @override
   String toString() =>
       'LiveCityData(flow=$flowRate m\u00b3/s, risk=$riskLevel, '
+      'severity=$predictedSeverity, score=$riskScore, '
       'rain=${rainfall24h}mm, level=$currentLevel m)';
 
   LiveCityData copyWith({
@@ -176,40 +192,56 @@ class LiveCityData {
     double?   rainfall24h,
     String?   riskLevel,
     DateTime? lastUpdated,
+    String?   predictedSeverity,
+    int?      riskScore,
+    double?   confidencePercent,
+    bool?     willBreachDanger,
+    double?   peakLevel72h,
   }) =>
       LiveCityData(
-        currentLevel: currentLevel ?? this.currentLevel,
-        warningLevel: warningLevel ?? this.warningLevel,
-        dangerLevel:  dangerLevel  ?? this.dangerLevel,
-        flowRate:     flowRate     ?? this.flowRate,
-        rainfall24h:  rainfall24h  ?? this.rainfall24h,
-        riskLevel:    riskLevel    ?? this.riskLevel,
-        lastUpdated:  lastUpdated  ?? this.lastUpdated,
+        currentLevel:      currentLevel      ?? this.currentLevel,
+        warningLevel:      warningLevel      ?? this.warningLevel,
+        dangerLevel:       dangerLevel       ?? this.dangerLevel,
+        flowRate:          flowRate          ?? this.flowRate,
+        rainfall24h:       rainfall24h       ?? this.rainfall24h,
+        riskLevel:         riskLevel         ?? this.riskLevel,
+        lastUpdated:       lastUpdated       ?? this.lastUpdated,
+        predictedSeverity: predictedSeverity ?? this.predictedSeverity,
+        riskScore:         riskScore         ?? this.riskScore,
+        confidencePercent: confidencePercent ?? this.confidencePercent,
+        willBreachDanger:  willBreachDanger  ?? this.willBreachDanger,
+        peakLevel72h:      peakLevel72h      ?? this.peakLevel72h,
       );
 
   FloodData toFloodData(String city, String state,
       {String? riverName, String district = ''}) {
-    final level  = currentLevel ?? 0.0;
+    final level = currentLevel ?? 0.0;
     return FloodData(
-      city:                city,
-      district:            district,
-      state:               state,
-      riverName:           riverName,
-      currentLevel:        level,
-      warningLevel:        warningLevel,
-      dangerLevel:         dangerLevel,
-      flowRate:            flowRate,
-      imdRainfallMm:       rainfall24h,
-      lastUpdated:         lastUpdated,
-      stationId:           '',
-      stationName:         city,
-      river:               riverName ?? '',
+      city:              city,
+      district:          district,
+      state:             state,
+      riverName:         riverName,
+      currentLevel:      level,
+      warningLevel:      warningLevel,
+      dangerLevel:       dangerLevel,
+      flowRate:          flowRate,
+      imdRainfallMm:     rainfall24h,
+      lastUpdated:       lastUpdated,
+      stationId:         '',
+      stationName:       city,
+      river:             riverName ?? '',
+      // v4.2 ML fields
+      predictedSeverity: predictedSeverity,
+      riskScore:         riskScore,
+      confidencePercent: confidencePercent,
+      willBreachDanger:  willBreachDanger,
+      peakLevel72h:      peakLevel72h,
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// LiveFetchEngine  (v4.1)
+// LiveFetchEngine  (v4.2)
 // ─────────────────────────────────────────────────────────────────────────────
 class LiveFetchEngine {
   static const _cacheTtl     = Duration(minutes: 5);
@@ -221,10 +253,12 @@ class LiveFetchEngine {
   final _cbWrd     = _CircuitBreaker();
   final _cbGlofas  = _CircuitBreaker();
   final _cbRain    = _CircuitBreaker();
+  final _cbSev     = _CircuitBreaker(); // circuit-breaker for severity endpoint
 
   final _wrdCache    = VersionedDataCache<List<WrdStation>>(ttl: const Duration(minutes: 5));
   final _glofasCache = VersionedDataCache<List<Map<String, dynamic>>>(ttl: const Duration(minutes: 5));
   final _rainCache   = VersionedDataCache<List<Map<String, dynamic>>>(ttl: const Duration(minutes: 5));
+  final _sevCache    = VersionedDataCache<Map<String, Map<String, dynamic>>>(ttl: const Duration(minutes: 5));
 
   final Map<String, LiveCityData> _cache = {};
   DateTime?  _lastFetch;
@@ -245,6 +279,7 @@ class LiveFetchEngine {
   SourceHealth _glofasHealth  = const SourceHealth.unknown();
   SourceHealth _imdHealth     = const SourceHealth.unknown();
   SourceHealth _wrdHealth     = const SourceHealth.unknown();
+  SourceHealth _sevHealth     = const SourceHealth.unknown();
 
   SourceHealth get _cwcHealth => _wrdHealth;
 
@@ -284,18 +319,21 @@ class LiveFetchEngine {
   SourceHealth get imdHealth     => _imdHealth;
   SourceHealth get wrdHealth     => _wrdHealth;
   SourceHealth get cwcHealth     => _cwcHealth;
+  SourceHealth get severityHealth => _sevHealth;
 
-  bool get backendHealthy => _backendHealth.healthy;
-  bool get glofasHealthy  => _glofasHealth.healthy;
-  bool get imdHealthy     => _imdHealth.healthy;
-  bool get wrdHealthy     => _wrdHealth.healthy;
-  bool get cwcHealthy     => _cwcHealth.healthy;
+  bool get backendHealthy  => _backendHealth.healthy;
+  bool get glofasHealthy   => _glofasHealth.healthy;
+  bool get imdHealthy      => _imdHealth.healthy;
+  bool get wrdHealthy      => _wrdHealth.healthy;
+  bool get cwcHealthy      => _cwcHealth.healthy;
+  bool get severityHealthy => _sevHealth.healthy;
 
-  int? get backendLatencyMs => _backendHealth.latencyMs;
-  int? get glofasLatencyMs  => _glofasHealth.latencyMs;
-  int? get imdLatencyMs     => _imdHealth.latencyMs;
-  int? get wrdLatencyMs     => _wrdHealth.latencyMs;
-  int? get cwcLatencyMs     => _cwcHealth.latencyMs;
+  int? get backendLatencyMs  => _backendHealth.latencyMs;
+  int? get glofasLatencyMs   => _glofasHealth.latencyMs;
+  int? get imdLatencyMs      => _imdHealth.latencyMs;
+  int? get wrdLatencyMs      => _wrdHealth.latencyMs;
+  int? get cwcLatencyMs      => _cwcHealth.latencyMs;
+  int? get severityLatencyMs => _sevHealth.latencyMs;
 
   // —— Data getters ——————————————————————————————————————————————————————————
   List<LiveCityData?> get liveLevels => _cache.values.toList();
@@ -412,7 +450,7 @@ class LiveFetchEngine {
     final lons     = allCities.map((c) => (c['lon']  as num).toDouble()).toList();
     final cityKeys = allCities.map((c) => (c['city'] as String).toLowerCase().trim()).toList();
 
-    // 1. WRD Bihar gauge readings
+    // 1. WRD Bihar
     final wrdStart = DateTime.now();
     Map<String, WrdStation> wrdByKey = {};
     _wrdLiveCount = 0;
@@ -458,8 +496,6 @@ class LiveFetchEngine {
         );
         _log('WRD fetch failed: $e');
       }
-    } else {
-      _log('WRD circuit-breaker OPEN — skipping');
     }
 
     // 2. GloFAS
@@ -502,8 +538,6 @@ class LiveFetchEngine {
         );
         _log('GloFAS fetch failed: $e');
       }
-    } else {
-      _log('GloFAS circuit-breaker OPEN — skipping');
     }
 
     // 3. Rainfall
@@ -544,11 +578,50 @@ class LiveFetchEngine {
         );
         _log('Rainfall fetch failed: $e');
       }
-    } else {
-      _log('Rainfall circuit-breaker OPEN — skipping');
     }
 
-    // 4. Assemble cache
+    // 4. Severity (GET /api/live-levels?with_severity=true)
+    //    Returns backend ML predictions per city; merged into cache below.
+    final sevStart = DateTime.now();
+    Map<String, Map<String, dynamic>> sevByKey = {};
+
+    if (!_cbSev.isOpen) {
+      try {
+        List<Map<String, dynamic>> sevRows;
+        if (_sevCache.isStale) {
+          sevRows = await SharedFetchCoordinator.instance.dedupe(
+            'live_levels_sev',
+            () => BackendApiService.instance.fetchLiveLevelsWithSeverity(),
+          );
+          // Build key map: normalised city name → record
+          final Map<String, Map<String, dynamic>> built = {};
+          for (final r in sevRows) {
+            final k = (r['city'] as String? ?? '').toLowerCase().trim();
+            if (k.isNotEmpty) built[k] = r;
+          }
+          _sevCache.set(built);
+        }
+        sevByKey = _sevCache.value ?? {};
+        _cbSev.recordSuccess();
+        _sevHealth = SourceHealth(
+          healthy:       true,
+          latencyMs:     DateTime.now().difference(sevStart).inMilliseconds,
+          lastSuccessAt: DateTime.now(),
+        );
+        _log('Severity: ${sevByKey.length} cities enriched');
+      } catch (e) {
+        _cbSev.recordFailure();
+        _sevHealth = SourceHealth(
+          healthy:       false,
+          latencyMs:     DateTime.now().difference(sevStart).inMilliseconds,
+          lastSuccessAt: _sevHealth.lastSuccessAt,
+          lastError:     e.toString(),
+        );
+        _log('Severity fetch failed (non-fatal): $e');
+      }
+    }
+
+    // 5. Assemble cache
     final now = DateTime.now();
     for (int i = 0; i < allCities.length; i++) {
       final mc       = allCities[i];
@@ -582,19 +655,33 @@ class LiveFetchEngine {
         }
       }
 
+      // Merge ML severity fields from /api/live-levels
+      final sev = sevByKey[key];
+      final predictedSeverity  = sev?['predicted_severity']  as String?;
+      final riskScore          = (sev?['risk_score']         as num?)?.toInt();
+      final confidencePercent  = (sev?['confidence_percent'] as num?)?.toDouble();
+      final willBreachDanger   = sev?['will_breach_danger']  as bool?;
+      final peakLevel72h       = (sev?['peak_level_72h']     as num?)?.toDouble();
+
       _cache[key] = LiveCityData(
-        currentLevel: wrd?.currentLevel ?? estLevel,
-        warningLevel: (wrd?.warningLevel != null && wrd!.warningLevel! > 0)
+        currentLevel:      wrd?.currentLevel ?? estLevel,
+        warningLevel:      (wrd?.warningLevel != null && wrd!.warningLevel! > 0)
             ? wrd.warningLevel! : wl,
-        dangerLevel:  (wrd?.dangerLevel != null && wrd!.dangerLevel! > 0)
+        dangerLevel:       (wrd?.dangerLevel != null && wrd!.dangerLevel! > 0)
             ? wrd.dangerLevel!  : dl,
-        flowRate:     discharge,
-        rainfall24h:  rain,
-        riskLevel:    _mergeRisk(wrd?.riskLabel, risk),
-        lastUpdated:  now,
+        flowRate:          discharge,
+        rainfall24h:       rain,
+        riskLevel:         _mergeRisk(wrd?.riskLabel, risk),
+        lastUpdated:       now,
+        // v4.2 ML
+        predictedSeverity: predictedSeverity,
+        riskScore:         riskScore,
+        confidencePercent: confidencePercent,
+        willBreachDanger:  willBreachDanger,
+        peakLevel72h:      peakLevel72h,
       );
 
-      // v4.1 — feed trend store with every non-zero reading
+      // v4.1 trend store
       final lvl = _cache[key]!.currentLevel;
       if (lvl != null && lvl > 0) {
         StationTrendStore.instance.append(key, lvl, now);
@@ -602,10 +689,11 @@ class LiveFetchEngine {
     }
 
     _lastFetch = now;
-    _log('v4.1 cache updated — ${_cache.length} stations across all states '
+    _log('v4.2 cache updated — ${_cache.length} stations '
         '(wrd=${_wrdHealth.healthy} [live=$_wrdLiveCount disk=$_wrdDiskCount], '
         'glofas=${_glofasHealth.healthy}, '
-        'rainfall=${_imdHealth.healthy})');
+        'rainfall=${_imdHealth.healthy}, '
+        'severity=${_sevHealth.healthy})');
     _notify();
   }
 
@@ -637,11 +725,19 @@ class LiveFetchEngine {
     return _cache.entries
         .where((e) =>
             e.value.riskLevel == 'CRITICAL' ||
-            e.value.riskLevel == 'SEVERE')
+            e.value.riskLevel == 'SEVERE'   ||
+            e.value.predictedSeverity == 'CRITICAL' ||
+            e.value.predictedSeverity == 'SEVERE')
         .map((e) => {
-              'city':      e.key,
-              'riskLevel': e.value.riskLevel,
-              'level':     e.value.currentLevel,
+              'city':              e.key,
+              'riskLevel':         e.value.riskLevel,
+              'level':             e.value.currentLevel,
+              // v4.2 ML fields
+              'predictedSeverity': e.value.predictedSeverity,
+              'riskScore':         e.value.riskScore,
+              'confidencePercent': e.value.confidencePercent,
+              'willBreachDanger':  e.value.willBreachDanger,
+              'peakLevel72h':      e.value.peakLevel72h,
             })
         .toList();
   }
@@ -655,6 +751,6 @@ class LiveFetchEngine {
 
   void _notify() => onStateChanged?.call();
   void _log(String msg) {
-    if (kDebugMode) debugPrint('[LiveFetchEngine v4.1] $msg');
+    if (kDebugMode) debugPrint('[LiveFetchEngine v4.2] $msg');
   }
 }
