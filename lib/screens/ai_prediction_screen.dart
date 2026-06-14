@@ -1,5 +1,7 @@
 // lib/screens/ai_prediction_screen.dart
-// OpsFlood — Phase 9: AI Flood Prediction Screen (full implementation)
+// OpsFlood — Phase 9: AI Flood Prediction Screen
+// FIX: removed `const` from TabBarView children list — PredictScreenImpl
+//      is not a const-constructible widget, so the list must be non-const.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -69,10 +71,11 @@ class _AiPredictionScreenState extends ConsumerState<AiPredictionScreen>
       ),
       body: TabBarView(
         controller: _tabs,
-        children: const [
+        // ⚠️ NOT const — PredictScreenImpl has no const constructor
+        children: [
           _PredictTab(),
-          _ForecastTab(),
-          _ModelInfoTab(),
+          const _ForecastTab(),
+          const _ModelInfoTab(),
         ],
       ),
     );
@@ -84,7 +87,7 @@ class _AiPredictionScreenState extends ConsumerState<AiPredictionScreen>
 class _PredictTab extends StatelessWidget {
   const _PredictTab();
   @override
-  Widget build(BuildContext context) => const PredictScreenImpl();
+  Widget build(BuildContext context) => PredictScreenImpl();
 }
 
 // ── Tab 2: 7-Day Forecast ─────────────────────────────────────────────────────
@@ -93,13 +96,13 @@ class _ForecastTab extends StatelessWidget {
   const _ForecastTab();
 
   static const List<_ForecastDay> _days = [
-    _ForecastDay('Today',   87, 'Critical',   Colors.red,       Icons.crisis_alert),
-    _ForecastDay('Mon',     74, 'High',        Colors.deepOrange,Icons.warning_amber),
-    _ForecastDay('Tue',     61, 'High',        Colors.deepOrange,Icons.warning_amber),
-    _ForecastDay('Wed',     48, 'Medium',      Colors.amber,     Icons.info_outline),
-    _ForecastDay('Thu',     35, 'Medium',      Colors.amber,     Icons.info_outline),
-    _ForecastDay('Fri',     22, 'Low',         Colors.green,     Icons.check_circle_outline),
-    _ForecastDay('Sat',     14, 'Low',         Colors.green,     Icons.check_circle_outline),
+    _ForecastDay('Today', 87, 'Critical',   Colors.red,        Icons.crisis_alert),
+    _ForecastDay('Mon',   74, 'High',        Colors.deepOrange, Icons.warning_amber),
+    _ForecastDay('Tue',   61, 'High',        Colors.deepOrange, Icons.warning_amber),
+    _ForecastDay('Wed',   48, 'Medium',      Colors.amber,      Icons.info_outline),
+    _ForecastDay('Thu',   35, 'Medium',      Colors.amber,      Icons.info_outline),
+    _ForecastDay('Fri',   22, 'Low',         Colors.green,      Icons.check_circle_outline),
+    _ForecastDay('Sat',   14, 'Low',         Colors.green,      Icons.check_circle_outline),
   ];
 
   @override
@@ -130,8 +133,7 @@ class _ForecastTab extends StatelessWidget {
           ),
           child: Row(
             children: [
-              const Icon(Icons.info_outline,
-                  color: Colors.amber, size: 16),
+              const Icon(Icons.info_outline, color: Colors.amber, size: 16),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -150,18 +152,17 @@ class _ForecastTab extends StatelessWidget {
 }
 
 class _ForecastDay {
-  final String day;
-  final int risk;
-  final String label;
-  final Color color;
+  final String  day;
+  final int     risk;
+  final String  label;
+  final Color   color;
   final IconData icon;
-  const _ForecastDay(
-      this.day, this.risk, this.label, this.color, this.icon);
+  const _ForecastDay(this.day, this.risk, this.label, this.color, this.icon);
 }
 
 class _ForecastRow extends StatelessWidget {
   final _ForecastDay day;
-  final RiverColors theme;
+  final RiverColors  theme;
   const _ForecastRow({required this.day, required this.theme});
 
   @override
@@ -191,8 +192,7 @@ class _ForecastRow extends StatelessWidget {
                     value: day.risk / 100,
                     minHeight: 8,
                     backgroundColor: t.divider.withOpacity(0.3),
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(day.color),
+                    valueColor: AlwaysStoppedAnimation<Color>(day.color),
                   ),
                 ),
               ),
@@ -280,8 +280,8 @@ class _BasinHeatmap extends StatelessWidget {
 
 class _BasinRisk {
   final String name;
-  final int risk;
-  final Color color;
+  final int    risk;
+  final Color  color;
   const _BasinRisk(this.name, this.risk, this.color);
 }
 
@@ -361,16 +361,13 @@ class _ModelInfoTab extends StatelessWidget {
 
 class _InfoCard extends StatelessWidget {
   final RiverColors theme;
-  final IconData icon;
-  final Color color;
-  final String title;
-  final String body;
+  final IconData    icon;
+  final Color       color;
+  final String      title;
+  final String      body;
   const _InfoCard({
-    required this.theme,
-    required this.icon,
-    required this.color,
-    required this.title,
-    required this.body,
+    required this.theme, required this.icon, required this.color,
+    required this.title, required this.body,
   });
 
   @override
@@ -384,8 +381,7 @@ class _InfoCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 36,
-              height: 36,
+              width: 36, height: 36,
               decoration: BoxDecoration(
                 color: color.withOpacity(0.15),
                 shape: BoxShape.circle,
@@ -423,13 +419,13 @@ class _FeatureTable extends StatelessWidget {
   const _FeatureTable({required this.theme});
 
   static const List<List<String>> _rows = [
-    ['River gauge level (m)',      'CWC RTDAS',   'Hourly'],
-    ['24h rainfall accumulation',  'IMD gridded', '3-hourly'],
-    ['Soil moisture index',        'ISRO SMAP',   'Daily'],
-    ['Upstream discharge (m³/s)', 'CWC stations','Hourly'],
-    ['Embankment breach history',  'SDMA Bihar',  'Event-based'],
-    ['Temperature / humidity',     'IMD AWS',     '3-hourly'],
-    ['Tidal backwater effect',     'CWPRS model', '6-hourly'],
+    ['River gauge level (m)',       'CWC RTDAS',   'Hourly'],
+    ['24h rainfall accumulation',   'IMD gridded', '3-hourly'],
+    ['Soil moisture index',         'ISRO SMAP',   'Daily'],
+    ['Upstream discharge (m³/s)',   'CWC stations','Hourly'],
+    ['Embankment breach history',   'SDMA Bihar',  'Event-based'],
+    ['Temperature / humidity',      'IMD AWS',     '3-hourly'],
+    ['Tidal backwater effect',      'CWPRS model', '6-hourly'],
   ];
 
   @override
@@ -470,8 +466,7 @@ class _FeatureTable extends StatelessWidget {
                               horizontal: 10, vertical: 7),
                           child: Text(c,
                               style: TextStyle(
-                                  color: t.textPrimary,
-                                  fontSize: 11)),
+                                  color: t.textPrimary, fontSize: 11)),
                         ))
                     .toList(),
               )),

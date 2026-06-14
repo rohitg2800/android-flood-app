@@ -1,4 +1,5 @@
 // lib/screens/profile_screen.dart
+// FIX: added static const String route = '/profile'
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/river_theme.dart';
@@ -6,6 +7,7 @@ import '../theme/theme_3d.dart';
 import '../providers/theme_provider.dart';
 
 class ProfileScreen extends ConsumerWidget {
+  static const String route = '/profile';
   const ProfileScreen({super.key});
 
   @override
@@ -72,8 +74,6 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 20),
-
-                // Profile menu tiles
                 _ProfileTile(
                     icon: Icons.notifications_rounded,
                     label: 'Notification Preferences',
@@ -112,8 +112,6 @@ class _ProfileTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Use Material instead of Container+BoxDecoration so ListTile ink splashes
-    // paint on Material, not on an intercepting DecoratedBox.
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
@@ -123,8 +121,7 @@ class _ProfileTile extends StatelessWidget {
         child: ListTile(
           leading: Icon(icon, color: t.accent, size: 20),
           title: Text(label,
-              style:
-                  TextStyle(color: t.textPrimary, fontSize: 14)),
+              style: TextStyle(color: t.textPrimary, fontSize: 14)),
           trailing: Icon(Icons.chevron_right,
               color: t.textSecondary, size: 18),
           onTap: () {},

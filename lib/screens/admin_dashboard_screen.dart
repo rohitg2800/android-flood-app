@@ -1,8 +1,6 @@
 // lib/screens/admin_dashboard_screen.dart
 // OpsFlood — Module 11: Admin Dashboard
-//
-// Gated behind role check: only shown when
-// FirebaseAuth.currentUser?.email ends with @opsflood.gov.in
+// FIX: added static const String route = '/admin-dashboard'
 
 import 'package:flutter/material.dart';
 import '../theme/river_theme.dart';
@@ -10,24 +8,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/alert_provider.dart';
 import '../services/alert_engine.dart';
 
-// ── Stub providers — replace with real implementations when available ────────
-final activeAlertsProvider = Provider<List<FloodAlert>>((ref) => const []);
-final liveLevelsProvider   = Provider<List<dynamic>>((ref) => const []);
+// Stub providers
+final activeAlertsProvider   = Provider<List<FloodAlert>>((ref) => const []);
+final liveLevelsProvider     = Provider<List<dynamic>>((ref) => const []);
 final pendingReportsProvider = Provider<List<dynamic>>((ref) => const []);
 
 class AdminDashboardScreen extends ConsumerWidget {
+  static const String route = '/admin-dashboard';
   const AdminDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final t = RiverColors.of(context);
+    final t      = RiverColors.of(context);
     final alerts = ref.watch(activeAlertsProvider);
     final live   = ref.watch(liveLevelsProvider);
     final crowd  = ref.watch(pendingReportsProvider);
 
     final criticalCount = alerts.where((a) =>
-      a.severity == AlertSeverity.critical ||
-      a.severity == AlertSeverity.emergency).length;
+        a.severity == AlertSeverity.critical ||
+        a.severity == AlertSeverity.emergency).length;
 
     return Scaffold(
       backgroundColor: t.scaffoldBg,
@@ -35,7 +34,8 @@ class AdminDashboardScreen extends ConsumerWidget {
         backgroundColor: t.cardBg,
         elevation: 0,
         title: Text('Admin Dashboard',
-            style: TextStyle(color: t.textPrimary, fontWeight: FontWeight.w700)),
+            style: TextStyle(
+                color: t.textPrimary, fontWeight: FontWeight.w700)),
         iconTheme: IconThemeData(color: t.textPrimary),
       ),
       body: ListView(
@@ -43,10 +43,10 @@ class AdminDashboardScreen extends ConsumerWidget {
         children: [
           _OverviewCards(
             t: t,
-            alertCount: alerts.length,
+            alertCount:    alerts.length,
             criticalCount: criticalCount,
-            liveCount: live.length,
-            pendingCount: crowd.length,
+            liveCount:     live.length,
+            pendingCount:  crowd.length,
           ),
           const SizedBox(height: 20),
           if (alerts.isNotEmpty) ..._AlertRows(alerts: alerts, t: t),
@@ -77,10 +77,10 @@ class _OverviewCards extends StatelessWidget {
       crossAxisSpacing: 12,
       childAspectRatio: 2.2,
       children: [
-        _KpiCard(label: 'Active Alerts',  value: '$alertCount',   color: AppPalette.warning,  t: t),
-        _KpiCard(label: 'Critical',       value: '$criticalCount', color: AppPalette.critical, t: t),
-        _KpiCard(label: 'Live Stations',  value: '$liveCount',    color: AppPalette.cyan,     t: t),
-        _KpiCard(label: 'Pending Reports',value: '$pendingCount', color: AppPalette.gold,     t: t),
+        _KpiCard(label: 'Active Alerts',   value: '$alertCount',    color: AppPalette.warning,  t: t),
+        _KpiCard(label: 'Critical',        value: '$criticalCount', color: AppPalette.critical, t: t),
+        _KpiCard(label: 'Live Stations',   value: '$liveCount',     color: AppPalette.cyan,     t: t),
+        _KpiCard(label: 'Pending Reports', value: '$pendingCount',  color: AppPalette.gold,     t: t),
       ],
     );
   }
@@ -107,9 +107,10 @@ class _KpiCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(value, style: TextStyle(color: color,
-              fontSize: 20, fontWeight: FontWeight.w700)),
-          Text(label, style: TextStyle(color: t.textSecondary, fontSize: 11)),
+          Text(value, style: TextStyle(
+              color: color, fontSize: 20, fontWeight: FontWeight.w700)),
+          Text(label, style: TextStyle(
+              color: t.textSecondary, fontSize: 11)),
         ],
       ),
     );
@@ -150,14 +151,19 @@ class _AlertRow extends StatelessWidget {
       child: Row(
         children: [
           Container(width: 8, height: 8,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+              decoration: BoxDecoration(
+                  color: color, shape: BoxShape.circle)),
           const SizedBox(width: 10),
           Expanded(
             child: Text(alert.title,
-                style: TextStyle(color: t.textPrimary, fontSize: 13)),
+                style: TextStyle(
+                    color: t.textPrimary, fontSize: 13)),
           ),
           Text(alert.severity.name.toUpperCase(),
-              style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700)),
+              style: TextStyle(
+                  color: color,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700)),
         ],
       ),
     );
