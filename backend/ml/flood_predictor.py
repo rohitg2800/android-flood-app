@@ -3,7 +3,7 @@
 #
 # Architecture (from saved .pt weight shapes):
 #   bilstm1:  input=11, hidden=128, bidirectional  → output=256
-#   attn:     MultiheadAttention(embed_dim=256, num_heads=3)
+#   attn:     MultiheadAttention(embed_dim=256, num_heads=?) — auto-detected
 #   norm1:    LayerNorm(256)
 #   bilstm2:  input=256, hidden=64, bidirectional  → output=128
 #   fc1:      Linear(128, 256)
@@ -52,7 +52,7 @@ def _load_feature_stats() -> dict[str, tuple[float, float]]:
 
 FEATURE_STATS: dict[str, tuple[float, float]] = _load_feature_stats()
 
-# ── Gauge thresholds ────────────────────────────────────────────────────────────
+# ── Gauge thresholds ───────────────────────────────────────────────────────────
 GAUGE_THRESHOLDS: dict[str, dict] = {
     'Gandhighat':     {'danger': 48.60, 'warning': 47.50, 'river': 'Ganga'},
     'Dighaghat':      {'danger': 50.45, 'warning': 49.30, 'river': 'Ganga'},
@@ -87,45 +87,42 @@ GAUGE_THRESHOLDS: dict[str, dict] = {
     'Sripalpur':      {'danger': 50.60, 'warning': 49.50, 'river': 'Punpun'},
 }
 
-SEQ_LEN   = 24   # matches config in .pt bundle
-N_FEATURES = 11  # matches config in .pt bundle
+SEQ_LEN    = 24   # matches config in .pt bundle
+N_FEATURES = 11   # matches config in .pt bundle
+_EMBED_DIM  = 256  # bilstm1 bidir output = 2*128
 
 
 # ── PyTorch BiLSTM+Attention model definition ──────────────────────────────────
-def _build_bilstm_model():
+def _build_bilstm_model(num_heads: int = 8):
     """
-    Reconstruct BiLSTMAttention architecture from weight shapes:
-      bilstm1 weight_ih_l0: [512, 11]  → hidden=128, input=11
-      bilstm1 weight_hh_l0: [512, 128] → confirms hidden=128
-      attn in_proj_weight:  [768, 256]  → embed=256, heads=3
-      bilstm2 weight_ih_l0: inferred hidden=64 (output=128 bidir)
-      fc1: [256, 128], fc2: [128, 256], out: [72, 128]
+    Reconstruct BiLSTMAttention. num_heads is auto-detected in _load_model
+    by trying all valid divisors of embed_dim=256 until state_dict loads.
     """
-    import torch
     import torch.nn as nn
 
     class BiLSTMAttention(nn.Module):
-        def __init__(self):
+        def __init__(self, nh: int):
             super().__init__()
             self.bilstm1 = nn.LSTM(N_FEATURES, 128, batch_first=True, bidirectional=True)
-            self.attn    = nn.MultiheadAttention(embed_dim=256, num_heads=3, batch_first=True)
-            self.norm1   = nn.LayerNorm(256)
-            self.bilstm2 = nn.LSTM(256, 64, batch_first=True, bidirectional=True)
+            self.attn    = nn.MultiheadAttention(embed_dim=_EMBED_DIM, num_heads=nh, batch_first=True)
+            self.norm1   = nn.LayerNorm(_EMBED_DIM)
+            self.bilstm2 = nn.LSTM(_EMBED_DIM, 64, batch_first=True, bidirectional=True)
             self.fc1     = nn.Linear(128, 256)
             self.fc2     = nn.Linear(256, 128)
             self.out     = nn.Linear(128, 72)
 
-        def forward(self, x):  # x: (batch, seq, features)
-            x, _ = self.bilstm1(x)         # (batch, seq, 256)
-            x, _ = self.attn(x, x, x)      # (batch, seq, 256)
+        def forward(self, x):
+            import torch
+            x, _ = self.bilstm1(x)      # (batch, seq, 256)
+            x, _ = self.attn(x, x, x)   # (batch, seq, 256)
             x     = self.norm1(x)
-            x, _ = self.bilstm2(x)         # (batch, seq, 128)
-            x     = x[:, -1, :]            # last timestep: (batch, 128)
-            x     = torch.relu(self.fc1(x))# (batch, 256)
-            x     = torch.relu(self.fc2(x))# (batch, 128)
-            return self.out(x)             # (batch, 72)
+            x, _ = self.bilstm2(x)      # (batch, seq, 128)
+            x     = x[:, -1, :]         # last timestep
+            x     = torch.relu(self.fc1(x))
+            x     = torch.relu(self.fc2(x))
+            return self.out(x)          # (batch, 72)
 
-    return BiLSTMAttention()
+    return BiLSTMAttention(num_heads)
 
 
 # ── FloodPredictor ─────────────────────────────────────────────────────────────────
@@ -197,33 +194,27 @@ class FloodPredictor:
         upstream_v = upstream or current
         level_win  = self._build_history_window(current, r3d, history, seq_len)
 
-        # Build cyclical time features
         day_of_year = now.timetuple().tm_yday
         hour        = now.hour
         day_sin  = math.sin(2 * math.pi * day_of_year / 365)
         day_cos  = math.cos(2 * math.pi * day_of_year / 365)
         hour_sin = math.sin(2 * math.pi * hour / 24)
 
-        # Normalise level using GAUGE_THRESHOLDS danger as reference
         danger = self.threshold['danger']
-
         def norm_level(v): return (v - danger * 0.8) / (danger * 0.2) if danger > 0 else v / 50.0
         def norm_rain(v, scale): return v / scale if scale > 0 else 0.0
 
-        # 11 features matching config: level_m, rain_1h, rain_3d, rain_7d,
-        # upstream_level, forecast_mm, soil_moisture, discharge_m3s,
-        # day_sin, day_cos, hour_sin
         seq = np.array(
             [
                 [
                     norm_level(level_win[t]),
-                    norm_rain(r3d / 72, 10.0),   # rain_1h approx
+                    norm_rain(r3d / 72, 10.0),
                     norm_rain(r3d, 200.0),
                     norm_rain(r7d, 400.0),
                     norm_level(upstream_v),
                     norm_rain(imd_fcst, 50.0),
-                    0.5,                          # soil_moisture (unknown → neutral)
-                    norm_level(current) * 100,    # discharge proxy
+                    0.5,
+                    norm_level(current) * 100,
                     day_sin,
                     day_cos,
                     hour_sin,
@@ -231,15 +222,13 @@ class FloodPredictor:
                 for t in range(seq_len)
             ],
             dtype=np.float32,
-        )  # (seq_len, 11)
+        )
 
-        x = torch.tensor(seq).unsqueeze(0)  # (1, seq_len, 11)
+        x = torch.tensor(seq).unsqueeze(0)
         self._model.eval()
         with torch.no_grad():
-            out = self._model(x)  # (1, 72)
-        levels_norm = out.squeeze(0).numpy()  # (72,)
-
-        # De-normalise: reverse norm_level
+            out = self._model(x)
+        levels_norm = out.squeeze(0).numpy()
         levels = levels_norm * (danger * 0.2) + danger * 0.8
 
         return [
@@ -284,24 +273,39 @@ class FloodPredictor:
     # ── Model loading ─────────────────────────────────────────────────────────────
     def _load_model(self, station: str):
         """
-        Load per-station BiLSTM .pt bundle, then fall back to all.keras / physics.
-        Returns (model, config) tuple; both None on failure.
+        Load per-station BiLSTM .pt bundle.
+        Auto-detects num_heads by trying valid divisors of embed_dim=256
+        until load_state_dict succeeds without errors.
+        Returns (model, config) or (None, None) on failure.
         """
         try:
             import torch
-            # Try per-station .pt first
             pt_path = MODEL_DIR / f'{station}_bilstm.pt'
             if not pt_path.exists():
-                # Try normalised name (spaces → underscores)
                 pt_path = MODEL_DIR / f'{station.replace(" ", "_")}_bilstm.pt'
-            if pt_path.exists():
-                bundle = torch.load(str(pt_path), map_location='cpu', weights_only=False)
-                model  = _build_bilstm_model()
-                model.load_state_dict(bundle['model_state'])
-                model.eval()
-                return model, bundle.get('config', {})
+            if not pt_path.exists():
+                return None, None
+
+            bundle      = torch.load(str(pt_path), map_location='cpu', weights_only=False)
+            state_dict  = bundle['model_state']
+            config      = bundle.get('config', {})
+
+            # Auto-detect num_heads: try common factors of 256 in likely order
+            for nh in [8, 4, 16, 2, 32, 1, 64, 128, 256]:
+                if _EMBED_DIM % nh != 0:
+                    continue
+                try:
+                    model = _build_bilstm_model(num_heads=nh)
+                    model.load_state_dict(state_dict)
+                    model.eval()
+                    print(f'✅ FloodPredictor: loaded {station} bilstm.pt with num_heads={nh}')
+                    return model, config
+                except Exception:
+                    continue
+
+            print(f'⚠\ufe0f FloodPredictor: no valid num_heads found for {station}')
         except Exception as exc:
-            print(f'\u26a0\ufe0f FloodPredictor: could not load .pt for {station}: {exc}')
+            print(f'⚠\ufe0f FloodPredictor: could not load .pt for {station}: {exc}')
         return None, None
 
 
