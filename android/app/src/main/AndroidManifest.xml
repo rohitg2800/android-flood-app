@@ -29,6 +29,39 @@
     <!-- Auto-restart on boot -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 
+    <!--
+        Android 11+ (API 30) Package Visibility:
+        url_launcher requires explicit <queries> entries so canLaunchUrl()
+        returns true for tel: and sms: URIs.  Without this block,
+        canLaunchUrl always returns false on API 30+ and SOS call/SMS
+        silently fails (component name for tel:... is null).
+    -->
+    <queries>
+        <!-- Allow launching the phone dialler (tel: URIs) -->
+        <intent>
+            <action android:name="android.intent.action.DIAL" />
+            <data android:scheme="tel" />
+        </intent>
+        <!-- Allow launching the SMS app (sms: URIs) -->
+        <intent>
+            <action android:name="android.intent.action.SENDTO" />
+            <data android:scheme="sms" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SENDTO" />
+            <data android:scheme="smsto" />
+        </intent>
+        <!-- Allow opening Google Maps / browser geo links -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="geo" />
+        </intent>
+    </queries>
+
     <application
         android:label="EQUINOX-BH"
         android:name="${applicationName}"
@@ -39,14 +72,6 @@
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-6001698589023170~4240191583"/>
 
-        <!--
-            Disable ProfileInstaller in debug builds.
-            Without this the installer fires on every cold launch and stalls
-            boot by 300-600 ms writing a baseline profile that has zero effect
-            in debug (non-AOT) mode.  The profileable shell=false tag tells
-            Android not to expose profiling data to shell, which also suppresses
-            the automatic profile-write triggered by ProfileInstaller.
-        -->
         <profileable
             android:shell="false"
             tools:targetApi="29"/>
@@ -65,20 +90,17 @@
                 android:name="io.flutter.embedding.android.NormalTheme"
                 android:resource="@style/NormalTheme" />
 
-            <!-- Launch intent -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- FCM notification tap deep-link -->
             <intent-filter>
                 <action android:name="FLUTTER_NOTIFICATION_CLICK" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
 
-        <!-- FCM background message handler -->
         <service
             android:name="com.google.firebase.messaging.FirebaseMessagingService"
             android:exported="false">
@@ -87,14 +109,12 @@
             </intent-filter>
         </service>
 
-        <!-- AI Prediction Background Service (flutter_background_service) -->
         <service
             android:name="id.flutter.flutter_background_service.BackgroundService"
             android:foregroundServiceType="dataSync"
             android:exported="false"
             tools:replace="android:exported" />
 
-        <!-- Auto-restart service on device reboot -->
         <receiver
             android:name="id.flutter.flutter_background_service.BootReceiver"
             android:exported="true">

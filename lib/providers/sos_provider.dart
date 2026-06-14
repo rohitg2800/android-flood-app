@@ -1,6 +1,6 @@
-// lib/providers/sos_provider.dart
-// Phase 5 — SOS State Management
-// fix: Riverpod 3 uses Notifier<T> + NotifierProvider, not StateNotifier.
+// lib/providers/sos_provider.dart  v2.0
+//
+// v2.0 (14 Jun 2026) — district field in SosState, callContact returns bool
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/sos_service.dart';
@@ -11,12 +11,14 @@ class SosState {
   final SosPhase phase;
   final double?  lat;
   final double?  lng;
+  final String?  district;     // Bihar district detected from GPS
   final String?  errorMessage;
 
   const SosState({
     this.phase        = SosPhase.idle,
     this.lat,
     this.lng,
+    this.district,
     this.errorMessage,
   });
 
@@ -24,17 +26,18 @@ class SosState {
     SosPhase? phase,
     double?   lat,
     double?   lng,
+    String?   district,
     String?   errorMessage,
   }) =>
       SosState(
         phase:        phase        ?? this.phase,
         lat:          lat          ?? this.lat,
         lng:          lng          ?? this.lng,
+        district:     district     ?? this.district,
         errorMessage: errorMessage ?? this.errorMessage,
       );
 }
 
-// Riverpod 3: extend Notifier<T> and expose state via build()
 class SosNotifier extends Notifier<SosState> {
   final _service = SosService();
 
@@ -59,9 +62,10 @@ class SosNotifier extends Notifier<SosState> {
     final result = await _service.dispatch();
     if (result is SosSuccess) {
       state = SosState(
-        phase: SosPhase.sent,
-        lat:   result.lat,
-        lng:   result.lng,
+        phase:    SosPhase.sent,
+        lat:      result.lat,
+        lng:      result.lng,
+        district: result.district,
       );
     } else {
       state = SosState(
@@ -73,7 +77,8 @@ class SosNotifier extends Notifier<SosState> {
 
   void reset() => state = const SosState();
 
-  Future<void> callContact(EmergencyContact c) => _service.call(c);
+  /// Returns true if call was launched, false if dialler unavailable.
+  Future<bool> callContact(EmergencyContact c) => _service.call(c);
 }
 
 final sosProvider = NotifierProvider<SosNotifier, SosState>(SosNotifier.new);
