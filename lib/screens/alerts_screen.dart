@@ -1,5 +1,6 @@
-// lib/screens/alerts_screen.dart  nav-v1
-// Wired: tap alert → CityDetailScreen (by cityName arg) or stationDetail.
+// lib/screens/alerts_screen.dart  nav-v1 fix
+// Wired: tap alert -> CityDetailScreen (by cityName arg), map button, SOS FAB.
+// FIX: AlertProvider exposes .all not .alerts
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/river_theme.dart';
@@ -13,9 +14,9 @@ class AlertsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final t  = RiverColors.of(context);
-    final ap = ref.watch(alertProvider);
-    final alerts = ap.alerts;
+    final t      = RiverColors.of(context);
+    final ap     = ref.watch(alertProvider);
+    final alerts = ap.all;   // FIX: was ap.alerts, correct getter is .all
 
     return Scaffold(
       backgroundColor: t.scaffoldBg,
@@ -55,11 +56,11 @@ class AlertsScreen extends ConsumerWidget {
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (ctx, i) {
-                    final a = alerts[i];
-                    final color = a.riskLevel == 'CRITICAL' ||
-                            a.riskLevel == 'EXTREME'
+                    final a     = alerts[i];
+                    final color = a.severity == AlertSeverity.critical ||
+                            a.severity == AlertSeverity.emergency
                         ? t.riverDanger
-                        : a.riskLevel == 'HIGH'
+                        : a.severity == AlertSeverity.warning
                             ? t.riverWarning
                             : t.riverNormal;
                     return Padding(
@@ -69,13 +70,13 @@ class AlertsScreen extends ConsumerWidget {
                         child: ListTile(
                           leading: Icon(Icons.warning_rounded,
                               color: color, size: 22),
-                          title: Text(a.city,
+                          title: Text(a.title,
                               style: TextStyle(
                                   color: t.textPrimary,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 14)),
                           subtitle: Text(
-                            '${a.river}  ·  Level: ${a.current > 0 ? a.current.toStringAsFixed(2) + " m" : "--"}',
+                            '${a.river}  ·  ${a.currentLevel.toStringAsFixed(2)} m',
                             style: TextStyle(
                                 color: t.textSecondary, fontSize: 12),
                           ),
@@ -88,15 +89,16 @@ class AlertsScreen extends ConsumerWidget {
                               border: Border.all(
                                   color: color.withOpacity(0.5)),
                             ),
-                            child: Text(a.riskLevel,
-                                style: TextStyle(
-                                    color: color,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w800)),
+                            child: Text(
+                              a.severity.name.toUpperCase(),
+                              style: TextStyle(
+                                  color: color,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800)),
                           ),
                           onTap: () => Navigator.of(context).pushNamed(
                             Routes.cityDetail,
-                            arguments: a.city,
+                            arguments: a.title, // station/city name
                           ),
                         ),
                       ),
@@ -108,7 +110,6 @@ class AlertsScreen extends ConsumerWidget {
             ),
         ],
       ),
-      // FAB → SOS
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'alerts_sos',
         backgroundColor: t.riverDanger,
