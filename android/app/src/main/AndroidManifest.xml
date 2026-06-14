@@ -30,36 +30,61 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 
     <!--
+        CALL_PHONE: required by some Android ROMs (Xiaomi/MIUI, Realme, etc.)
+        to allow launching the dialler via tel: URIs without user interaction.
+        Without this, launchUrl(tel:...) silently fails on those devices.
+    -->
+    <uses-permission android:name="android.permission.CALL_PHONE"/>
+
+    <!--
         Android 11+ (API 30) Package Visibility:
-        url_launcher requires explicit <queries> entries so canLaunchUrl()
-        returns true for tel: and sms: URIs.  Without this block,
-        canLaunchUrl always returns false on API 30+ and SOS call/SMS
-        silently fails (component name for tel:... is null).
+        url_launcher resolves tel: and sms: URIs via ACTION_VIEW (not
+        ACTION_DIAL / ACTION_SENDTO).  Both intents must be declared here
+        or canLaunchUrl() returns false and SOS silently fails.
+
+        Rule of thumb: always mirror both ACTION_VIEW and the
+        "semantic" action (DIAL / SENDTO) for maximum ROM compatibility.
     -->
     <queries>
-        <!-- Allow launching the phone dialler (tel: URIs) -->
+
+        <!-- tel: — ACTION_VIEW is what url_launcher actually queries -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="tel" />
+        </intent>
+        <!-- tel: — ACTION_DIAL for older ROMs / alternative resolvers -->
         <intent>
             <action android:name="android.intent.action.DIAL" />
             <data android:scheme="tel" />
         </intent>
-        <!-- Allow launching the SMS app (sms: URIs) -->
+
+        <!-- sms: — ACTION_VIEW -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="sms" />
+        </intent>
+        <!-- sms: — ACTION_SENDTO (standard SMS intent) -->
         <intent>
             <action android:name="android.intent.action.SENDTO" />
             <data android:scheme="sms" />
         </intent>
+        <!-- smsto: — ACTION_SENDTO -->
         <intent>
             <action android:name="android.intent.action.SENDTO" />
             <data android:scheme="smsto" />
         </intent>
-        <!-- Allow opening Google Maps / browser geo links -->
+
+        <!-- https: links (Maps, browser) -->
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="https" />
         </intent>
+        <!-- geo: links (Google Maps) -->
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="geo" />
         </intent>
+
     </queries>
 
     <application
