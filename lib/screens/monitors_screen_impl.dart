@@ -1,2 +1,2 @@
-// DELETED — was an empty placeholder. MonitorsScreen lives in monitors_screen.dart.
+// DELETED — empty stub, monitors_screen.dart is the active file.
 library;

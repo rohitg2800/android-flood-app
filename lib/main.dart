@@ -48,6 +48,10 @@ import 'screens/ai_prediction_screen.dart';
 import 'screens/india_river_explorer_screen.dart';
 // ── Analytics / Forecast ─────────────────────────────────────────────────────
 import 'screens/rainfall_forecast_screen.dart';
+import 'screens/historical_analytics_screen.dart';
+import 'screens/analytics_dashboard_screen.dart';
+import 'screens/profile_screen.dart';
+import 'screens/admin_dashboard_screen.dart';
 import 'services/befiqr_cwc_service.dart';
 import 'services/notification_channel_service.dart';
 import 'services/fcm_topic_manager.dart';
@@ -263,9 +267,17 @@ class FloodWatchApp extends ConsumerWidget {
           // ── Phase 10 ───────────────────────────────────────────────────
           case IndiaRiverExplorerScreen.route:
             return _fade(const IndiaRiverExplorerScreen());
-          // ── Analytics / Forecast ────────────────────────────────────────
+          // ── Analytics / Forecast / Orphans (now wired) ───────────────────
           case RainfallForecastScreen.route:
             return _fade(const RainfallForecastScreen());
+          case HistoricalAnalyticsScreen.route:
+            return _fade(const HistoricalAnalyticsScreen());
+          case AnalyticsDashboardScreen.route:
+            return _fade(const AnalyticsDashboardScreen());
+          case ProfileScreen.route:
+            return _fade(const ProfileScreen());
+          case AdminDashboardScreen.route:
+            return _fade(const AdminDashboardScreen());
           // ── Argument-based routes ───────────────────────────────────────
           case '/city_detail':
             final cityName = settings.arguments as String? ?? '';

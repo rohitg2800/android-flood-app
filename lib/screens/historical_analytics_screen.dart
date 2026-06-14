@@ -1,16 +1,11 @@
 // lib/screens/historical_analytics_screen.dart
 // OpsFlood — Historical Analytics Screen
-//
-// Self-contained: defines HistoricalFloodRecord, FloodEventType,
-// and historicalDataProvider inline so no missing-file imports are needed.
-// Replace the stub provider with real data when backend is ready.
+// WIRING: added static route constant
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/river_theme.dart';
-
-// ── Models ───────────────────────────────────────────────────────────────────
 
 enum FloodEventType { hfl, dangerLevel, warningLevel }
 
@@ -34,15 +29,10 @@ class HistoricalFloodRecord {
   });
 }
 
-// ── Provider (stub — replace with real API call) ──────────────────────────────
-
 final historicalDataProvider =
     FutureProvider<List<HistoricalFloodRecord>>((ref) async {
-  // Stub: return empty list until backend is wired.
   return const [];
 });
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 Color _eventColor(FloodEventType t) {
   switch (t) {
@@ -52,9 +42,8 @@ Color _eventColor(FloodEventType t) {
   }
 }
 
-// ── Screen ───────────────────────────────────────────────────────────────────
-
 class HistoricalAnalyticsScreen extends ConsumerStatefulWidget {
+  static const String route = '/historical-analytics';
   const HistoricalAnalyticsScreen({super.key});
 
   @override
@@ -86,7 +75,6 @@ class _HistoricalAnalyticsScreenState
 
     return Theme(
       data: Theme.of(context).copyWith(
-        // TabBarThemeData (not TabBarTheme) is the correct type for copyWith
         tabBarTheme: TabBarThemeData(
           labelStyle:           const TextStyle(fontWeight: FontWeight.w700),
           unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w400),
@@ -128,8 +116,6 @@ class _HistoricalAnalyticsScreenState
     );
   }
 }
-
-// ── Timeline Tab ─────────────────────────────────────────────────────────────
 
 class _TimelineTab extends StatelessWidget {
   final List<HistoricalFloodRecord> records;
@@ -187,8 +173,6 @@ class _TimelineTab extends StatelessWidget {
   }
 }
 
-// ── Chart Tab ─────────────────────────────────────────────────────────────────
-
 class _ChartTab extends StatelessWidget {
   final List<HistoricalFloodRecord> records;
   const _ChartTab({required this.records});
@@ -201,7 +185,6 @@ class _ChartTab extends StatelessWidget {
         child: Text('No chart data.', style: TextStyle(color: t.textSecondary)),
       );
     }
-    // Group by year, pick max peakLevel
     final Map<int, double> yearPeak = {};
     for (final r in records) {
       final yr = r.date.year;
@@ -253,8 +236,6 @@ class _ChartTab extends StatelessWidget {
   }
 }
 
-// ── Stats Tab ─────────────────────────────────────────────────────────────────
-
 class _StatsTab extends StatelessWidget {
   final List<HistoricalFloodRecord> records;
   const _StatsTab({required this.records});
@@ -271,11 +252,11 @@ class _StatsTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _StatRow(label: 'Total Events',  value: '${records.length}',           color: AppPalette.cyan,     t: t),
-        _StatRow(label: 'HFL Crossings', value: '$hflCnt',                     color: AppPalette.critical, t: t),
-        _StatRow(label: 'Danger Level',  value: '$dlCnt',                      color: AppPalette.danger,   t: t),
-        _StatRow(label: 'Warning Level', value: '$wlCnt',                      color: AppPalette.warning,  t: t),
-        _StatRow(label: 'Avg Peak',      value: '${avgPeak.toStringAsFixed(2)} m', color: AppPalette.gold, t: t),
+        _StatRow(label: 'Total Events',  value: '${records.length}',               color: AppPalette.cyan,     t: t),
+        _StatRow(label: 'HFL Crossings', value: '$hflCnt',                         color: AppPalette.critical, t: t),
+        _StatRow(label: 'Danger Level',  value: '$dlCnt',                          color: AppPalette.danger,   t: t),
+        _StatRow(label: 'Warning Level', value: '$wlCnt',                          color: AppPalette.warning,  t: t),
+        _StatRow(label: 'Avg Peak',      value: '${avgPeak.toStringAsFixed(2)} m', color: AppPalette.gold,     t: t),
       ],
     );
   }

@@ -1,8 +1,3 @@
-// lib/screens/dashboard_screen_part2.dart
-// ⚠️  This file is kept ONLY for backward compatibility.
-// All widgets have been moved to lib/widgets/dashboard/.
-// Import the barrel instead:
-//   import '../widgets/dashboard/dashboard_widgets.dart';
+// DELETED — superseded by dashboard_screen.dart Phase 8+ wiring.
+// Safe to ignore; no imports reference this file.
 library;
-
-export '../widgets/dashboard/dashboard_widgets.dart';

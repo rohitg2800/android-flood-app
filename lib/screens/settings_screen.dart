@@ -1,154 +1,267 @@
 // lib/screens/settings_screen.dart
+// WIRING UPDATE: added Profile, Analytics Hub, Historical Analytics, Model Info links
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/river_theme.dart';
-import '../theme/theme_registry.dart';
-import '../theme/theme_3d.dart';
 import '../providers/theme_provider.dart';
+import 'notification_settings_screen.dart';
+import 'export_screen.dart';
+import 'profile_screen.dart';
+import 'analytics_dashboard_screen.dart';
+import 'historical_analytics_screen.dart';
+import 'model_info_screen.dart';
+import 'admin_dashboard_screen.dart';
 
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends StatelessWidget {
+  static const String route = '/settings';
   const SettingsScreen({super.key});
 
-  static const String route = '/settings';
-
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final t    = RiverColors.of(context);
-    final mode = ref.watch(themeModeProvider);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
+  Widget build(BuildContext context) {
+    final t = RiverColors.of(context);
     return Scaffold(
       backgroundColor: t.scaffoldBg,
-      body: CustomScrollView(
-        slivers: [
-          Td3AppBar(
-            title: 'Settings',
-            subtitle: 'App preferences',
-            leading: Navigator.canPop(context)
-                ? IconButton(
-                    icon: Icon(Icons.arrow_back_ios_new_rounded,
-                        color: t.textPrimary, size: 18),
-                    onPressed: () => Navigator.pop(context),
-                  )
-                : null,
+      appBar: AppBar(
+        backgroundColor: t.navBg,
+        foregroundColor: t.textPrimary,
+        elevation: 0,
+        title: const Text('Settings'),
+      ),
+      body: ListView(
+        children: [
+          // ── Account ────────────────────────────────────────────────────────────────
+          _SectionHeader(label: 'Account', theme: t),
+          _SettingsTile(
+            theme: t,
+            icon: Icons.person_outline,
+            color: Colors.teal,
+            title: 'My Profile',
+            subtitle: 'View and edit your profile',
+            onTap: () => Navigator.pushNamed(context, ProfileScreen.route),
           ),
-          SliverPadding(
-            padding: const EdgeInsets.all(16),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                const Td3SectionHeader('Appearance'),
-                const SizedBox(height: 10),
-                Td3Card(
-                  elevation: Td3.elevMid,
-                  child: Column(
-                    children: [
-                      _SettingsTile(
-                        icon: Icons.palette_rounded,
-                        title: 'Theme',
-                        subtitle: mode.name,
-                        onTap: () => _showThemePicker(context, ref),
-                      ),
-                      const Td3Divider(),
-                      _SettingsTile(
-                        icon: Icons.dark_mode_rounded,
-                        title: 'Dark Mode',
-                        subtitle: isDark ? 'On' : 'Off',
-                        onTap: () {
-                          final notifier =
-                              ref.read(themeModeProvider.notifier);
-                          notifier.setMode(
-                              isDark ? AppThemeMode.light : AppThemeMode.dark);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Td3SectionHeader('About'),
-                const SizedBox(height: 10),
-                Td3Card(
-                  elevation: Td3.elevMid,
-                  child: _SettingsTile(
-                    icon: Icons.info_outline_rounded,
-                    title: 'OpsFlood',
-                    subtitle: 'v1.0.0',
-                    onTap: () {},
-                  ),
-                ),
-              ]),
-            ),
+          // ── App ───────────────────────────────────────────────────────────────────
+          _SectionHeader(label: 'App', theme: t),
+          _ThemeTile(theme: t),
+          _SettingsTile(
+            theme: t,
+            icon: Icons.notifications_outlined,
+            color: Colors.amber,
+            title: 'Notifications',
+            subtitle: 'Alert thresholds, FCM topics',
+            onTap: () => Navigator.pushNamed(
+                context, NotificationSettingsScreen.route),
           ),
+          // ── Analytics ───────────────────────────────────────────────────────────
+          _SectionHeader(label: 'Analytics', theme: t),
+          _SettingsTile(
+            theme: t,
+            icon: Icons.analytics_outlined,
+            color: const Color(0xFF00E5FF),
+            title: 'Analytics Hub',
+            subtitle: 'Historical data, forecasts, state matrix, export',
+            onTap: () => Navigator.pushNamed(
+                context, AnalyticsDashboardScreen.route),
+          ),
+          _SettingsTile(
+            theme: t,
+            icon: Icons.history_edu_outlined,
+            color: AppPalette.cyan,
+            title: 'Historical Analytics',
+            subtitle: 'Past flood event timeline & charts',
+            onTap: () => Navigator.pushNamed(
+                context, HistoricalAnalyticsScreen.route),
+          ),
+          _SettingsTile(
+            theme: t,
+            icon: Icons.download_outlined,
+            color: Colors.green,
+            title: 'Export Data',
+            subtitle: 'Download station data as CSV / PDF',
+            onTap: () => Navigator.pushNamed(context, ExportScreen.route),
+          ),
+          // ── About ────────────────────────────────────────────────────────────────
+          _SectionHeader(label: 'About', theme: t),
+          _SettingsTile(
+            theme: t,
+            icon: Icons.model_training_outlined,
+            color: const Color(0xFF7B2FF7),
+            title: 'Model Info',
+            subtitle: 'AI model architecture & accuracy metrics',
+            onTap: () => Navigator.pushNamed(context, ModelInfoScreen.route),
+          ),
+          _SettingsTile(
+            theme: t,
+            icon: Icons.admin_panel_settings_outlined,
+            color: Colors.deepOrange,
+            title: 'Admin Dashboard',
+            subtitle: 'System diagnostics & data management',
+            onTap: () => Navigator.pushNamed(
+                context, AdminDashboardScreen.route),
+          ),
+          const SizedBox(height: 32),
+          Center(
+            child: Text('OpsFlood Bihar v1.0.0',
+                style: TextStyle(
+                    color: t.textSecondary, fontSize: 12)),
+          ),
+          const SizedBox(height: 16),
         ],
       ),
     );
   }
-
-  void _showThemePicker(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
-      context: context,
-      builder: (_) => _ThemePickerSheet(ref: ref),
-    );
-  }
 }
 
-class _ThemePickerSheet extends ConsumerWidget {
-  const _ThemePickerSheet({required this.ref});
-  final WidgetRef ref;
+// ── Section header ────────────────────────────────────────────────────────────
+
+class _SectionHeader extends StatelessWidget {
+  final String label;
+  final RiverColors theme;
+  const _SectionHeader({required this.label, required this.theme});
 
   @override
-  Widget build(BuildContext context, WidgetRef innerRef) {
-    final t    = RiverColors.of(context);
-    final mode = innerRef.watch(themeModeProvider);
-    // Use Material instead of Container(color:) so ListTile ink splashes
-    // can paint on Material rather than being hidden by a DecoratedBox.
-    return Material(
-      color: t.cardBg,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: AppThemeMode.values.map((m) => ListTile(
-            title: Text(m.name,
-                style: TextStyle(
-                    color: m == mode ? t.accent : t.textPrimary)),
-            trailing: m == mode
-                ? Icon(Icons.check_rounded, color: t.accent)
-                : null,
-            onTap: () {
-              innerRef.read(themeModeProvider.notifier).setMode(m);
-              Navigator.pop(context);
-            },
-          )).toList(),
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 6),
+      child: Text(
+        label.toUpperCase(),
+        style: TextStyle(
+          color: theme.textSecondary,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1.2,
         ),
       ),
     );
   }
 }
 
-class _SettingsTile extends StatelessWidget {
-  const _SettingsTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
+// ── Settings tile ─────────────────────────────────────────────────────────────
 
-  final IconData  icon;
-  final String    title;
-  final String    subtitle;
-  final VoidCallback onTap;
+class _SettingsTile extends StatelessWidget {
+  final RiverColors theme;
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onTap;
+  const _SettingsTile({
+    required this.theme, required this.icon, required this.color,
+    required this.title, required this.subtitle, this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final t = RiverColors.of(context);
+    final t = theme;
     return ListTile(
-      leading:  Icon(icon, color: t.accent, size: 22),
-      title:    Text(title,   style: TextStyle(color: t.textPrimary,   fontSize: 14, fontWeight: FontWeight.w600)),
-      subtitle: Text(subtitle, style: TextStyle(color: t.textSecondary, fontSize: 12)),
-      trailing: Icon(Icons.chevron_right_rounded, color: t.textSecondary, size: 18),
-      onTap:    onTap,
+      onTap: onTap,
+      leading: Container(
+        width: 40, height: 40,
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, color: color, size: 20),
+      ),
+      title: Text(title,
+          style: TextStyle(color: t.textPrimary,
+              fontSize: 14, fontWeight: FontWeight.w600)),
+      subtitle: Text(subtitle,
+          style: TextStyle(color: t.textSecondary, fontSize: 12)),
+      trailing: Icon(Icons.chevron_right,
+          color: t.textSecondary, size: 18),
+    );
+  }
+}
+
+// ── Theme picker tile ──────────────────────────────────────────────────────────
+
+class _ThemeTile extends ConsumerWidget {
+  final RiverColors theme;
+  const _ThemeTile({required this.theme});
+
+  static const _modes = [
+    (AppThemeMode.dark,         'Dark'),
+    (AppThemeMode.light,        'Light'),
+    (AppThemeMode.ocean,        'Ocean'),
+    (AppThemeMode.sunset,       'Sunset'),
+    (AppThemeMode.roboticDark,  'Robotic Dark'),
+    (AppThemeMode.roboticLight, 'Robotic Light'),
+    (AppThemeMode.system,       'System'),
+  ];
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t       = theme;
+    final current = ref.watch(themeModeProvider);
+    final label   = _modes.firstWhere((m) => m.$1 == current,
+        orElse: () => (AppThemeMode.dark, 'Dark')).$2;
+
+    return ListTile(
+      leading: Container(
+        width: 40, height: 40,
+        decoration: BoxDecoration(
+          color: Colors.purple.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: const Icon(Icons.palette_outlined,
+            color: Colors.purple, size: 20),
+      ),
+      title: Text('Theme',
+          style: TextStyle(color: t.textPrimary,
+              fontSize: 14, fontWeight: FontWeight.w600)),
+      subtitle: Text(label,
+          style: TextStyle(color: t.textSecondary, fontSize: 12)),
+      trailing: Icon(Icons.chevron_right,
+          color: t.textSecondary, size: 18),
+      onTap: () => _showThemePicker(context, ref, t, current),
+    );
+  }
+
+  void _showThemePicker(
+      BuildContext ctx, WidgetRef ref, RiverColors t, AppThemeMode current) {
+    showModalBottomSheet<void>(
+      context: ctx,
+      backgroundColor: t.navBg,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(18))),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(
+              child: Container(
+                width: 36, height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                    color: t.divider,
+                    borderRadius: BorderRadius.circular(2)),
+              ),
+            ),
+            Text('Choose Theme',
+                style: TextStyle(
+                    color: t.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700)),
+            const SizedBox(height: 12),
+            ..._modes.map((m) => RadioListTile<AppThemeMode>(
+                  value: m.$1,
+                  groupValue: current,
+                  title: Text(m.$2,
+                      style: TextStyle(color: t.textPrimary)),
+                  activeColor: t.accent,
+                  onChanged: (v) {
+                    if (v != null) {
+                      ref.read(themeModeProvider.notifier).setMode(v);
+                      Navigator.pop(ctx);
+                    }
+                  },
+                )),
+          ],
+        ),
+      ),
     );
   }
 }

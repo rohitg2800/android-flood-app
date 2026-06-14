@@ -1,164 +1,118 @@
 // lib/screens/analytics_dashboard_screen.dart
-// OpsFlood — Module 14: Analytics Dashboard
+// OpsFlood — Analytics Dashboard
+// WIRING: added static route constant
+library;
 
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import '../theme/river_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/alert_provider.dart';
-import '../services/alert_engine.dart';
-
-// ── Minimal AnalyticsData model ───────────────────────────────────────────────
-class AnalyticsData {
-  final int    hflCount;
-  final double avgRisk;
-  final List<FlSpot> riskTrend;
-  final Map<String, int> districtAlerts;
-  const AnalyticsData({
-    required this.hflCount,
-    required this.avgRisk,
-    required this.riskTrend,
-    required this.districtAlerts,
-  });
-}
-
-// ── Stub providers — replace with real implementations when available ─────────
-final activeAlertsProvider = Provider<List<FloodAlert>>((ref) => const []);
-final analyticsProvider    = Provider<AnalyticsData>((ref) => const AnalyticsData(
-  hflCount: 0, avgRisk: 0.0, riskTrend: [], districtAlerts: {},
-));
-final liveLevelsProvider   = Provider<List<dynamic>>((ref) => const []);
+import '../theme/river_theme.dart';
+import '../theme/theme_3d.dart';
+import 'historical_analytics_screen.dart';
+import 'rainfall_forecast_screen.dart';
+import 'state_matrix_screen.dart';
+import 'export_screen.dart';
 
 class AnalyticsDashboardScreen extends ConsumerWidget {
+  static const String route = '/analytics-dashboard';
   const AnalyticsDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final t         = RiverColors.of(context);
-    final alerts    = ref.watch(activeAlertsProvider);
-    final analytics = ref.watch(analyticsProvider);
-
+    final t = RiverColors.of(context);
     return Scaffold(
       backgroundColor: t.scaffoldBg,
       appBar: AppBar(
-        backgroundColor: t.cardBg,
+        backgroundColor: t.navBg,
+        foregroundColor: t.textPrimary,
         elevation: 0,
-        title: Text('Analytics Dashboard',
-            style: TextStyle(color: t.textPrimary, fontWeight: FontWeight.w700)),
-        iconTheme: IconThemeData(color: t.textPrimary),
+        title: Row(
+          children: [
+            Icon(Icons.analytics_outlined, color: t.accent, size: 20),
+            const SizedBox(width: 8),
+            const Text('Analytics Hub'),
+          ],
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _kpiRow(t, alerts.length, analytics.hflCount, analytics.avgRisk),
-          const SizedBox(height: 20),
-          _SectionHeader(title: 'System Risk Trend', t: t),
-          const SizedBox(height: 8),
-          _RiskTrendChart(analytics: analytics, t: t),
-          const SizedBox(height: 40),
-        ],
-      ),
-    );
-  }
-
-  Widget _kpiRow(RiverColors t, int alertCount, int hflCount, double avgRisk) {
-    return Row(
-      children: [
-        Expanded(child: _Kpi(label: 'Active Alerts', value: '$alertCount',
-            color: AppPalette.warning, t: t)),
-        const SizedBox(width: 12),
-        Expanded(child: _Kpi(label: 'HFL Events', value: '$hflCount',
-            color: AppPalette.critical, t: t)),
-        const SizedBox(width: 12),
-        Expanded(child: _Kpi(label: 'Avg Risk', value: avgRisk.toStringAsFixed(1),
-            color: AppPalette.cyan, t: t)),
-      ],
-    );
-  }
-}
-
-class _Kpi extends StatelessWidget {
-  final String label, value;
-  final Color  color;
-  final RiverColors t;
-  const _Kpi({required this.label, required this.value,
-      required this.color, required this.t});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-      decoration: BoxDecoration(
-        color: t.cardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: t.stroke.withValues(alpha: 0.5)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(value, style: TextStyle(color: color,
-              fontSize: 22, fontWeight: FontWeight.w700)),
-          const SizedBox(height: 2),
-          Text(label, style: TextStyle(color: t.textSecondary, fontSize: 11)),
+          Td3SectionHeader('Data & Analytics', accentColor: t.accent),
+          const SizedBox(height: 12),
+          _AnalyticsCard(
+            theme: t,
+            icon: Icons.history_edu_outlined,
+            color: AppPalette.cyan,
+            title: 'Historical Analytics',
+            subtitle: 'Timeline, charts & stats of past flood events',
+            onTap: () => Navigator.pushNamed(context, HistoricalAnalyticsScreen.route),
+          ),
+          const SizedBox(height: 10),
+          _AnalyticsCard(
+            theme: t,
+            icon: Icons.cloudy_snowing,
+            color: const Color(0xFF00B0FF),
+            title: 'Rainfall Forecast',
+            subtitle: '7-day IMD rainfall & flood risk by district',
+            onTap: () => Navigator.pushNamed(context, RainfallForecastScreen.route),
+          ),
+          const SizedBox(height: 10),
+          _AnalyticsCard(
+            theme: t,
+            icon: Icons.grid_view_rounded,
+            color: const Color(0xFF7B2FF7),
+            title: 'State Matrix',
+            subtitle: 'District-wise flood status matrix for Bihar',
+            onTap: () => Navigator.pushNamed(context, StateMatrixScreen.route),
+          ),
+          const SizedBox(height: 10),
+          _AnalyticsCard(
+            theme: t,
+            icon: Icons.download_outlined,
+            color: Colors.green,
+            title: 'Export Data',
+            subtitle: 'Export station data as CSV / PDF report',
+            onTap: () => Navigator.pushNamed(context, ExportScreen.route),
+          ),
         ],
       ),
     );
   }
 }
 
-class _SectionHeader extends StatelessWidget {
+class _AnalyticsCard extends StatelessWidget {
+  final RiverColors theme;
+  final IconData icon;
+  final Color color;
   final String title;
-  final RiverColors t;
-  const _SectionHeader({required this.title, required this.t});
+  final String subtitle;
+  final VoidCallback onTap;
+  const _AnalyticsCard({
+    required this.theme, required this.icon, required this.color,
+    required this.title, required this.subtitle, required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Text(title,
-        style: TextStyle(color: t.textPrimary,
-            fontSize: 15, fontWeight: FontWeight.w700));
-  }
-}
-
-class _RiskTrendChart extends StatelessWidget {
-  final AnalyticsData analytics;
-  final RiverColors t;
-  const _RiskTrendChart({required this.analytics, required this.t});
-
-  @override
-  Widget build(BuildContext context) {
-    if (analytics.riskTrend.isEmpty) {
-      return Container(
-        height: 160,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: t.cardBg,
-          borderRadius: BorderRadius.circular(12),
+    final t = theme;
+    return Td3Card(
+      showGloss: false,
+      child: ListTile(
+        onTap: onTap,
+        leading: Container(
+          width: 44, height: 44,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color.withOpacity(0.4)),
+          ),
+          child: Icon(icon, color: color, size: 22),
         ),
-        child: Text('No trend data', style: TextStyle(color: t.textSecondary)),
-      );
-    }
-    return Container(
-      height: 160,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: t.cardBg,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: LineChart(
-        LineChartData(
-          lineBarsData: [
-            LineChartBarData(
-              spots: analytics.riskTrend,
-              isCurved: true,
-              color: AppPalette.cyan,
-              barWidth: 2,
-              dotData: const FlDotData(show: false),
-            ),
-          ],
-          gridData: const FlGridData(show: false),
-          titlesData: const FlTitlesData(show: false),
-          borderData: FlBorderData(show: false),
-        ),
+        title: Text(title,
+            style: TextStyle(color: t.textPrimary,
+                fontSize: 14, fontWeight: FontWeight.w700)),
+        subtitle: Text(subtitle,
+            style: TextStyle(color: t.textSecondary, fontSize: 12)),
+        trailing: Icon(Icons.chevron_right, color: t.textSecondary, size: 18),
       ),
     );
   }
