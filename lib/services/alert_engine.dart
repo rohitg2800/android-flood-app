@@ -1,13 +1,20 @@
-// lib/services/alert_engine.dart  v1.2
+// lib/services/alert_engine.dart  v1.3
 //
-// v1.2: added evaluateMerged(List<RiverStation>) — converts the already-deduped
-//       mergedStationsProvider list into StationReadings and runs the same
-//       evaluation pipeline.  alertsProvider now calls this instead of
-//       evaluate(DataFetchSnapshot) so duplicate alert cards are impossible.
+// v1.3 — UX: stable alert IDs + preserved issuedAt
 //
-// v1.1: alias-getters added (station, rateOfRise, rainfall24h, isOffline).
+//   PROBLEM: every call to _runPipeline stamped `issuedAt: now` on every
+//   alert.  On each data-poll cycle the AlertProvider received "new" objects
+//   with updated timestamps, triggering notifyListeners() and causing the
+//   alerts list to flicker/rebuild continuously even when nothing changed.
 //
-// Rule-based alert engine for OpsFlood.
+//   FIX:
+//   1. AlertEngine keeps an internal _issued cache: Map<alertId, DateTime>.
+//      First time an alert fires it records the wall-clock time.  On every
+//      subsequent re-evaluation the SAME issuedAt is used, so the FloodAlert
+//      object is semantically identical to the previous one.
+//   2. expiresAt is anchored to the cached issuedAt — an alert that has been
+//      active for 2 h will expire correctly rather than having its TTL reset.
+//   3. clearIssuedCache() lets tests and the admin screen flush state.
 
 library;
 
@@ -70,7 +77,6 @@ extension AlertTypeExt on AlertType {
     }
   }
 
-  /// Alias used by alert_share_service / alert_notification_bridge.
   String get label => displayName;
 
   String get icon {
@@ -129,7 +135,6 @@ class FloodAlert {
     this.expiresAt,
   });
 
-  // ── Alias getters ──
   String get station      => stationName;
   double? get rateOfRise  => rateOfRiseMph;
   double? get rainfall24h => rainfall24hMm;
@@ -147,29 +152,41 @@ class FloodAlert {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AlertEngine
+// AlertEngine  v1.3
 // ─────────────────────────────────────────────────────────────────────────────
 class AlertEngine {
   AlertEngine._();
   static final instance = AlertEngine._();
 
-  // ── Primary entry-point: evaluate the already-deduped merged list ─────────
-  //
-  // alertsProvider calls this with mergedStationsProvider so that one
-  // station = one card, guaranteed.  RiverStation carries no forecast /
-  // rainfall / RoR fields today, so those alert types are simply skipped
-  // (they require a DataFetchSnapshot with GloFAS data).  Level and
-  // basin alerts are fully functional.
+  // v1.3: stable issued-at cache — keyed by alert ID.
+  // Once an alert fires for the first time, its wall-clock issuedAt is stored
+  // here and reused on every subsequent evaluation.  This prevents the
+  // FloodAlert objects from changing on every data-poll cycle.
+  final Map<String, DateTime> _issued = {};
+
+  /// Returns the stable issuedAt for [id], recording [now] on first call.
+  DateTime _issuedAt(String id, DateTime now) =>
+      _issued.putIfAbsent(id, () => now);
+
+  /// Purges IDs that have not been seen in [maxAge] (default 24 h).
+  /// Call periodically (e.g. from a timer in the provider) to prevent
+  /// unbounded growth of the cache.
+  void pruneIssuedCache({Duration maxAge = const Duration(hours: 24)}) {
+    final cutoff = DateTime.now().subtract(maxAge);
+    _issued.removeWhere((_, ts) => ts.isBefore(cutoff));
+  }
+
+  /// Full reset — useful for tests and the admin debug screen.
+  void clearIssuedCache() => _issued.clear();
+
+  // ── Entry-points ─────────────────────────────────────────────────────────
+
   List<FloodAlert> evaluateMerged(List<RiverStation> stations) {
-    final now     = DateTime.now();
+    final now      = DateTime.now();
     final readings = stations.map(_riverStationToReading).toList();
     return _runPipeline(readings, now);
   }
 
-  // ── Legacy entry-point: evaluate a raw DataFetchSnapshot ─────────────────
-  //
-  // Kept for any admin/debug callers that still pass a snapshot directly.
-  // NOT used by alertsProvider any more.
   List<FloodAlert> evaluate(DataFetchSnapshot snapshot) {
     if (snapshot.isLoading) return const [];
     return _runPipeline(snapshot.stations, snapshot.fetchedAt);
@@ -185,6 +202,7 @@ class AlertEngine {
     }
     alerts.addAll(_evaluateBasin(readings, now));
 
+    // Deduplicate by ID; prefer higher severity.
     final Map<String, FloodAlert> deduped = {};
     for (final a in alerts) {
       final existing = deduped[a.id];
@@ -193,6 +211,9 @@ class AlertEngine {
         deduped[a.id] = a;
       }
     }
+
+    // Prune cache of very old IDs (keep memory bounded).
+    pruneIssuedCache();
 
     return deduped.values
         .where((a) => !a.isExpired)
@@ -205,15 +226,6 @@ class AlertEngine {
   }
 
   // ── RiverStation → StationReading shim ───────────────────────────────────
-  //
-  // RiverStation has no forecast / rainfall / RoR fields today.
-  // Those alert types (rapidRise, forecast*, rainfall*) require GloFAS /
-  // Open-Meteo data that only DataFetchEngine carries — they are simply
-  // null here and the guards in _evaluateStation skip them cleanly.
-  //
-  // district: RiverStation.city holds the city/district name in most rows;
-  // for WRD rows where city == station we fall back to river name so the
-  // alert body is still readable.
   static StationReading _riverStationToReading(RiverStation s) {
     final district = (s.city.isNotEmpty && s.city != s.station)
         ? s.city
@@ -234,8 +246,6 @@ class AlertEngine {
       source:       s.dataSource ?? 'MERGED',
       isLive:       s.isLive,
       fetchedAt:    DateTime.now(),
-      // forecast / rainfall / RoR: not available on RiverStation
-      // → null → _evaluateStation skips those alert branches cleanly
     );
   }
 
@@ -244,8 +254,10 @@ class AlertEngine {
     final id     = s.stationName.toLowerCase().replaceAll(' ', '_');
 
     if (s.isAboveHfl) {
+      final aid = '$id.hfl';
+      final ts  = _issuedAt(aid, now); // v1.3: stable timestamp
       alerts.add(FloodAlert(
-        id: '$id.hfl', type: AlertType.levelAboveHfl,
+        id: aid, type: AlertType.levelAboveHfl,
         severity: AlertSeverity.emergency,
         title: '${s.stationName}: NEW HFL',
         body: '${s.stationName} on ${s.river} has reached '
@@ -255,11 +267,13 @@ class AlertEngine {
         district: s.district, state: s.state,
         currentLevel: s.currentLevel, thresholdLevel: s.hfl,
         action: 'EVACUATE immediately. Breach possible. Alert SDRF and district admin.',
-        issuedAt: now, expiresAt: now.add(const Duration(hours: 12)),
+        issuedAt: ts, expiresAt: ts.add(const Duration(hours: 12)),
       ));
     } else if (s.isAboveDanger) {
+      final aid = '$id.danger';
+      final ts  = _issuedAt(aid, now);
       alerts.add(FloodAlert(
-        id: '$id.danger', type: AlertType.levelAboveDanger,
+        id: aid, type: AlertType.levelAboveDanger,
         severity: AlertSeverity.emergency,
         title: '${s.stationName}: DANGER LEVEL BREACHED',
         body: '${s.stationName} on ${s.river} at '
@@ -270,11 +284,13 @@ class AlertEngine {
         district: s.district, state: s.state,
         currentLevel: s.currentLevel, thresholdLevel: s.dangerLevel,
         action: 'Issue Red Alert. Initiate evacuation in low-lying areas. Deploy NDRF/SDRF.',
-        issuedAt: now, expiresAt: now.add(const Duration(hours: 6)),
+        issuedAt: ts, expiresAt: ts.add(const Duration(hours: 6)),
       ));
     } else if (s.isAboveWarning) {
+      final aid = '$id.warning';
+      final ts  = _issuedAt(aid, now);
       alerts.add(FloodAlert(
-        id: '$id.warning', type: AlertType.levelAboveWarning,
+        id: aid, type: AlertType.levelAboveWarning,
         severity: AlertSeverity.critical,
         title: '${s.stationName}: Above Warning Level',
         body: '${s.stationName} on ${s.river} at '
@@ -285,15 +301,17 @@ class AlertEngine {
         district: s.district, state: s.state,
         currentLevel: s.currentLevel, thresholdLevel: s.warningLevel,
         action: 'Issue Yellow Alert. Monitor closely. Prepare evacuation plans.',
-        issuedAt: now, expiresAt: now.add(const Duration(hours: 4)),
+        issuedAt: ts, expiresAt: ts.add(const Duration(hours: 4)),
       ));
     }
 
     final ror = s.rateOfRiseMph;
     if (ror != null && ror >= 0.15) {
       final isCrit = ror >= 0.30;
+      final aid    = '$id.rapid_rise';
+      final ts     = _issuedAt(aid, now);
       alerts.add(FloodAlert(
-        id: '$id.rapid_rise', type: AlertType.rapidRise,
+        id: aid, type: AlertType.rapidRise,
         severity: isCrit ? AlertSeverity.critical : AlertSeverity.warning,
         title: '${s.stationName}: Rapid Rise (${ror.toStringAsFixed(2)} m/h)',
         body: '${s.stationName} on ${s.river} is rising at '
@@ -306,14 +324,16 @@ class AlertEngine {
         action: isCrit
             ? 'Warn communities downstream. Close riverfront areas.'
             : 'Alert downstream districts. Monitor every 15 min.',
-        issuedAt: now, expiresAt: now.add(const Duration(hours: 3)),
+        issuedAt: ts, expiresAt: ts.add(const Duration(hours: 3)),
       ));
     }
 
     final f24 = s.forecastLevel24h;
     if (f24 != null && f24 >= s.dangerLevel && !s.isAboveDanger) {
+      final aid = '$id.forecast24';
+      final ts  = _issuedAt(aid, now);
       alerts.add(FloodAlert(
-        id: '$id.forecast24', type: AlertType.forecastDanger24h,
+        id: aid, type: AlertType.forecastDanger24h,
         severity: AlertSeverity.critical,
         title: '${s.stationName}: Danger Expected in 24h',
         body: '${s.stationName} on ${s.river} forecast to reach '
@@ -323,15 +343,17 @@ class AlertEngine {
         district: s.district, state: s.state,
         currentLevel: s.currentLevel, thresholdLevel: s.dangerLevel,
         action: 'Pre-position boats. Notify village-level disaster committees.',
-        issuedAt: now, expiresAt: now.add(const Duration(hours: 24)),
+        issuedAt: ts, expiresAt: ts.add(const Duration(hours: 24)),
       ));
     }
 
     final f48 = s.forecastLevel48h;
     if (f48 != null && f48 >= s.dangerLevel &&
         (f24 == null || f24 < s.dangerLevel)) {
+      final aid = '$id.forecast48';
+      final ts  = _issuedAt(aid, now);
       alerts.add(FloodAlert(
-        id: '$id.forecast48', type: AlertType.forecastDanger48h,
+        id: aid, type: AlertType.forecastDanger48h,
         severity: AlertSeverity.warning,
         title: '${s.stationName}: Danger Possible in 48h',
         body: '${s.stationName} on ${s.river} may reach danger level within 48 h '
@@ -340,15 +362,17 @@ class AlertEngine {
         district: s.district, state: s.state,
         currentLevel: s.currentLevel, thresholdLevel: s.dangerLevel,
         action: 'Review embankment status. Alert district administration.',
-        issuedAt: now, expiresAt: now.add(const Duration(hours: 48)),
+        issuedAt: ts, expiresAt: ts.add(const Duration(hours: 48)),
       ));
     }
 
     final rain = s.rainfall24hMm;
     if (rain != null) {
       if (rain >= 100) {
+        final aid = '$id.rain_extreme';
+        final ts  = _issuedAt(aid, now);
         alerts.add(FloodAlert(
-          id: '$id.rain_extreme', type: AlertType.rainfallExtreme,
+          id: aid, type: AlertType.rainfallExtreme,
           severity: AlertSeverity.critical,
           title: '${s.district}: Extreme Rainfall (${rain.toStringAsFixed(0)} mm)',
           body: 'Extreme rainfall of ${rain.toStringAsFixed(0)} mm recorded '
@@ -358,11 +382,13 @@ class AlertEngine {
           currentLevel: s.currentLevel, thresholdLevel: 100.0,
           rainfall24hMm: rain,
           action: 'Mobilise rescue teams. Close low-lying settlements.',
-          issuedAt: now, expiresAt: now.add(const Duration(hours: 6)),
+          issuedAt: ts, expiresAt: ts.add(const Duration(hours: 6)),
         ));
       } else if (rain >= 64.5) {
+        final aid = '$id.rain_heavy';
+        final ts  = _issuedAt(aid, now);
         alerts.add(FloodAlert(
-          id: '$id.rain_heavy', type: AlertType.rainfallHeavy,
+          id: aid, type: AlertType.rainfallHeavy,
           severity: AlertSeverity.warning,
           title: '${s.district}: Heavy Rainfall (${rain.toStringAsFixed(0)} mm)',
           body: 'Heavy rainfall of ${rain.toStringAsFixed(0)} mm in past 24 h '
@@ -372,7 +398,7 @@ class AlertEngine {
           currentLevel: s.currentLevel, thresholdLevel: 64.5,
           rainfall24hMm: rain,
           action: 'Alert block-level officials. Monitor river rise closely.',
-          issuedAt: now, expiresAt: now.add(const Duration(hours: 6)),
+          issuedAt: ts, expiresAt: ts.add(const Duration(hours: 6)),
         ));
       }
     }
@@ -391,8 +417,10 @@ class AlertEngine {
     riverGroups.forEach((river, slist) {
       final dangerStns = slist.where((s) => s.isAboveDanger).toList();
       if (dangerStns.length >= 2) {
+        final aid = '${river.toLowerCase().replaceAll(' ', '_')}.upstream_critical';
+        final ts  = _issuedAt(aid, now);
         alerts.add(FloodAlert(
-          id: '${river.toLowerCase().replaceAll(' ', '_')}.upstream_critical',
+          id: aid,
           type: AlertType.upstreamCritical,
           severity: AlertSeverity.emergency,
           title: '$river: Multi-Station Danger',
@@ -408,8 +436,8 @@ class AlertEngine {
           thresholdLevel: dangerStns.first.dangerLevel,
           action:
               'Breach likely. Mobilise NDRF. Evacuate all riverside settlements.',
-          issuedAt: now,
-          expiresAt: now.add(const Duration(hours: 8)),
+          issuedAt: ts,
+          expiresAt: ts.add(const Duration(hours: 8)),
         ));
       }
     });
@@ -418,8 +446,10 @@ class AlertEngine {
         .where((r) => riverGroups[r]!.any((s) => s.isAboveWarning))
         .toList();
     if (warnRivers.length >= 3) {
+      const aid = 'bihar.multi_river';
+      final ts  = _issuedAt(aid, now);
       alerts.add(FloodAlert(
-        id: 'bihar.multi_river', type: AlertType.multiRiverAlert,
+        id: aid, type: AlertType.multiRiverAlert,
         severity: AlertSeverity.critical,
         title: 'Multi-River Flood Alert (${warnRivers.length} Rivers)',
         body: '${warnRivers.length} rivers are above warning level: '
@@ -430,8 +460,8 @@ class AlertEngine {
         currentLevel: 0, thresholdLevel: 0,
         action:
             'Activate State Emergency Operations Centre. Issue state-wide flood alert.',
-        issuedAt: now,
-        expiresAt: now.add(const Duration(hours: 12)),
+        issuedAt: ts,
+        expiresAt: ts.add(const Duration(hours: 12)),
       ));
     }
 
