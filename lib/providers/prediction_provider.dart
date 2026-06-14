@@ -1,34 +1,27 @@
 // lib/providers/prediction_provider.dart
-// v7 — wires real ML pipeline (PredictionService) into the Riverpod graph.
-//
-// WHAT CHANGED FROM v6
-// • predictionProvider now calls PredictionService.predict() which runs:
-//     1. PipelineService pre-fill (live river level + rainfall)
-//     2. POST /predict/v2 backend ML
-//     3. Local Rule-Engine fallback (60/40 hybrid or 100% offline)
-// • FloodPrediction extended with ML fields while keeping every field
-//   that predict_screen_impl.dart reads (no screen changes required).
-// • _predict() kept as a private helper used only by bulk providers
-//   (floodPredictionsProvider / activeFloodPredictionsProvider) which
-//   run synchronously over many stations and cannot await per-station.
+// v7.1 — analyzer-clean: all imports at top, UpperCamelCase typedefs,
+//         no leading-underscore prefixes, no duplicate imports.
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/river_station.dart';
 import '../data/bihar_rivers.dart';
-import '../services/predict.dart';
+import '../services/predict.dart' as predictLib
+    show PredictionService, FloodPredictionInput, FloodPrediction;
 import 'real_time_river_provider.dart';
 import 'weather_provider.dart';
 
-export '../services/predict.dart' show PredictionService, FloodPredictionInput;
+/// Alias: the FloodPrediction returned by predict.dart / prediction_service.dart.
+/// Named differently to avoid collision with this file's FloodPrediction.
+typedef MlFloodPrediction = predictLib.FloodPrediction;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PredictionPoint — single hourly forecast step (unchanged)
+// PredictionPoint — single hourly forecast step
 // ─────────────────────────────────────────────────────────────────────────────
 
 class PredictionPoint {
   final DateTime time;
-  final double   level;    // metres
+  final double   level;
   final double?  precipMm;
 
   const PredictionPoint({
@@ -41,12 +34,12 @@ class PredictionPoint {
 // ─────────────────────────────────────────────────────────────────────────────
 // FloodPrediction — unified result model
 //
-// Screen-facing fields (predict_screen_impl reads these):
+// Screen-facing fields (predict_screen_impl reads these — unchanged):
 //   station, river, currentLevel, dangerLevel, warningLevel, progressPct,
 //   predicted24h/48h/72h, next24h/48h/72h, riskScore, confidencePct,
 //   modelVersion, cwcRiskScore, trend, outlook
 //
-// NEW ML fields (for AI panel, details screen, debugging):
+// NEW ML fields (AI panel, details screen, debugging):
 //   severity, probabilities, algorithm, dataSource, fromBackend, timestamp
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -70,22 +63,22 @@ class FloodPrediction {
   final List<PredictionPoint> next72h;
 
   // ── Classic metadata (screen-facing) ─────────────────────────────────────
-  final double  riskScore;      // 0–100
-  final double  confidencePct;  // 0–99
+  final double  riskScore;
+  final double  confidencePct;
   final String  modelVersion;
   final double? cwcRiskScore;
-  final String  trend;          // 'rising' | 'stable' | 'falling'
+  final String  trend;
   final String  outlook;
 
-  // ── ML / ensemble fields (NEW) ────────────────────────────────────────────
-  final String              severity;      // LOW | MODERATE | SEVERE | CRITICAL
-  final Map<String, double> probabilities; // {LOW:%, MODERATE:%, ...}
-  final String              algorithm;     // e.g. 'Hybrid (Backend ML 60% + Rule Engine 40%)'
-  final String              dataSource;    // e.g. 'CWC Live + OpsFlood API + Rule Engine'
+  // ── ML / ensemble fields (NEW — optional with safe defaults) ─────────────
+  final String              severity;
+  final Map<String, double> probabilities;
+  final String              algorithm;
+  final String              dataSource;
   final bool                fromBackend;
   final DateTime            timestamp;
 
-  const FloodPrediction({
+  FloodPrediction({
     required this.station,
     required this.river,
     required this.currentLevel,
@@ -110,19 +103,11 @@ class FloodPrediction {
     this.dataSource    = 'OpsFlood API',
     this.fromBackend   = false,
     DateTime? timestamp,
-  }) : timestamp = timestamp ?? const _FakeDateTimeNow();
-}
-
-// Dart const workaround: DateTime.now() is not const.
-// We store a sentinel and expose a real getter.
-class _FakeDateTimeNow implements DateTime {
-  const _FakeDateTimeNow();
-  // Delegate every member to DateTime.now() at call time.
-  @override dynamic noSuchMethod(Invocation i) => DateTime.now();
+  }) : timestamp = timestamp ?? DateTime.now();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// _buildSeries — generate hourly PredictionPoint list from a rise rate
+// _buildSeries — hourly PredictionPoint list from a rise rate
 // ─────────────────────────────────────────────────────────────────────────────
 
 List<PredictionPoint> _buildSeries(
@@ -134,7 +119,7 @@ List<PredictionPoint> _buildSeries(
 ) {
   final now = DateTime.now();
   return List.generate(hours, (i) {
-    final level    = (cur + risePerHour * (i + 1)).clamp(0.0, maxLevel);
+    final level = (cur + risePerHour * (i + 1)).clamp(0.0, maxLevel);
     double? precip;
     if (forecast.isNotEmpty) {
       final dayIdx = i ~/ 24;
@@ -149,7 +134,7 @@ List<PredictionPoint> _buildSeries(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// _levelPredict — local linear extrapolation (used by bulk providers only)
+// _levelPredict — local linear extrapolation (bulk providers only)
 // ─────────────────────────────────────────────────────────────────────────────
 
 FloodPrediction _levelPredict(
@@ -192,37 +177,36 @@ FloodPrediction _levelPredict(
               : 'Likely to remain below danger level for 72 h';
 
   return FloodPrediction(
-    station:      s.station,
-    river:        s.river,
-    currentLevel: cur,
-    dangerLevel:  dng,
-    warningLevel: warn,
-    progressPct:  s.progressPct,
-    predicted24h: p24,
-    predicted48h: p48,
-    predicted72h: p72,
-    next24h:      pts24,
-    next48h:      pts48,
-    next72h:      pts72,
-    riskScore:    riskScore,
+    station:       s.station,
+    river:         s.river,
+    currentLevel:  cur,
+    dangerLevel:   dng,
+    warningLevel:  warn,
+    progressPct:   s.progressPct,
+    predicted24h:  p24,
+    predicted48h:  p48,
+    predicted72h:  p72,
+    next24h:       pts24,
+    next48h:       pts48,
+    next72h:       pts72,
+    riskScore:     riskScore,
     confidencePct: conf,
-    modelVersion: 'v3.2-linear',
-    cwcRiskScore: null,
-    trend:        trend,
-    outlook:      outlook,
-    severity:     riskScore >= 85 ? 'CRITICAL'
-                : riskScore >= 65 ? 'SEVERE'
-                : riskScore >= 40 ? 'MODERATE'
-                : 'LOW',
-    fromBackend:  false,
-    algorithm:    'Linear Extrapolation',
-    dataSource:   s.isLive ? 'Live Gauge' : 'Seed Data',
-    timestamp:    DateTime.now(),
+    modelVersion:  'v3.2-linear',
+    cwcRiskScore:  null,
+    trend:         trend,
+    outlook:       outlook,
+    severity:      riskScore >= 85 ? 'CRITICAL'
+                 : riskScore >= 65 ? 'SEVERE'
+                 : riskScore >= 40 ? 'MODERATE'
+                 : 'LOW',
+    fromBackend:   false,
+    algorithm:     'Linear Extrapolation',
+    dataSource:    s.isLive ? 'Live Gauge' : 'Seed Data',
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// _resolveStation — station lookup logic (unchanged from v6)
+// _resolveStation — station lookup (unchanged from v6)
 // ─────────────────────────────────────────────────────────────────────────────
 
 RiverStation _resolveStation(
@@ -246,7 +230,6 @@ RiverStation _resolveStation(
         (a, b) => a.progressPct > b.progressPct ? a : b);
   }
 
-  // No live data — seed from static gauge list.
   final seed = kBiharGauges.firstWhere(
     (g) => g.station.toLowerCase() == keyLower,
     orElse: () => kBiharGauges.first,
@@ -266,30 +249,24 @@ RiverStation _resolveStation(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// _mlToFloodPrediction — map PredictionService result → FloodPrediction
-//
-// The ML service returns severity/probabilities/riskScore.  We layer those
-// on top of the level-series fields (still computed locally from the live
-// gauge reading) so predict_screen_impl sees all the fields it needs.
+// _mlToFloodPrediction — map ML service result → provider FloodPrediction
 // ─────────────────────────────────────────────────────────────────────────────
 
 FloodPrediction _mlToFloodPrediction(
-  RiverStation      station,
-  services_FloodPrediction ml,
+  RiverStation     station,
+  MlFloodPrediction ml,
   List<WeatherDay>  forecast,
   double            rainfallMod,
 ) {
-  // Build level series from live gauge (ML doesn't return hourly levels).
-  final cur     = station.current;
-  final dng     = station.danger  > 0 ? station.danger  : cur * 1.5;
-  final warn    = station.warning > 0 ? station.warning : dng * 0.85;
-  final prog    = station.progressPct / 100;
-  final rise    = prog * rainfallMod * 0.021;
-  final pts72   = _buildSeries(72, cur, rise, dng * 1.5, forecast);
-  final pts48   = pts72.sublist(0, 48);
-  final pts24   = pts72.sublist(0, 24);
+  final cur   = station.current;
+  final dng   = station.danger  > 0 ? station.danger  : cur * 1.5;
+  final warn  = station.warning > 0 ? station.warning : dng * 0.85;
+  final prog  = station.progressPct / 100;
+  final rise  = prog * rainfallMod * 0.021;
+  final pts72 = _buildSeries(72, cur, rise, dng * 1.5, forecast);
+  final pts48 = pts72.sublist(0, 48);
+  final pts24 = pts72.sublist(0, 24);
 
-  // Derive trend from ML severity + live level trend.
   final String trend;
   if (ml.severity == 'CRITICAL' || ml.severity == 'SEVERE') {
     trend = 'rising';
@@ -299,7 +276,6 @@ FloodPrediction _mlToFloodPrediction(
     trend = 'stable';
   }
 
-  // Derive outlook from ML severity.
   final String outlook;
   switch (ml.severity) {
     case 'CRITICAL':
@@ -313,25 +289,24 @@ FloodPrediction _mlToFloodPrediction(
   }
 
   return FloodPrediction(
-    station:      station.station,
-    river:        station.river,
-    currentLevel: cur,
-    dangerLevel:  dng,
-    warningLevel: warn,
-    progressPct:  station.progressPct,
-    predicted24h: pts24.last.level,
-    predicted48h: pts48.last.level,
-    predicted72h: pts72.last.level,
-    next24h:      pts24,
-    next48h:      pts48,
-    next72h:      pts72,
-    riskScore:    ml.riskScore.toDouble(),
+    station:       station.station,
+    river:         station.river,
+    currentLevel:  cur,
+    dangerLevel:   dng,
+    warningLevel:  warn,
+    progressPct:   station.progressPct,
+    predicted24h:  pts24.last.level,
+    predicted48h:  pts48.last.level,
+    predicted72h:  pts72.last.level,
+    next24h:       pts24,
+    next48h:       pts48,
+    next72h:       pts72,
+    riskScore:     ml.riskScore.toDouble(),
     confidencePct: ml.confidencePercent.clamp(0, 99),
     modelVersion:  ml.fromBackend ? 'v2-backend-ml' : 'v2-rule-engine',
     cwcRiskScore:  ml.liveRiverLevelM,
     trend:         trend,
     outlook:       outlook,
-    // ML fields
     severity:      ml.severity,
     probabilities: ml.probabilities,
     algorithm:     ml.algorithm,
@@ -341,21 +316,9 @@ FloodPrediction _mlToFloodPrediction(
   );
 }
 
-// Alias to avoid name collision with this file's FloodPrediction.
-typedef services_FloodPrediction = predict_FloodPrediction;
-
-// ignore: library_prefixes
-import 'package:flutter_riverpod/flutter_riverpod.dart' as _rv;
-// Import predict.dart under an alias to access its FloodPrediction.
-import '../services/predict.dart' as _predict_lib
-    show PredictionService, FloodPredictionInput, FloodPrediction;
-typedef predict_FloodPrediction = _predict_lib.FloodPrediction;
-
 // ─────────────────────────────────────────────────────────────────────────────
-// predictionProvider(String stationKey) — FutureProvider.family
-//
-// Now calls the real ML pipeline.  Falls back gracefully to linear
-// extrapolation if the pipeline or backend throws.
+// predictionProvider — FutureProvider.family
+// Calls real ML pipeline; falls back to linear extrapolation on any error.
 // ─────────────────────────────────────────────────────────────────────────────
 
 final predictionProvider =
@@ -370,14 +333,12 @@ final predictionProvider =
 
   final match = _resolveStation(stations, stationKey);
 
-  // ── Try ML pipeline ───────────────────────────────────────────────────────
   try {
-    final svc   = const _predict_lib.PredictionService();
-    final input = _predict_lib.FloodPredictionInput(
-      peakFloodLevelM:   match.current > 0 ? match.current : 8.5,
-      state:             match.state.isNotEmpty ? match.state : 'Bihar',
-      station:           match.station,
-      // Rainfall: distribute 7d total across daily buckets.
+    const svc = predictLib.PredictionService();
+    final input = predictLib.FloodPredictionInput(
+      peakFloodLevelM: match.current > 0 ? match.current : 8.5,
+      state:           match.state.isNotEmpty ? match.state : 'Bihar',
+      station:         match.station,
       t1d: wxState.rainfall7dMm / 7,
       t2d: wxState.rainfall7dMm / 7,
       t3d: wxState.rainfall7dMm / 7,
@@ -389,14 +350,12 @@ final predictionProvider =
     final ml = await svc.predict(input);
     return _mlToFloodPrediction(match, ml, wxState.forecast, rainfallMod);
   } catch (_) {
-    // Offline or backend unavailable — fall back to linear extrapolation.
     return _levelPredict(match, rainfallMod, forecast: wxState.forecast);
   }
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Bulk providers — synchronous, use linear extrapolation over all stations.
-// Cannot await per-station ML calls; ML is only for single-station screen.
+// Bulk providers — synchronous linear extrapolation over all stations.
 // ─────────────────────────────────────────────────────────────────────────────
 
 final floodPredictionsProvider = Provider<List<FloodPrediction>>((ref) {
