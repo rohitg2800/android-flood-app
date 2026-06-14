@@ -41,7 +41,7 @@ import 'screens/export_screen.dart';
 import 'screens/notification_settings_screen.dart';
 import 'screens/incident_report_screen.dart';
 import 'screens/crowd_report_feed_screen.dart';
-import 'screens/evacuation_routes_screen.dart';
+import 'screens/evacuation_routes_screen.dart'; // ← already imported
 // ── Phase 9 ──────────────────────────────────────────────────────────────────
 import 'screens/ai_prediction_screen.dart';
 // ── Phase 10 ─────────────────────────────────────────────────────────────────
@@ -64,6 +64,7 @@ import 'theme/robotic_theme.dart';
 import 'providers/theme_provider.dart';
 import 'providers/locale_provider.dart';
 import 'services/data_fetch_engine.dart';
+import 'app_router.dart'; // Routes constants
 
 final FlutterLocalNotificationsPlugin _localNotifications =
     FlutterLocalNotificationsPlugin();
@@ -212,84 +213,117 @@ class FloodWatchApp extends ConsumerWidget {
       initialRoute: SplashScreen.route,
       onGenerateRoute: (settings) {
         switch (settings.name) {
+          case Routes.splash:
           case SplashScreen.route:
             return _fade(const SplashScreen());
+          case Routes.onboarding:
           case OnboardingScreen.route:
             return _fade(const OnboardingScreen());
-          case MainShell.route:
+          case Routes.shell:
           case '/home':
             return _fade(const MainShell());
+          case Routes.dashboard:
           case DashboardScreen.route:
             return _fade(const DashboardScreen());
+          case Routes.alerts:
           case AlertsScreen.route:
             return _fade(const AlertsScreen());
+          case Routes.monitors:
           case MonitorsScreen.route:
             return _fade(const MonitorsScreen());
+          case Routes.predict:
           case PredictScreen.route:
             return _fade(const PredictScreen());
+          case Routes.settings:
           case SettingsScreen.route:
             return _fade(const SettingsScreen());
+          case Routes.sos:
           case SosScreen.route:
             return _fade(const SosScreen());
+          // ── FIX: evacuation was missing from main.dart onGenerateRoute ──
+          // Routes.evacuation = '/evacuation'
+          // Old EvacuationRoutesScreen.route was '/evacuation-routes' (mismatch!)
+          // Now both are '/evacuation'. Both cases kept for safety.
+          case Routes.evacuation:          // '/evacuation'  ← the one called everywhere
+          case '/evacuation-routes':       // legacy fallback
+            return _fade(const EvacuationRoutesScreen());
+          case Routes.weather:
           case WeatherScreen.route:
             return _fade(const WeatherScreen());
+          case Routes.riverMonitor:
           case RiverMonitorScreen.route:
             return _fade(const RiverMonitorScreen());
+          case Routes.stateMatrix:
           case StateMatrixScreen.route:
             return _fade(const StateMatrixScreen());
+          case Routes.modelInfo:
           case ModelInfoScreen.route:
             return _fade(const ModelInfoScreen());
+          case Routes.biharRiverMap:
           case BiharRiverMapScreen.route:
             return _fade(const BiharRiverMapScreen());
+          case Routes.liveStations:
           case LiveStationsScreen.route:
             return _fade(const LiveStationsScreen());
+          case Routes.news:
           case NewsFeedScreen.route:
             return _fade(const NewsFeedScreen());
+          case Routes.map:
           case MapScreen.route:
             return _fade(const MapScreen());
+          case Routes.community:
           case CommunityScreen.route:
             return _fade(const CommunityScreen());
+          case Routes.export_:
           case ExportScreen.route:
             return _fade(const ExportScreen());
+          case Routes.notificationSettings:
           case NotificationSettingsScreen.route:
             return _fade(const NotificationSettingsScreen());
-          // ── Phase 7 ────────────────────────────────────────────────────
+          case Routes.incidentReport:
           case IncidentReportScreen.route:
             return _fade(const IncidentReportScreen());
-          // ── Phase 8 ────────────────────────────────────────────────────
+          case Routes.crowdReports:
           case CrowdReportFeedScreen.route:
             return _fade(const CrowdReportFeedScreen());
-          case EvacuationRoutesScreen.route:
-            return _fade(const EvacuationRoutesScreen());
-          // ── Phase 9 ────────────────────────────────────────────────────
+          case Routes.aiPredictor:
           case AiPredictionScreen.route:
             return _fade(const AiPredictionScreen());
-          // ── Phase 10 ───────────────────────────────────────────────────
+          case Routes.indiaRiverExplorer:
           case IndiaRiverExplorerScreen.route:
             return _fade(const IndiaRiverExplorerScreen());
-          // ── Analytics / Forecast / Orphans (now wired) ───────────────────
+          case Routes.rainfallForecast:
           case RainfallForecastScreen.route:
             return _fade(const RainfallForecastScreen());
+          case Routes.historicalAnalytics:
           case HistoricalAnalyticsScreen.route:
             return _fade(const HistoricalAnalyticsScreen());
+          case Routes.analytics:
           case AnalyticsDashboardScreen.route:
             return _fade(const AnalyticsDashboardScreen());
+          case Routes.profile:
           case ProfileScreen.route:
             return _fade(const ProfileScreen());
+          case Routes.adminDashboard:
           case AdminDashboardScreen.route:
             return _fade(const AdminDashboardScreen());
-          // ── Argument-based routes ───────────────────────────────────────
-          case '/city_detail':
+          case Routes.cityDetail:
+          case '/city_detail': {
             final cityName = settings.arguments as String? ?? '';
             return _fade(CityDetailScreen(cityName: cityName));
-          case '/river_detail':
+          }
+          case Routes.riverDetail:
+          case '/river_detail': {
             final rdArgs = settings.arguments;
             if (rdArgs is! FloodData) return _fade(const SplashScreen());
             return _fade(RiverDetailScreen(data: rdArgs));
-          case '/cwc_station':
+          }
+          case Routes.stationDetail:
+          case '/cwc_station': {
             final cwcArgs = settings.arguments;
             if (cwcArgs is! CwcStation) return _fade(const SplashScreen());
             return _fade(CwcStationDetailScreen(station: cwcArgs));
+          }
           default:
             return _fade(const SplashScreen());
         }

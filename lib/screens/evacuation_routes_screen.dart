@@ -1,5 +1,10 @@
 // lib/screens/evacuation_routes_screen.dart
 // OpsFlood — Evacuation Routes Screen (Phase 6 full implementation)
+//
+// FIX (14 Jun 2026): route constant changed '/evacuation-routes' → '/evacuation'
+// to match Routes.evacuation in app_router.dart and main.dart onGenerateRoute.
+// The old value caused main.dart's onGenerateRoute to fall through to
+// default: SplashScreen(), making the app appear to restart.
 library;
 
 import 'package:flutter/material.dart';
@@ -7,9 +12,11 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../data/evacuation_routes_data.dart';
 import '../theme/river_theme.dart';
+import '../app_router.dart'; // Routes.evacuation
 
 class EvacuationRoutesScreen extends StatefulWidget {
-  static const String route = '/evacuation-routes';
+  // ── FIXED: was '/evacuation-routes', now matches Routes.evacuation ──
+  static const String route = Routes.evacuation; // '/evacuation'
   const EvacuationRoutesScreen({super.key});
 
   @override
@@ -201,14 +208,10 @@ class _EvacuationRoutesScreenState extends State<EvacuationRoutesScreen>
 
   Color _riskColor(String risk) {
     switch (risk) {
-      case 'HIGH':
-        return Colors.red;
-      case 'MEDIUM':
-        return Colors.orange;
-      case 'LOW':
-        return Colors.green;
-      default:
-        return Colors.grey;
+      case 'HIGH':   return Colors.red;
+      case 'MEDIUM': return Colors.orange;
+      case 'LOW':    return Colors.green;
+      default:       return Colors.grey;
     }
   }
 
@@ -549,14 +552,9 @@ class _RiskBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     Color color;
     switch (risk) {
-      case 'HIGH':
-        color = Colors.red;
-        break;
-      case 'MEDIUM':
-        color = Colors.orange;
-        break;
-      default:
-        color = Colors.green;
+      case 'HIGH':   color = Colors.red;    break;
+      case 'MEDIUM': color = Colors.orange; break;
+      default:       color = Colors.green;
     }
     return Container(
       width: 40,
