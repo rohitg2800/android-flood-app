@@ -1,8 +1,7 @@
 // lib/screens/incident_report_screen.dart
 // OpsFlood — Incident Report Screen (Phase 7 full implementation)
-library;
 
-import 'dart:convert'n
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -160,7 +159,7 @@ class IncidentDraft {
       'Location: $district${block.isNotEmpty ? " > $block" : ""}${village.isNotEmpty ? " > $village" : ""}\n'
       '${lat != null ? "GPS: $lat, $lng\n" : ""}'
       'Description: $description\n'
-      'Reporter: ${reporterName.isNotEmpty ? reporterName : "Anonymous"} ${reporterPhone.isNotEmpty ? "(${reporterPhone})" : ""}\n'
+      'Reporter: ${reporterName.isNotEmpty ? reporterName : "Anonymous"} ${reporterPhone.isNotEmpty ? "($reporterPhone)" : ""}\n'
       'Reported at: ${createdAt.toLocal()}\n\n'
       'OpsFlood — Bihar Flood Monitoring App';
 }
@@ -195,10 +194,8 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
 
   final IncidentDraft _draft = IncidentDraft();
 
-  // Step 2 controllers
   final _blockCtrl   = TextEditingController();
   final _villageCtrl = TextEditingController();
-  // Step 3 controllers
   final _descCtrl    = TextEditingController();
   final _nameCtrl    = TextEditingController();
   final _phoneCtrl   = TextEditingController();
@@ -227,7 +224,8 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString(_draftKey);
       if (raw != null) {
-        final loaded = IncidentDraft.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+        final loaded = IncidentDraft.fromJson(
+            jsonDecode(raw) as Map<String, dynamic>);
         setState(() {
           _draft
             ..type = loaded.type
@@ -240,11 +238,11 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
             ..description = loaded.description
             ..reporterName = loaded.reporterName
             ..reporterPhone = loaded.reporterPhone;
-          _blockCtrl.text = loaded.block;
+          _blockCtrl.text   = loaded.block;
           _villageCtrl.text = loaded.village;
-          _descCtrl.text = loaded.description;
-          _nameCtrl.text = loaded.reporterName;
-          _phoneCtrl.text = loaded.reporterPhone;
+          _descCtrl.text    = loaded.description;
+          _nameCtrl.text    = loaded.reporterName;
+          _phoneCtrl.text   = loaded.reporterPhone;
         });
       }
     } catch (_) {}
@@ -267,18 +265,19 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
 
   void _syncControllers() {
     _draft
-      ..block = _blockCtrl.text.trim()
-      ..village = _villageCtrl.text.trim()
-      ..description = _descCtrl.text.trim()
+      ..block        = _blockCtrl.text.trim()
+      ..village      = _villageCtrl.text.trim()
+      ..description  = _descCtrl.text.trim()
       ..reporterName = _nameCtrl.text.trim()
-      ..reporterPhone = _phoneCtrl.text.trim();
+      ..reporterPhone= _phoneCtrl.text.trim();
   }
 
   void _goToStep(int s) {
     _saveDraft();
     setState(() => _step = s);
     _page.animateToPage(s,
-        duration: const Duration(milliseconds: 350), curve: Curves.easeInOut);
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeInOut);
   }
 
   bool get _step1Valid => _draft.type != null;
@@ -286,18 +285,12 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
   bool get _step3Valid => _descCtrl.text.trim().length >= 10;
 
   Future<void> _tryGetLocation() async {
-    // Graceful stub — real implementation would use geolocator package
-    setState(() {
-      _draft.lat = 25.5941;
-      _draft.lng = 85.1376;
-    });
+    setState(() { _draft.lat = 25.5941; _draft.lng = 85.1376; });
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('📍 GPS location captured (Patna — demo)'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('📍 GPS location captured (Patna — demo)'),
+        duration: Duration(seconds: 2),
+      ));
     }
   }
 
@@ -305,18 +298,13 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
     _syncControllers();
     if (!_step1Valid || !_step2Valid || !_step3Valid) return;
     setState(() => _submitting = true);
-
-    // Simulate network / offline queue
     await Future<void>.delayed(const Duration(milliseconds: 1400));
-
-    // Persist to offline queue
     try {
       final prefs = await SharedPreferences.getInstance();
       final queue = prefs.getStringList('incident_queue_v1') ?? [];
       queue.add(jsonEncode(_draft.toJson()));
       await prefs.setStringList('incident_queue_v1', queue);
     } catch (_) {}
-
     await _clearDraft();
     if (mounted) setState(() { _submitting = false; _submitted = true; });
   }
@@ -330,11 +318,11 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
       appBar: AppBar(
         backgroundColor: t.navBg,
         foregroundColor: t.textPrimary,
-        title: Row(
+        title: const Row(
           children: [
-            const Icon(Icons.report_problem, color: Colors.deepOrange, size: 20),
-            const SizedBox(width: 8),
-            const Text('Incident Report'),
+            Icon(Icons.report_problem, color: Colors.deepOrange, size: 20),
+            SizedBox(width: 8),
+            Text('Incident Report'),
           ],
         ),
         actions: [
@@ -369,7 +357,6 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
   // ── Step indicator ──────────────────────────────────────────────────────────
 
   Widget _buildStepper(RiverColors t) {
-    const labels = ['Type', 'Location', 'Details', 'Review'];
     return Container(
       color: t.navBg,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -427,9 +414,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                         : t.cardBg,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: selected
-                          ? type.color
-                          : t.divider.withOpacity(0.5),
+                      color: selected ? type.color : t.divider.withOpacity(0.5),
                       width: selected ? 2.0 : 1.0,
                     ),
                   ),
@@ -472,9 +457,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                       duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       decoration: BoxDecoration(
-                        color: sel
-                            ? s.color.withOpacity(0.18)
-                            : t.cardBg,
+                        color: sel ? s.color.withOpacity(0.18) : t.cardBg,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: sel ? s.color : t.divider.withOpacity(0.4),
@@ -532,8 +515,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                   const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide:
-                    BorderSide(color: t.divider.withOpacity(0.5)),
+                borderSide: BorderSide(color: t.divider.withOpacity(0.5)),
               ),
               border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10)),
@@ -587,16 +569,15 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                   onPressed: _tryGetLocation,
                 ),
               ),
-              if (_draft.lat != null) ...
-                [
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.clear, size: 18),
-                    tooltip: 'Clear GPS',
-                    onPressed: () =>
-                        setState(() { _draft.lat = null; _draft.lng = null; }),
-                  ),
-                ],
+              if (_draft.lat != null) ...[
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.clear, size: 18),
+                  tooltip: 'Clear GPS',
+                  onPressed: () => setState(
+                      () { _draft.lat = null; _draft.lng = null; }),
+                ),
+              ],
             ],
           ),
         ],
@@ -630,8 +611,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
               decoration: InputDecoration(
                 hintText:
                     'Describe what happened — water level, people affected, damage observed…',
-                hintStyle:
-                    TextStyle(color: t.textSecondary, fontSize: 13),
+                hintStyle: TextStyle(color: t.textSecondary, fontSize: 13),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.all(12),
                 counterStyle:
@@ -644,36 +624,30 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
           const SizedBox(height: 8),
           GestureDetector(
             onTap: () {
-              // image_picker integration stub
               setState(() => _draft.photoCount++);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content: Text('📷 Photo added (demo stub)'),
-                    duration: Duration(seconds: 1)),
-              );
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content: Text('📷 Photo added (demo stub)'),
+                  duration: Duration(seconds: 1)));
             },
             child: Container(
               height: 80,
               decoration: BoxDecoration(
                 color: t.cardBg,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                    color: t.divider.withOpacity(0.5),
-                    style: BorderStyle.solid),
+                border: Border.all(color: t.divider.withOpacity(0.5)),
               ),
               child: Center(
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.add_a_photo_outlined,
-                        color: t.textSecondary),
+                    Icon(Icons.add_a_photo_outlined, color: t.textSecondary),
                     const SizedBox(width: 8),
                     Text(
                       _draft.photoCount == 0
                           ? 'Tap to attach photos'
                           : '${_draft.photoCount} photo(s) attached',
-                      style: TextStyle(
-                          color: t.textSecondary, fontSize: 13),
+                      style:
+                          TextStyle(color: t.textSecondary, fontSize: 13),
                     ),
                   ],
                 ),
@@ -713,8 +687,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Td3SectionHeader('Review Before Submitting',
-              accentColor: t.accent),
+          Td3SectionHeader('Review Before Submitting', accentColor: t.accent),
           const SizedBox(height: 12),
           Td3Card(
             showGloss: false,
@@ -787,7 +760,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                       color: Colors.teal,
                       label: 'Reporter',
                       value:
-                          '${_draft.reporterName} ${_draft.reporterPhone.isNotEmpty ? "(${_draft.reporterPhone})" : ""}',
+                          '${_draft.reporterName}${_draft.reporterPhone.isNotEmpty ? " (${_draft.reporterPhone})" : ""}',
                       theme: t,
                     ),
                   ],
@@ -796,7 +769,6 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          // Validation warnings
           if (!_step1Valid)
             _Warning('Please go back and select an incident type.'),
           if (!_step2Valid)
@@ -804,24 +776,18 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
           if (!_step3Valid)
             _Warning('Description must be at least 10 characters.'),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.share, size: 16),
-                  label: const Text('Share Report'),
-                  onPressed: () => Share.share(_draft.shareText,
-                      subject: 'OpsFlood Incident Report'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: t.accent,
-                    side: BorderSide(color: t.accent.withOpacity(0.6)),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
-                ),
-              ),
-            ],
+          OutlinedButton.icon(
+            icon: const Icon(Icons.share, size: 16),
+            label: const Text('Share Report'),
+            onPressed: () => Share.share(_draft.shareText,
+                subject: 'OpsFlood Incident Report'),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 48),
+              foregroundColor: t.accent,
+              side: BorderSide(color: t.accent.withOpacity(0.6)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
           ),
           const SizedBox(height: 10),
           Td3Button(
@@ -850,7 +816,8 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
       decoration: BoxDecoration(
         color: t.navBg,
         border: Border(
-            top: BorderSide(color: t.divider.withOpacity(0.4), width: 0.75)),
+            top: BorderSide(
+                color: t.divider.withOpacity(0.4), width: 0.75)),
       ),
       child: Row(
         children: [
@@ -931,7 +898,8 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                         fontWeight: FontWeight.w800)),
                 const SizedBox(height: 8),
                 Text(
-                  'Your incident report has been saved to the offline queue and will be uploaded when connectivity is available.',
+                  'Your incident report has been saved to the offline queue '
+                  'and will be uploaded when connectivity is available.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                       color: t.textSecondary, fontSize: 13, height: 1.5),
@@ -943,9 +911,10 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                   color: Colors.deepOrange,
                   onTap: () => setState(() {
                     _submitted = false;
-                    _draft.type = null;
-                    _draft.district = '';
-                    _draft.description = '';
+                    _draft
+                      ..type = null
+                      ..district = ''
+                      ..description = '';
                     _descCtrl.clear();
                     _blockCtrl.clear();
                     _villageCtrl.clear();
@@ -994,14 +963,14 @@ class _StepDot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = theme;
-    Color bg;
-    Color fg;
+    final Color bg;
+    final Color fg;
     if (done) {
-      bg = t.accent; fg = Colors.white;
+      bg = t.accent;          fg = Colors.white;
     } else if (active) {
-      bg = Colors.deepOrange; fg = Colors.white;
+      bg = Colors.deepOrange;  fg = Colors.white;
     } else {
-      bg = t.cardBg; fg = t.textSecondary;
+      bg = t.cardBg;           fg = t.textSecondary;
     }
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
@@ -1011,7 +980,9 @@ class _StepDot extends StatelessWidget {
         color: bg,
         shape: BoxShape.circle,
         border: Border.all(
-            color: active ? Colors.deepOrange : t.divider.withOpacity(0.5),
+            color: active
+                ? Colors.deepOrange
+                : t.divider.withOpacity(0.5),
             width: 1.5),
       ),
       child: Center(
@@ -1084,8 +1055,7 @@ class _Warning extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.red.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
-        border:
-            Border.all(color: Colors.red.withOpacity(0.4), width: 1),
+        border: Border.all(color: Colors.red.withOpacity(0.4)),
       ),
       child: Row(
         children: [
@@ -1093,8 +1063,7 @@ class _Warning extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(message,
-                style:
-                    const TextStyle(color: Colors.red, fontSize: 12)),
+                style: const TextStyle(color: Colors.red, fontSize: 12)),
           ),
         ],
       ),
