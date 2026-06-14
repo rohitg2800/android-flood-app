@@ -62,7 +62,7 @@ class OpsDepthCard extends StatelessWidget {
     final pct   = (alert.currentLevel /
             (alert.thresholdLevel > 0 ? alert.thresholdLevel : alert.currentLevel * 1.2))
         .clamp(0.0, 1.0);
-    final when  = timeago.format(alert.triggeredAt);
+    final when  = timeago.format(alert.issuedAt);         // ✅ was triggeredAt
 
     return GestureDetector(
       onTap: onTap,
@@ -116,8 +116,7 @@ class OpsDepthCard extends StatelessWidget {
 
               // ── River + district ────────────────────────────────────
               Text(
-                '${alert.riverName ?? "River"}'  
-                '${alert.district != null ? "  •  ${alert.district}" : ""}',
+                '${alert.river}  •  ${alert.district}', // ✅ river (not riverName), district non-nullable
                 style: const TextStyle(
                     color: AppPalette.textGrey, fontSize: 12),
               ),
@@ -168,13 +167,13 @@ class OpsDepthCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
 
-              // ── Footer: message + time-ago ───────────────────────────
+              // ── Footer: body + time-ago ──────────────────────────────
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
                     child: Text(
-                      alert.message,
+                      alert.body,                         // ✅ was message
                       style: TextStyle(
                           color:    t.textSecondary,
                           fontSize: 11,
