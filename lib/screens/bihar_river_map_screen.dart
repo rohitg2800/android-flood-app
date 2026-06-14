@@ -1,5 +1,13 @@
 // lib/screens/bihar_river_map_screen.dart
-// OpsFlood — BiharRiverMapScreen v5.6.1
+// OpsFlood — BiharRiverMapScreen v5.6.2
+//
+// v5.6.2 (14 Jun 2026 — map spam fix):
+//   • Replace NetworkTileProvider for RainViewer with SilentTileProvider.
+//   • SilentTileProvider injects synthetic Cache-Control max-age=600 on
+//     every tile response, preventing the fallback freshness age warning:
+//       [flutter_map] Using fallback freshness age (168:00:00.000000) …
+//     from firing for every single nowcast tile.
+//   • Remove unused _rainViewerHeaders constant.
 //
 // v5.6.1 (14 Jun 2026 — analyze fixes):
 //   • Remove bogus merged_stations_provider.dart import.
@@ -22,6 +30,7 @@ import 'package:latlong2/latlong.dart';
 import '../data/bihar_rivers.dart';
 import '../providers/map_live_index_provider.dart';
 import '../providers/real_time_river_provider.dart'; // mergedStationsProvider
+import '../providers/silent_tile_provider.dart';     // ← NEW
 import '../theme/river_theme.dart';
 import 'city_detail_screen.dart';
 import '../providers/flood_providers.dart';
@@ -87,14 +96,10 @@ IconData _riskIcon(RiskLevel level) {
 Color _riskColour(String risk, RiverColors t) => _riskColor(_parseRisk(risk));
 
 // ────────────────────────────────────────────────────────────────────────────────
-// RainViewer
+// RainViewer URL  (headers now handled inside SilentTileProvider)
 // ────────────────────────────────────────────────────────────────────────────────
 const _rainViewerUrl =
     'https://tilecache.rainviewer.com/v2/radar/nowcast/{z}/{x}/{y}/2/1_1.png';
-
-final _rainViewerHeaders = <String, String>{
-  'Cache-Control': 'max-age=600',
-};
 
 // ────────────────────────────────────────────────────────────────────────────────
 // Tile styles
@@ -204,6 +209,12 @@ class BiharRiverMapScreen extends ConsumerStatefulWidget {
 class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen> {
   final _mapCtrl = MapController();
 
+  // Single shared SilentTileProvider instance — reused across rebuilds
+  // so we don't create a new http.Client on every setState.
+  final _rainTileProvider = SilentTileProvider(
+    maxAge: const Duration(minutes: 10),
+  );
+
   String?    _filterRiver;
   RiskLevel? _filterRisk;
   _TileStyle _tileStyle         = _TileStyle.voyager;
@@ -217,6 +228,12 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen> {
   static final _rivers =
       kBiharGauges.map((g) => g.river).toSet().toList()..sort();
 
+  @override
+  void dispose() {
+    _rainTileProvider.dispose();
+    super.dispose();
+  }
+
   MapStationData? _resolveMerged(
     BiharGauge gauge,
     Map<String, MapStationData> index,
@@ -224,7 +241,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen> {
     final normStation  = _norm(gauge.station);
     final normRiver    = _norm(gauge.river);
     final direct       = index[normStation];
-    if (direct != null) { return direct; }  // fix: braces required
+    if (direct != null) { return direct; }
 
     final stFirst = normStation.split(' ').first;
     final rvFirst = normRiver.split(' ').first;
@@ -257,7 +274,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen> {
   Widget build(BuildContext context) {
     final t              = RiverColors.of(context);
     final liveIndex      = ref.watch(mapLiveIndexProvider);
-    final mergedStations = ref.watch(mergedStationsProvider); // List<RiverStation>
+    final mergedStations = ref.watch(mergedStationsProvider);
 
     final liveCount = liveIndex.values.where((s) => s.isLive).length;
 
@@ -313,15 +330,16 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen> {
                   userAgentPackageName: 'com.rohitg.floodwatch',
                 ),
               // ── Precipitation overlay ─────────────────────────────────
+              // SilentTileProvider injects Cache-Control max-age=600 on
+              // every response so flutter_map_tile_caching never falls
+              // back to its 168h default and stops logging the warning.
               if (_showPrecip)
                 Opacity(
                   opacity: _precipOpacity,
                   child: TileLayer(
                     urlTemplate:          _rainViewerUrl,
                     userAgentPackageName: 'com.rohitg.floodwatch',
-                    tileProvider: NetworkTileProvider(
-                      headers: Map<String, String>.of(_rainViewerHeaders),
-                    ),
+                    tileProvider:         _rainTileProvider, // ← FIXED
                   ),
                 ),
               // ── District heatmap ─────────────────────────────────────
@@ -950,7 +968,6 @@ class _LayerPanel extends StatelessWidget {
                   fontWeight: FontWeight.w800, letterSpacing: 1.5)),
           const SizedBox(height: 8),
 
-          // ── Station Risk toggle ──────────────────────────────────────
           GestureDetector(
             onTap: onStationsToggle,
             child: AnimatedContainer(
@@ -1096,7 +1113,6 @@ class _LayerPanel extends StatelessWidget {
 
           const SizedBox(height: 8),
 
-          // ── District Heatmap toggle ──────────────────────────────────
           GestureDetector(
             onTap: onHeatmapToggle,
             child: AnimatedContainer(
@@ -1152,7 +1168,6 @@ class _LayerPanel extends StatelessWidget {
 
           const SizedBox(height: 8),
 
-          // ── Precipitation toggle ────────────────────────────────────
           GestureDetector(
             onTap: onPrecipToggle,
             child: AnimatedContainer(
