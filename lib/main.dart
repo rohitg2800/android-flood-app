@@ -40,6 +40,8 @@ import 'screens/map_screen.dart';
 import 'screens/export_screen.dart';
 import 'screens/notification_settings_screen.dart';
 import 'screens/incident_report_screen.dart';
+import 'screens/crowd_report_feed_screen.dart';
+import 'screens/evacuation_routes_screen.dart';
 import 'services/befiqr_cwc_service.dart';
 import 'services/notification_channel_service.dart';
 import 'services/fcm_topic_manager.dart';
@@ -68,12 +70,8 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ── CRITICAL PATH: only what is needed before the first frame ────────────
-
-  // 1. .env — fast local file read
   await dotenv.load(fileName: '.env').catchError((_) {});
 
-  // 2. Firebase — required before FCM background handler registration
   try {
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(
@@ -84,17 +82,14 @@ Future<void> main() async {
   }
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  // 3. Hive — needed for CommunityIncident box used on community screen
   await Hive.initFlutter();
   Hive.registerAdapter(IncidentTypeAdapter());
   Hive.registerAdapter(CommunityIncidentAdapter());
   await Hive.openBox<CommunityIncident>('community_incidents');
 
-  // 4. Locale — must be synchronous before runApp to avoid English flash
   final prefs = await SharedPreferences.getInstance();
   final savedLangCode = prefs.getString('app_locale') ?? 'en';
 
-  // 5. Orientation & status-bar chrome
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
@@ -106,7 +101,6 @@ Future<void> main() async {
     ),
   );
 
-  // ── Paint first frame NOW ─────────────────────────────────────────────────
   runApp(
     ProviderScope(
       overrides: [
@@ -116,7 +110,6 @@ Future<void> main() async {
     ),
   );
 
-  // ── DEFERRED PATH: runs after the first frame is on screen ───────────────
   WidgetsBinding.instance.addPostFrameCallback((_) async {
     const androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -253,6 +246,11 @@ class FloodWatchApp extends ConsumerWidget {
           // ── Phase 7 ──────────────────────────────────────────────────────
           case IncidentReportScreen.route:
             return _fade(const IncidentReportScreen());
+          // ── Phase 8 ──────────────────────────────────────────────────────
+          case CrowdReportFeedScreen.route:
+            return _fade(const CrowdReportFeedScreen());
+          case EvacuationRoutesScreen.route:
+            return _fade(const EvacuationRoutesScreen());
           // ─────────────────────────────────────────────────────────────────
           case '/city_detail':
             final cityName = settings.arguments as String? ?? '';
