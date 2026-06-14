@@ -1,6 +1,9 @@
 // lib/screens/rainfall_forecast_screen.dart
 // OpsFlood — Module 14: Rainfall Forecast Screen
-// FIX 2026-06-14: explicit riverpod import moved to top; StateProvider resolved
+//
+// FIX 2026-06-14: StateProvider was REMOVED in flutter_riverpod ^3.0.
+// Replaced with a NotifierProvider<_DistrictNotifier, String>, which is
+// the Riverpod-3.x idiomatic drop-in for simple mutable state.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -66,8 +69,16 @@ final _forecastProvider =
   ];
 });
 
-// StateProvider requires flutter_riverpod (imported above)
-final _selectedDistrictProvider = StateProvider<String>((_) => 'Patna');
+// Riverpod 3.x: StateProvider was removed. Use Notifier + NotifierProvider.
+class _DistrictNotifier extends Notifier<String> {
+  @override
+  String build() => 'Patna';
+
+  void select(String district) => state = district;
+}
+
+final _selectedDistrictProvider =
+    NotifierProvider<_DistrictNotifier, String>(_DistrictNotifier.new);
 
 // ---------------------------------------------------------------------------
 // Screen
@@ -84,7 +95,7 @@ class RainfallForecastScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final district    = ref.watch(_selectedDistrictProvider);
+    final district      = ref.watch(_selectedDistrictProvider);
     final forecastAsync = ref.watch(_forecastProvider(district));
 
     return Scaffold(
@@ -109,7 +120,7 @@ class RainfallForecastScreen extends ConsumerWidget {
                 final selected = d == district;
                 return GestureDetector(
                   onTap: () =>
-                      ref.read(_selectedDistrictProvider.notifier).state = d,
+                      ref.read(_selectedDistrictProvider.notifier).select(d),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     padding: const EdgeInsets.symmetric(
@@ -162,7 +173,7 @@ class RainfallForecastScreen extends ConsumerWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Rain probability bar chart
+// Rain bar chart
 // ---------------------------------------------------------------------------
 
 class _RainBarChart extends StatelessWidget {
@@ -312,10 +323,15 @@ class _DayCard extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _Stat(Icons.water_drop,  '${forecast.rainMm.toInt()}mm',    AppPalette.oceanAccent),
-                  _Stat(Icons.thermostat,  '${forecast.tempMax.toInt()}°/${forecast.tempMin.toInt()}°', AppPalette.danger),
-                  _Stat(Icons.water,       '${forecast.humidity}%',           AppPalette.cyan),
-                  _Stat(Icons.air,         '${forecast.windKmh.toInt()}km/h', Colors.grey),
+                  _Stat(Icons.water_drop,  '${forecast.rainMm.toInt()}mm',
+                      AppPalette.oceanAccent),
+                  _Stat(Icons.thermostat,
+                      '${forecast.tempMax.toInt()}°/${forecast.tempMin.toInt()}°',
+                      AppPalette.danger),
+                  _Stat(Icons.water, '${forecast.humidity}%',
+                      AppPalette.cyan),
+                  _Stat(Icons.air, '${forecast.windKmh.toInt()}km/h',
+                      Colors.grey),
                 ],
               ),
             ),
