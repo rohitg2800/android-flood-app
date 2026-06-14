@@ -1,28 +1,29 @@
-// lib/providers/map_command_provider.dart  v1.1
+// lib/providers/map_command_provider.dart  v1.2
 //
-// v1.1 (14 Jun 2026) — Fix Riverpod 3.x pausedActiveSubscriptionCount crash
+// v1.2 (14 Jun 2026) — Fix Riverpod 3.x pausedActiveSubscriptionCount=3 crash
 //
 //   CRASH:
-//     Expected pausedActiveSubscriptionCount to be 4, but was 5.
-//     ProviderElement<List<RiverStation>>#34699 (origin: mapStationsProvider)
+//     Expected pausedActiveSubscriptionCount to be 2, but was 3.
+//     ProviderElement<List<RiverStation>> (origin: mapStationsProvider)
 //
 //   ROOT CAUSE:
-//     mapStationsProvider and biharDistrictRiskProvider were plain (non-autoDispose)
-//     Providers that are ONLY ever watched from the BiharRiverMapScreen widget subtree.
-//     In Riverpod 3.x, when a persistent Provider is watched exclusively from a widget
-//     that unmounts, the subscription is closed (listenerCount drops to 0) without
-//     going through the pause path.  However the element itself remains alive and its
-//     own upstream subscriptions (to mapViewModeProvider + mergedStationsProvider) are
-//     still registered.  When TickerMode then fires ConsumerStatefulElement._updateTickerMode
-//     it tries to resume those subscriptions, but biharDistrictRiskProvider's
-//     subscription to mapStationsProvider was never paused → count mismatch assertion.
+//     biharDistrictRiskProvider (autoDispose) was watching mapStationsProvider
+//     (autoDispose).  On a TickerMode change, Riverpod 3.x's
+//     ConsumerStatefulElement._updateTickerMode resumed the 2 expected
+//     ProviderContainer subscriptions to mapStationsProvider, but
+//     biharDistrictRiskProvider's provider→provider sub was also resumed
+//     during the same flush cycle → 3 resumes vs expected 2 → assertion crash.
 //
 //   FIX:
-//     Convert both providers to Provider.autoDispose.  An autoDispose provider is
-//     fully torn down (all upstream subscriptions cancelled) the moment its last
-//     listener disappears — no lingering element, no count mismatch.
-//     The map screen is a ConsumerWidget / ConsumerStatefulWidget so the providers
-//     are recreated on re-entry at negligible cost (pure synchronous computation).
+//     biharDistrictRiskProvider now watches mergedStationsProvider (persistent)
+//     and mapViewModeProvider (persistent) directly — no autoDispose chain.
+//     mapStationsProvider retains exactly 2 ProviderContainer listeners
+//     while the map screen is open, so TickerMode always sees count=2.
+//
+// v1.1 (14 Jun 2026) — Convert mapStationsProvider + biharDistrictRiskProvider
+//   to Provider.autoDispose to fix previous pausedActiveSubscriptionCount crash.
+//
+// v1.0: initial
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -33,7 +34,7 @@ import '../services/befiqr_cwc_service.dart';
 
 export 'cwc_provider.dart' show biharGeoJsonProvider;
 
-// ─── View-mode toggle ─────────────────────────────────────────────────────────
+// ─── View-mode toggle ───────────────────────────────────────────────────
 enum MapViewMode { bihar, national }
 
 class MapViewModeNotifier extends Notifier<MapViewMode> {
@@ -45,7 +46,7 @@ final mapViewModeProvider =
     NotifierProvider<MapViewModeNotifier, MapViewMode>(
         MapViewModeNotifier.new);
 
-// ─── Selected station (popup) ─────────────────────────────────────────────────
+// ─── Selected station (popup) ─────────────────────────────────────────────
 class SelectedStationNotifier extends Notifier<RiverStation?> {
   @override
   RiverStation? build() => null;
@@ -104,7 +105,7 @@ class SyncMetaNotifier extends Notifier<SyncMeta> {
 final mapSyncMetaProvider =
     NotifierProvider<SyncMetaNotifier, SyncMeta>(SyncMetaNotifier.new);
 
-// ─── CwcStation → RiverStation adapter ───────────────────────────────────────
+// ─── CwcStation → RiverStation adapter ───────────────────────────────────────────
 extension CwcStationAdapter on CwcStation {
   RiverStation toRiverStation() => RiverStation(
     city:    site,
@@ -122,7 +123,7 @@ extension CwcStationAdapter on CwcStation {
   );
 }
 
-// ─── Gauge-site → Bihar district lookup ──────────────────────────────────────
+// ─── Gauge-site → Bihar district lookup ──────────────────────────────────────────
 const Map<String, String> _kSiteToDistrict = {
   'ekmighat': 'darbhanga', 'kamtaul': 'darbhanga', 'sonbarsa': 'sitamarhi',
   'benibad': 'darbhanga', 'dheng bridge': 'muzaffarpur', 'dhengbridge': 'muzaffarpur',
@@ -166,23 +167,14 @@ String _districtFor(RiverStation s) {
   return norm;
 }
 
-// ─── Map station list ─────────────────────────────────────────────────────────
+// ─── Map station list ────────────────────────────────────────────────────────────
 //
-// v1.1: Provider.autoDispose — MUST be autoDispose.
-//   This provider watches mapViewModeProvider (a persistent NotifierProvider)
-//   AND mergedStationsProvider (a persistent Provider).  It is only ever
-//   watched from the BiharRiverMapScreen widget subtree.  When the map screen
-//   is popped, the widget unmounts and its subscription closes.  If the
-//   provider were persistent, Riverpod 3.x would keep the ProviderElement
-//   alive with dead upstream subscriptions, and a subsequent TickerMode change
-//   would fire _updateTickerMode → resume() on a subscription that was never
-//   paused → pausedActiveSubscriptionCount assertion crash.
-//
-//   autoDispose tears down the ProviderElement (and all its upstream subs)
-//   as soon as the last listener disappears — no lingering state, no crash.
+// autoDispose — only live while BiharRiverMapScreen is mounted.
+// Watches only PERSISTENT providers (mapViewModeProvider,
+// mergedStationsProvider) so there is no autoDispose→autoDispose chain.
 final mapStationsProvider = Provider.autoDispose<List<RiverStation>>((ref) {
-  final mode = ref.watch(mapViewModeProvider);
-  final all  = ref.watch(mergedStationsProvider);
+  final mode = ref.watch(mapViewModeProvider);      // persistent
+  final all  = ref.watch(mergedStationsProvider);   // persistent
 
   final filtered = mode == MapViewMode.bihar
       ? all.where((s) => s.state.toLowerCase().contains('bihar')).toList()
@@ -192,12 +184,30 @@ final mapStationsProvider = Provider.autoDispose<List<RiverStation>>((ref) {
     ..sort((a, b) => b.riskScore.compareTo(a.riskScore));
 });
 
-// ─── District risk map (polygon heatmap layer) ────────────────────────────────
+// ─── District risk map (polygon heatmap layer) ─────────────────────────────────
 //
-// v1.1: Provider.autoDispose — same reasoning as mapStationsProvider above.
-//   This provider only lives while the map screen is visible.
+// v1.2: NO LONGER watches mapStationsProvider (autoDispose).
+//
+// REASON: an autoDispose provider watching another autoDispose provider
+// creates a chained subscription that confuses Riverpod 3.x's
+// pausedActiveSubscriptionCount bookkeeping on TickerMode changes.
+// The fix is to replicate the filter logic here and watch only the two
+// PERSISTENT upstream providers (mergedStationsProvider, mapViewModeProvider)
+// that mapStationsProvider itself already watches.
+//
+// Result: mapStationsProvider now has exactly 2 ProviderContainer
+// subscriptions while the map screen is open, matching the expected count
+// on every _updateTickerMode call.
 final biharDistrictRiskProvider = Provider.autoDispose<Map<String, DangerClass>>((ref) {
-  final stations = ref.watch(mapStationsProvider);
+  // Watch persistent providers directly — NOT mapStationsProvider.
+  final mode     = ref.watch(mapViewModeProvider);    // persistent
+  final allMerged = ref.watch(mergedStationsProvider); // persistent
+
+  // Apply the same Bihar filter as mapStationsProvider
+  final stations = mode == MapViewMode.bihar
+      ? allMerged.where((s) => s.state.toLowerCase().contains('bihar')).toList()
+      : allMerged;
+
   final map = <String, DangerClass>{};
   for (final s in stations) {
     if (!s.state.toLowerCase().contains('bihar')) continue;
