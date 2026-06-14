@@ -1,4 +1,5 @@
 // lib/screens/dashboard_screen.dart
+// WIRING UPDATE: Quick Actions grid added — Phase 7-10 screens accessible from Home
 library;
 
 import 'dart:async';
@@ -16,6 +17,13 @@ import 'bihar_river_map_screen.dart';
 import 'sos_screen.dart';
 import 'weather_screen.dart';
 import 'news_feed_screen.dart';
+import 'ai_prediction_screen.dart';
+import 'incident_report_screen.dart';
+import 'crowd_report_feed_screen.dart';
+import 'evacuation_routes_screen.dart';
+import 'india_river_explorer_screen.dart';
+import 'rainfall_forecast_screen.dart';
+import 'community_screen.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -84,6 +92,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 delegate: SliverChildListDelegate([
                   _buildSummaryRow(context, t, fp, ap),
                   const SizedBox(height: 16),
+                  _buildQuickActions(context, t),
+                  const SizedBox(height: 16),
                   _buildAtRiskCities(context, t, fp),
                   const SizedBox(height: 16),
                   _buildLiveStations(context, t, fp),
@@ -93,6 +103,47 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           ],
         ),
       ),
+    );
+  }
+
+  // ── Quick Actions 2×4 Grid ──────────────────────────────────────────────────
+  Widget _buildQuickActions(BuildContext context, RiverColors t) {
+    const actions = [
+      _QA('AI Predictor',     Icons.auto_graph,             Color(0xFF7B2FF7), AiPredictionScreen.route),
+      _QA('Rainfall',         Icons.cloudy_snowing,         Color(0xFF00B0FF), RainfallForecastScreen.route),
+      _QA('River Map',        Icons.map_outlined,           Colors.blue,       BiharRiverMapScreen.route),
+      _QA('Evacuation',       Icons.directions_run,         Colors.deepOrange, EvacuationRoutesScreen.route),
+      _QA('Report',           Icons.report_problem_outlined,Colors.red,        IncidentReportScreen.route),
+      _QA('Crowd Feed',       Icons.dynamic_feed_outlined,  Colors.teal,       CrowdReportFeedScreen.route),
+      _QA('River Explorer',   Icons.water_outlined,         Color(0xFF00E5FF), IndiaRiverExplorerScreen.route),
+      _QA('Community',        Icons.people_outline,         Colors.green,      CommunityScreen.route),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Quick Actions',
+            style: TextStyle(
+                color: t.textPrimary,
+                fontWeight: FontWeight.w700,
+                fontSize: 14)),
+        const SizedBox(height: 10),
+        GridView.count(
+          crossAxisCount: 4,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: 8,
+          mainAxisSpacing: 8,
+          childAspectRatio: 0.85,
+          children: actions
+              .map((a) => _QuickActionTile(
+                    qa: a,
+                    theme: t,
+                    onTap: () => Navigator.pushNamed(context, a.route),
+                  ))
+              .toList(),
+        ),
+      ],
     );
   }
 
@@ -160,7 +211,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 : city.riskLevel == 'HIGH'
                     ? t.riverWarning
                     : t.riverNormal;
-            // FloodData.city is the display name (was: cityName / stationId)
             return ListTile(
               dense: true,
               title: Text(city.city,
@@ -197,7 +247,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                     fontWeight: FontWeight.w700,
                     fontSize: 14)),
           ),
-          // FloodData.city is the station display name (was: s.stationId)
           ...stations.map((s) => ListTile(
                 dense: true,
                 title: Text(s.city,
@@ -205,6 +254,59 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 trailing: Icon(Icons.circle,
                     color: t.accent, size: 8),
               )),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Quick Action model & tile ──────────────────────────────────────────────
+
+class _QA {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final String route;
+  const _QA(this.label, this.icon, this.color, this.route);
+}
+
+class _QuickActionTile extends StatelessWidget {
+  final _QA qa;
+  final RiverColors theme;
+  final VoidCallback onTap;
+  const _QuickActionTile(
+      {required this.qa, required this.theme, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = theme;
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: qa.color.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                  color: qa.color.withOpacity(0.5), width: 1),
+            ),
+            child: Icon(qa.icon, color: qa.color, size: 24),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            qa.label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            style: TextStyle(
+                color: t.textPrimary,
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                height: 1.2),
+          ),
         ],
       ),
     );

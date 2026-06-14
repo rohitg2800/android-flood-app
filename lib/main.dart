@@ -42,6 +42,12 @@ import 'screens/notification_settings_screen.dart';
 import 'screens/incident_report_screen.dart';
 import 'screens/crowd_report_feed_screen.dart';
 import 'screens/evacuation_routes_screen.dart';
+// ── Phase 9 ──────────────────────────────────────────────────────────────────
+import 'screens/ai_prediction_screen.dart';
+// ── Phase 10 ─────────────────────────────────────────────────────────────────
+import 'screens/india_river_explorer_screen.dart';
+// ── Analytics / Forecast ─────────────────────────────────────────────────────
+import 'screens/rainfall_forecast_screen.dart';
 import 'services/befiqr_cwc_service.dart';
 import 'services/notification_channel_service.dart';
 import 'services/fcm_topic_manager.dart';
@@ -243,15 +249,24 @@ class FloodWatchApp extends ConsumerWidget {
             return _fade(const ExportScreen());
           case NotificationSettingsScreen.route:
             return _fade(const NotificationSettingsScreen());
-          // ── Phase 7 ──────────────────────────────────────────────────────
+          // ── Phase 7 ────────────────────────────────────────────────────
           case IncidentReportScreen.route:
             return _fade(const IncidentReportScreen());
-          // ── Phase 8 ──────────────────────────────────────────────────────
+          // ── Phase 8 ────────────────────────────────────────────────────
           case CrowdReportFeedScreen.route:
             return _fade(const CrowdReportFeedScreen());
           case EvacuationRoutesScreen.route:
             return _fade(const EvacuationRoutesScreen());
-          // ─────────────────────────────────────────────────────────────────
+          // ── Phase 9 ────────────────────────────────────────────────────
+          case AiPredictionScreen.route:
+            return _fade(const AiPredictionScreen());
+          // ── Phase 10 ───────────────────────────────────────────────────
+          case IndiaRiverExplorerScreen.route:
+            return _fade(const IndiaRiverExplorerScreen());
+          // ── Analytics / Forecast ────────────────────────────────────────
+          case RainfallForecastScreen.route:
+            return _fade(const RainfallForecastScreen());
+          // ── Argument-based routes ───────────────────────────────────────
           case '/city_detail':
             final cityName = settings.arguments as String? ?? '';
             return _fade(CityDetailScreen(cityName: cityName));
