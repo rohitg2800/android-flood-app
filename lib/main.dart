@@ -39,6 +39,7 @@ import 'screens/news_feed_screen.dart';
 import 'screens/map_screen.dart';
 import 'screens/export_screen.dart';
 import 'screens/notification_settings_screen.dart';
+import 'screens/incident_report_screen.dart';
 import 'services/befiqr_cwc_service.dart';
 import 'services/notification_channel_service.dart';
 import 'services/fcm_topic_manager.dart';
@@ -116,10 +117,7 @@ Future<void> main() async {
   );
 
   // ── DEFERRED PATH: runs after the first frame is on screen ───────────────
-  // addPostFrameCallback fires once the engine has committed the first raster
-  // frame — UI is visible and no jank risk from these heavier operations.
   WidgetsBinding.instance.addPostFrameCallback((_) async {
-    // Local notifications — channel creation is disk/IPC, not user-visible yet
     const androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
@@ -132,18 +130,13 @@ Future<void> main() async {
       onDidReceiveNotificationResponse: _onNotificationTap,
     );
 
-    // Notification channels & FCM topics — network calls, fully deferrable
     unawaited(NotificationChannelService.instance.init());
     unawaited(FcmTopicManager.instance.init());
-
-    // RTDAS threshold sync — background network, never blocks UI
     unawaited(RtdasThresholdSyncService.instance.start());
 
-    // Data engine & alert controller
     DataFetchEngine.instance.start();
     ActiveAlertController.instance.start();
 
-    // Alert → notification bridge
     final Stream<FloodAlert> alertStream = DataFetchEngine.instance.alertStream
         .map((snapshot) => AlertEngine.instance.evaluate(snapshot))
         .expand((alerts) => alerts);
@@ -257,6 +250,10 @@ class FloodWatchApp extends ConsumerWidget {
             return _fade(const ExportScreen());
           case NotificationSettingsScreen.route:
             return _fade(const NotificationSettingsScreen());
+          // ── Phase 7 ──────────────────────────────────────────────────────
+          case IncidentReportScreen.route:
+            return _fade(const IncidentReportScreen());
+          // ─────────────────────────────────────────────────────────────────
           case '/city_detail':
             final cityName = settings.arguments as String? ?? '';
             return _fade(CityDetailScreen(cityName: cityName));
