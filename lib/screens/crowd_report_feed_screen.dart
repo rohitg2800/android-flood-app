@@ -1,5 +1,6 @@
 // lib/screens/crowd_report_feed_screen.dart
 // OpsFlood — Phase 8: Crowd Report Feed (reads incident_queue_v1 from SharedPreferences)
+// v8.7-fix: Wrap AppBar title Row in Flexible to prevent 1.5px right overflow.
 
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -56,7 +57,6 @@ class _CrowdReportFeedScreenState extends State<CrowdReportFeedScreen> {
   Future<void> _deleteReport(int index) async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getStringList(_queueKey) ?? [];
-    // Rebuild the queue without deleted item (match by createdAt)
     final target = _reports[index];
     raw.removeWhere((s) {
       try {
@@ -93,12 +93,19 @@ class _CrowdReportFeedScreenState extends State<CrowdReportFeedScreen> {
       appBar: AppBar(
         backgroundColor: t.navBg,
         foregroundColor: t.textPrimary,
+        // v8.7-fix: title uses Row inside Flexible so it never exceeds _AppBarTitleBox width.
         title: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(Icons.feed, color: Colors.deepOrange, size: 20),
-            const SizedBox(width: 8),
-            const Text('Community Reports'),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
+            Flexible(
+              child: const Text(
+                'Community Reports',
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 6),
             if (!_loading)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
@@ -173,8 +180,6 @@ class _CrowdReportFeedScreenState extends State<CrowdReportFeedScreen> {
     );
   }
 
-  // ── Filter bar ──────────────────────────────────────────────────────────────
-
   Widget _buildFilterBar(RiverColors t) {
     return Container(
       color: t.navBg,
@@ -183,7 +188,6 @@ class _CrowdReportFeedScreenState extends State<CrowdReportFeedScreen> {
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
-            // District filter
             _FilterChip(
               label: _filterDistrict,
               icon: Icons.location_on_outlined,
@@ -191,7 +195,6 @@ class _CrowdReportFeedScreenState extends State<CrowdReportFeedScreen> {
               onTap: () => _showDistrictPicker(t),
             ),
             const SizedBox(width: 8),
-            // Type filter
             _FilterChip(
               label: _filterType?.label ?? 'All Types',
               icon: Icons.filter_list,
@@ -318,8 +321,6 @@ class _CrowdReportFeedScreenState extends State<CrowdReportFeedScreen> {
     );
   }
 
-  // ── Empty state ─────────────────────────────────────────────────────────────
-
   Widget _buildEmpty(RiverColors t) {
     return Center(
       child: Padding(
@@ -386,7 +387,6 @@ class _ReportCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Header row ──
             Row(
               children: [
                 Container(
@@ -421,7 +421,6 @@ class _ReportCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                // Severity badge
                 Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 8, vertical: 3),
@@ -440,7 +439,6 @@ class _ReportCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 4),
-                // Delete
                 IconButton(
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(
@@ -477,7 +475,6 @@ class _ReportCard extends StatelessWidget {
                 ),
               ],
             ),
-            // ── Location row ──
             if (draft.district.isNotEmpty) ...
               [
                 const SizedBox(height: 8),
@@ -498,7 +495,6 @@ class _ReportCard extends StatelessWidget {
                   ],
                 ),
               ],
-            // ── Description ──
             if (draft.description.isNotEmpty) ...
               [
                 const SizedBox(height: 8),
@@ -512,22 +508,19 @@ class _ReportCard extends StatelessWidget {
                       height: 1.4),
                 ),
               ],
-            // ── Footer row ──
             const SizedBox(height: 10),
             Row(
               children: [
-                // GPS badge
                 if (draft.lat != null) ...
                   [
-                    Icon(Icons.my_location,
+                    const Icon(Icons.my_location,
                         size: 12, color: Colors.green),
                     const SizedBox(width: 4),
-                    Text('GPS',
+                    const Text('GPS',
                         style: TextStyle(
                             color: Colors.green, fontSize: 11)),
                     const SizedBox(width: 12),
                   ],
-                // Photos badge
                 if (draft.photoCount > 0) ...
                   [
                     Icon(Icons.photo_outlined,
@@ -538,7 +531,6 @@ class _ReportCard extends StatelessWidget {
                             color: t.textSecondary, fontSize: 11)),
                     const SizedBox(width: 12),
                   ],
-                // Reporter
                 if (draft.reporterName.isNotEmpty) ...
                   [
                     Icon(Icons.person_outline,
@@ -559,7 +551,6 @@ class _ReportCard extends StatelessWidget {
                         style: TextStyle(
                             color: t.textSecondary, fontSize: 11)),
                   ),
-                // Pending badge
                 Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 6, vertical: 2),
