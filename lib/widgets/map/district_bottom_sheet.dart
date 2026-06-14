@@ -116,9 +116,9 @@ class DistrictBottomSheet extends StatelessWidget {
                         Text(
                           stations.isEmpty
                               ? 'No stations'
-                              : '${stations.length} station${stations.length == 1 ? "" : "s"}'  
-                                '${aboveDanger > 0 ? "  •  $aboveDanger above danger" : ""}'  
-                                '${aboveWarn > 0 && aboveDanger == 0 ? "  •  $aboveWarn above warning" : ""}',
+                              : '${stations.length} station${stations.length == 1 ? "" : "s"}'
+                                '${aboveDanger > 0 ? "  •  $aboveDanger above danger" : "}'
+                                '${aboveWarn > 0 && aboveDanger == 0 ? "  •  $aboveWarn above warning" : "}',
                           style: const TextStyle(
                               color: AppPalette.textGrey, fontSize: 12),
                         ),
@@ -190,9 +190,16 @@ class _StationMiniCard extends StatelessWidget {
     final sev   = DistrictBottomSheet._sev(station);
     final color = DistrictBottomSheet._sevColor(sev);
     final pct   = (station.progressPct * 100).clamp(0, 100).toStringAsFixed(0);
-    final updatedStr = station.lastUpdated != null
-        ? timeago.format(station.lastUpdated!)
-        : '—';
+
+    // FIX: station.lastUpdated is String? — parse to DateTime before passing
+    // to timeago.format which expects DateTime.
+    String updatedStr = '—';
+    if (station.lastUpdated != null) {
+      final parsed = DateTime.tryParse(station.lastUpdated!);
+      if (parsed != null) {
+        updatedStr = timeago.format(parsed);
+      }
+    }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),

@@ -87,7 +87,9 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen>
                 delegate: SliverChildBuilderDelegate(
                   (ctx, i) => Padding(
                     padding: const EdgeInsets.only(bottom: 10),
-                    child: _AlertCard(alert: items[i]),
+                    // FIX: OpsDepthCard takes only alert: and optional onTap:
+                    // There is no elevation: / OpsDepthLevel enum on OpsDepthCard.
+                    child: OpsDepthCard(alert: items[i]),
                   ),
                   childCount: items.length,
                 ),
@@ -119,111 +121,6 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen>
                 color: active ? color : RiverColors.of(ctx).textSecondary,
                 fontSize: 11,
                 fontWeight: FontWeight.w700)),
-      ),
-    );
-  }
-}
-
-// ── Alert card ───────────────────────────────────────────────────────────────
-
-class _AlertCard extends StatelessWidget {
-  const _AlertCard({required this.alert});
-  final FloodAlert alert;
-
-  Color _severityColor(RiverColors t) {
-    switch (alert.severity) {
-      case AlertSeverity.emergency:
-      case AlertSeverity.critical:
-        return t.riverDanger;
-      case AlertSeverity.warning:
-        return t.riverWarning;
-      case AlertSeverity.info:
-        return t.riverNormal;
-    }
-  }
-
-  OpsDepthLevel _elevFromSeverity(AlertSeverity s) {
-    switch (s) {
-      case AlertSeverity.emergency:
-      case AlertSeverity.critical:
-        return OpsDepthLevel.critical;
-      case AlertSeverity.warning:
-        return OpsDepthLevel.high;
-      case AlertSeverity.info:
-        return OpsDepthLevel.mid;
-    }
-  }
-
-  double get _progress {
-    if (alert.thresholdLevel <= 0) return 0;
-    return (alert.exceedancePct / 100).clamp(0.0, 1.0);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final t     = RiverColors.of(context);
-    final color = _severityColor(t);
-
-    return OpsDepthCard(
-      elevation: _elevFromSeverity(alert.severity),
-      borderColor: color,
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(alert.type.icon,
-                  style: const TextStyle(fontSize: 16)),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  alert.title,
-                  style: TextStyle(
-                      color: t.textPrimary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  alert.severity.label,
-                  style: TextStyle(
-                      color: color,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            alert.body,
-            style: TextStyle(color: t.textSecondary, fontSize: 12),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 10),
-          LinearProgressIndicator(
-            value: _progress,
-            backgroundColor: t.cardBgElevated,
-            valueColor: AlwaysStoppedAnimation(color),
-            borderRadius: BorderRadius.circular(4),
-            minHeight: 6,
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '${alert.currentLevel.toStringAsFixed(2)} m  /  threshold at ${alert.thresholdLevel.toStringAsFixed(2)} m',
-            style: TextStyle(color: t.textSecondary, fontSize: 12),
-          ),
-        ],
       ),
     );
   }

@@ -92,10 +92,11 @@ class _MainShellState extends ConsumerState<MainShell> {
           showCriticalAlertOverlay(
             context,
             stationName:  alert.title,
-            riverName:    alert.riverName ?? 'River',
+            // FIX: FloodAlert has .river (not .riverName)
+            riverName:    alert.river,
             currentLevel: alert.currentLevel,
             dangerLevel:  alert.thresholdLevel,
-            district:     alert.district ?? '',
+            district:     alert.district,
             onViewMap:    () => setState(() => _index = 3),
             onEvacuate:   () => setState(() => _index = 2),
           );

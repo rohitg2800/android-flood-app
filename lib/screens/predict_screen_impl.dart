@@ -1,5 +1,5 @@
 // lib/screens/predict_screen_impl.dart
-// EQUINOX-BR05 — LSTM Flood Prediction Screen  (v1.2 — Phase 2: ActionAdviceCard)
+// EQUINOX-BR05 — LSTM Flood Prediction Screen  (v1.3 — Riverpod 3.x compat)
 //
 // FloodPrediction fields used here (from prediction_provider.dart):
 //   • confidencePct  (not 'confidence')
@@ -7,6 +7,9 @@
 //   • riskScore, modelVersion  (unchanged)
 //   • no updatedAt field — omitted from model meta
 // Provider: predictionProvider (FutureProvider.family<FloodPrediction, String>)
+//
+// FIX v1.3: AsyncValue.valueOrNull was removed in riverpod 3.x.
+//   Use .value instead (returns null when loading/error, the value when data).
 library;
 
 import 'dart:math' as math;
@@ -99,7 +102,9 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
         ? null
         : ref.watch(predictionProvider(station.station));
 
-    final prediction = predAsync?.valueOrNull;
+    // FIX: Riverpod 3.x removed valueOrNull — use .value instead.
+    // AsyncValue.value returns null when loading or error, and T when data.
+    final prediction = predAsync?.value;
 
     return Scaffold(
       backgroundColor: t.scaffoldBg,
@@ -886,7 +891,6 @@ class _ModelMetaCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          // confidencePct is the correct field name (not 'confidence')
           _metaRow('Confidence',
               '${prediction.confidencePct.toStringAsFixed(0)}%'),
           _metaRow('Risk Score',

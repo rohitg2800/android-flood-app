@@ -7,7 +7,7 @@
 //   • animated pulse border when above danger
 //   • tap  → opens DistrictBottomSheet with all stations in that district
 //
-// Drop-in usage inside BiharRiverMapScreen’s Stack:
+// Drop-in usage inside BiharRiverMapScreen's Stack:
 // ```dart
 // BiharDistrictHeatmap(
 //   stations: mergedStations,
@@ -57,7 +57,6 @@ const List<_DistrictMeta> _kDistricts = [
   _DistrictMeta('Aurangabad',     24.7526, 84.3742),
   _DistrictMeta('Arwal',          25.2421, 84.6824),
   _DistrictMeta('Jehanabad',      25.2118, 84.9964),
-  _DistrictMeta('Patna',          25.5941, 85.1376),
   _DistrictMeta('Rohtas',         24.9867, 83.8048),
   _DistrictMeta('Kaimur',         25.0459, 83.5993),
   _DistrictMeta('Buxar',          25.5645, 83.9828),
@@ -89,10 +88,10 @@ AlertSeverity _worstSeverity(List<RiverStation> stations) {
 }
 
 AlertSeverity _stationSeverity(RiverStation s) {
-  if (s.hfl > 0 && s.current >= s.hfl)     return AlertSeverity.emergency;
-  if (s.danger > 0 && s.current >= s.danger) return AlertSeverity.emergency;
+  if (s.hfl > 0 && s.current >= s.hfl)        return AlertSeverity.emergency;
+  if (s.danger > 0 && s.current >= s.danger)   return AlertSeverity.emergency;
   if (s.warning > 0 && s.current >= s.warning) return AlertSeverity.critical;
-  if (s.progressPct >= 0.75)               return AlertSeverity.warning;
+  if (s.progressPct >= 0.75)                   return AlertSeverity.warning;
   return AlertSeverity.info;
 }
 
@@ -163,7 +162,8 @@ class _BiharDistrictHeatmapState extends State<BiharDistrictHeatmap>
   void _rebuildIndex() {
     _byDistrict = {};
     for (final s in widget.stations) {
-      final key = s.city.isNotEmpty ? s.city : s.district ?? s.river;
+      // FIX: RiverStation has no .district field — use .city as the bucket key
+      final key = s.city.isNotEmpty ? s.city : s.river;
       _byDistrict.putIfAbsent(key, () => []).add(s);
     }
   }
@@ -175,12 +175,10 @@ class _BiharDistrictHeatmapState extends State<BiharDistrictHeatmap>
   }
 
   List<RiverStation> _stationsFor(String districtName) {
-    // fuzzy match: district name may differ slightly from station city
+    // fuzzy match against city (the closest field to district on RiverStation)
     final lower = districtName.toLowerCase();
     return widget.stations
-        .where((s) =>
-            s.city.toLowerCase().contains(lower) ||
-            (s.district?.toLowerCase().contains(lower) ?? false))
+        .where((s) => s.city.toLowerCase().contains(lower))
         .toList();
   }
 

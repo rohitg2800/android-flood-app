@@ -1,4 +1,4 @@
-// lib/screens/river_monitor_screen.dart  (v4.1 — Phase 2: RiverGauge3D)
+// lib/screens/river_monitor_screen.dart  (v4.2 — Phase 2: RiverGauge3D)
 // Bihar Flood Ops — River Monitor Screen
 
 import 'dart:math' as math;
@@ -252,6 +252,10 @@ class _RiverCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final riskColor = _riskToColor(data.riskLevel, t);
 
+    // FIX: RiverGauge3D only accepts progressPct (0–100), height, width, animate.
+    // It does NOT have level/dangerLevel/warningLevel/size/label parameters.
+    final fillPct = data.fillPercent ?? 0.0;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Td3Card(
@@ -263,11 +267,9 @@ class _RiverCard extends StatelessWidget {
           children: [
             // ── LEFT: 3D Cylinder Gauge ─────────────────────────────
             RiverGauge3D(
-              level:        data.currentLevel  ?? 0.0,
-              dangerLevel:  data.dangerLevel   ?? 10.0,
-              warningLevel: data.warningLevel  ?? 8.0,
-              size: 72,
-              label: data.riverName,
+              progressPct: fillPct,
+              height: 72,
+              width:  24,
             ),
             const SizedBox(width: 14),
 
@@ -296,7 +298,7 @@ class _RiverCard extends StatelessWidget {
                     ],
                   ),
 
-                  if ((data.riverName ?? '').isNotEmpty) ...[  
+                  if ((data.riverName ?? '').isNotEmpty) ...[
                     const SizedBox(height: 2),
                     Text(
                       data.riverName!,
@@ -336,7 +338,7 @@ class _RiverCard extends StatelessWidget {
                               color: t.textSecondary, fontSize: 10)),
                       const Spacer(),
                       Text(
-                        '${(data.fillPercent ?? 0.0).toStringAsFixed(1)}%',
+                        '${fillPct.toStringAsFixed(1)}%',
                         style: TextStyle(
                             color: riskColor,
                             fontSize: 10,
@@ -346,8 +348,7 @@ class _RiverCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Td3ProgressBar(
-                    value: ((data.fillPercent ?? 0.0) / 100)
-                        .clamp(0.0, 1.0),
+                    value: (fillPct / 100).clamp(0.0, 1.0),
                     fillColor: riskColor,
                     height: 5,
                   ),
