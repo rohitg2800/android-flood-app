@@ -1,12 +1,6 @@
 // lib/providers/sos_provider.dart
 // Phase 5 — SOS State Management
-//
-// SosPhase tracks the lifecycle:
-//   idle       → user has not started SOS
-//   confirming → hold-guard is counting down (0–3 s)
-//   sending    → awaiting GPS + SMS/call launch
-//   sent       → successfully dispatched
-//   failed     → SosService returned SosFailure
+// fix: Riverpod 3 uses Notifier<T> + NotifierProvider, not StateNotifier.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/sos_service.dart';
@@ -40,10 +34,12 @@ class SosState {
       );
 }
 
-class SosNotifier extends StateNotifier<SosState> {
-  SosNotifier() : super(const SosState());
-
+// Riverpod 3: extend Notifier<T> and expose state via build()
+class SosNotifier extends Notifier<SosState> {
   final _service = SosService();
+
+  @override
+  SosState build() => const SosState();
 
   void startConfirming() {
     if (state.phase != SosPhase.idle) return;
@@ -77,10 +73,7 @@ class SosNotifier extends StateNotifier<SosState> {
 
   void reset() => state = const SosState();
 
-  Future<void> callContact(EmergencyContact c) =>
-      _service.call(c);
+  Future<void> callContact(EmergencyContact c) => _service.call(c);
 }
 
-final sosProvider =
-    StateNotifierProvider<SosNotifier, SosState>(
-        (_) => SosNotifier());
+final sosProvider = NotifierProvider<SosNotifier, SosState>(SosNotifier.new);

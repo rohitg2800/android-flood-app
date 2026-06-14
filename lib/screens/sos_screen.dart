@@ -1,13 +1,6 @@
 // lib/screens/sos_screen.dart
 // Phase 5 — SOS Emergency Screen (full upgrade)
-//
-// Features:
-//   • 3-second hold-to-confirm button with arc progress ring
-//   • Animated success / failure state
-//   • GPS coordinates shown after send
-//   • Scrollable emergency contacts with direct-call chips
-//   • Offline connectivity banner
-//   • State persisted via sosProvider (survives nav away and back)
+// fix: RiverColorScheme → RiverColors, .valueOrNull → .value
 library;
 
 import 'dart:async';
@@ -40,9 +33,7 @@ class SosScreen extends ConsumerStatefulWidget {
 
 class _SosScreenState extends ConsumerState<SosScreen>
     with TickerProviderStateMixin {
-  // Outer ambient pulse (always runs while idle/confirming)
   late final AnimationController _pulse;
-  // Inner arc fill for the 3-second hold guard
   late final AnimationController _holdArc;
 
   Timer? _holdTimer;
@@ -70,7 +61,6 @@ class _SosScreenState extends ConsumerState<SosScreen>
     super.dispose();
   }
 
-  // ── Hold gesture handlers ─────────────────────────────────────────────────
   void _onHoldStart() {
     final phase = ref.read(sosProvider).phase;
     if (phase != SosPhase.idle) return;
@@ -94,14 +84,13 @@ class _SosScreenState extends ConsumerState<SosScreen>
     _pulse.stop();
   }
 
-  // ── Build ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final t       = RiverColors.of(context);
-    final state   = ref.watch(sosProvider);
-    final online  = ref.watch(_connectivityProvider).valueOrNull ?? true;
+    final t      = RiverColors.of(context);
+    final state  = ref.watch(sosProvider);
+    // fix: Riverpod 3 removed .valueOrNull — use .value (null during loading)
+    final online = ref.watch(_connectivityProvider).value ?? true;
 
-    // Restart pulse when state resets to idle
     if (state.phase == SosPhase.idle && !_pulse.isAnimating) {
       _pulse.repeat(reverse: true);
     }
@@ -114,7 +103,8 @@ class _SosScreenState extends ConsumerState<SosScreen>
         backgroundColor: t.navBg,
         iconTheme: IconThemeData(color: t.riverDanger),
         actions: [
-          if (state.phase == SosPhase.sent || state.phase == SosPhase.failed)
+          if (state.phase == SosPhase.sent ||
+              state.phase == SosPhase.failed)
             TextButton(
               onPressed: () {
                 ref.read(sosProvider.notifier).reset();
@@ -128,7 +118,6 @@ class _SosScreenState extends ConsumerState<SosScreen>
       ),
       body: Column(
         children: [
-          // Offline banner
           if (!online)
             Material(
               color: Colors.orange.shade700,
@@ -151,41 +140,31 @@ class _SosScreenState extends ConsumerState<SosScreen>
                 ),
               ),
             ),
-
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
               child: Column(
                 children: [
-                  // ── SOS Button ──────────────────────────────────────────
                   _SosButton(
-                    pulse:   _pulse,
-                    holdArc: _holdArc,
-                    phase:   state.phase,
+                    pulse:       _pulse,
+                    holdArc:     _holdArc,
+                    phase:       state.phase,
                     onHoldStart: _onHoldStart,
                     onHoldEnd:   _onHoldEnd,
                   ),
                   const SizedBox(height: 10),
-
-                  // Hold instruction label
                   AnimatedOpacity(
                     opacity: state.phase == SosPhase.idle ? 1 : 0,
                     duration: const Duration(milliseconds: 300),
                     child: Text(
                       'Hold for 3 seconds to send SOS',
                       style: TextStyle(
-                          color: t.textSecondary,
-                          fontSize: 13),
+                          color: t.textSecondary, fontSize: 13),
                     ),
                   ),
                   const SizedBox(height: 24),
-
-                  // ── Status card (sent / failed / sending) ──────────────
                   _StatusCard(state: state),
-
                   const SizedBox(height: 28),
-
-                  // ── Emergency Contacts ─────────────────────────────────
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
@@ -198,12 +177,8 @@ class _SosScreenState extends ConsumerState<SosScreen>
                   ),
                   const SizedBox(height: 10),
                   ...kEmergencyContacts.map(
-                    (c) => _ContactCard(contact: c),
-                  ),
-
+                      (c) => _ContactCard(contact: c)),
                   const SizedBox(height: 24),
-
-                  // ── Info rows ──────────────────────────────────────────
                   _InfoRow(
                     icon:  Icons.warning_amber_rounded,
                     color: t.riverDanger,
@@ -229,9 +204,7 @@ class _SosScreenState extends ConsumerState<SosScreen>
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Hold-to-confirm SOS button with animated arc ring
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Hold-to-confirm SOS button ─────────────────────────────────────────────────────
 class _SosButton extends StatelessWidget {
   final AnimationController pulse;
   final AnimationController holdArc;
@@ -249,60 +222,55 @@ class _SosButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = RiverColors.of(context);
+    final t        = RiverColors.of(context);
     final isActive = phase == SosPhase.idle || phase == SosPhase.confirming;
 
     return GestureDetector(
-      onLongPressStart: isActive ? (_) => onHoldStart() : null,
-      onLongPressEnd:   isActive ? (_) => onHoldEnd()   : null,
-      onLongPressCancel: isActive ? onHoldEnd           : null,
+      onLongPressStart:  isActive ? (_) => onHoldStart() : null,
+      onLongPressEnd:    isActive ? (_) => onHoldEnd()   : null,
+      onLongPressCancel: isActive ? onHoldEnd            : null,
       child: SizedBox(
-        width: 180,
+        width:  180,
         height: 180,
         child: AnimatedBuilder(
           animation: Listenable.merge([pulse, holdArc]),
-          builder: (_, __) {
-            final pulseVal = pulse.value;
-            final arcVal   = holdArc.value;
-
-            return CustomPaint(
-              painter: _SosArcPainter(
-                arcProgress:  arcVal,
-                dangerColor:  t.riverDanger,
-                accentColor:  t.accent,
-                phase:        phase,
+          builder: (_, __) => CustomPaint(
+            painter: _SosArcPainter(
+              arcProgress: holdArc.value,
+              dangerColor: t.riverDanger,
+              phase:       phase,
+            ),
+            child: Container(
+              margin: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(colors: [
+                  t.riverDanger.withValues(
+                      alpha: phase == SosPhase.sent
+                          ? 0.10
+                          : 0.30 * pulse.value),
+                  t.riverDanger.withValues(
+                      alpha: phase == SosPhase.sent
+                          ? 0.04
+                          : 0.08 * pulse.value),
+                ]),
+                border: Border.all(
+                    color: t.riverDanger.withValues(alpha: 0.55),
+                    width: 2),
               ),
-              child: Container(
-                margin: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(colors: [
-                    t.riverDanger.withValues(
-                        alpha: phase == SosPhase.sent
-                            ? 0.10
-                            : 0.30 * pulseVal),
-                    t.riverDanger.withValues(
-                        alpha: phase == SosPhase.sent
-                            ? 0.04
-                            : 0.08 * pulseVal),
-                  ]),
-                  border: Border.all(
-                      color: t.riverDanger.withValues(alpha: 0.55),
-                      width: 2),
-                ),
-                child: _ButtonContent(phase: phase, t: t),
-              ),
-            );
-          },
+              child: _ButtonContent(phase: phase, t: t),
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
+// fix: pass RiverColors (the actual class), not the phantom RiverColorScheme
 class _ButtonContent extends StatelessWidget {
-  final SosPhase phase;
-  final RiverColorScheme t;
+  final SosPhase    phase;
+  final RiverColors t;          // ← correct type
   const _ButtonContent({required this.phase, required this.t});
 
   @override
@@ -330,7 +298,8 @@ class _ButtonContent extends StatelessWidget {
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_rounded, color: t.riverDanger, size: 44),
+            Icon(Icons.error_rounded,
+                color: t.riverDanger, size: 44),
             const SizedBox(height: 4),
             Text('FAILED',
                 style: TextStyle(
@@ -358,38 +327,28 @@ class _ButtonContent extends StatelessWidget {
   }
 }
 
-// Arc progress painter
 class _SosArcPainter extends CustomPainter {
-  final double arcProgress;
-  final Color  dangerColor;
-  final Color  accentColor;
+  final double   arcProgress;
+  final Color    dangerColor;
   final SosPhase phase;
 
   _SosArcPainter({
     required this.arcProgress,
     required this.dangerColor,
-    required this.accentColor,
     required this.phase,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (arcProgress <= 0 && phase != SosPhase.confirming) return;
-
-    final rect   = Rect.fromLTWH(6, 6, size.width - 12, size.height - 12);
-    final paint  = Paint()
+    if (arcProgress <= 0) return;
+    final rect  = Rect.fromLTWH(6, 6, size.width - 12, size.height - 12);
+    final paint = Paint()
       ..color       = dangerColor
       ..style       = PaintingStyle.stroke
       ..strokeWidth = 5
       ..strokeCap   = StrokeCap.round;
-
     canvas.drawArc(
-      rect,
-      -math.pi / 2,
-      2 * math.pi * arcProgress,
-      false,
-      paint,
-    );
+      rect, -math.pi / 2, 2 * math.pi * arcProgress, false, paint);
   }
 
   @override
@@ -397,9 +356,7 @@ class _SosArcPainter extends CustomPainter {
       old.arcProgress != arcProgress || old.phase != phase;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Status card shown after dispatch
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Status card ────────────────────────────────────────────────────────────────────
 class _StatusCard extends ConsumerWidget {
   final SosState state;
   const _StatusCard({required this.state});
@@ -426,7 +383,9 @@ class _StatusCard extends ConsumerWidget {
               const SizedBox(height: 4),
               Text(
                 state.lat != null
-                    ? 'Location shared: ${state.lat!.toStringAsFixed(5)}, ${state.lng!.toStringAsFixed(5)}'
+                    ? 'Location shared: '
+                      '${state.lat!.toStringAsFixed(5)}, '
+                      '${state.lng!.toStringAsFixed(5)}'
                     : 'Emergency services notified. Location unavailable.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
@@ -455,7 +414,8 @@ class _StatusCard extends ConsumerWidget {
                       fontSize: 16)),
               const SizedBox(height: 4),
               Text(
-                state.errorMessage ?? 'Unknown error. Call 011-24363260 directly.',
+                state.errorMessage ??
+                    'Unknown error. Call 011-24363260 directly.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                     color: t.textSecondary, fontSize: 13),
@@ -470,9 +430,7 @@ class _StatusCard extends ConsumerWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Emergency contact card with call button
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Emergency contact card ────────────────────────────────────────────────────────
 class _ContactCard extends ConsumerWidget {
   final EmergencyContact contact;
   const _ContactCard({required this.contact});
@@ -482,7 +440,8 @@ class _ContactCard extends ConsumerWidget {
     final t = RiverColors.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding:
+          const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: t.cardBg,
         borderRadius: BorderRadius.circular(12),
@@ -522,8 +481,8 @@ class _ContactCard extends ConsumerWidget {
             style: FilledButton.styleFrom(
               backgroundColor: t.riverDanger,
               foregroundColor: Colors.white,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 14, vertical: 8),
               textStyle: const TextStyle(
                   fontSize: 12, fontWeight: FontWeight.w700),
               shape: RoundedRectangleBorder(
@@ -536,9 +495,7 @@ class _ContactCard extends ConsumerWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Info row
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Info row ────────────────────────────────────────────────────────────────────────
 class _InfoRow extends StatelessWidget {
   const _InfoRow({
     required this.icon,
@@ -560,8 +517,8 @@ class _InfoRow extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(text,
-                style:
-                    TextStyle(color: t.textSecondary, fontSize: 13)),
+                style: TextStyle(
+                    color: t.textSecondary, fontSize: 13)),
           ),
         ],
       ),
