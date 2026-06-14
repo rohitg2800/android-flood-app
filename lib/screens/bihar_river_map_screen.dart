@@ -1,18 +1,15 @@
 // lib/screens/bihar_river_map_screen.dart
-// OpsFlood — BiharRiverMapScreen v5.6
+// OpsFlood — BiharRiverMapScreen v5.6.1
+//
+// v5.6.1 (14 Jun 2026 — analyze fixes):
+//   • Remove bogus merged_stations_provider.dart import.
+//   • Import real_time_river_provider.dart for mergedStationsProvider.
+//   • Pass mergedStations List<RiverStation> to BiharDistrictHeatmap.
+//   • Fix curly_braces_in_flow_control_structures lint in _resolveMerged.
 //
 // v5.6 (14 Jun 2026 — Phase 4B wire):
-//   • Adds BiharDistrictHeatmap as a layer in FlutterMap children
-//     (renders behind station pins, on top of tile/precip layers).
-//   • Adds _showHeatmap bool state + toggle row inside _LayerPanel
-//     OVERLAYS section ("District Heatmap" with a 🗺 icon).
-//   • Passes mergedStationsProvider watch to BiharDistrictHeatmap so
-//     district colours update live with every Riverpod refresh cycle.
-//   • No other logic changed.
-//
-// v5.5.1 (13 Jun 2026 — Option A graceful station-only fallback):
-//   • Non-interactive 'No city profile' label for unmatched stations.
-// v5.5 / v5.4 / v5.3 — see earlier changelogs.
+//   • BiharDistrictHeatmap layer added to FlutterMap children.
+//   • District Heatmap toggle row added to _LayerPanel OVERLAYS section.
 library;
 
 import 'package:flutter/material.dart';
@@ -24,11 +21,11 @@ import 'package:latlong2/latlong.dart';
 
 import '../data/bihar_rivers.dart';
 import '../providers/map_live_index_provider.dart';
-import '../providers/merged_stations_provider.dart';  // Phase 4B
+import '../providers/real_time_river_provider.dart'; // mergedStationsProvider
 import '../theme/river_theme.dart';
 import 'city_detail_screen.dart';
 import '../providers/flood_providers.dart';
-import '../widgets/map/bihar_district_heatmap.dart'; // Phase 4B
+import '../widgets/map/bihar_district_heatmap.dart';
 
 // ────────────────────────────────────────────────────────────────────────────────
 // Severity system  (5 levels)
@@ -214,7 +211,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen> {
   double     _precipOpacity     = 0.65;
   bool       _showStations      = true;
   double     _stationOpacity    = 1.0;
-  bool       _showHeatmap       = true;   // Phase 4B
+  bool       _showHeatmap       = true;
   bool       _layerPanelOpen    = false;
 
   static final _rivers =
@@ -227,17 +224,17 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen> {
     final normStation  = _norm(gauge.station);
     final normRiver    = _norm(gauge.river);
     final direct       = index[normStation];
-    if (direct != null) return direct;
+    if (direct != null) { return direct; }  // fix: braces required
 
     final stFirst = normStation.split(' ').first;
     final rvFirst = normRiver.split(' ').first;
     for (final entry in index.entries) {
       if (entry.key.contains(stFirst) &&
-          entry.key.contains(rvFirst)) return entry.value;
+          entry.key.contains(rvFirst)) { return entry.value; }
     }
     for (final sd in index.values) {
-      if (_norm(sd.river) != normRiver) continue;
-      if (_norm(sd.city).contains(stFirst)) return sd;
+      if (_norm(sd.river) != normRiver) { continue; }
+      if (_norm(sd.city).contains(stFirst)) { return sd; }
     }
     return null;
   }
@@ -258,9 +255,9 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final t          = RiverColors.of(context);
-    final liveIndex  = ref.watch(mapLiveIndexProvider);
-    final mergedStations = ref.watch(mergedStationsProvider); // Phase 4B
+    final t              = RiverColors.of(context);
+    final liveIndex      = ref.watch(mapLiveIndexProvider);
+    final mergedStations = ref.watch(mergedStationsProvider); // List<RiverStation>
 
     final liveCount = liveIndex.values.where((s) => s.isLive).length;
 
@@ -327,8 +324,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen> {
                     ),
                   ),
                 ),
-              // ── District heatmap (Phase 4B) ───────────────────────────
-              // Rendered below station pins so pins always stay on top.
+              // ── District heatmap ─────────────────────────────────────
               BiharDistrictHeatmap(
                 stations:      mergedStations,
                 mapController: _mapCtrl,
@@ -456,7 +452,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen> {
                       precipOpacity:        _precipOpacity,
                       showStations:         _showStations,
                       stationOpacity:       _stationOpacity,
-                      showHeatmap:          _showHeatmap,       // Phase 4B
+                      showHeatmap:          _showHeatmap,
                       critCount:            critCount,
                       severeCount:          severeCount,
                       dangerTotal:          dangerTotal,
@@ -469,7 +465,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen> {
                           setState(() => _showStations = !_showStations),
                       onStationOpacity:     (v) =>
                           setState(() => _stationOpacity = v),
-                      onHeatmapToggle:      () =>              // Phase 4B
+                      onHeatmapToggle:      () =>
                           setState(() => _showHeatmap = !_showHeatmap),
                       onCriticalOnly:       () => setState(() {
                         _filterRisk    = RiskLevel.critical;
@@ -590,7 +586,8 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen> {
         return;
       }
       final pos = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.low);
+          locationSettings:
+              const LocationSettings(accuracy: LocationAccuracy.low));
       _mapCtrl.move(LatLng(pos.latitude, pos.longitude), 10.0);
     } catch (_) {
       if (context.mounted) {
@@ -844,7 +841,7 @@ class _PulsingRingState extends State<_PulsingRing>
 }
 
 // ────────────────────────────────────────────────────────────────────────────────
-// _LayerPanel  (v5.6: adds District Heatmap toggle row)
+// _LayerPanel
 // ────────────────────────────────────────────────────────────────────────────────
 
 class _LayerPanel extends StatelessWidget {
@@ -854,7 +851,7 @@ class _LayerPanel extends StatelessWidget {
   final double      precipOpacity;
   final bool        showStations;
   final double      stationOpacity;
-  final bool        showHeatmap;          // Phase 4B
+  final bool        showHeatmap;
   final int         critCount;
   final int         severeCount;
   final int         dangerTotal;
@@ -863,7 +860,7 @@ class _LayerPanel extends StatelessWidget {
   final ValueChanged<double>     onOpacityChanged;
   final VoidCallback             onStationsToggle;
   final ValueChanged<double>     onStationOpacity;
-  final VoidCallback             onHeatmapToggle;  // Phase 4B
+  final VoidCallback             onHeatmapToggle;
   final VoidCallback             onCriticalOnly;
 
   const _LayerPanel({
@@ -1099,7 +1096,7 @@ class _LayerPanel extends StatelessWidget {
 
           const SizedBox(height: 8),
 
-          // ── District Heatmap toggle (Phase 4B) ───────────────────────
+          // ── District Heatmap toggle ──────────────────────────────────
           GestureDetector(
             onTap: onHeatmapToggle,
             child: AnimatedContainer(
@@ -1155,7 +1152,7 @@ class _LayerPanel extends StatelessWidget {
 
           const SizedBox(height: 8),
 
-          // ── Precipitation toggle ─────────────────────────────────────
+          // ── Precipitation toggle ────────────────────────────────────
           GestureDetector(
             onTap: onPrecipToggle,
             child: AnimatedContainer(
@@ -1256,7 +1253,7 @@ class _LayerPanel extends StatelessWidget {
 }
 
 // ────────────────────────────────────────────────────────────────────────────────
-// _StationSheet  (v5.5.1 — unchanged)
+// _StationSheet
 // ────────────────────────────────────────────────────────────────────────────────
 
 class _StationSheet extends ConsumerWidget {
