@@ -1,21 +1,14 @@
 """
 Prediction router: ML model predictions, artifacts, and state severity matrix endpoints.
 
-All endpoints now use pipeline_autofill_predict_input() so that:
-  - /predict/v2  auto-fills Peak_Flood_Level_m + T1d from the OperationalDataPipeline
-    features CSV before calling the ML model
-  - Manual values from the Flutter UI always take precedence (defaults are only
-    replaced when the caller sends the sentinel defaults: Peak=8.5, T1d=10.0)
-
-Option-A Guard wiring (NEW):
-  - Both /predict/legacy and /predict/v2 now call select_best_station_node() and
-    build_effective_state_entry() so that station-specific CWC warning/danger/HFL
-    thresholds override the state-matrix defaults before severity_from_entry() fires.
-  - The effective entry is passed to predictor.predict_flood() via the
-    state_entry_override= kwarg, which the predictor must accept and forward to
-    severity_from_entry().
+Fix (v2-wired):
+  When predictor=None (FastAPI DI never wired), /predict/v2 and /predict/legacy
+  now instantiate FloodPredictor(station) directly from ml/flood_predictor.py and
+  call .predict() so the BiLSTM / physics model is always used.
+  The old hardcoded MODERATE fallback is only kept as a last-resort except guard.
 """
 
+import importlib.util as _importlib_util
 import asyncio
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -52,6 +45,116 @@ class FloodPredictionInput(BaseModel):
     T7d: float = 7.0
     state: str = "Maharashtra"
     station: str | None = None
+
+
+# ── FloodPredictor import (lazy, so import errors don't crash the router) ─────
+def _get_flood_predictor_cls():
+    try:
+        if _importlib_util.find_spec("backend") is not None:
+            from backend.ml.flood_predictor import FloodPredictor
+        else:
+            from ml.flood_predictor import FloodPredictor  # type: ignore
+        return FloodPredictor
+    except Exception:
+        return None
+
+
+def _run_flood_predictor(
+    input_data: "FloodPredictionInput",
+    data_source: str,
+    effective_entry: dict | None,
+) -> dict:
+    """
+    Instantiate FloodPredictor for the requested station and call .predict().
+    Maps the result to the /predict/v2 response schema.
+    Falls back to the hardcoded MODERATE block only on complete failure.
+    """
+    FloodPredictor = _get_flood_predictor_cls()
+    if FloodPredictor is None:
+        raise RuntimeError("FloodPredictor could not be imported")
+
+    station = (input_data.station or "").strip() or "Gandhighat"
+    predictor = FloodPredictor(station)
+
+    rainfall_3d = input_data.T1d + input_data.T2d + input_data.T3d
+    rainfall_7d = sum([
+        input_data.T1d, input_data.T2d, input_data.T3d,
+        input_data.T4d, input_data.T5d, input_data.T6d, input_data.T7d,
+    ])
+
+    raw = predictor.predict(
+        current_level=input_data.Peak_Flood_Level_m,
+        rainfall_3d_mm=rainfall_3d,
+        rainfall_7d_mm=rainfall_7d,
+    )
+
+    # Derive severity from danger-level ratio using effective_entry thresholds.
+    danger_level = float(
+        (effective_entry or {}).get("danger_level_m")
+        or raw.get("danger_level")
+        or 50.0
+    )
+    warning_level = float(
+        (effective_entry or {}).get("warning_level_m")
+        or raw.get("warning_level")
+        or danger_level * 0.85
+    )
+    current = float(raw.get("current_level") or input_data.Peak_Flood_Level_m)
+    ratio = current / danger_level if danger_level > 0 else 0.0
+
+    if ratio >= 1.0:
+        severity = "CRITICAL"
+        risk_score = 100
+    elif ratio >= 0.90:
+        severity = "SEVERE"
+        risk_score = int(ratio * 100)
+    elif ratio >= 0.70:
+        severity = "MODERATE"
+        risk_score = int(ratio * 100)
+    else:
+        severity = "LOW"
+        risk_score = int(ratio * 100)
+
+    will_breach = raw.get("will_breach_danger", False)
+    confidence  = float(raw.get("confidence_pct", 65.0))
+    model_ver   = raw.get("model_version", "v1.0-physics")
+    algorithm   = "BiLSTM" if "lstm" in model_ver else "Physics-Trend"
+
+    # Simple probability spread around the chosen severity.
+    _sev_order = ["LOW", "MODERATE", "SEVERE", "CRITICAL"]
+    _sev_idx   = _sev_order.index(severity)
+    probs: dict[str, float] = {s: 0.0 for s in _sev_order}
+    probs[severity] = round(confidence, 1)
+    remaining = round(100.0 - confidence, 1)
+    if _sev_idx + 1 < len(_sev_order):
+        probs[_sev_order[_sev_idx + 1]] = remaining
+    else:
+        probs[_sev_order[_sev_idx - 1]] = remaining
+
+    alert_icon = (
+        "\U0001f6a8" if severity == "CRITICAL"
+        else "\u26a0\ufe0f" if severity in ("SEVERE", "MODERATE")
+        else "\u2705"
+    )
+
+    return {
+        "severity":          severity,
+        "confidence_percent": confidence,
+        "probabilities":     probs,
+        "alert":             alert_icon,
+        "algorithm":         algorithm,
+        "data_source":       data_source,
+        "model_trained":     True,
+        "model_version":     model_ver,
+        "risk_score":        risk_score,
+        "state":             input_data.state,
+        "station":           station,
+        "danger_level_m":    danger_level,
+        "warning_level_m":   warning_level,
+        "will_breach_danger": will_breach,
+        "next_24h":          raw.get("next_24h", []),
+        "peak_level":        raw.get("peak_level"),
+    }
 
 
 # ============= HELPERS =============
@@ -233,7 +336,6 @@ async def predict_flood_legacy(
             except Exception as e:
                 print(f"\u26a0\ufe0f Live CWC fetch failed, falling back: {e}")
 
-        # Build effective state entry using state-matrix defaults (no telemetry in legacy mode)
         _legacy_effective_entry = build_effective_state_entry(
             state_name=input_data.state,
             station_telemetry=None,
@@ -248,17 +350,23 @@ async def predict_flood_legacy(
                 state_entry_override=_legacy_effective_entry,
             )
         else:
-            result = {
-                "severity": "MODERATE",
-                "confidence_percent": 75.0,
-                "probabilities": {"SEVERE": 25, "MODERATE": 75, "LOW": 0, "CRITICAL": 0},
-                "alert": "\u26a0\ufe0f",
-                "algorithm": "Fallback",
-                "data_source": data_source,
-                "model_trained": False,
-                "risk_score": 50,
-                "state": input_data.state,
-            }
+            try:
+                result = await asyncio.to_thread(
+                    _run_flood_predictor, input_data, data_source, _legacy_effective_entry
+                )
+            except Exception as fp_exc:
+                print(f"\u26a0\ufe0f FloodPredictor failed in legacy: {fp_exc}")
+                result = {
+                    "severity": "MODERATE",
+                    "confidence_percent": 75.0,
+                    "probabilities": {"SEVERE": 25, "MODERATE": 75, "LOW": 0, "CRITICAL": 0},
+                    "alert": "\u26a0\ufe0f",
+                    "algorithm": "Fallback",
+                    "data_source": data_source,
+                    "model_trained": False,
+                    "risk_score": 50,
+                    "state": input_data.state,
+                }
 
         result["source_policy"] = source_policy
         persist_prediction_record(input_data, result)
@@ -282,18 +390,7 @@ async def predict_flood_v2(
 ):
     """
     Auto-fill prediction v2: pipeline-first, CWC-second, manual-third.
-
-    Priority order for Peak_Flood_Level_m and T1d:
-      1. OperationalDataPipeline feature CSV  (most recent hourly run)
-      2. Live CWC scraper                     (real-time gauge, if enabled)
-      3. Values from the request body         (Flutter manual input)
-
-    Option-A guard:
-      4. select_best_station_node() picks the best matching CWC node
-      5. build_effective_state_entry() merges station warning/danger/HFL into
-         the state-matrix defaults
-      6. Effective entry passed to predictor.predict_flood() via state_entry_override=
-         so severity_from_entry() uses real CWC thresholds not state defaults.
+    When predictor=None, uses FloodPredictor from ml/flood_predictor.py directly.
     """
     try:
         source_policy = get_source_policy_payload()
@@ -325,7 +422,7 @@ async def predict_flood_v2(
                 except (TypeError, ValueError):
                     river_level_m = None
 
-        # ── Step 2: CWC live override (if available and pipeline didn't get level) ──
+        # ── Step 2: CWC live override ─────────────────────────────────────────
         if cwc_scraper and river_level_m is None:
             try:
                 station_query = input_data.station or input_data.state
@@ -345,10 +442,7 @@ async def predict_flood_v2(
             except Exception as e:
                 print(f"\u26a0\ufe0f V2 CWC auto-fill failed: {e}")
 
-        # ── Step 2b: Build effective state entry from live station telemetry ──
-        # Attempt a non-blocking telemetry fetch to get real CWC station
-        # warning/danger/HFL thresholds for the Option-A guard.
-        # If telemetry is unavailable, falls back gracefully to state-matrix defaults.
+        # ── Step 2b: Build effective state entry ──────────────────────────────
         _telemetry_payload: dict | None = None
         try:
             if _importlib_util.find_spec("backend") is not None:
@@ -360,7 +454,7 @@ async def predict_flood_v2(
             if isinstance(_raw, dict) and _raw.get("data"):
                 _telemetry_payload = _raw
         except Exception:
-            pass  # Non-fatal — guard falls back to state defaults
+            pass
 
         _best_node = select_best_station_node(
             state_name=input_data.state,
@@ -382,17 +476,23 @@ async def predict_flood_v2(
                 state_entry_override=_effective_entry,
             )
         else:
-            result = {
-                "severity": "MODERATE",
-                "confidence_percent": 75.0,
-                "probabilities": {"SEVERE": 25, "MODERATE": 75, "LOW": 0, "CRITICAL": 0},
-                "alert": "\u26a0\ufe0f",
-                "algorithm": "Fallback",
-                "data_source": data_source,
-                "model_trained": False,
-                "risk_score": 50,
-                "state": input_data.state,
-            }
+            try:
+                result = await asyncio.to_thread(
+                    _run_flood_predictor, input_data, data_source, _effective_entry
+                )
+            except Exception as fp_exc:
+                print(f"\u26a0\ufe0f FloodPredictor failed in v2: {fp_exc}")
+                result = {
+                    "severity": "MODERATE",
+                    "confidence_percent": 75.0,
+                    "probabilities": {"SEVERE": 25, "MODERATE": 75, "LOW": 0, "CRITICAL": 0},
+                    "alert": "\u26a0\ufe0f",
+                    "algorithm": "Fallback",
+                    "data_source": data_source,
+                    "model_trained": False,
+                    "risk_score": 50,
+                    "state": input_data.state,
+                }
 
         result["source_policy"] = source_policy
         result["autofill_applied"] = autofill_applied
