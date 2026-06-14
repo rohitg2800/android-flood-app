@@ -27,7 +27,7 @@ class MainShell extends ConsumerStatefulWidget {
 class _MainShellState extends ConsumerState<MainShell> {
   int _index = 0;
 
-  // Tracks alert IDs already shown this session — prevents re-firing same alert.
+  // Tracks UIDs of alerts already shown this session.
   final Set<String> _shownAlertIds = {};
 
   static const _screens = [
@@ -71,9 +71,10 @@ class _MainShellState extends ConsumerState<MainShell> {
     final t      = RiverColors.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // ── CRITICAL ALERT LISTENER ──────────────────────────────────────────────
-    ref.listen<AlertsState>(alertsProvider, (prev, next) {
-      final criticals = next.all.where(
+    // ── Critical alert listener ───────────────────────────────────────────────
+    // alertsProvider returns List<FloodAlert> directly.
+    ref.listen<List<FloodAlert>>(alertsProvider, (prev, alerts) {
+      final criticals = alerts.where(
         (a) =>
             a.severity == AlertSeverity.critical ||
             a.severity == AlertSeverity.emergency,
@@ -95,11 +96,11 @@ class _MainShellState extends ConsumerState<MainShell> {
             currentLevel: alert.currentLevel,
             dangerLevel:  alert.thresholdLevel,
             district:     alert.district ?? '',
-            onViewMap: () => setState(() => _index = 3),
-            onEvacuate: () => setState(() => _index = 2),
+            onViewMap:    () => setState(() => _index = 3),
+            onEvacuate:   () => setState(() => _index = 2),
           );
         });
-        break; // show one at a time; next fires on next state change
+        break; // show one at a time
       }
     });
 

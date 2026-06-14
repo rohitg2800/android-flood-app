@@ -1,11 +1,12 @@
 // lib/screens/predict_screen_impl.dart
 // EQUINOX-BR05 — LSTM Flood Prediction Screen  (v1.2 — Phase 2: ActionAdviceCard)
 //
-// v1.1 fixes:
-//   • station.name → station.station  (RiverStation has no .name field)
-//   • AsyncValue.valueOrNull → .when() (riverpod 3.x compat)
-// v1.2 adds:
-//   • _ActionAdviceCard — plain-language emergency advice below model meta
+// FloodPrediction fields used here (from prediction_provider.dart):
+//   • confidencePct  (not 'confidence')
+//   • trend          (String: 'rising' | 'stable' | 'falling', not enum)
+//   • riskScore, modelVersion  (unchanged)
+//   • no updatedAt field — omitted from model meta
+// Provider: predictionProvider (FutureProvider.family<FloodPrediction, String>)
 library;
 
 import 'dart:math' as math;
@@ -22,7 +23,7 @@ import '../providers/prediction_provider.dart';
 import '../providers/real_time_river_provider.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  PredictScreen  (shell re-export stays in predict_screen.dart)
+//  PredictScreen
 // ─────────────────────────────────────────────────────────────────────────────
 
 class PredictScreen extends ConsumerStatefulWidget {
@@ -33,7 +34,6 @@ class PredictScreen extends ConsumerStatefulWidget {
   @override
   ConsumerState<PredictScreen> createState() => _PredictScreenState();
 
-  /// Helper used by widgets to derive color from alert level.
   static Color levelColor(BuildContext context, AlertLevel? level) {
     final t = RiverColors.of(context);
     if (level == AlertLevel.danger || level == AlertLevel.extreme) {
@@ -47,7 +47,7 @@ class PredictScreen extends ConsumerStatefulWidget {
 class _PredictScreenState extends ConsumerState<PredictScreen>
     with SingleTickerProviderStateMixin {
   String? _selectedStationId;
-  int     _horizonHours = 24;   // 24 | 48 | 72
+  int     _horizonHours = 24;
   late AnimationController _pulseCtrl;
   late Animation<double>   _pulseAnim;
 
@@ -69,7 +69,7 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
     super.dispose();
   }
 
-  // ── Derive severity label from prediction progress percentage ──────────────
+  // trend is a String: 'rising' | 'stable' | 'falling'
   String _severityFromPrediction(FloodPrediction p) {
     final pct = p.progressPct.clamp(0.0, 100.0);
     if (pct >= 100) return 'CRITICAL';
@@ -83,7 +83,6 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
     final t        = RiverColors.of(context);
     final stations = ref.watch(mergedStationsProvider);
 
-    // Auto-select first station on first load
     if (_selectedStationId == null && stations.isNotEmpty) {
       _selectedStationId = stations.first.station;
     }
@@ -95,9 +94,12 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
             orElse: () => stations.first,
           );
 
-    final prediction = station == null
+    // predictionProvider is FutureProvider.family<FloodPrediction, String>
+    final predAsync = station == null
         ? null
-        : ref.watch(predictionForStationProvider(station));
+        : ref.watch(predictionProvider(station.station));
+
+    final prediction = predAsync?.valueOrNull;
 
     return Scaffold(
       backgroundColor: t.scaffoldBg,
@@ -161,7 +163,6 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
                         const SizedBox(height: 16),
                         _ModelMetaCard(prediction: prediction, theme: t),
                         const SizedBox(height: 16),
-                        // ── Phase 2: Action Advice Card ────────────────
                         _ActionAdviceCard(
                           severity: _severityFromPrediction(prediction),
                           theme: t,
@@ -366,9 +367,9 @@ class _StationPickerCard extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _CurrentLevelCard extends StatelessWidget {
-  final RiverStation   station;
-  final FloodPrediction prediction;
-  final RiverColors    theme;
+  final RiverStation      station;
+  final FloodPrediction   prediction;
+  final RiverColors       theme;
   final Animation<double> pulseAnim;
 
   const _CurrentLevelCard({
@@ -488,13 +489,13 @@ class _CurrentLevelCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Horizon Selector  (24h / 48h / 72h)
+//  Horizon Selector
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _HorizonSelector extends StatelessWidget {
-  final int                 selected;
-  final ValueChanged<int>   onChanged;
-  final RiverColors         theme;
+  final int               selected;
+  final ValueChanged<int> onChanged;
+  final RiverColors       theme;
 
   const _HorizonSelector({
     required this.selected,
@@ -548,7 +549,7 @@ class _HorizonSelector extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Forecast Grid  (3 prediction cards)
+//  Forecast Grid
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _ForecastGrid extends StatelessWidget {
@@ -671,7 +672,7 @@ class _ForecastData {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  Sparkline Chart (fl_chart)
+//  Sparkline Chart
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _SparklineCard extends StatelessWidget {
@@ -697,9 +698,7 @@ class _SparklineCard extends StatelessWidget {
             ? prediction.next48h
             : prediction.next72h;
 
-    if (series.isEmpty) {
-      return const SizedBox.shrink();
-    }
+    if (series.isEmpty) return const SizedBox.shrink();
 
     final maxY = [
       ...series.map((p) => p.level),
@@ -707,17 +706,15 @@ class _SparklineCard extends StatelessWidget {
     ].reduce(math.max);
     final minY = series.map((p) => p.level).reduce(math.min) * 0.95;
 
-    final spots = series.asMap().entries.map((e) {
-      return FlSpot(e.key.toDouble(), e.value.level);
-    }).toList();
-
-    final dangerSpots = series.asMap().entries.map((e) {
-      return FlSpot(e.key.toDouble(), dangerLevel);
-    }).toList();
-
-    final warnSpots = series.asMap().entries.map((e) {
-      return FlSpot(e.key.toDouble(), warningLevel);
-    }).toList();
+    final spots = series.asMap().entries
+        .map((e) => FlSpot(e.key.toDouble(), e.value.level))
+        .toList();
+    final dangerSpots = series.asMap().entries
+        .map((e) => FlSpot(e.key.toDouble(), dangerLevel))
+        .toList();
+    final warnSpots = series.asMap().entries
+        .map((e) => FlSpot(e.key.toDouble(), warningLevel))
+        .toList();
 
     return Container(
       decoration: AppPalette.glassMorph(
@@ -889,13 +886,14 @@ class _ModelMetaCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
+          // confidencePct is the correct field name (not 'confidence')
           _metaRow('Confidence',
-              '${(prediction.confidence * 100).toStringAsFixed(0)}%'),
+              '${prediction.confidencePct.toStringAsFixed(0)}%'),
           _metaRow('Risk Score',
               prediction.riskScore.toStringAsFixed(2)),
+          _metaRow('Trend',     prediction.trend),
           _metaRow('Model',     prediction.modelVersion),
-          _metaRow('Updated',
-              prediction.updatedAt.toLocal().toString().substring(0, 16)),
+          _metaRow('Outlook',   prediction.outlook),
         ],
       ),
     );
@@ -911,11 +909,13 @@ class _ModelMetaCard extends StatelessWidget {
                   style: const TextStyle(
                       color: AppPalette.textGrey, fontSize: 12)),
             ),
-            Text(value,
-                style: TextStyle(
-                    color: theme.textPrimary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600)),
+            Expanded(
+              child: Text(value,
+                  style: TextStyle(
+                      color: theme.textPrimary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600)),
+            ),
           ],
         ),
       );
@@ -1032,17 +1032,26 @@ class _ActionAdviceCard extends StatelessWidget {
 //  Small helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
+/// Trend badge — prediction.trend is a String: 'rising' | 'falling' | 'stable'
 class _TrendBadge extends StatelessWidget {
-  final PredictionTrend trend;
+  final String trend;
   const _TrendBadge({required this.trend});
 
   @override
   Widget build(BuildContext context) {
-    final (icon, color) = switch (trend) {
-      PredictionTrend.rising  => (Icons.trending_up_rounded,   AppPalette.danger),
-      PredictionTrend.falling => (Icons.trending_down_rounded, AppPalette.safe),
-      PredictionTrend.stable  => (Icons.trending_flat_rounded, AppPalette.warning),
-    };
+    final IconData icon;
+    final Color    color;
+    switch (trend) {
+      case 'rising':
+        icon  = Icons.trending_up_rounded;
+        color = AppPalette.danger;
+      case 'falling':
+        icon  = Icons.trending_down_rounded;
+        color = AppPalette.safe;
+      default:
+        icon  = Icons.trending_flat_rounded;
+        color = AppPalette.warning;
+    }
     return Container(
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
@@ -1078,7 +1087,7 @@ class _ThresholdChip extends StatelessWidget {
           children: [
             TextSpan(
                 text: '$label  ',
-                style: TextStyle(
+                style: const TextStyle(
                     color: AppPalette.textGrey, fontSize: 11)),
             TextSpan(
                 text: '${value.toStringAsFixed(2)} m',
@@ -1106,8 +1115,8 @@ class _LegendDot extends StatelessWidget {
         Container(
           width: 8,
           height: 8,
-          decoration: BoxDecoration(
-              color: color, shape: BoxShape.circle),
+          decoration:
+              BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 4),
         Text(label,
