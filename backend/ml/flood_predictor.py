@@ -1,20 +1,16 @@
 # backend/ml/flood_predictor.py
 # OpsFlood — BiLSTM+Attention Flood Prediction Engine
 #
-# Architecture (from saved .pt weight shapes):
-#   bilstm1:  input=11, hidden=128, bidirectional  → output=256
-#   attn:     MultiheadAttention(embed_dim=256, num_heads=?) — auto-detected
-#   norm1:    LayerNorm(256)
-#   bilstm2:  input=256, hidden=64, bidirectional  → output=128
-#   fc1:      Linear(128, 256)
-#   fc2:      Linear(256, 128)
-#   out:      Linear(128, 72)   → 72-hour forecast
+# Architecture matches ml/model_train.py exactly:
+#   bilstm1:  LSTM(input=11, hidden=128, bidir)  -> drop(0.25) -> (B,24,256)
+#   attn:     MultiheadAttention(256, heads=4)   -> residual+norm -> (B,24,256)
+#   bilstm2:  LSTM(input=256, hidden=64, bidir)  -> drop(0.2)  -> last step (B,128)
+#   fc1:      Linear(128,256) + GELU
+#   fc2:      Linear(256,128) + GELU
+#   out:      Linear(128,72)
 #
-# Input features (11, from config in .pt bundle):
-#   level_m, rain_1h, rain_3d, rain_7d, upstream_level, forecast_mm,
-#   soil_moisture, discharge_m3s, day_sin, day_cos, hour_sin
-#
-# Sequence length: 24 (from config)
+# Normalisation: per-station RobustScaler (all 11 features together)
+# Output denorm: scaler.inverse_transform on level_m column (col 0)
 from __future__ import annotations
 
 import json
@@ -26,31 +22,19 @@ from typing import List, Optional
 
 import numpy as np
 
-# ── Model / scaler registry ─────────────────────────────────────────────────
-MODEL_DIR   = Path(os.getenv('MODEL_DIR',   Path(__file__).parent / 'saved_models'))
-SCALER_DIR  = Path(os.getenv('SCALER_DIR',  Path(__file__).parent / 'scalers'))
-_STATS_FILE = SCALER_DIR / 'feature_stats.json'
+# ── Paths ───────────────────────────────────────────────────────────────────
+MODEL_DIR  = Path(os.getenv('MODEL_DIR',  Path(__file__).parent / 'saved_models'))
+SCALER_DIR = Path(os.getenv('SCALER_DIR', Path(__file__).parent / 'scalers'))
 
-
-def _load_feature_stats() -> dict[str, tuple[float, float]]:
-    _fallback: dict[str, tuple[float, float]] = {
-        'gauge_level':    (40.0, 20.0),
-        'rainfall_3d':    (50.0, 80.0),
-        'rainfall_7d':    (120.0, 150.0),
-        'upstream_level': (40.0, 20.0),
-        'imd_forecast':   (20.0, 60.0),
-    }
-    try:
-        raw = json.loads(_STATS_FILE.read_text())
-        loaded = {k: tuple(v) for k, v in raw['features'].items()}
-        if loaded.keys() == _fallback.keys():
-            return loaded  # type: ignore[return-value]
-    except Exception:
-        pass
-    return _fallback
-
-
-FEATURE_STATS: dict[str, tuple[float, float]] = _load_feature_stats()
+# 11 features in order (matches FEATURES list in model_train.py)
+FEATURES = [
+    'level_m', 'rain_1h', 'rain_3d', 'rain_7d', 'upstream_level',
+    'forecast_mm', 'soil_moisture', 'discharge_m3s',
+    'day_sin', 'day_cos', 'hour_sin',
+]
+N_FEATURES = len(FEATURES)  # 11
+SEQ_LEN    = 24
+FORECAST_H = 72
 
 # ── Gauge thresholds ───────────────────────────────────────────────────────────
 GAUGE_THRESHOLDS: dict[str, dict] = {
@@ -87,69 +71,70 @@ GAUGE_THRESHOLDS: dict[str, dict] = {
     'Sripalpur':      {'danger': 50.60, 'warning': 49.50, 'river': 'Punpun'},
 }
 
-SEQ_LEN    = 24   # matches config in .pt bundle
-N_FEATURES = 11   # matches config in .pt bundle
-_EMBED_DIM  = 256  # bilstm1 bidir output = 2*128
 
-
-# ── PyTorch BiLSTM+Attention model definition ──────────────────────────────────
-def _build_bilstm_model(num_heads: int = 8):
-    """
-    Reconstruct BiLSTMAttention. num_heads is auto-detected in _load_model
-    by trying all valid divisors of embed_dim=256 until state_dict loads.
-    """
+# ── Build model matching model_train.py exactly ─────────────────────────────────
+def _build_model():
     import torch.nn as nn
 
-    class BiLSTMAttention(nn.Module):
-        def __init__(self, nh: int):
+    class _Model(nn.Module):
+        def __init__(self):
             super().__init__()
-            self.bilstm1 = nn.LSTM(N_FEATURES, 128, batch_first=True, bidirectional=True)
-            self.attn    = nn.MultiheadAttention(embed_dim=_EMBED_DIM, num_heads=nh, batch_first=True)
-            self.norm1   = nn.LayerNorm(_EMBED_DIM)
-            self.bilstm2 = nn.LSTM(_EMBED_DIM, 64, batch_first=True, bidirectional=True)
+            self.bilstm1 = nn.LSTM(N_FEATURES, 128, num_layers=1,
+                                   batch_first=True, bidirectional=True)
+            self.drop1   = nn.Dropout(0.25)
+            self.attn    = nn.MultiheadAttention(embed_dim=256, num_heads=4,
+                                                  dropout=0.1, batch_first=True)
+            self.norm1   = nn.LayerNorm(256)
+            self.bilstm2 = nn.LSTM(256, 64, num_layers=1,
+                                   batch_first=True, bidirectional=True)
+            self.drop2   = nn.Dropout(0.2)
             self.fc1     = nn.Linear(128, 256)
+            self.act1    = nn.GELU()
             self.fc2     = nn.Linear(256, 128)
-            self.out     = nn.Linear(128, 72)
+            self.act2    = nn.GELU()
+            self.out     = nn.Linear(128, FORECAST_H)
 
         def forward(self, x):
-            import torch
-            x, _ = self.bilstm1(x)      # (batch, seq, 256)
-            x, _ = self.attn(x, x, x)   # (batch, seq, 256)
-            x     = self.norm1(x)
-            x, _ = self.bilstm2(x)      # (batch, seq, 128)
-            x     = x[:, -1, :]         # last timestep
-            x     = torch.relu(self.fc1(x))
-            x     = torch.relu(self.fc2(x))
-            return self.out(x)          # (batch, 72)
+            h1, _ = self.bilstm1(x)
+            h1     = self.drop1(h1)
+            a,  _  = self.attn(h1, h1, h1)
+            h1     = self.norm1(h1 + a)          # residual connection
+            h2, _ = self.bilstm2(h1)
+            h2     = self.drop2(h2)
+            h2     = h2[:, -1, :]                # last timestep
+            out    = self.act1(self.fc1(h2))
+            out    = self.act2(self.fc2(out))
+            return self.out(out)                 # (B, 72)
 
-    return BiLSTMAttention(num_heads)
+    return _Model()
 
 
 # ── FloodPredictor ─────────────────────────────────────────────────────────────────
 class FloodPredictor:
     """
     BiLSTM+Attention flood level predictor for Bihar gauge stations.
+    Uses per-station RobustScaler for feature normalisation/denormalisation.
     Falls back to physics-based trend model when PyTorch model is unavailable.
     """
 
     def __init__(self, station: str):
         self.station    = station
         self.threshold  = GAUGE_THRESHOLDS.get(station, {'danger': 50.0, 'warning': 48.0})
-        self._model, self._config = self._load_model(station)
+        self._model, self._scaler, self._config = self._load_model(station)
 
     # ── Public API ───────────────────────────────────────────────────────────
     def predict(
         self,
-        current_level:     float,
-        rainfall_3d_mm:    float,
-        rainfall_7d_mm:    float,
-        upstream_level:    Optional[float] = None,
-        imd_forecast_mm:   float = 0.0,
-        history:           Optional[List[float]] = None,
+        current_level:   float,
+        rainfall_3d_mm:  float,
+        rainfall_7d_mm:  float,
+        upstream_level:  Optional[float] = None,
+        imd_forecast_mm: float = 0.0,
+        history:         Optional[List[float]] = None,
     ) -> dict:
         now = datetime.now(timezone.utc)
 
-        if self._model is not None:
+        if self._model is not None and self._scaler is not None:
             points = self._ml_predict(
                 current_level, rainfall_3d_mm, rainfall_7d_mm,
                 upstream_level, imd_forecast_mm, now, history)
@@ -159,7 +144,6 @@ class FloodPredictor:
         next_24h = points[:24]
         next_48h = points[:48]
         next_72h = points[:72]
-
         peak       = max(p['level'] for p in next_72h) if next_72h else current_level
         confidence = 85.0 if self._model is not None else 65.0
 
@@ -190,46 +174,47 @@ class FloodPredictor:
     ) -> list:
         import torch
 
-        seq_len    = (self._config or {}).get('seq_len', SEQ_LEN)
-        upstream_v = upstream or current
-        level_win  = self._build_history_window(current, r3d, history, seq_len)
+        upstream_v  = upstream if upstream is not None else current
+        level_win   = self._build_history_window(current, r3d, history)
 
-        day_of_year = now.timetuple().tm_yday
-        hour        = now.hour
-        day_sin  = math.sin(2 * math.pi * day_of_year / 365)
-        day_cos  = math.cos(2 * math.pi * day_of_year / 365)
+        doy      = now.timetuple().tm_yday
+        hour     = now.hour
+        day_sin  = math.sin(2 * math.pi * doy / 365)
+        day_cos  = math.cos(2 * math.pi * doy / 365)
         hour_sin = math.sin(2 * math.pi * hour / 24)
 
-        danger = self.threshold['danger']
-        def norm_level(v): return (v - danger * 0.8) / (danger * 0.2) if danger > 0 else v / 50.0
-        def norm_rain(v, scale): return v / scale if scale > 0 else 0.0
-
-        seq = np.array(
+        # Build raw feature matrix (SEQ_LEN, 11) then scale with station scaler
+        raw_seq = np.array(
             [
                 [
-                    norm_level(level_win[t]),
-                    norm_rain(r3d / 72, 10.0),
-                    norm_rain(r3d, 200.0),
-                    norm_rain(r7d, 400.0),
-                    norm_level(upstream_v),
-                    norm_rain(imd_fcst, 50.0),
-                    0.5,
-                    norm_level(current) * 100,
+                    level_win[t],     # level_m
+                    r3d / 72.0,       # rain_1h  (approx from 3d total)
+                    r3d,              # rain_3d
+                    r7d,              # rain_7d
+                    upstream_v,       # upstream_level
+                    imd_fcst,         # forecast_mm
+                    0.261,            # soil_moisture (station median from scaler center_)
+                    1.94,             # discharge_m3s (station median)
                     day_sin,
                     day_cos,
                     hour_sin,
                 ]
-                for t in range(seq_len)
+                for t in range(SEQ_LEN)
             ],
-            dtype=np.float32,
-        )
+            dtype=np.float64,
+        )  # (24, 11)
 
-        x = torch.tensor(seq).unsqueeze(0)
+        scaled_seq = self._scaler.transform(raw_seq)  # (24, 11)
+        x = torch.tensor(scaled_seq, dtype=torch.float32).unsqueeze(0)  # (1, 24, 11)
+
         self._model.eval()
         with torch.no_grad():
-            out = self._model(x)
-        levels_norm = out.squeeze(0).numpy()
-        levels = levels_norm * (danger * 0.2) + danger * 0.8
+            out = self._model(x).squeeze(0).numpy()  # (72,)
+
+        # De-normalise: model output is scaled level_m — inverse via col 0 of scaler
+        dummy          = np.zeros((FORECAST_H, N_FEATURES), dtype=np.float64)
+        dummy[:, 0]    = out
+        levels         = self._scaler.inverse_transform(dummy)[:, 0]
 
         return [
             {
@@ -237,22 +222,21 @@ class FloodPredictor:
                 'level':     round(float(levels[i]), 3),
                 'precip_mm': round(float(max(0.0, imd_fcst * (1 + 0.1 * math.sin(i)))), 1),
             }
-            for i in range(72)
+            for i in range(FORECAST_H)
         ]
 
-    # ── History window builder ──────────────────────────────────────────────────
+    # ── History window ─────────────────────────────────────────────────────────────
     def _build_history_window(
         self,
         current_level: float,
         rainfall_3d_mm: float,
         history: Optional[List[float]],
-        seq_len: int = SEQ_LEN,
     ) -> List[float]:
-        if history and len(history) >= seq_len:
-            return list(history[-seq_len:])
+        if history and len(history) >= SEQ_LEN:
+            return list(history[-SEQ_LEN:])
         rate    = 0.025 if rainfall_3d_mm > 100 else 0.008
         partial = list(history) if history else []
-        n_miss  = seq_len - len(partial)
+        n_miss  = SEQ_LEN - len(partial)
         oldest  = partial[0] if partial else current_level
         return [oldest - rate * (n_miss - t) for t in range(n_miss)] + partial
 
@@ -267,49 +251,47 @@ class FloodPredictor:
                     3),
                 'precip_mm': round(max(0.0, rainfall_3d_mm / 3 - i * 0.5), 1),
             }
-            for i in range(72)
+            for i in range(FORECAST_H)
         ]
 
     # ── Model loading ─────────────────────────────────────────────────────────────
     def _load_model(self, station: str):
         """
-        Load per-station BiLSTM .pt bundle.
-        Auto-detects num_heads by trying valid divisors of embed_dim=256
-        until load_state_dict succeeds without errors.
-        Returns (model, config) or (None, None) on failure.
+        Load per-station .pt model + _scaler.joblib.
+        Returns (model, scaler, config) or (None, None, None) on failure.
         """
         try:
             import torch
-            pt_path = MODEL_DIR / f'{station}_bilstm.pt'
+            import joblib as jl
+
+            # Normalise station name for file lookup
+            sname    = station.replace(' ', '_')
+            pt_path  = MODEL_DIR  / f'{station}_bilstm.pt'
+            sc_path  = SCALER_DIR / f'{station}_scaler.joblib'
             if not pt_path.exists():
-                pt_path = MODEL_DIR / f'{station.replace(" ", "_")}_bilstm.pt'
+                pt_path = MODEL_DIR / f'{sname}_bilstm.pt'
+            if not sc_path.exists():
+                sc_path = SCALER_DIR / f'{sname}_scaler.joblib'
+
             if not pt_path.exists():
-                return None, None
+                return None, None, None
 
-            bundle      = torch.load(str(pt_path), map_location='cpu', weights_only=False)
-            state_dict  = bundle['model_state']
-            config      = bundle.get('config', {})
+            bundle  = torch.load(str(pt_path), map_location='cpu', weights_only=False)
+            model   = _build_model()
+            model.load_state_dict(bundle['model_state'])
+            model.eval()
 
-            # Auto-detect num_heads: try common factors of 256 in likely order
-            for nh in [8, 4, 16, 2, 32, 1, 64, 128, 256]:
-                if _EMBED_DIM % nh != 0:
-                    continue
-                try:
-                    model = _build_bilstm_model(num_heads=nh)
-                    model.load_state_dict(state_dict)
-                    model.eval()
-                    print(f'✅ FloodPredictor: loaded {station} bilstm.pt with num_heads={nh}')
-                    return model, config
-                except Exception:
-                    continue
+            scaler = jl.load(str(sc_path)) if sc_path.exists() else None
+            config = bundle.get('config', {})
+            print(f'\u2705 FloodPredictor: loaded {station} (bilstm + scaler={sc_path.exists()})')
+            return model, scaler, config
 
-            print(f'⚠\ufe0f FloodPredictor: no valid num_heads found for {station}')
         except Exception as exc:
-            print(f'⚠\ufe0f FloodPredictor: could not load .pt for {station}: {exc}')
-        return None, None
+            print(f'\u26a0\ufe0f FloodPredictor: could not load {station}: {exc}')
+        return None, None, None
 
 
-# ── Convenience function for API route ───────────────────────────────────────────
+# ── Convenience function ────────────────────────────────────────────────────────────
 def get_prediction_json(
     station: str,
     current_level: float,
