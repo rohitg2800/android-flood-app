@@ -1,139 +1,93 @@
-// test/unit/alert_engine_test.dart
-// OpsFlood — Module 10: Unit tests — Alert threshold crossing logic
+// test/unit/alert_engine_test.dart  Step 6.2
+// Unit tests for AlertEngine threshold evaluation:
+//   • no alert when level < warning threshold
+//   • MODERATE alert when warning <= level < danger
+//   • SEVERE alert when danger <= level < HFL
+//   • CRITICAL alert when level >= HFL
+//   • no duplicate alert within debounce window
+//   • alert fires again after cooldown expires
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flood_app/services/alert_engine.dart';
+import 'package:flood_app/models/alert_model.dart';
+import 'package:flood_app/models/flood_data.dart';
 
-// ---------------------------------------------------------------------------
-// Pure-Dart threshold engine (mirrors AlertEngine in lib/services/)
-// ---------------------------------------------------------------------------
-
-enum Severity { normal, warning, danger, emergency }
-
-Severity classifyLevel({
-  required double level,
-  required double warningLevel,
-  required double dangerLevel,
-  required double emergencyLevel,
-}) {
-  if (level >= emergencyLevel) return Severity.emergency;
-  if (level >= dangerLevel)    return Severity.danger;
-  if (level >= warningLevel)   return Severity.warning;
-  return Severity.normal;
-}
-
-bool hasCrossedThreshold({
-  required double previous,
+FloodData _station({
   required double current,
-  required double threshold,
-}) => previous < threshold && current >= threshold;
-
-double percentOfDanger(double level, double dangerLevel) =>
-    dangerLevel == 0 ? 0 : (level / dangerLevel).clamp(0.0, 1.5);
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
+  double warning = 8.0,
+  double danger  = 10.0,
+  double hfl     = 12.0,
+}) =>
+    FloodData.testInstance(
+      stationId:    'GS001',
+      city:         'TestCity',
+      currentLevel: current,
+      warningLevel: warning,
+      dangerLevel:  danger,
+      hfl:          hfl,
+    );
 
 void main() {
-  group('classifyLevel', () {
-    const w = 48.0, d = 52.0, e = 56.0;
+  late AlertEngine engine;
 
-    test('returns normal below warning', () {
-      expect(
-          classifyLevel(
-              level: 40.0,
-              warningLevel: w,
-              dangerLevel: d,
-              emergencyLevel: e),
-          Severity.normal);
-    });
-
-    test('returns warning at warning threshold', () {
-      expect(
-          classifyLevel(
-              level: 48.0,
-              warningLevel: w,
-              dangerLevel: d,
-              emergencyLevel: e),
-          Severity.warning);
-    });
-
-    test('returns danger between danger and emergency', () {
-      expect(
-          classifyLevel(
-              level: 54.0,
-              warningLevel: w,
-              dangerLevel: d,
-              emergencyLevel: e),
-          Severity.danger);
-    });
-
-    test('returns emergency at or above emergency level', () {
-      expect(
-          classifyLevel(
-              level: 56.0,
-              warningLevel: w,
-              dangerLevel: d,
-              emergencyLevel: e),
-          Severity.emergency);
-    });
-
-    test('returns emergency well above emergency level', () {
-      expect(
-          classifyLevel(
-              level: 65.0,
-              warningLevel: w,
-              dangerLevel: d,
-              emergencyLevel: e),
-          Severity.emergency);
-    });
+  setUp(() {
+    engine = AlertEngine.forTesting();
   });
 
-  group('hasCrossedThreshold', () {
-    test('detects upward crossing', () {
-      expect(
-          hasCrossedThreshold(
-              previous: 49.9, current: 50.1, threshold: 50.0),
-          isTrue);
-    });
-
-    test('no crossing when already above', () {
-      expect(
-          hasCrossedThreshold(
-              previous: 51.0, current: 52.0, threshold: 50.0),
-          isFalse);
-    });
-
-    test('no crossing when still below', () {
-      expect(
-          hasCrossedThreshold(
-              previous: 48.0, current: 49.5, threshold: 50.0),
-          isFalse);
-    });
-
-    test('no crossing on downward movement', () {
-      expect(
-          hasCrossedThreshold(
-              previous: 51.0, current: 49.0, threshold: 50.0),
-          isFalse);
-    });
+  // ── 1. Below warning — no alert
+  test('no alert when level < warningLevel', () {
+    final alerts = engine.evaluate(_station(current: 7.5));
+    expect(alerts, isEmpty);
   });
 
-  group('percentOfDanger', () {
-    test('returns 0.5 at half danger level', () {
-      expect(percentOfDanger(25.0, 50.0), closeTo(0.5, 0.001));
-    });
+  // ── 2. At warning — MODERATE
+  test('MODERATE alert when level >= warningLevel and < dangerLevel', () {
+    final alerts = engine.evaluate(_station(current: 8.5));
+    expect(alerts.length, 1);
+    expect(alerts.first.severity, AlertSeverity.moderate);
+  });
 
-    test('returns 1.0 at danger level', () {
-      expect(percentOfDanger(50.0, 50.0), closeTo(1.0, 0.001));
-    });
+  // ── 3. At danger — SEVERE
+  test('SEVERE alert when level >= dangerLevel and < HFL', () {
+    final alerts = engine.evaluate(_station(current: 10.5));
+    expect(alerts.length, 1);
+    expect(alerts.first.severity, AlertSeverity.severe);
+  });
 
-    test('clamps at 1.5 above danger', () {
-      expect(percentOfDanger(100.0, 50.0), closeTo(1.5, 0.001));
-    });
+  // ── 4. At HFL — CRITICAL
+  test('CRITICAL alert when level >= HFL', () {
+    final alerts = engine.evaluate(_station(current: 12.0));
+    expect(alerts.length, 1);
+    expect(alerts.first.severity, AlertSeverity.critical);
+  });
 
-    test('returns 0 for zero danger level (guard)', () {
-      expect(percentOfDanger(10.0, 0.0), equals(0.0));
-    });
+  // ── 5. No duplicate within debounce window
+  test('second evaluate with same level returns no new alert (debounce)', () {
+    engine.evaluate(_station(current: 10.5)); // first — SEVERE
+    final second = engine.evaluate(_station(current: 10.5));
+    expect(second, isEmpty); // debounced
+  });
+
+  // ── 6. Escalation generates new alert
+  test('escalation from MODERATE to SEVERE generates new alert', () {
+    engine.evaluate(_station(current: 8.5));  // MODERATE
+    final alerts = engine.evaluate(_station(current: 10.5)); // SEVERE
+    expect(alerts.length, 1);
+    expect(alerts.first.severity, AlertSeverity.severe);
+  });
+
+  // ── 7. Below warning after alert — state resets
+  test('dropping below warning after alert resets debounce state', () {
+    engine.evaluate(_station(current: 10.5));  // SEVERE
+    engine.evaluate(_station(current: 6.0));   // back to safe
+    final alerts = engine.evaluate(_station(current: 10.5)); // SEVERE again
+    expect(alerts.length, 1); // should fire again
+  });
+
+  // ── 8. Alert metadata
+  test('alert contains correct stationId and city', () {
+    final alerts = engine.evaluate(_station(current: 10.5));
+    expect(alerts.first.stationId, 'GS001');
+    expect(alerts.first.city,      'TestCity');
   });
 }
