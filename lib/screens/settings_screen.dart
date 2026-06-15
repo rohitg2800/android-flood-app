@@ -1,13 +1,8 @@
-// lib/screens/settings_screen.dart  v3.1  (15 Jun 2026)
+// lib/screens/settings_screen.dart  v3.2  (15 Jun 2026)
 //
-// v3.1 visual polish:
-//   • Every tile row uses mainAxisAlignment.center + crossAxisAlignment.center
-//   • Icon badges use perfect square containers with centred icon
-//   • Section header icon badge centred
-//   • Theme grid cards: icon + text centred inside card column
-//   • Larger icon badge (36x36), more padding, richer shadows
-//   • Tiles have a subtle accent-tinted trailing arrow
-//   • Haptic on every interaction
+// v3.2:
+//   • Removed 'Auto' (AppThemeMode.system) from the theme grid — gone
+//   • All 6 remaining theme cards laid out in a clean 2-column Wrap
 library;
 
 import 'package:flutter/material.dart';
@@ -48,14 +43,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   bool _isOpen(String key) => _expanded[key] ?? true;
 
+  // Auto (system) removed — 6 explicit themes only
   static const _themes = [
-    (AppThemeMode.system,      Icons.brightness_auto_rounded,  'Auto',           'Follows OS light / dark setting', Color(0xFF94A3B8)),
-    (AppThemeMode.light,       Icons.wb_sunny_rounded,         'Day River',      'Warm gold — bright daytime UI',   Color(0xFFFFB800)),
-    (AppThemeMode.dark,        Icons.nights_stay_rounded,      'Night River',    'Deep abyss with gold accents',    Color(0xFFFFD966)),
-    (AppThemeMode.sunset,      Icons.wb_twilight_rounded,      'Sunset Warm',    'Red-orange fiery glow',           Color(0xFFFF6B35)),
-    (AppThemeMode.ocean,       Icons.water_rounded,            'Deep Ocean',     'Cyan + midnight navy',            Color(0xFF00C6FF)),
-    (AppThemeMode.roboticDark, Icons.memory_rounded,           'Tactical Dark',  'Amber HUD on near-black',         Color(0xFFf59e0b)),
-    (AppThemeMode.roboticLight,Icons.developer_board_rounded,  'Tactical Light', 'Amber HUD on light surface',      Color(0xFFB45309)),
+    (AppThemeMode.light,        Icons.wb_sunny_rounded,        'Day River',      'Warm gold — bright daytime UI',    Color(0xFFFFB800)),
+    (AppThemeMode.dark,         Icons.nights_stay_rounded,     'Night River',    'Deep abyss with gold accents',     Color(0xFFFFD966)),
+    (AppThemeMode.sunset,       Icons.wb_twilight_rounded,     'Sunset Warm',    'Red-orange fiery glow',            Color(0xFFFF6B35)),
+    (AppThemeMode.ocean,        Icons.water_rounded,           'Deep Ocean',     'Cyan + midnight navy',             Color(0xFF00C6FF)),
+    (AppThemeMode.roboticDark,  Icons.memory_rounded,          'Tactical Dark',  'Amber HUD on near-black',          Color(0xFFf59e0b)),
+    (AppThemeMode.roboticLight, Icons.developer_board_rounded, 'Tactical Light', 'Amber HUD on light surface',       Color(0xFFB45309)),
   ];
 
   @override
@@ -91,8 +86,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   icon: Icons.manage_accounts_rounded, title: 'Account',
                   open: _isOpen('account'), onToggle: () => _toggle('account'),
                   child: _tiles(t, [
-                    (Icons.person_outline,          'Profile',                Routes.profile),
-                    (Icons.notifications_outlined,  'Notification Settings',  Routes.notificationSettings),
+                    (Icons.person_outline,         'Profile',                Routes.profile),
+                    (Icons.notifications_outlined, 'Notification Settings',  Routes.notificationSettings),
                   ]),
                 ),
                 _gap,
@@ -102,9 +97,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   icon: Icons.analytics_rounded, title: 'Data & Analytics',
                   open: _isOpen('data'), onToggle: () => _toggle('data'),
                   child: _tiles(t, [
-                    (Icons.bar_chart_rounded,   'Analytics Dashboard',  Routes.analytics),
-                    (Icons.history_rounded,     'Historical Analytics', Routes.historicalAnalytics),
-                    (Icons.download_rounded,    'Export Data',          Routes.export_),
+                    (Icons.bar_chart_rounded,  'Analytics Dashboard',  Routes.analytics),
+                    (Icons.history_rounded,    'Historical Analytics', Routes.historicalAnalytics),
+                    (Icons.download_rounded,   'Export Data',          Routes.export_),
                   ]),
                 ),
                 _gap,
@@ -114,10 +109,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   icon: Icons.build_circle_outlined, title: 'Tools',
                   open: _isOpen('tools'), onToggle: () => _toggle('tools'),
                   child: _tiles(t, [
-                    (Icons.sensors,                 'Live Stations',  Routes.liveStations),
-                    (Icons.grid_view_rounded,        'State Matrix',   Routes.stateMatrix),
-                    (Icons.monitor_heart_outlined,   'River Monitor',  Routes.riverMonitor),
-                    (Icons.info_outline,             'Model Info',     Routes.modelInfo),
+                    (Icons.sensors,                'Live Stations',  Routes.liveStations),
+                    (Icons.grid_view_rounded,      'State Matrix',   Routes.stateMatrix),
+                    (Icons.monitor_heart_outlined, 'River Monitor',  Routes.riverMonitor),
+                    (Icons.info_outline,           'Model Info',     Routes.modelInfo),
                   ]),
                 ),
                 _gap,
@@ -127,10 +122,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   icon: Icons.map_outlined, title: 'Maps',
                   open: _isOpen('maps'), onToggle: () => _toggle('maps'),
                   child: _tiles(t, [
-                    (Icons.layers_outlined,          'Flood Command Map',      Routes.map),
-                    (Icons.water_damage_outlined,    'Bihar River Map',        Routes.biharRiverMap),
-                    (Icons.public_rounded,           'India River Explorer',   Routes.indiaRiverExplorer),
-                    (Icons.alt_route_rounded,        'Evacuation Routes',      Routes.evacuation),
+                    (Icons.layers_outlined,       'Flood Command Map',    Routes.map),
+                    (Icons.water_damage_outlined, 'Bihar River Map',      Routes.biharRiverMap),
+                    (Icons.public_rounded,        'India River Explorer', Routes.indiaRiverExplorer),
+                    (Icons.alt_route_rounded,     'Evacuation Routes',    Routes.evacuation),
                   ]),
                 ),
                 _gap,
@@ -140,8 +135,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   icon: Icons.cloud_outlined, title: 'Weather',
                   open: _isOpen('weather'), onToggle: () => _toggle('weather'),
                   child: _tiles(t, [
-                    (Icons.wb_sunny_outlined,       'Weather',            Routes.weather),
-                    (Icons.thunderstorm_outlined,   'Rainfall Forecast',  Routes.rainfallForecast),
+                    (Icons.wb_sunny_outlined,    'Weather',           Routes.weather),
+                    (Icons.thunderstorm_outlined,'Rainfall Forecast', Routes.rainfallForecast),
                   ]),
                 ),
                 _gap,
@@ -151,8 +146,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   icon: Icons.auto_awesome_rounded, title: 'Prediction & AI',
                   open: _isOpen('prediction'), onToggle: () => _toggle('prediction'),
                   child: _tiles(t, [
-                    (Icons.psychology_rounded,    'AI Predictor',   Routes.aiPredictor),
-                    (Icons.query_stats_rounded,   'Manual Predict', Routes.predict),
+                    (Icons.psychology_rounded,  'AI Predictor',   Routes.aiPredictor),
+                    (Icons.query_stats_rounded, 'Manual Predict', Routes.predict),
                   ]),
                 ),
                 _gap,
@@ -162,9 +157,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   icon: Icons.people_outline, title: 'Community',
                   open: _isOpen('community'), onToggle: () => _toggle('community'),
                   child: _tiles(t, [
-                    (Icons.feed_outlined,    'Crowd Reports',    Routes.crowdReports),
-                    (Icons.report_outlined,  'Incident Report',  Routes.incidentReport),
-                    (Icons.sos_rounded,      'SOS & Emergency',  Routes.sos),
+                    (Icons.feed_outlined,   'Crowd Reports',   Routes.crowdReports),
+                    (Icons.report_outlined, 'Incident Report', Routes.incidentReport),
+                    (Icons.sos_rounded,     'SOS & Emergency', Routes.sos),
                   ]),
                 ),
                 _gap,
@@ -194,8 +189,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     'OpsFlood v1.0.0  •  Bihar Flood Command',
                     style: TextStyle(
                       color: t.textSecondary.withOpacity(0.45),
-                      fontSize: 11,
-                      letterSpacing: 0.3,
+                      fontSize: 11, letterSpacing: 0.3,
                     ),
                   ),
                 ),
@@ -210,7 +204,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   static const _gap = SizedBox(height: 10);
 
-  // Build a column of tiles from (icon, label, route) tuples
   Widget _tiles(RiverColors t, List<(IconData, String, String)> items) {
     return Column(
       children: [
@@ -218,9 +211,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           _tile(t, items[i].$1, items[i].$2, items[i].$3),
           if (i < items.length - 1)
             Divider(
-              height: 1,
-              indent: 58,
-              endIndent: 16,
+              height: 1, indent: 58, endIndent: 16,
               color: t.stroke.withOpacity(0.25),
             ),
         ],
@@ -228,7 +219,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  // ── Theme grid ──────────────────────────────────────────────────────────────
   Widget _buildThemeGrid(BuildContext ctx, RiverColors t,
       AppThemeMode current, dynamic notifier) {
     return Wrap(
@@ -248,105 +238,62 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             width: (MediaQuery.of(ctx).size.width - 54) / 2,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
             decoration: BoxDecoration(
-              color: selected
-                  ? accentColor.withValues(alpha: 0.10)
-                  : t.cardBg,
+              color: selected ? accentColor.withValues(alpha: 0.10) : t.cardBg,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: selected ? accentColor : t.stroke.withValues(alpha: 0.4),
                 width: selected ? 1.5 : 1.0,
               ),
               boxShadow: selected
-                  ? [
-                      BoxShadow(
-                        color: accentColor.withValues(alpha: 0.22),
-                        blurRadius: 14,
-                        offset: const Offset(0, 4),
-                      ),
-                    ]
-                  : [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.06),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                  ? [BoxShadow(color: accentColor.withValues(alpha: 0.22), blurRadius: 14, offset: const Offset(0, 4))]
+                  : [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 6, offset: const Offset(0, 2))],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Icon badge — centred
                 Center(
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
                       Container(
-                        width: 44,
-                        height: 44,
+                        width: 44, height: 44,
                         decoration: BoxDecoration(
                           color: accentColor.withValues(alpha: 0.13),
                           borderRadius: BorderRadius.circular(13),
-                          border: Border.all(
-                            color: accentColor.withValues(alpha: 0.30),
-                            width: 1,
-                          ),
+                          border: Border.all(color: accentColor.withValues(alpha: 0.30), width: 1),
                         ),
-                        child: Center(
-                          child: Icon(icon, color: accentColor, size: 22),
-                        ),
+                        child: Center(child: Icon(icon, color: accentColor, size: 22)),
                       ),
                       if (selected)
                         Positioned(
-                          right: -2,
-                          top: -2,
+                          right: -2, top: -2,
                           child: Container(
-                            width: 16,
-                            height: 16,
+                            width: 16, height: 16,
                             decoration: BoxDecoration(
-                              color: accentColor,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                  color: t.cardBg, width: 1.5),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: accentColor.withOpacity(0.4),
-                                  blurRadius: 4,
-                                ),
-                              ],
+                              color: accentColor, shape: BoxShape.circle,
+                              border: Border.all(color: t.cardBg, width: 1.5),
+                              boxShadow: [BoxShadow(color: accentColor.withOpacity(0.4), blurRadius: 4)],
                             ),
-                            child: const Icon(
-                              Icons.check_rounded,
-                              color: Colors.white,
-                              size: 10,
-                            ),
+                            child: const Icon(Icons.check_rounded, color: Colors.white, size: 10),
                           ),
                         ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 12),
-                Text(
-                  label,
+                Text(label,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: selected ? accentColor : t.textPrimary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    height: 1.1,
+                    fontSize: 13, fontWeight: FontWeight.w700, height: 1.1,
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  desc,
+                Text(desc,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: t.textSecondary,
-                    fontSize: 10,
-                    height: 1.3,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: t.textSecondary, fontSize: 10, height: 1.3),
+                  maxLines: 2, overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -356,7 +303,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  // ── Single tile ─────────────────────────────────────────────────────────────
   Widget _tile(RiverColors t, IconData icon, String label, String route) {
     return Material(
       color: Colors.transparent,
@@ -371,49 +317,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Icon badge — centred icon inside square
               Container(
-                width: 36,
-                height: 36,
+                width: 36, height: 36,
                 decoration: BoxDecoration(
                   color: t.accent.withOpacity(0.10),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: t.accent.withOpacity(0.18),
-                    width: 1,
-                  ),
+                  border: Border.all(color: t.accent.withOpacity(0.18), width: 1),
                 ),
-                child: Center(
-                  child: Icon(icon, color: t.accent, size: 18),
-                ),
+                child: Center(child: Icon(icon, color: t.accent, size: 18)),
               ),
               const SizedBox(width: 13),
-              Expanded(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    color: t.textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    height: 1.2,
-                  ),
-                ),
-              ),
+              Expanded(child: Text(label, style: TextStyle(
+                color: t.textPrimary, fontSize: 14,
+                fontWeight: FontWeight.w500, height: 1.2,
+              ))),
               const SizedBox(width: 4),
               Container(
-                width: 24,
-                height: 24,
+                width: 24, height: 24,
                 decoration: BoxDecoration(
                   color: t.accent.withOpacity(0.07),
                   borderRadius: BorderRadius.circular(7),
                 ),
-                child: Center(
-                  child: Icon(
-                    Icons.chevron_right_rounded,
-                    color: t.accent.withOpacity(0.6),
-                    size: 16,
-                  ),
-                ),
+                child: Center(child: Icon(
+                  Icons.chevron_right_rounded,
+                  color: t.accent.withOpacity(0.6), size: 16,
+                )),
               ),
             ],
           ),
@@ -423,7 +351,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 }
 
-// ── Collapsible section ──────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 class _CollapsibleSection extends StatelessWidget {
   final RiverColors  t;
   final String       sectionKey;
@@ -450,10 +378,9 @@ class _CollapsibleSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Tappable header
           InkWell(
             borderRadius: BorderRadius.vertical(
-              top:    const Radius.circular(16),
+              top: const Radius.circular(16),
               bottom: open ? Radius.zero : const Radius.circular(16),
             ),
             onTap: onToggle,
@@ -462,64 +389,46 @@ class _CollapsibleSection extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Section icon badge — perfectly centred
                   Container(
-                    width: 32,
-                    height: 32,
+                    width: 32, height: 32,
                     decoration: BoxDecoration(
                       color: t.accent.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(9),
-                      border: Border.all(
-                          color: t.accent.withOpacity(0.20), width: 1),
+                      border: Border.all(color: t.accent.withOpacity(0.20), width: 1),
                     ),
-                    child: Center(
-                      child: Icon(icon, color: t.accent, size: 15),
-                    ),
+                    child: Center(child: Icon(icon, color: t.accent, size: 15)),
                   ),
                   const SizedBox(width: 11),
-                  Expanded(
-                    child: Text(
-                      title.toUpperCase(),
-                      style: TextStyle(
-                        color: t.accent,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.3,
-                      ),
-                    ),
-                  ),
+                  Expanded(child: Text(title.toUpperCase(), style: TextStyle(
+                    color: t.accent, fontSize: 11,
+                    fontWeight: FontWeight.w800, letterSpacing: 1.3,
+                  ))),
                   AnimatedRotation(
                     turns: open ? 0.0 : -0.25,
                     duration: const Duration(milliseconds: 220),
                     curve: Curves.easeOut,
                     child: Container(
-                      width: 26,
-                      height: 26,
+                      width: 26, height: 26,
                       decoration: BoxDecoration(
                         color: t.accent.withOpacity(0.08),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Center(
-                        child: Icon(
-                          Icons.keyboard_arrow_down_rounded,
-                          color: t.textSecondary,
-                          size: 18,
-                        ),
-                      ),
+                      child: Center(child: Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: t.textSecondary, size: 18,
+                      )),
                     ),
                   ),
                 ],
               ),
             ),
           ),
-          // Animated body
           AnimatedCrossFade(
             duration: const Duration(milliseconds: 220),
             sizeCurve: Curves.easeOut,
             firstCurve: Curves.easeOut,
             secondCurve: Curves.easeIn,
-            crossFadeState:
-                open ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+            crossFadeState: open ? CrossFadeState.showFirst : CrossFadeState.showSecond,
             firstChild: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
