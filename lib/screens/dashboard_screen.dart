@@ -3,14 +3,13 @@
 // v8.8 (15 Jun 2026) — ML severity fields wired throughout
 //
 //   Changes from v8.7:
-//   • Remove bare library; directive
 //   • _AtRiskTile: predictedSeverity chip, riskScore bar,
 //     willBreachDanger banner, peakLevel72h label
 //   • _LiveStationTile: predictedSeverity micro-chip, riskScore bar,
 //     confidencePercent subtitle
 //   • _buildAtRiskCities: sorted by riskScore desc
-//   • Summary row: breach count chip (willBreachDanger stations)
-//   • All existing v8.7 logic unchanged
+//   • Summary row: breach count banner (willBreachDanger stations)
+//   • liveFloodDataProvider read from flood_provider.dart
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -97,7 +96,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     final fp     = ref.watch(floodProvider);
     final ap     = ref.watch(alertProvider);
     final merged = ref.watch(mergedStationsProvider);
-    final live   = ref.watch(liveFloodDataProvider);
+    // liveFloodData for ML fields — comes from floodProvider's liveLevels getter
+    final live   = fp.liveLevels;
 
     final totalCount   = merged.length;
     final liveCount    = merged.where((s) => s.isLive).length;
@@ -108,7 +108,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     final warningCount = merged.where((s) => s.dangerClass == DangerClass.aboveNormal).length;
     final normalCount  = merged.where((s) => s.dangerClass == DangerClass.normal).length;
 
-    // ML breach count from liveFloodData
+    // ML breach count from live FloodData list
     final breachCount = live.where((fd) => fd.willBreachDanger == true).length;
 
     final leCount   = merged.where((s) => _sourceLabel(s.dataSource ?? '') == 'LiveEngine').length;
@@ -210,7 +210,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             ),
           ],
         ),
-        // ML breach prediction banner
         if (breach > 0) ...[
           const SizedBox(height: 8),
           Container(
@@ -242,7 +241,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     );
   }
 
-  // ── Source breakdown banner ────────────────────────────────────────────
+  // ── Source breakdown banner ──────────────────────────────────────────────
   Widget _buildSourceBreakdown(RiverColors t, int total,
       int le, int cwc, int df, int wrd, int seed) {
     return Td3Card(
@@ -265,7 +264,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                       letterSpacing: 0.3),
                 ),
                 const Spacer(),
-                // ML severity health dot
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
@@ -347,11 +345,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     );
   }
 
-  // ── At-Risk Cities ─────────────────────────────────────────────────────────
+  // ── At-Risk Cities ────────────────────────────────────────────────────────
   Widget _buildAtRiskCities(
       BuildContext context, RiverColors t,
       List<RiverStation> merged, List<FloodData> live) {
-    // Build lookup: city key -> FloodData (for ML fields)
     final fdMap = <String, FloodData>{
       for (final fd in live) fd.city.toLowerCase().trim(): fd,
     };
@@ -359,12 +356,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     final atRisk = merged
         .where((s) => s.dangerClass != DangerClass.normal)
         .toList()
-      // Sort by ML riskScore desc, fall back to dangerClass ordinal
       ..sort((a, b) {
           final fdA = fdMap[a.city.toLowerCase().trim()];
           final fdB = fdMap[b.city.toLowerCase().trim()];
-          final scoreA = fdA?.riskScore ?? (a.dangerClass.index * 20);
-          final scoreB = fdB?.riskScore ?? (b.dangerClass.index * 20);
+          final scoreA = (fdA?.riskScore ?? (a.dangerClass.index * 20)).toDouble();
+          final scoreB = (fdB?.riskScore ?? (b.dangerClass.index * 20)).toDouble();
           return scoreB.compareTo(scoreA);
         });
 
@@ -389,7 +385,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                         fontWeight: FontWeight.w700,
                         fontSize: 14)),
                 const Spacer(),
-                // ML badge
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
@@ -437,8 +432,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       ..sort((a, b) {
           final fdA = fdMap[a.city.toLowerCase().trim()];
           final fdB = fdMap[b.city.toLowerCase().trim()];
-          final scoreA = fdA?.riskScore ?? 0;
-          final scoreB = fdB?.riskScore ?? 0;
+          final scoreA = (fdA?.riskScore ?? 0).toDouble();
+          final scoreB = (fdB?.riskScore ?? 0).toDouble();
           return scoreB.compareTo(scoreA);
         });
 
@@ -487,7 +482,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
 // ─────────────────────────────────────────────────────────────────────────────
 class _AtRiskTile extends StatelessWidget {
   final RiverStation station;
-  final FloodData?   floodData; // may be null if not in liveFloodData
+  final FloodData?   floodData;
   final RiverColors  theme;
   final VoidCallback onTap;
   const _AtRiskTile({
@@ -513,7 +508,6 @@ class _AtRiskTile extends StatelessWidget {
       default:                      barColor = const Color(0xFF69F0AE); dcLabel = 'NORMAL';  break;
     }
 
-    // Prefer ML severity colour if available
     final mlSev = fd?.predictedSeverity?.toUpperCase();
     Color mlColor = barColor;
     if (mlSev != null) {
@@ -525,10 +519,10 @@ class _AtRiskTile extends StatelessWidget {
       }
     }
 
-    final riskScore      = fd?.riskScore;
-    final confidence     = fd?.confidencePercent;
-    final willBreach     = fd?.willBreachDanger ?? false;
-    final peak           = fd?.peakLevel72h;
+    final riskScore  = fd?.riskScore;
+    final confidence = fd?.confidencePercent;
+    final willBreach = fd?.willBreachDanger ?? false;
+    final peak       = fd?.peakLevel72h;
     final max   = s.hfl    > 0 ? s.hfl    : (s.danger > 0 ? s.danger + 2 : 1.0);
     final frac  = (s.current / max).clamp(0.0, 1.0);
     final dFrac = (s.danger  / max).clamp(0.0, 1.0);
@@ -541,7 +535,7 @@ class _AtRiskTile extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Breach warning banner
+            // Breach warning banner
             if (willBreach)
               Container(
                 margin: const EdgeInsets.only(bottom: 5),
@@ -587,7 +581,6 @@ class _AtRiskTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                // ML predicted severity chip
                 if (mlSev != null) ...[
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -612,7 +605,6 @@ class _AtRiskTile extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                 ],
-                // DangerClass badge
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                   decoration: BoxDecoration(
@@ -698,11 +690,10 @@ class _AtRiskTile extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 3),
-              // Risk score bar
               ClipRRect(
                 borderRadius: BorderRadius.circular(2),
                 child: LinearProgressIndicator(
-                  value: riskScore / 100.0,
+                  value: (riskScore / 100.0).clamp(0.0, 1.0),
                   minHeight: 3,
                   backgroundColor: const Color(0xFF7B2FF7).withOpacity(0.12),
                   valueColor: AlwaysStoppedAnimation(
@@ -792,125 +783,120 @@ class _LiveStationTile extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              // Source badge
-              Container(
-                width: 30,
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                decoration: BoxDecoration(
-                  color: scCol.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: scCol.withOpacity(0.5)),
-                ),
-                child: Text(sc,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        color: scCol,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w800)),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          // Source badge
+          Container(
+            width: 30,
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            decoration: BoxDecoration(
+              color: scCol.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: scCol.withOpacity(0.5)),
+            ),
+            child: Text(sc,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    color: scCol,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800)),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(s.city,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                  color: t.textPrimary,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600)),
-                        ),
-                        // ML severity micro-chip
-                        if (mlSev != null) ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 5, vertical: 1),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF7B2FF7).withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(mlSev,
-                                style: const TextStyle(
-                                    color: Color(0xFF7B2FF7),
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.w800)),
-                          ),
-                          const SizedBox(width: 4),
-                        ],
-                        // Breach indicator
-                        if (willBreach) ...[
-                          const Icon(Icons.crisis_alert_rounded,
-                              color: Color(0xFFFF1744), size: 12),
-                          const SizedBox(width: 4),
-                        ],
-                        Text(
-                          s.current > 0
-                              ? '${s.current.toStringAsFixed(2)} m'
-                              : '——',
+                    Expanded(
+                      child: Text(s.city,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                              color: levelColor,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700),
+                              color: t.textPrimary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600)),
+                    ),
+                    // ML severity micro-chip
+                    if (mlSev != null) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 5, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF7B2FF7).withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(4),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 3),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(2),
-                      child: LinearProgressIndicator(
-                        value: frac,
-                        minHeight: 3,
-                        backgroundColor: t.divider.withOpacity(0.3),
-                        valueColor: AlwaysStoppedAnimation<Color>(levelColor),
+                        child: Text(mlSev,
+                            style: const TextStyle(
+                                color: Color(0xFF7B2FF7),
+                                fontSize: 8,
+                                fontWeight: FontWeight.w800)),
                       ),
-                    ),
-                    // ML risk score micro-bar
-                    if (riskScore != null) ...[
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(2),
-                              child: LinearProgressIndicator(
-                                value: riskScore / 100.0,
-                                minHeight: 2,
-                                backgroundColor:
-                                    const Color(0xFF7B2FF7).withOpacity(0.10),
-                                valueColor: AlwaysStoppedAnimation(
-                                  riskScore >= 80
-                                      ? const Color(0xFFFF1744)
-                                      : const Color(0xFF7B2FF7),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          if (confidence != null)
-                            Text('${confidence.toStringAsFixed(0)}%✓',
-                                style: TextStyle(
-                                    color: t.textSecondary,
-                                    fontSize: 8)),
-                        ],
-                      ),
+                      const SizedBox(width: 4),
                     ],
+                    // Breach indicator
+                    if (willBreach) ...[
+                      const Icon(Icons.crisis_alert_rounded,
+                          color: Color(0xFFFF1744), size: 12),
+                      const SizedBox(width: 4),
+                    ],
+                    Text(
+                      s.current > 0
+                          ? '${s.current.toStringAsFixed(2)} m'
+                          : '——',
+                      style: TextStyle(
+                          color: levelColor,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700),
+                    ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 8),
-              Text(time,
-                  style: TextStyle(
-                      color: t.textSecondary, fontSize: 10)),
-            ],
+                const SizedBox(height: 3),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(2),
+                  child: LinearProgressIndicator(
+                    value: frac,
+                    minHeight: 3,
+                    backgroundColor: t.divider.withOpacity(0.3),
+                    valueColor: AlwaysStoppedAnimation<Color>(levelColor),
+                  ),
+                ),
+                // ML risk score micro-bar
+                if (riskScore != null) ...[
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(2),
+                          child: LinearProgressIndicator(
+                            value: (riskScore / 100.0).clamp(0.0, 1.0),
+                            minHeight: 2,
+                            backgroundColor:
+                                const Color(0xFF7B2FF7).withOpacity(0.10),
+                            valueColor: AlwaysStoppedAnimation(
+                              riskScore >= 80
+                                  ? const Color(0xFFFF1744)
+                                  : const Color(0xFF7B2FF7),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      if (confidence != null)
+                        Text('${confidence.toStringAsFixed(0)}%✓',
+                            style: TextStyle(
+                                color: t.textSecondary,
+                                fontSize: 8)),
+                    ],
+                  ),
+                ],
+              ],
+            ),
           ),
+          const SizedBox(width: 8),
+          Text(time,
+              style: TextStyle(
+                  color: t.textSecondary, fontSize: 10)),
         ],
       ),
     );
@@ -1109,4 +1095,13 @@ class _StatChip extends StatelessWidget {
                       fontWeight: FontWeight.w800)),
               Text(label,
                   style: TextStyle(
-                      color: t.
+                      color: t.textSecondary,
+                      fontSize: 9,
+                      letterSpacing: 0.5)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
