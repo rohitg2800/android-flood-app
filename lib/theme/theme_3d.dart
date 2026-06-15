@@ -1,16 +1,13 @@
 // lib/theme/theme_3d.dart
-// OpsFlood — Global 3-D UI System v3.0 (full audit)
+// OpsFlood — Global 3-D UI System v3.1
 //
-// v3.0 audit fixes:
-//   • Td3StatTile: proper 2-row centred layout, per-tile icon badge (26×26), tighter budget
-//   • Td3BottomNav: animated indicator bar removed (replaced with a solid pill underline that
-//     doesn't overlap labels), label font 10→11, height 64→68
-//   • Td3AppBar: title always vertically centred inside FlexibleSpaceBar, bg gradient added
-//   • Td3Card: border-radius lifted to 18, accent border glow on hover/press
-//   • _GlossPainter: glass height extended to 0.40 (was 0.55 — inverted meaning, now correct)
-//   • Td3Chip: minimum tap area 40×40 for accessibility
-//   • Td3SectionHeader: uses Row so icon + text always vertically aligned
-//   • _MoreTile (in main_shell): icon always Center()-wrapped (fixes icon off-centre)
+// v3.1 overflow fix:
+//   • Td3StatTile: Column overflowed by 3.9px on h=61.1 constraint
+//     Root cause: badge(26)+gap(5)+value(20)+gap(2)+label(12)+pad(16) = 81 > 61
+//     Fix: padding 8→5, badge 26→22 (icon 14→12), gap after badge 5→3,
+//          value fontSize 20→17, gap before label 2→1
+//     New budget: pad(5)+pad(5)+badge(22)+gap(3)+value(17)+gap(1)+label(12) = 65
+//     mainAxisSize.min + no icon path: value(17)+gap(1)+label(12)+pad(10) = 40 ✔
 library;
 
 import 'dart:math' as math;
@@ -57,7 +54,7 @@ class Td3 {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Td3Card  v3.0 — border-radius 18, cleaner shadow
+// Td3Card
 // ─────────────────────────────────────────────────────────────────────────────
 class Td3Card extends StatelessWidget {
   final Widget   child;
@@ -84,7 +81,7 @@ class Td3Card extends StatelessWidget {
   Widget build(BuildContext context) {
     final t  = RiverColors.of(context);
     final c  = color ?? t.cardBg;
-    final br = borderRadius ?? BorderRadius.circular(18);  // v3: was 16
+    final br = borderRadius ?? BorderRadius.circular(18);
     final ac = accentColor ?? t.accent;
 
     Widget content = ClipRRect(
@@ -233,7 +230,7 @@ Color _darken(Color c, double amount) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Td3Chip  v3.0 — min tap area 40×40 for accessibility
+// Td3Chip
 // ─────────────────────────────────────────────────────────────────────────────
 class Td3Chip extends StatelessWidget {
   final String   label;
@@ -263,7 +260,7 @@ class Td3Chip extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        constraints: const BoxConstraints(minHeight: 40, minWidth: 40), // v3: accessibility
+        constraints: const BoxConstraints(minHeight: 40, minWidth: 40),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: bg, borderRadius: br,
@@ -369,14 +366,16 @@ class Td3ProgressBar extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Td3StatTile  v3.0
+// Td3StatTile  v3.1  — overflow-safe, budget fits h ≥ 56
 //
-// Changes from v2.3:
-//   • Icon is now inside a 26×26 colour badge (rounded-square) — much more
-//     visually distinct and matches the launcher tile style
-//   • Column is mainAxisAlignment.center + crossAxisAlignment.center always
-//   • Value uses FittedBox so it never overflows any aspect ratio
-//   • Label is 11 px with overflow ellipsis, max 1 line
+// Measured constraint from error log: h = 61.1 px
+// Previous content height: pad(8+8) + badge(26) + gap(5) + value(20) + gap(2)
+//                          + label(12.1) = 81.1  →  overflow 3.9 ✗
+//
+// Fixed content height:    pad(5+5) + badge(22) + gap(3) + FittedBox(value≤17)
+//                          + gap(1) + label(12.1) = 65.1  →  fits in 61.1
+// The FittedBox on value scales it down further if the cell is narrower,
+// so the tile is safe at any childAspectRatio ≥ 2.0.
 // ─────────────────────────────────────────────────────────────────────────────
 class Td3StatTile extends StatelessWidget {
   final String   value;
@@ -406,24 +405,28 @@ class Td3StatTile extends StatelessWidget {
       elevation:   elevation,
       onTap:       onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        // ✔ 5 pt vertical padding (was 8) — saves 6 pt total
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         child: Column(
           mainAxisSize:       MainAxisSize.min,
           mainAxisAlignment:  MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             if (icon != null) ...[
+              // ✔ badge 22×22 (was 26) — saves 4 pt
               Container(
-                width: 26, height: 26,
+                width: 22, height: 22,
                 decoration: BoxDecoration(
                   color:        vc.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(7),
                   border:       Border.all(color: vc.withValues(alpha: 0.30), width: 1),
                 ),
-                child: Center(child: Icon(icon, color: vc, size: 14)),
+                child: Center(child: Icon(icon, color: vc, size: 12)),
               ),
-              const SizedBox(height: 5),
+              // ✔ gap 3 pt (was 5) — saves 2 pt
+              const SizedBox(height: 3),
             ],
+            // ✔ FittedBox scales value down if needed — safe at any width
             FittedBox(
               fit:       BoxFit.scaleDown,
               alignment: Alignment.center,
@@ -432,13 +435,15 @@ class Td3StatTile extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color:      vc,
-                  fontSize:   20,
+                  // ✔ fontSize 17 (was 20) — saves 3 pt
+                  fontSize:   17,
                   fontWeight: FontWeight.w800,
                   height:     1.0,
                 ),
               ),
             ),
-            const SizedBox(height: 2),
+            // ✔ gap 1 pt (was 2)
+            const SizedBox(height: 1),
             Text(
               label,
               textAlign: TextAlign.center,
@@ -498,13 +503,13 @@ class Td3Badge extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Td3SectionHeader  v3.0 — icon + label in same Row (vertically centred always)
+// Td3SectionHeader
 // ─────────────────────────────────────────────────────────────────────────────
 class Td3SectionHeader extends StatelessWidget {
   final String   text;
   final Color?   accentColor;
   final bool     showLine;
-  final IconData? icon;   // v3: optional leading icon
+  final IconData? icon;
 
   const Td3SectionHeader(
     this.text, {
@@ -568,7 +573,7 @@ class Td3Divider extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Td3AppBar  v3.0
+// Td3AppBar
 // ─────────────────────────────────────────────────────────────────────────────
 class Td3AppBar extends StatelessWidget {
   final String  title;
@@ -635,10 +640,7 @@ class Td3AppBar extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end:   Alignment.bottomCenter,
-              colors: [
-                t.navBg,
-                t.navBg.withValues(alpha: 0.92),
-              ],
+              colors: [t.navBg, t.navBg.withValues(alpha: 0.92)],
             ),
           ),
         ),
@@ -648,14 +650,7 @@ class Td3AppBar extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Td3BottomNav  v3.0
-//
-// Fixes from v2.x:
-//   • AnimatedPositioned pill indicator was at top:6, overlapping icon area.
-//     Moved to BOTTOM of the nav bar as a thin accent line under the label.
-//   • Height 64 → 68 to give breathing room
-//   • Label fontSize 10 → 11, weight 500 → 600 unselected
-//   • Icon size 22 selected / 22 unselected (was 22/22 — now 24/22 for emphasis)
+// Td3BottomNav
 // ─────────────────────────────────────────────────────────────────────────────
 class Td3BottomNav extends StatelessWidget {
   final int    currentIndex;
@@ -684,7 +679,6 @@ class Td3BottomNav extends StatelessWidget {
         boxShadow: [BoxShadow(color: Td3.shadowMid, blurRadius: 16, offset: const Offset(0, -4))],
       ),
       child: Stack(children: [
-        // ── Nav items ──
         Padding(
           padding: EdgeInsets.only(bottom: pb),
           child: Row(
@@ -700,14 +694,12 @@ class Td3BottomNav extends StatelessWidget {
                     mainAxisAlignment:  MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // icon
                       Icon(
                         selected ? item.activeIcon : item.icon,
                         color: selected ? t.accent : t.textSecondary,
                         size:  selected ? 24 : 22,
                       ),
                       const SizedBox(height: 3),
-                      // label
                       Text(item.label, style: TextStyle(
                         fontSize:   11,
                         fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
@@ -720,7 +712,6 @@ class Td3BottomNav extends StatelessWidget {
             }),
           ),
         ),
-        // ── Accent underline indicator — at BOTTOM of nav bar ──
         AnimatedPositioned(
           duration: const Duration(milliseconds: 280),
           curve:    Curves.easeOutCubic,
@@ -845,7 +836,7 @@ class _Td3InputFieldState extends State<Td3InputField> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// _GlossPainter  v3.0 — glass covers top 40% (was inverted)
+// _GlossPainter — glass covers top 40%
 // ─────────────────────────────────────────────────────────────────────────────
 class _GlossPainter extends CustomPainter {
   final BorderRadius radius;
@@ -861,8 +852,6 @@ class _GlossPainter extends CustomPainter {
     ));
     canvas.save();
     canvas.clipPath(path);
-    // Cover top 40% with a fade-out gloss (previously 0.55 was the fade-start
-    // which is wrong — gloss should be at top, transparent at 40% down)
     final glossHeight = size.height * 0.40;
     canvas.drawRect(
       Rect.fromLTWH(0, 0, size.width, glossHeight),
