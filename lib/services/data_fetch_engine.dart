@@ -1,11 +1,8 @@
 // lib/services/data_fetch_engine.dart
-// DataFetchEngine — emits DataFetchSnapshot on each successful fetch.
-// snapshotStream is consumed by the alert pipeline in main.dart.
 import 'dart:async';
 import '../models/flood_data.dart';
 import '../models/river_station.dart';
 
-// ─── DataFetchSnapshot ────────────────────────────────────────────────────────
 class DataFetchSnapshot {
   final List<FloodData> stations;
   final DateTime        fetchedAt;
@@ -15,27 +12,23 @@ class DataFetchSnapshot {
     required this.fetchedAt,
   });
 
-  /// Used by push-notification path (alert_engine.evaluate).
   List<FloodData> toFloodDataList() => stations;
 
-  /// Used by stream alert pipeline (alert_engine.evaluateMerged).
-  /// Converts FloodData → RiverStation so evaluateMerged can process them.
+  /// Converts to List<RiverStation> for AlertEngine.evaluateMerged().
+  /// RiverStation has no district/riskLevel/source params — omitted.
+  /// hfl is not on FloodData; use dangerLevel * 1.3 as a safe upper bound.
   List<RiverStation> toRiverStations() => stations.map((f) => RiverStation(
-    station:   f.stationId,
-    river:     f.riverName ?? '',
-    district:  f.district,
-    state:     f.state,
-    city:      f.city,
-    current:   f.currentLevel,
-    danger:    f.dangerLevel,
-    warning:   f.warningLevel,
-    riskLevel: f.riskLevel,
-    source:    'LIVE',
-    hfl:       f.hfl ?? 0,
+    city:    f.city,
+    state:   f.state,
+    river:   f.riverName ?? '',
+    station: f.stationId,
+    current: f.currentLevel,
+    warning: f.warningLevel,
+    danger:  f.dangerLevel,
+    hfl:     f.dangerLevel > 0 ? f.dangerLevel * 1.3 : 0,
   )).toList();
 }
 
-// ─── DataFetchEngine ──────────────────────────────────────────────────────────
 class DataFetchEngine {
   DataFetchEngine._();
   static final DataFetchEngine instance = DataFetchEngine._();
@@ -43,11 +36,8 @@ class DataFetchEngine {
   final _snapshotController =
       StreamController<DataFetchSnapshot>.broadcast();
 
-  /// Primary stream — consumed by main.dart alert pipeline.
   Stream<DataFetchSnapshot> get snapshotStream => _snapshotController.stream;
-
-  /// Legacy alias.
-  Stream<DataFetchSnapshot> get alertStream => snapshotStream;
+  Stream<DataFetchSnapshot> get alertStream    => snapshotStream;
 
   bool _running = false;
 
