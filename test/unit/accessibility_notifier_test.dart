@@ -5,12 +5,14 @@
 //   • setTextScale clamps to [1.0, 1.4]
 //   • setLocale updates locale string
 //   • toggleHighContrast flips the flag
+//
+// fix: flood_app → equinox_flood package name (pubspec.yaml name:)
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:flood_app/providers/accessibility_provider.dart';
+import 'package:equinox_flood/providers/accessibility_provider.dart';
 
 void main() {
   setUp(() {
