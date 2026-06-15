@@ -1,85 +1,47 @@
-# ══ Flutter / Dart ═══════════════════════════════════════════════════════════════
+# ── Flutter / Dart ────────────────────────────────────────────────────
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
 .packages
 build/
-*.g.dart.bak
+*.g.dart          # generated — but only if not pre-committed
+pubspec.lock      # keep for reproducible builds — remove this line if you want
 
-# ══ Android ═══════════════════════════════════════════════════════════════════
-android/local.properties
-android/.gradle/
-android/app/debug/
-android/app/profile/
-android/app/release/
+# ── Environment & Secrets ────────────────────────────────────────────
+.env
+.env.*
+!.env.example      # allow the example template
 
-# ══ SECURITY — NEVER COMMIT THESE ═════════════════════════════════════════
-
-# Keystores / signing
+# ── Android signing ───────────────────────────────────────────────────
 *.jks
 *.keystore
-*.p12
-*.pfx
-*.pem
-keystore.local.properties
+android/key.properties
+android/app/google-services.json  # injected by flutterfire configure in CI
 
-# Environment / secrets
-.env
-.env.local
-.env.production
-.env.staging
-.dart_defines
-*.dart_defines
-secrets/
-.secrets/
+# ── Firebase ──────────────────────────────────────────────────────────
+lib/firebase_options.dart
 
-# Firebase — real service account / API key files
-# (google-services.json with placeholder values is checked in;
-#  if you ever populate real keys, remove from git first.)
-google-services.json.secret
-GoogleService-Info.plist.secret
-service-account.json
-firebase-adminsdk*.json
+# ── Fastlane ──────────────────────────────────────────────────────────
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+fastlane/.env
+fastlane/.env.*
 
-# Crashlytics / Firebase source mapping
-*.deobfuscation
-app/src/main/assets/crashlytics-build.properties
+# ── Test artefacts ─────────────────────────────────────────────────────
+coverage/
+test/golden/failures/       # only failure diffs; committed goldens stay
 
-# ══ iOS ════════════════════════════════════════════════════════════════════════
-ios/Flutter/App.framework
-ios/Flutter/Flutter.framework
-ios/Flutter/Flutter.podspec
-ios/.symlinks/
-ios/Pods/
-
-# ══ IDE ═════════════════════════════════════════════════════════════════════
+# ── IDE ────────────────────────────────────────────────────────────────
 .idea/
 .vscode/
 *.iml
-*.ipr
-*.iws
 
-# ══ macOS ═════════════════════════════════════════════════════════════─
+# ── macOS ────────────────────────────────────────────────────────────────
 .DS_Store
 
-# ══ Compiled / binary files ═════════════════════════════════════════════
-*.class
+# ── Misc ────────────────────────────────────────────────────────────────
 *.log
-*.jar
-*.war
-*.nar
-*.ear
-*.zip
-*.tar.gz
-*.rar
-
-# ══ Test & coverage output ═══════════════════════════════════════════════
-coverage/
-*.lcov
-
-# ══ Merge conflict artifacts ═════════════════════════════════════════════
-*.orig
-*.rej
-
-# ══ Generated ═══════════════════════════════════════════════════════════════
-lib/generated_plugin_registrant.dart
+*.lock
+!pubspec.lock   # re-allow pubspec.lock for reproducibility
