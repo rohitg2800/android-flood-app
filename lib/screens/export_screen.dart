@@ -1,13 +1,9 @@
 // lib/screens/export_screen.dart
-// OpsFlood — Module 6: Media, Image Attachments & Export
-//
-// Fix (15 Jun 2026): ExportRow constructor uses danger:/warning: not dangerLevel:/warningLevel:
-// and has no observedAt field. Tuple positional order corrected.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/export_service.dart';
-import '../services/alert_engine.dart';   // AlertSeverity
+import '../services/alert_engine.dart';
 import '../theme/river_theme.dart';
 import '../widgets/ops_icon.dart';
 
@@ -16,12 +12,10 @@ class ExportScreen extends ConsumerStatefulWidget {
   static const String route = '/export';
 
   @override
-  ConsumerState<ExportScreen> createState() =>
-      _ExportScreenState();
+  ConsumerState<ExportScreen> createState() => _ExportScreenState();
 }
 
-class _ExportScreenState
-    extends ConsumerState<ExportScreen> {
+class _ExportScreenState extends ConsumerState<ExportScreen> {
   DateTimeRange _range = DateTimeRange(
     start: DateTime.now().subtract(const Duration(days: 7)),
     end:   DateTime.now(),
@@ -72,9 +66,10 @@ class _ExportScreenState
                 Text(
                   '${_fmtDate(_range.start)}  →  ${_fmtDate(_range.end)}',
                   style: TextStyle(
-                      color: t.accent,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13),
+                    color: t.accent,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 SizedBox(
@@ -85,8 +80,7 @@ class _ExportScreenState
                       side: BorderSide(color: t.stroke),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                     ),
-                    icon: Icon(Icons.edit_calendar_rounded,
-                        color: t.accent, size: 16),
+                    icon: Icon(Icons.edit_calendar_rounded, color: t.accent, size: 16),
                     label: const Text('Change Range'),
                     onPressed: _pickDateRange,
                   ),
@@ -108,10 +102,7 @@ class _ExportScreenState
                 const SizedBox(width: 8),
                 Text(
                   '${_rows.length} station readings ready for export',
-                  style: TextStyle(
-                      color: t.accent,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12),
+                  style: TextStyle(color: t.accent, fontWeight: FontWeight.w600, fontSize: 12),
                 ),
               ],
             ),
@@ -138,7 +129,7 @@ class _ExportScreenState
             loading:     _exportingPdf,
             onTap:       _exportPdf,
           ),
-          if (_lastFilePath != null) ...[  
+          if (_lastFilePath != null) ...[
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
@@ -149,14 +140,12 @@ class _ExportScreenState
               ),
               child: Row(
                 children: [
-                  Icon(Icons.check_circle_rounded,
-                      color: AppPalette.safe, size: 16),
+                  Icon(Icons.check_circle_rounded, color: AppPalette.safe, size: 16),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Last export: ${_lastFilePath!.split('/').last}',
-                      style: TextStyle(
-                          color: t.textSecondary, fontSize: 11),
+                      style: TextStyle(color: t.textSecondary, fontSize: 11),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -227,30 +216,26 @@ class _ExportScreenState
     ));
   }
 
-  // Fix: ExportRow fields are danger:/warning: (not dangerLevel:/warningLevel:)
-  // and there is no observedAt field. Tuple order:
-  // $1=station $2=river $3=district $4=currentLevel $5=dangerLevel $6=warningLevel $7=hfl $8=severity
   List<ExportRow> _buildDemoRows() {
     final stations = [
-      ('Birpur',         'Kosi',          'Supaul',       75.92, 74.50, 76.02, 76.80, AlertSeverity.critical),
-      ('Baltara',        'Gandak',        'Muzaffarpur',  58.20, 57.80, 59.10, 59.80, AlertSeverity.warning),
-      ('Hajipur',        'Gandak',        'Vaishali',     51.80, 51.00, 53.20, 54.00, AlertSeverity.info),
-      ('Rosera',         'Bagmati',       'Samastipur',   47.30, 46.80, 48.60, 49.20, AlertSeverity.warning),
-      ('Dalsinghsarai',  'Buri Gandak',   'Samastipur',   39.10, 38.50, 39.80, 40.20, AlertSeverity.emergency),
-      ('Muzaffarpur',    'Burhi Gandak',  'Muzaffarpur',  46.80, 46.00, 48.20, 49.00, null),
-      ('Sitamarhi',      'Bagmati',       'Sitamarhi',    38.90, 38.20, 40.10, 41.00, null),
-      ('Supaul',         'Kosi',          'Supaul',       73.40, 74.50, 76.02, 76.80, null),
+      ('Birpur',         'Kosi',         'Supaul',       75.92, 74.50, 76.02, 76.80, AlertSeverity.critical),
+      ('Baltara',        'Gandak',       'Muzaffarpur',  58.20, 57.80, 59.10, 59.80, AlertSeverity.warning),
+      ('Hajipur',        'Gandak',       'Vaishali',     51.80, 51.00, 53.20, 54.00, AlertSeverity.info),
+      ('Rosera',         'Bagmati',      'Samastipur',   47.30, 46.80, 48.60, 49.20, AlertSeverity.warning),
+      ('Dalsinghsarai',  'Buri Gandak',  'Samastipur',   39.10, 38.50, 39.80, 40.20, AlertSeverity.emergency),
+      ('Muzaffarpur',    'Burhi Gandak', 'Muzaffarpur',  46.80, 46.00, 48.20, 49.00, null),
+      ('Sitamarhi',      'Bagmati',      'Sitamarhi',    38.90, 38.20, 40.10, 41.00, null),
+      ('Supaul',         'Kosi',         'Supaul',       73.40, 74.50, 76.02, 76.80, null),
     ];
     return stations.map((s) => ExportRow(
       stationName:  s.$1,
       river:        s.$2,
       district:     s.$3,
       currentLevel: s.$4,
-      danger:       s.$5,   // ExportRow.danger (not dangerLevel)
-      warning:      s.$6,   // ExportRow.warning (not warningLevel)
+      danger:       s.$5,
+      warning:      s.$6,
       hfl:          s.$7,
       severity:     s.$8,
-      // no observedAt field in ExportRow
     )).toList();
   }
 
@@ -267,35 +252,31 @@ class _SectionCard extends StatelessWidget {
   final Widget      child;
   const _SectionCard({
     required this.t, required this.title,
-    required this.icon, required this.child,
+    required this.icon,  required this.child,
   });
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: t.cardBg,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: t.stroke),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, color: t.accent, size: 16),
-                const SizedBox(width: 8),
-                Text(title, style: TextStyle(
-                  color: t.textPrimary,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 13,
-                )),
-              ],
-            ),
-            const SizedBox(height: 12),
-            child,
-          ],
-        ),
-      );
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: t.cardBg,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: t.stroke),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [
+          Icon(icon, color: t.accent, size: 16),
+          const SizedBox(width: 8),
+          Text(title, style: TextStyle(
+            color: t.textPrimary, fontWeight: FontWeight.w800, fontSize: 13,
+          )),
+        ]),
+        const SizedBox(height: 12),
+        child,
+      ],
+    ),
+  );
 }
 
 class _ExportActionCard extends StatelessWidget {
@@ -314,66 +295,56 @@ class _ExportActionCard extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: t.cardBg,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: t.stroke),
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: t.cardBg,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: t.stroke),
+    ),
+    child: Row(
+      children: [
+        Container(
+          width: 44, height: 44,
+          decoration: BoxDecoration(
+            color: iconColor.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: iconColor, size: 22),
         ),
-        child: Row(
-          children: [
-            Container(
-              width: 44, height: 44,
-              decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: iconColor, size: 22),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: TextStyle(
-                    color: t.textPrimary,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 14,
-                  )),
-                  const SizedBox(height: 2),
-                  Text(subtitle, style: TextStyle(
-                    color: t.textSecondary, fontSize: 10,
-                  )),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            SizedBox(
-              width: 110,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: iconColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                ),
-                onPressed: loading ? null : onTap,
-                child: loading
-                    ? const SizedBox(
-                        width: 16, height: 16,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
-                      )
-                    : Text(
-                        buttonLabel,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700, fontSize: 11,
-                        ),
-                      ),
-              ),
-            ),
-          ],
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: TextStyle(
+                color: t.textPrimary, fontWeight: FontWeight.w800, fontSize: 14,
+              )),
+              const SizedBox(height: 2),
+              Text(subtitle, style: TextStyle(color: t.textSecondary, fontSize: 10)),
+            ],
+          ),
         ),
-      );
+        const SizedBox(width: 12),
+        SizedBox(
+          width: 110,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: iconColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: loading ? null : onTap,
+            child: loading
+                ? const SizedBox(
+                    width: 16, height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  )
+                : Text(buttonLabel,
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11)),
+          ),
+        ),
+      ],
+    ),
+  );
 }

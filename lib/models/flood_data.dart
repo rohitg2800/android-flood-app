@@ -1,10 +1,8 @@
 // lib/models/flood_data.dart
 // OpsFlood — FloodData model (canonical v5)
 //
-// v5 (15 Jun 2026) — add 11 missing fields used by backend_sync_service,
-//   export_screen, river_detail_screen, active_alert_controller, and tests.
-//   All additions are optional/nullable — zero breaking changes.
-
+// v5: added missing getter aliases consumed by backend_sync_service,
+//     active_alert_controller, river_detail_screen and bihar_district_heatmap.
 import 'package:flutter/material.dart';
 
 class EmergencyContact {
@@ -27,23 +25,23 @@ class EmergencyContact {
 }
 
 class FloodData {
-  final String    stationId;
-  final String    stationName;
-  final String    river;
-  final String    district;
-  final double    currentLevel;
-  final double    dangerLevel;
-  final double    warningLevel;
-  final double?   previousLevel;
+  final String   stationId;
+  final String   stationName;
+  final String   river;
+  final String   district;
+  final double   currentLevel;
+  final double   dangerLevel;
+  final double   warningLevel;
+  final double?  previousLevel;
   final DateTime? observedAt;
-  final String    trend;
+  final String   trend;
 
   // v2 optional fields
-  final String?   _city;
-  final String?   _riverName;
-  final String?   _state;
-  final double?   _flowRate;
-  final double?   _imdRainfallMm;
+  final String?  _city;
+  final String?  _riverName;
+  final String?  _state;
+  final double?  _flowRate;
+  final double?  _imdRainfallMm;
   final DateTime? _lastUpdated;
 
   // v3 ML prediction fields
@@ -57,14 +55,12 @@ class FloodData {
   final double?  _latitude;
   final double?  _longitude;
 
-  // v5 extended telemetry / chart / test fields
-  final double?   hfl;             // highest flood level (m)
-  final String?   source;          // data source label e.g. 'CWC', 'IMD'
-  final double?   normalLevel;     // low-flow normal gauge level (m)
-  final double?   rainfall24hMm;   // 24h accumulated rainfall in mm
-  final double?   forecastLevel24h;// predicted level 24h from now (m)
-  final double?   rateOfRiseMph;   // rate of rise metres-per-hour
-  final DateTime? _fetchedAt;      // wall-clock time data was pulled
+  // v5 extended live-data fields
+  final String?  _source;           // e.g. 'CWC', 'RTDAS', 'SEED'
+  final double?  _hfl;              // Highest Flood Level (m)
+  final double?  _rainfall24hMm;
+  final double?  _forecastLevel24h;
+  final double?  _rateOfRiseMph;
 
   const FloodData({
     required this.stationId,
@@ -90,23 +86,24 @@ class FloodData {
     this.peakLevel72h,
     double?   latitude,
     double?   longitude,
-    // v5
-    this.hfl,
-    this.source,
-    this.normalLevel,
-    this.rainfall24hMm,
-    this.forecastLevel24h,
-    this.rateOfRiseMph,
-    DateTime? fetchedAt,
-  })  : _city          = city,
-        _riverName     = riverName,
-        _state         = state,
-        _flowRate      = flowRate,
-        _imdRainfallMm = imdRainfallMm,
-        _lastUpdated   = lastUpdated,
-        _latitude      = latitude,
-        _longitude     = longitude,
-        _fetchedAt     = fetchedAt;
+    String?   source,
+    double?   hfl,
+    double?   rainfall24hMm,
+    double?   forecastLevel24h,
+    double?   rateOfRiseMph,
+  })  : _city             = city,
+        _riverName        = riverName,
+        _state            = state,
+        _flowRate         = flowRate,
+        _imdRainfallMm    = imdRainfallMm,
+        _lastUpdated      = lastUpdated,
+        _latitude         = latitude,
+        _longitude        = longitude,
+        _source           = source,
+        _hfl              = hfl,
+        _rainfall24hMm    = rainfall24hMm,
+        _forecastLevel24h = forecastLevel24h,
+        _rateOfRiseMph    = rateOfRiseMph;
 
   FloodData copyWith({
     String?   stationId,
@@ -132,13 +129,11 @@ class FloodData {
     double?   peakLevel72h,
     double?   latitude,
     double?   longitude,
-    double?   hfl,
     String?   source,
-    double?   normalLevel,
+    double?   hfl,
     double?   rainfall24hMm,
     double?   forecastLevel24h,
     double?   rateOfRiseMph,
-    DateTime? fetchedAt,
   }) =>
       FloodData(
         stationId:         stationId         ?? this.stationId,
@@ -164,22 +159,20 @@ class FloodData {
         peakLevel72h:      peakLevel72h      ?? this.peakLevel72h,
         latitude:          latitude          ?? _latitude,
         longitude:         longitude         ?? _longitude,
-        hfl:               hfl               ?? this.hfl,
-        source:            source            ?? this.source,
-        normalLevel:       normalLevel       ?? this.normalLevel,
-        rainfall24hMm:     rainfall24hMm     ?? this.rainfall24hMm,
-        forecastLevel24h:  forecastLevel24h  ?? this.forecastLevel24h,
-        rateOfRiseMph:     rateOfRiseMph     ?? this.rateOfRiseMph,
-        fetchedAt:         fetchedAt         ?? _fetchedAt,
+        source:            source            ?? _source,
+        hfl:               hfl               ?? _hfl,
+        rainfall24hMm:     rainfall24hMm     ?? _rainfall24hMm,
+        forecastLevel24h:  forecastLevel24h  ?? _forecastLevel24h,
+        rateOfRiseMph:     rateOfRiseMph     ?? _rateOfRiseMph,
       );
 
-  // ── Computed getters ────────────────────────────────────────────────────────
+  // ── Computed getters ───────────────────────────────────────────────
   double get fillPercent =>
       dangerLevel > 0 ? (currentLevel / dangerLevel * 100).clamp(0, 150) : 0;
   bool get isAboveDanger  => currentLevel >= dangerLevel;
   bool get isAboveWarning => currentLevel >= warningLevel;
 
-  // ── Alias getters (v1–v4 compat) ──────────────────────────────────────────
+  // ── Alias getters (v2) ────────────────────────────────────────────
   String  get city          => _city?.isNotEmpty == true ? _city! : stationName;
   String? get riverName     => _riverName?.isNotEmpty == true ? _riverName : river;
   String  get state         => _state?.isNotEmpty == true ? _state! : district;
@@ -188,26 +181,26 @@ class FloodData {
   double  get effectiveRainfallMm => _imdRainfallMm ?? 0.0;
   DateTime? get lastUpdated => _lastUpdated ?? observedAt;
   double  get capacityPercent => fillPercent.clamp(0, 100).toDouble();
+
   double? get latitude  => _latitude;
   double? get longitude => _longitude;
-
-  // ── v5 alias getters ────────────────────────────────────────────────────────
-  /// Short-form geo aliases used by backend_sync_service JSON payload
+  // short aliases used by alert_engine proximity filter
   double? get lat => _latitude;
   double? get lon => _longitude;
 
-  /// Risk label string — same as riskLevel; explicit alias so callers
-  /// can use either name without confusion with numeric riskScore.
-  String get riskLabel => riskLevel;
+  // ── v5 extended getters ───────────────────────────────────────────
+  /// Data source tag, e.g. 'CWC', 'RTDAS', 'SEED'. Defaults to 'LIVE'.
+  String  get source           => _source ?? 'LIVE';
+  /// Highest Flood Level (m). Falls back to dangerLevel * 1.3.
+  double  get hfl              => _hfl ?? (dangerLevel > 0 ? dangerLevel * 1.3 : 0);
+  double? get rainfall24hMm    => _rainfall24hMm;
+  double? get forecastLevel24h => _forecastLevel24h;
+  double? get rateOfRiseMph    => _rateOfRiseMph;
+  /// Timestamp of the fetch. Aliases lastUpdated → observedAt → epoch.
+  DateTime get fetchedAt       => _lastUpdated ?? observedAt ?? DateTime(1970);
+  /// Progress from 0 to HFL (used by backend sync / station cards).
+  double  get progressPct      => hfl > 0 ? (currentLevel / hfl).clamp(0.0, 1.0) : 0.0;
 
-  /// Progress percent of danger level as a 0–100 double.
-  /// Alias of fillPercent clamped to 100; used by backend_sync telemetry.
-  double get progressPct => fillPercent.clamp(0, 100).toDouble();
-
-  /// Wall-clock time data was fetched. Falls back to lastUpdated then now.
-  DateTime get fetchedAt => _fetchedAt ?? lastUpdated ?? DateTime.now();
-
-  // ── Risk classification ──────────────────────────────────────────────────────
   String get riskLevel {
     if (dangerLevel <= 0) return 'UNKNOWN';
     final pct = currentLevel / dangerLevel;
@@ -218,6 +211,9 @@ class FloodData {
     if (pct >= 0.40) return 'MODERATE';
     return 'SAFE';
   }
+
+  /// Alias matching RiverStation.riskLabel naming used by backend_sync_service.
+  String get riskLabel => riskLevel;
 
   String get status {
     final ts = lastUpdated;
@@ -238,7 +234,6 @@ class FloodData {
     }
   }
 
-  // ── JSON ───────────────────────────────────────────────────────────────────
   factory FloodData.fromJson(Map<String, dynamic> j) => FloodData(
         stationId:    j['station_id']    as String? ?? '',
         stationName:  j['station_name']  as String? ?? '',
@@ -267,16 +262,11 @@ class FloodData {
         peakLevel72h:      (j['peak_level_72h']     as num?)?.toDouble(),
         latitude:          (j['latitude']            as num?)?.toDouble(),
         longitude:         (j['longitude']           as num?)?.toDouble(),
-        // v5
-        hfl:              (j['hfl']               as num?)?.toDouble(),
-        source:            j['source']             as String?,
-        normalLevel:      (j['normal_level']       as num?)?.toDouble(),
-        rainfall24hMm:    (j['rainfall_24h']       as num?)?.toDouble(),
-        forecastLevel24h: (j['forecast_24h']       as num?)?.toDouble(),
-        rateOfRiseMph:    (j['rate_of_rise']       as num?)?.toDouble(),
-        fetchedAt: j['fetched_at'] != null
-            ? DateTime.tryParse(j['fetched_at'] as String)
-            : null,
+        source:            j['source']               as String?,
+        hfl:               (j['hfl']                 as num?)?.toDouble(),
+        rainfall24hMm:     (j['rainfall_24h_mm']     as num?)?.toDouble(),
+        forecastLevel24h:  (j['forecast_level_24h']  as num?)?.toDouble(),
+        rateOfRiseMph:     (j['rate_of_rise_mph']    as num?)?.toDouble(),
       );
 
   Map<String, dynamic> toJson() => {
@@ -303,13 +293,10 @@ class FloodData {
         if (peakLevel72h      != null) 'peak_level_72h':     peakLevel72h,
         if (_latitude         != null) 'latitude':           _latitude,
         if (_longitude        != null) 'longitude':          _longitude,
-        // v5
-        if (hfl              != null) 'hfl':          hfl,
-        if (source           != null) 'source':        source,
-        if (normalLevel      != null) 'normal_level':  normalLevel,
-        if (rainfall24hMm    != null) 'rainfall_24h':  rainfall24hMm,
-        if (forecastLevel24h != null) 'forecast_24h':  forecastLevel24h,
-        if (rateOfRiseMph    != null) 'rate_of_rise':  rateOfRiseMph,
-        if (_fetchedAt       != null) 'fetched_at':    _fetchedAt!.toIso8601String(),
+        if (_source           != null) 'source':             _source,
+        if (_hfl              != null) 'hfl':                _hfl,
+        if (_rainfall24hMm    != null) 'rainfall_24h_mm':   _rainfall24hMm,
+        if (_forecastLevel24h != null) 'forecast_level_24h':_forecastLevel24h,
+        if (_rateOfRiseMph    != null) 'rate_of_rise_mph':  _rateOfRiseMph,
       };
 }
