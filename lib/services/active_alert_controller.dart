@@ -1,15 +1,33 @@
 // lib/services/active_alert_controller.dart  v2.1
 //
-// v2.1 (15 Jun 2026) — remove DataFetchSnapshot wrapper in push().
-//   push(List<StationReading>) now calls _processReadings() directly so
-//   there is no List<StationReading> → List<FloodData> type conflict.
+// OpsFlood — Active Alert Rules Engine
+//
+// v2.1 (15 Jun 2026) — fix push() type errors
+//
+//   PROBLEM:
+//     push(List<StationReading>) called
+//       DataFetchSnapshot(stations: stations, sources: const [], ...)
+//     which failed because:
+//       1. DataFetchSnapshot.stations is List<FloodData>, not List<StationReading>.
+//       2. sources: const []  is List<dynamic>; DataFetchSnapshot.sources
+//          is Map<String,int> (Commit B).
+//
+//   FIX:
+//     • _toFloodData() helper converts StationReading → FloodData inline.
+//     • sources: param removed from DataFetchSnapshot ctor call — the
+//       snapshot auto-builds the map from FloodData.source (Commit B).
+//
+// v2.0 history: DataFetchEngine stream removed; push() added.
+// v1.x history: _kMaxAlerts/ClearWindow/RorThreshold tuning (AAC-1–5).
 library;
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'data_fetch_engine.dart';   // StationReading
+import '../models/flood_data.dart';
+import '../models/station_reading.dart';
+import 'data_fetch_engine.dart';
 
-// ── Severity enum (ordered low→high for comparisons) ─────────────────────────
+// ── Severity enum (ordered low→high for comparisons) ──────────────────────
 enum AlertSeverity { normal, rising, danger, critical, extreme }
 
 extension AlertSeverityX on AlertSeverity {
@@ -75,7 +93,7 @@ class AlertItem {
   );
 }
 
-// ── ActiveAlertController ─────────────────────────────────────────────────────
+// ── ActiveAlertController ────────────────────────────────────────────────────
 class ActiveAlertController {
   ActiveAlertController._();
   static final instance = ActiveAlertController._();
@@ -83,19 +101,18 @@ class ActiveAlertController {
   static const _kMaxAlerts      = 8;
   static const _kSuppressWindow = Duration(minutes: 30);
   static const _kClearWindow    = Duration(minutes: 15);
-  static const _kRorThreshold   = 0.3;    // m/h
-  static const _kRainThreshold  = 10.0;   // mm/24h
+  static const _kRorThreshold   = 0.3;   // m/h
+  static const _kRainThreshold  = 10.0;  // mm/24h
 
   final _activeMap   = <String, AlertItem>{};
   final _normalSince = <String, DateTime>{};
-  bool _started = false;
+  bool  _started     = false;
 
   final _ctrl = StreamController<List<AlertItem>>.broadcast();
 
-  Stream<List<AlertItem>> get stream => _ctrl.stream;
-  List<AlertItem>         get alerts => _sortedAlerts();
+  Stream<List<AlertItem>> get stream  => _ctrl.stream;
+  List<AlertItem>         get alerts  => _sortedAlerts();
 
-  // ── lifecycle ─────────────────────────────────────────────────────────────────
   void start() {
     if (_started) return;
     _started = true;
@@ -107,28 +124,66 @@ class ActiveAlertController {
     debugPrint('[AlertCtrl v2.1] stopped');
   }
 
-  // ── push() — entry-point called by alerts_parent_bridge_provider ─────────────
-  // Processes StationReading list directly; no DataFetchSnapshot wrapper needed.
+  // ── push() — public entry-point (fed by alerts_parent_bridge_provider) ────
+  //
+  // Accepts List<StationReading> (the format produced by the bridge provider).
+  // Converts to List<FloodData> before building a DataFetchSnapshot so the
+  // snapshot’s type contract is satisfied.
   void push(List<StationReading> stations) {
     if (stations.isEmpty) return;
-    _processReadings(stations);
+    // v2.1 fix: convert StationReading → FloodData; drop invalid sources: param
+    final asFloodData = stations.map(_toFloodData).toList();
+    final snap = DataFetchSnapshot(
+      stations:  asFloodData,
+      fetchedAt: DateTime.now(),
+      isLoading: false,
+      // sources auto-built by DataFetchSnapshot from FloodData.source
+    );
+    _onSnapshot(snap);
   }
 
-  // ── core processing ───────────────────────────────────────────────────────────
-  void _processReadings(List<StationReading> readings) {
+  // ── StationReading → FloodData shim ─────────────────────────────────────
+  //
+  // Maps every meaningful StationReading field to its FloodData equivalent.
+  // Fields that don’t exist on FloodData are left null (all optional in v5).
+  static FloodData _toFloodData(StationReading s) => FloodData(
+    stationId:        s.stationName,            // closest equivalent
+    stationName:      s.stationName,
+    river:            s.river,
+    district:         s.district,
+    currentLevel:     s.currentLevel,
+    dangerLevel:      s.dangerLevel,
+    warningLevel:     s.warningLevel,
+    latitude:         s.lat,
+    longitude:        s.lon,
+    hfl:              s.hfl,
+    source:           s.source,
+    rainfall24hMm:    s.rainfall24hMm,
+    forecastLevel24h: s.forecastLevel24h,
+    rateOfRiseMph:    s.rateOfRiseMph,
+    fetchedAt:        s.fetchedAt,
+    state:            s.state,
+    // isLive drives status getter; encode via lastUpdated proximity
+    lastUpdated: s.isLive ? DateTime.now() : s.fetchedAt,
+  );
+
+  // ── core processing ──────────────────────────────────────────────────────
+  void _onSnapshot(DataFetchSnapshot snap) {
+    if (snap.isLoading || snap.stations.isEmpty) return;
     final now = DateTime.now();
 
-    for (final s in readings) {
-      // Rule 1: SEED source never alerts
-      if (s.source == 'SEED') continue;
+    // Re-derive StationReading-like access via the raw snapshot stations
+    // using FloodData fields directly (both share the same semantics in v5).
+    for (final fd in snap.stations) {
+      if (fd.source == 'SEED') continue;
 
-      final key      = _norm(s.stationName);
+      final key      = _norm(fd.stationName);
+      final s        = _fromFloodData(fd);
       final severity = _deriveSeverity(s);
 
       if (severity == AlertSeverity.normal) {
         _normalSince.putIfAbsent(key, () => now);
-        final sinceNormal = now.difference(_normalSince[key]!);
-        if (sinceNormal >= _kClearWindow) {
+        if (now.difference(_normalSince[key]!) >= _kClearWindow) {
           _activeMap.remove(key);
           _normalSince.remove(key);
         }
@@ -136,8 +191,7 @@ class ActiveAlertController {
       }
 
       _normalSince.remove(key);
-
-      final existing   = _activeMap[key];
+      final existing = _activeMap[key];
       final isSameTier = existing != null && existing.severity == severity;
       final isExpired  = existing == null ||
           now.difference(existing.lastSeenAt) >= _kSuppressWindow;
@@ -147,13 +201,35 @@ class ActiveAlertController {
         _activeMap[key] = existing.copyWithTime(now);
         continue;
       }
-
       _activeMap[key] = _buildAlert(s, severity, now,
           firstSeen: existing?.firstSeenAt ?? now);
     }
-
     _emit();
   }
+
+  // ── helpers ────────────────────────────────────────────────────────────────
+  /// Re-wrap FloodData as StationReading for _deriveSeverity / _buildAlert
+  /// which still operate on StationReading for clarity.
+  static StationReading _fromFloodData(FloodData fd) => StationReading(
+    stationName:      fd.stationName,
+    river:            fd.river,
+    district:         fd.district,
+    state:            fd.state,
+    lat:              fd.latitude  ?? 0.0,
+    lon:              fd.longitude ?? 0.0,
+    currentLevel:     fd.currentLevel,
+    warningLevel:     fd.warningLevel,
+    dangerLevel:      fd.dangerLevel,
+    hfl:              fd.hfl ?? fd.dangerLevel * 1.3,
+    progressPct:      fd.progressPct,
+    riskLabel:        fd.riskLabel,
+    source:           fd.source ?? 'UNKNOWN',
+    isLive:           fd.status == 'LIVE',
+    fetchedAt:        fd.fetchedAt,
+    rateOfRiseMph:    fd.rateOfRiseMph,
+    rainfall24hMm:    fd.rainfall24hMm,
+    forecastLevel24h: fd.forecastLevel24h,
+  );
 
   void _emit() {
     if (!_ctrl.isClosed) _ctrl.add(_sortedAlerts());
@@ -171,19 +247,17 @@ class ActiveAlertController {
     return all.take(_kMaxAlerts).toList();
   }
 
-  // ── severity derivation ───────────────────────────────────────────────────────
   AlertSeverity _deriveSeverity(StationReading s) {
     if (!s.isLive) return AlertSeverity.normal;
-    if (s.currentLevel >= s.hfl)          return AlertSeverity.extreme;
-    if (s.currentLevel >= s.dangerLevel)  return AlertSeverity.critical;
-    if (s.currentLevel >= s.warningLevel) return AlertSeverity.danger;
+    if (s.currentLevel >= s.hfl)           return AlertSeverity.extreme;
+    if (s.currentLevel >= s.dangerLevel)   return AlertSeverity.critical;
+    if (s.currentLevel >= s.warningLevel)  return AlertSeverity.danger;
     final ror  = s.rateOfRiseMph ?? 0.0;
     final rain = s.rainfall24hMm ?? 0.0;
     if (ror >= _kRorThreshold && rain >= _kRainThreshold) return AlertSeverity.rising;
     return AlertSeverity.normal;
   }
 
-  // ── alert item builder ────────────────────────────────────────────────────────
   AlertItem _buildAlert(
     StationReading s,
     AlertSeverity  severity,
@@ -191,31 +265,29 @@ class ActiveAlertController {
     required DateTime firstSeen,
   }) {
     final tierLabel = switch (severity) {
-      AlertSeverity.extreme  => '🚨 ABOVE HFL',
-      AlertSeverity.critical => '🔴 CRITICAL',
-      AlertSeverity.danger   => '🟠 DANGER',
-      AlertSeverity.rising   => '⚡ RAPID RISE',
+      AlertSeverity.extreme  => '\u{1F6A8} ABOVE HFL',
+      AlertSeverity.critical => '\u{1F534} CRITICAL',
+      AlertSeverity.danger   => '\u{1F7E0} DANGER',
+      AlertSeverity.rising   => '\u26A1 RAPID RISE',
       AlertSeverity.normal   => 'NORMAL',
     };
-    final message = '$tierLabel — ${s.stationName} (${s.river})';
-    final aboveDl = s.currentLevel - s.dangerLevel;
-
+    final message  = '$tierLabel — ${s.stationName} (${s.river})';
+    final aboveDl  = s.currentLevel - s.dangerLevel;
     final sub = switch (severity) {
       AlertSeverity.extreme  =>
-          '${s.currentLevel.toStringAsFixed(2)} m — '
-          '${(s.currentLevel - s.hfl).abs().toStringAsFixed(2)} m above HFL',
+        '${s.currentLevel.toStringAsFixed(2)} m — '
+        '${(s.currentLevel - s.hfl).abs().toStringAsFixed(2)} m above HFL',
       AlertSeverity.critical =>
-          '${s.currentLevel.toStringAsFixed(2)} m — '
-          '+${aboveDl.toStringAsFixed(2)} m above danger (${s.dangerLevel.toStringAsFixed(2)} m)',
+        '${s.currentLevel.toStringAsFixed(2)} m — '
+        '+${aboveDl.toStringAsFixed(2)} m above danger (${s.dangerLevel.toStringAsFixed(2)} m)',
       AlertSeverity.danger   =>
-          '${s.currentLevel.toStringAsFixed(2)} m — '
-          'DL ${s.dangerLevel.toStringAsFixed(2)} m · WL ${s.warningLevel.toStringAsFixed(2)} m',
+        '${s.currentLevel.toStringAsFixed(2)} m — '
+        'DL ${s.dangerLevel.toStringAsFixed(2)} m \u00b7 WL ${s.warningLevel.toStringAsFixed(2)} m',
       AlertSeverity.rising   =>
-          'Rising at ${(s.rateOfRiseMph ?? 0).toStringAsFixed(2)} m/h · '
-          '${(s.rainfall24hMm ?? 0).toStringAsFixed(0)} mm rain/24h',
+        'Rising at ${(s.rateOfRiseMph ?? 0).toStringAsFixed(2)} m/h \u00b7 '
+        '${(s.rainfall24hMm ?? 0).toStringAsFixed(0)} mm rain/24h',
       AlertSeverity.normal   => '',
     };
-
     return AlertItem(
       stationKey:    _norm(s.stationName),
       stationName:   s.stationName,
