@@ -4,6 +4,10 @@
 //   • shows 'No history yet' when cache is empty
 //   • renders chart when data has >= 2 points
 //   • toggle buttons switch range and rebuild
+//
+// fix(D): flood_app → equinox_flood package name (pubspec.yaml name:)
+// fix(D): removed stale import of sparkline_card_test.mocks.dart (file
+//         doesn't exist yet; build_runner will generate it from @GenerateMocks)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,12 +15,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 
-import 'package:flood_app/services/local_cache_service.dart';
-import 'package:flood_app/widgets/sparkline_card.dart';
-import 'package:flood_app/theme/river_theme.dart';
+import 'package:equinox_flood/services/local_cache_service.dart';
+import 'package:equinox_flood/widgets/sparkline_card.dart';
+import 'package:equinox_flood/theme/river_theme.dart';
 
-import 'sparkline_card_test.mocks.dart';
-
+// NOTE: run `flutter pub run build_runner build` to regenerate mocks
+// after any LocalCacheService API change.
 @GenerateMocks([LocalCacheService])
 void main() {
   late MockLocalCacheService mockCache;

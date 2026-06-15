@@ -4,14 +4,16 @@
 //   • shows orange banner when status is Connecting
 //   • shows red banner when status is Offline
 //   • shows amber banner when status is Stale (> 5 min old)
+//
+// fix(D): flood_app → equinox_flood package name (pubspec.yaml name:)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:flood_app/widgets/sync_status_banner.dart';
-import 'package:flood_app/providers/flood_providers.dart';
-import 'package:flood_app/theme/river_theme.dart';
+import 'package:equinox_flood/widgets/sync_status_banner.dart';
+import 'package:equinox_flood/providers/flood_providers.dart';
+import 'package:equinox_flood/theme/river_theme.dart';
 
 void main() {
   Widget _wrap(SyncStatus status) {
