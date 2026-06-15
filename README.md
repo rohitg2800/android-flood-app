@@ -1,264 +1,277 @@
-# 🌊 OpsFlood — AI-Powered Flood Monitoring App
+<!-- README.md -->
+<p align="center">
+  <img src="assets/icon/opsflood_icon.png" width="96" alt="OpsFlood icon"/>
+</p>
 
-> **Flutter mobile application** that provides real-time flood monitoring, AI-driven predictions, and push-alert notifications for **80+ CWC-monitored cities across India.**  
-> Backed by the [OpsFlood FastAPI backend](https://opsflood.onrender.com) (XGBoost + RandomForest ensemble), with a full **on-device fallback ML engine** for offline use.
+<h1 align="center">OpsFlood</h1>
+<p align="center">
+  Real-time Bihar flood monitoring &amp; early-warning Android app
+  <br/>
+  <sub>Built with Flutter 3.22 · Firebase · Riverpod · TFLite · Hive · flutter_map</sub>
+</p>
+
+<p align="center">
+  <a href="https://github.com/rohitg2800/android-flood-app/actions/workflows/ci.yml">
+    <img src="https://github.com/rohitg2800/android-flood-app/actions/workflows/ci.yml/badge.svg" alt="CI"/>
+  </a>
+  <img src="https://img.shields.io/badge/flutter-3.22.2-blue?logo=flutter" alt="Flutter"/>
+  <img src="https://img.shields.io/badge/dart-3.4-blue?logo=dart" alt="Dart"/>
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="License"/>
+  <img src="https://img.shields.io/badge/WCAG-2.1%20AA-success" alt="WCAG"/>
+</p>
 
 ---
 
-## 📱 Screenshots & Key Screens
+## 📍 Overview
 
-| Screen | Description |
+OpsFlood is a production-ready Android app that monitors **52 Bihar river gauge stations** in real time, applies on-device ML flood-risk prediction, and delivers critical early warnings to users — even when offline.
+
+### Key Capabilities
+
+| Feature | Detail |
 |---|---|
-| Splash | Animated brand screen with backend health check |
-| Dashboard | National flood status overview with risk heatmap |
-| Predict | Manual flood prediction with feature sliders |
-| River Monitor | Live CWC gauge telemetry per river |
-| India Rivers | Full all-India river map with alert overlays |
-| India River Explorer | State-by-state river browsing & filtering |
-| Alerts | Critical + warning push notifications log |
-| Weather | IMD weather data with rainfall forecasts |
-| Monitors | CWC gauge station directory |
-| City Detail | Deep-dive view for a single monitored city |
-| State Matrix | State-level risk severity matrix |
-| Model Info | On-device ML model transparency screen |
-| Home | Bottom-nav shell |
+| **Live Gauges** | WebSocket + Firebase polling every 5 min for 52 stations |
+| **ML Risk Prediction** | TFLite LSTM model — 24 h & 72 h forecasts, linear fallback |
+| **Early Alerts** | FCM push + in-app banners with MODERATE/SEVERE/CRITICAL grading |
+| **Watch List** | Per-station bookmarking with instant Home Widget refresh |
+| **Offline Mode** | Hive cache + WorkManager background sync; graceful stale-data UI |
+| **Sparkline History** | 24 h / 48 h / 72 h level history per station |
+| **Multilingual** | English, हिंदी, বাংলা, ଓଡ଼ିଆ (ARB-based l10n) |
+| **Accessibility** | WCAG 2.1 AA — high-contrast mode, text scale 1.0–1.4, 48×48 touch targets |
+| **3 Visual Themes** | River / Robotic / 3D — switchable at runtime |
+| **Interactive Map** | flutter_map with colour-coded risk markers |
+| **PDF / CSV Export** | Single-station or bulk report generation |
+| **Home Widget** | Android glance widget showing top 3 watched stations |
 
 ---
 
 ## 🏗️ Architecture
 
 ```
-android-flood-app/
-├── lib/
-│   ├── main.dart                    # App entry — dotenv, FCM, WorkManager init
-│   ├── constants/                   # Domain-split constants (v2)
-│   │   ├── app_config.dart          # API endpoints, polling, animation durations
-│   │   ├── flood_thresholds.dart    # Severity %, water levels, risk colors/icons
-│   │   ├── alert_channels.dart      # Notification channel IDs
-│   │   ├── india_geodata.dart       # 36 states + 80+ CWC gauge cities
-│   │   └── constants.dart           # Barrel export
-│   ├── constants.dart               # @Deprecated shim — backward compat only
-│   ├── config/                      # Runtime configuration
-│   ├── ml/
-│   │   └── flood_engine.dart        # On-device fallback ML (pure Dart, offline)
-│   ├── models/                      # Data models (FloodResult, RiverData, etc.)
-│   ├── providers/                   # Riverpod / ChangeNotifier state providers
-│   ├── screens/                     # 13 UI screens
-│   ├── services/                    # 15 data + business-logic services
-│   ├── theme/                       # Dark theme, color tokens
-│   └── widgets/                     # Shared reusable widgets
-├── test/
-│   └── constants_domain_test.dart   # 30 unit tests for constants layer
-├── docs/
-│   └── architecture/
-│       └── flood_engine_boundary.md # On-device vs backend boundary contract
-├── .env.example                     # Required environment variables
-├── pubspec.yaml
-├── SETUP.md
-└── P2_IMD_NDMA_PLAN.md              # Phase 2 IMD + NDMA integration roadmap
+lib/
+├── data/            # DTO → model mappers, remote data sources
+├── models/          # FloodData, AlertModel, FloodPrediction, …
+├── repositories/    # FloodRepository (cache + network strategy)
+├── services/
+│   ├── flood_api_service.dart       # HTTP + XML parsing (CWC RSS)
+│   ├── websocket_service.dart       # Real-time WebSocket pipeline
+│   ├── local_cache_service.dart     # Hive offline cache
+│   ├── alert_engine.dart            # Threshold evaluation + debounce
+│   └── ml_service.dart              # TFLite LSTM + linear fallback
+├── providers/       # Riverpod StateNotifiers + StreamProviders
+├── screens/         # 10 screens (Home, Map, Detail, Settings, …)
+├── widgets/         # Reusable — SparklineCard, WatchButton, AccessibleCard, …
+├── theme/           # RiverTheme, RoboticTheme, Theme3D, high-contrast colours
+├── l10n/            # ARB files + generated Dart classes
+├── ml/              # TFLite model asset loader + scaler
+└── home_widget/     # Android glance widget
+
+test/
+├── widget/          # SparklineCard, WatchButton, SyncStatusBanner
+├── unit/            # AccessibilityNotifier, AlertEngine
+└── golden/          # MlCard × 5 severity states
 ```
 
----
-
-## ⚙️ Services Layer (`lib/services/`)
-
-| Service | Responsibility |
-|---|---|
-| `real_time_service.dart` | Primary data orchestrator — polls backend, triggers alerts |
-| `real_time_river_service.dart` | Live CWC river gauge telemetry polling |
-| `cwc_direct_service.dart` | Direct CWC API integration (raw gauge data) |
-| `cwc_open_data_service.dart` | CWC Open Data portal scraper/parser |
-| `cwc_live_provider.dart` | Provider wrapper for CWC live stream |
-| `imd_service.dart` | IMD rainfall & weather data fetcher |
-| `ndma_service.dart` | NDMA disaster alerts integration |
-| `prediction_service.dart` | Calls FastAPI `/predict/legacy` endpoint |
-| `prediction_facade.dart` | Facade: routes prediction to backend or on-device fallback |
-| `predict.dart` | Low-level prediction request builder |
-| `prediction_history_service.dart` | Persists prediction history locally |
-| `api_service.dart` | Base HTTP client with retry & timeout logic |
-| `fcm_service.dart` | Firebase Cloud Messaging — push notification handler |
-| `background_service.dart` | WorkManager background polling (every 5 min) |
-| `real_time_service_notif_patch.dart` | ⚠️ Temporary patch — pending merge into `real_time_service.dart` |
+**State management:** Riverpod 2.x (`StateNotifier`, `StreamProvider`, `FutureProvider`)  
+**Navigation:** GoRouter with deep-link support  
+**Persistence:** Hive (gauge cache) + SharedPreferences (settings)  
+**Background sync:** WorkManager (15-min interval, battery-aware)  
 
 ---
 
-## 🤖 ML Architecture
-
-### Backend (Primary)
-- **XGBoost + RandomForest ensemble** trained on CWC historical flood data
-- Hosted at `https://opsflood.onrender.com/predict/legacy`
-- Feature inputs: rainfall (mm), river level (m), capacity (%), zone, river type, state severity
-- Returns: `flood_probability`, `risk_level`, `confidence`
-
-### On-Device Fallback (`lib/ml/flood_engine.dart`)
-- Pure Dart heuristic engine — **no network required**
-- Activates automatically when FastAPI backend is unreachable
-- Always sets `isOfflineEstimate = true` on results
-- Mirrors the state severity matrix from `state_severity_matrix.py` (backend)
-- See [`docs/architecture/flood_engine_boundary.md`](docs/architecture/flood_engine_boundary.md) for the full contract
-
-```
-Online:   App → prediction_facade → FastAPI /predict/legacy → FloodResult
-Offline:  App → prediction_facade → flood_engine.dart (Dart) → FloodResult (isOfflineEstimate=true)
-```
-
----
-
-## 📡 Data Sources
-
-| Source | Data | Service |
-|---|---|---|
-| CWC (Central Water Commission) | Live river gauge levels, danger/warning thresholds | `cwc_direct_service`, `cwc_open_data_service` |
-| IMD (India Meteorological Dept.) | Rainfall forecasts, weather data | `imd_service` |
-| NDMA (National Disaster Mgmt. Authority) | Disaster alerts, state risk bulletins | `ndma_service` |
-| OpsFlood FastAPI Backend | ML predictions, aggregated telemetry | `prediction_service`, `real_time_service` |
-| Firebase Cloud Messaging | Push notification delivery | `fcm_service` |
-
----
-
-## 🚀 Setup & Running
+## 🚀 Getting Started
 
 ### Prerequisites
-- Flutter SDK ≥ 3.x
-- Dart SDK ≥ 3.x
-- Android Studio / Xcode (for device/emulator)
-- A `.env` file (copy from `.env.example`)
 
-### 1. Clone & Install
+| Tool | Version |
+|---|---|
+| Flutter | 3.22.2 |
+| Dart | 3.4+ |
+| Android Studio / VS Code | latest |
+| Java | 17 (for Gradle) |
+
+### 1. Clone & install
+
 ```bash
 git clone https://github.com/rohitg2800/android-flood-app.git
 cd android-flood-app
 flutter pub get
 ```
 
-### 2. Configure Environment
-```bash
-cp .env.example .env
-# Edit .env and set:
-# BASE_URL=https://opsflood.onrender.com
-# BACKUP_URL=           (optional)
+### 2. Environment variables
+
+Create `.env` in the repo root (never commit this):
+
+```dotenv
+# Firebase
+FIREBASE_PROJECT_ID=your-project-id
+
+# Flood data API (CWC)
+CWC_BASE_URL=https://cwc.gov.in/
+FLOOD_API_BASE_URL=https://your-backend.com/api
+
+# WebSocket
+WS_URL=wss://your-backend.com/ws/gauges
+
+# AdMob (optional)
+ADMOB_APP_ID=ca-app-pub-xxxxxxxxxxxxxxxx~xxxxxxxxxx
+ADMOB_BANNER_ID=ca-app-pub-xxxxxxxxxxxxxxxx/xxxxxxxxxx
 ```
 
-### 3. Run
+### 3. Firebase setup
+
 ```bash
-# Android (emulator or device)
-flutter run
+# Install FlutterFire CLI
+dart pub global activate flutterfire_cli
 
-# iOS
-flutter run -d ios
-
-# With verbose logging
-flutter run --verbose
+# Configure (generates google-services.json + firebase_options.dart)
+flutterfire configure --project=your-project-id
 ```
 
-### 4. Build Release APK
+### 4. Generate code
+
 ```bash
-flutter build apk --release
-# Output: build/app/outputs/flutter-apk/app-release.apk
+flutter gen-l10n
+dart run build_runner build --delete-conflicting-outputs
 ```
 
-> 📖 For full platform-specific setup (Firebase, permissions, signing), see [SETUP.md](SETUP.md).
+### 5. Run
+
+```bash
+flutter run                  # debug on connected device
+flutter run --release        # release mode
+```
 
 ---
 
 ## 🧪 Testing
 
 ```bash
-# Run all tests
+# Unit + widget tests
 flutter test
 
-# Run constants domain tests (30 tests)
-flutter test test/constants_domain_test.dart
+# With coverage report
+flutter test --coverage
+genhtml coverage/lcov.info -o coverage/html
+open coverage/html/index.html
+
+# Golden tests (first time — generates reference PNGs)
+flutter test --update-goldens test/golden/
+
+# Golden tests (CI — pixel compare)
+flutter test --tags golden test/golden/
+
+# Lint
+flutter analyze --fatal-infos
+dart format --set-exit-if-changed lib/ test/
 ```
 
-### Test Coverage
-| Test File | Coverage Area | Tests |
-|---|---|---|
-| `constants_domain_test.dart` | `AppConfig`, `FloodThresholds`, `AlertChannels`, `IndiaGeodata` | 30 |
+**Coverage gate:** CI enforces ≥ 60% line coverage.
 
-**Upcoming:** Service unit tests for `real_time_service`, `prediction_facade`, and `flood_engine` are planned (tracked in issues).
+---
+
+## 🔧 CI / CD
+
+| Workflow | Trigger | What it does |
+|---|---|---|
+| `ci.yml` | PR + push to `main` | Format → Analyze → Unit/Widget tests (60% gate) → Golden tests |
+| `release.yml` | Push `v*` tag | Signed APK + AAB build → GitHub Release |
+| Fastlane `internal` | Manual / CI | AAB → Play Store Internal track |
+| Fastlane `beta` | Manual | Internal → Open Beta promotion |
+| Fastlane `production` | Manual | Beta → Production (configurable rollout %) |
+
+### Release a new version
+
+```bash
+git tag v1.3.0
+git push origin v1.3.0
+# → release.yml fires automatically
+# → Then: bundle exec fastlane internal
+```
+
+### Required GitHub Secrets
+
+| Secret | Purpose |
+|---|---|
+| `KEYSTORE_BASE64` | base64-encoded release keystore |
+| `KEYSTORE_PASSWORD` | keystore password |
+| `KEY_ALIAS` | key alias |
+| `KEY_PASSWORD` | key password |
+| `SUPPLY_JSON_KEY_DATA` | Play Store service-account JSON |
+| `CODECOV_TOKEN` | Coverage upload |
+
+---
+
+## ♿ Accessibility
+
+OpsFlood targets **WCAG 2.1 Level AA**:
+
+- High-contrast colour palette (≥4.5:1 body text, ≥3:1 UI elements)
+- Text scale: 1.0 × → 1.4 × via `AccessibilitySettingsScreen`
+- All interactive elements have ≥ 48×48 dp touch targets
+- Colour is never the sole means of conveying risk level (text labels always present)
+- Four-language support: English, Hindi, Bengali, Odia
+
+---
+
+## 🗣️ Localization
+
+ARB source files live in `lib/l10n/`.
+
+| Locale | File |
+|---|---|
+| English | `app_en.arb` |
+| Hindi | `app_hi.arb` |
+| Bengali | `app_bn.arb` |
+| Odia | `app_or.arb` |
+
+To add a new language:
+1. Copy `app_en.arb` → `app_xx.arb`
+2. Translate all values
+3. Run `flutter gen-l10n`
+4. Add the locale to `accessibilityProvider`’s `setLocale` allowed list
 
 ---
 
 ## 📦 Key Dependencies
 
-| Package | Purpose |
-|---|---|
-| `flutter_riverpod` / `provider` | State management |
-| `http` | HTTP client for API calls |
-| `flutter_dotenv` | `.env` config loading |
-| `firebase_messaging` | Push notifications (FCM) |
-| `flutter_local_notifications` | On-device notification display |
-| `workmanager` | Background periodic tasks |
-| `flutter_map` + `latlong2` | Interactive India river maps |
-| `fl_chart` | River level & weather charts |
-| `shared_preferences` | Local prediction history persistence |
-| `geolocator` | User location for nearest city detection |
-
-> Full dependency list: [`pubspec.yaml`](pubspec.yaml)
-
----
-
-## 🗂️ Constants Architecture (v2)
-
-The old `lib/constants.dart` God-file has been split into four domain-focused files:
-
-```dart
-// New — use this in all new code:
-import 'package:equinox_flood/constants/constants.dart';
-
-AppConfig.baseUrl                  // API config
-FloodThresholds.critical           // 90.0%
-AlertChannels.criticalId           // 'opsflood_critical'
-IndiaGeodata.monitoredCities       // 80+ CWC cities
-```
-
-The old `AppConstants` class is kept as a `@Deprecated` shim for backward compatibility during migration.
-
----
-
-## 🔔 Notifications
-
-OpsFlood uses a two-channel notification system:
-
-| Channel | ID | Trigger |
+| Package | Version | Purpose |
 |---|---|---|
-| Critical Flood Alert | `opsflood_critical` | River capacity ≥ 90% |
-| Flood Warning | `opsflood_warning` | River capacity ≥ 75% |
+| `flutter_riverpod` | ^2.6.1 | State management |
+| `firebase_core` / `messaging` | ^3.13.1 / ^15.2.5 | Push notifications |
+| `cloud_firestore` | ^5.6.9 | Real-time DB fallback |
+| `hive` + `hive_flutter` | ^2.2.3 | Offline gauge cache |
+| `flutter_map` + `latlong2` | ^8.1.1 | Interactive river map |
+| `fl_chart` | ^0.69.0 | Sparkline history charts |
+| `workmanager` | ^0.9.0+3 | Background sync |
+| `web_socket_channel` | ^3.0.1 | Real-time WebSocket |
+| `flutter_local_notifications` | ^17.2.4 | On-device alerts |
+| `home_widget` | ^0.7.0 | Android home screen widget |
+| `pdf` + `csv` + `excel` | ^3.10.8 / ^6.0.0 / ^4.0.6 | Export |
+| `geolocator` | ^13.0.4 | GPS location |
+| `share_plus` | ^10.1.4 | Share reports |
 
-Background polling runs every **5 minutes** via WorkManager. FCM handles server-pushed alerts when the app is killed.
-
----
-
-## 🗺️ Monitored Coverage
-
-- **80+ cities** across all 28 states + 8 UTs
-- CWC-published `danger_level` and `warning_level` (metres above sea level) per gauge
-- Historical flood frequency (`flood_freq`) from NDMA/CWC hazard atlas
-- River types: `perennial` · `seasonal` · `glacier` · `coastal`
-- Zones: `himalayan` · `northeastern` · `peninsular` · `coastal` · `arid` · `central`
-
----
-
-## 📋 Roadmap
-
-- [ ] Merge `real_time_service_notif_patch.dart` into `real_time_service.dart`
-- [ ] Break `india_rivers_screen.dart` (68KB) into sub-widgets
-- [ ] Add unit tests for `real_time_service`, `prediction_facade`, `flood_engine`
-- [ ] IMD + NDMA Phase 2 integration (see [`P2_IMD_NDMA_PLAN.md`](P2_IMD_NDMA_PLAN.md))
-- [ ] Migrate all files from `AppConstants` → new domain constants
-- [ ] Delete deprecated `lib/constants.dart` shim post-migration
+Full list: [`pubspec.yaml`](pubspec.yaml)
 
 ---
 
-## 👤 Author
+## 📁 Project Structure (Top Level)
 
-
-**Rohit Raj  
-GitHub: [@rohitg2800](https://github.com/rohitg2800)
+```
+android-flood-app/
+├── lib/                 # Dart source
+├── test/                # Unit / widget / golden tests
+├── android/             # Native Android project
+├── assets/              # Icons, fonts, splash, station data
+├── fastlane/            # Fastfile, Appfile, Pluginfile
+├── .github/workflows/   # ci.yml, release.yml
+├── pubspec.yaml
+├── .env                 # ⚠️ gitignored — never commit
+└── README.md
+```
 
 ---
 
 ## 📄 License
 
-This project is for educational and research purposes. All CWC/IMD/NDMA data is used under their respective open data policies.
+MIT © 2026 Rohit Gupta
