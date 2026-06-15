@@ -1,127 +1,70 @@
 // lib/screens/admin_dashboard_screen.dart
-// OpsFlood — Module 11: Admin Dashboard
-// FIX: added static const String route = '/admin-dashboard'
-
 import 'package:flutter/material.dart';
-import '../theme/river_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/alert_provider.dart';
 import '../services/alert_engine.dart';
+import '../providers/data_fetch_provider.dart';
+import '../theme/app_palette.dart';
+import '../theme/river_colors.dart';
 
-// Stub providers
-final activeAlertsProvider   = Provider<List<FloodAlert>>((ref) => const []);
-final liveLevelsProvider     = Provider<List<dynamic>>((ref) => const []);
-final pendingReportsProvider = Provider<List<dynamic>>((ref) => const []);
+final activeAlertsProvider = Provider<List<FloodAlert>>((ref) => const []);
 
 class AdminDashboardScreen extends ConsumerWidget {
-  static const String route = '/admin-dashboard';
   const AdminDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t      = RiverColors.of(context);
-    final alerts = ref.watch(activeAlertsProvider);
-    final live   = ref.watch(liveLevelsProvider);
-    final crowd  = ref.watch(pendingReportsProvider);
+    final alerts = ref.watch(alertsProvider);
 
-    final criticalCount = alerts.where((a) =>
+    final dangerCount = alerts.where((a) =>
         a.severity == AlertSeverity.critical ||
         a.severity == AlertSeverity.emergency).length;
 
     return Scaffold(
-      backgroundColor: t.scaffoldBg,
-      appBar: AppBar(
-        backgroundColor: t.cardBg,
-        elevation: 0,
-        title: Text('Admin Dashboard',
-            style: TextStyle(
-                color: t.textPrimary, fontWeight: FontWeight.w700)),
-        iconTheme: IconThemeData(color: t.textPrimary),
-      ),
+      appBar: AppBar(title: const Text('Admin Dashboard')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _OverviewCards(
-            t: t,
-            alertCount:    alerts.length,
-            criticalCount: criticalCount,
-            liveCount:     live.length,
-            pendingCount:  crowd.length,
-          ),
-          const SizedBox(height: 20),
-          if (alerts.isNotEmpty) ..._AlertRows(alerts: alerts, t: t),
+          _SummaryCard(
+              label: 'Active Danger Alerts',
+              value: dangerCount.toString(),
+              color: AppPalette.critical),
+          _SummaryCard(
+              label: 'Total Alerts',
+              value: alerts.length.toString(),
+              color: AppPalette.warning),
+          const SizedBox(height: 16),
+          ..._buildAlertRows(alerts: alerts, t: t),
         ],
       ),
     );
   }
+
+  static List<Widget> _buildAlertRows({
+    required List<FloodAlert> alerts,
+    required RiverColors t,
+  }) =>
+      alerts.map((a) => _AlertRow(alert: a, t: t)).toList();
 }
 
-class _OverviewCards extends StatelessWidget {
-  final RiverColors t;
-  final int alertCount, criticalCount, liveCount, pendingCount;
-  const _OverviewCards({
-    required this.t,
-    required this.alertCount,
-    required this.criticalCount,
-    required this.liveCount,
-    required this.pendingCount,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      childAspectRatio: 2.2,
-      children: [
-        _KpiCard(label: 'Active Alerts',   value: '$alertCount',    color: AppPalette.warning,  t: t),
-        _KpiCard(label: 'Critical',        value: '$criticalCount', color: AppPalette.critical, t: t),
-        _KpiCard(label: 'Live Stations',   value: '$liveCount',     color: AppPalette.cyan,     t: t),
-        _KpiCard(label: 'Pending Reports', value: '$pendingCount',  color: AppPalette.gold,     t: t),
-      ],
-    );
-  }
-}
-
-class _KpiCard extends StatelessWidget {
-  final String label, value;
+class _SummaryCard extends StatelessWidget {
+  final String label;
+  final String value;
   final Color  color;
-  final RiverColors t;
-  const _KpiCard({
-    required this.label, required this.value,
-    required this.color, required this.t,
-  });
-
+  const _SummaryCard(
+      {required this.label, required this.value, required this.color});
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: t.cardBg,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(value, style: TextStyle(
-              color: color, fontSize: 20, fontWeight: FontWeight.w700)),
-          Text(label, style: TextStyle(
-              color: t.textSecondary, fontSize: 11)),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Card(
+        child: ListTile(
+          title:    Text(label),
+          trailing: Text(value,
+              style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20)),
+        ),
+      );
 }
-
-List<Widget> _AlertRows({
-  required List<FloodAlert> alerts,
-  required RiverColors t,
-}) =>
-    alerts.map((a) => _AlertRow(alert: a, t: t)).toList();
 
 class _AlertRow extends StatelessWidget {
   final FloodAlert alert;
@@ -140,31 +83,13 @@ class _AlertRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = _severityColor(alert.severity);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: t.cardBg,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
-      ),
-      child: Row(
-        children: [
-          Container(width: 8, height: 8,
-              decoration: BoxDecoration(
-                  color: color, shape: BoxShape.circle)),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(alert.title,
-                style: TextStyle(
-                    color: t.textPrimary, fontSize: 13)),
-          ),
-          Text(alert.severity.name.toUpperCase(),
-              style: TextStyle(
-                  color: color,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700)),
-        ],
+    return Card(
+      child: ListTile(
+        leading:  Icon(Icons.water, color: color),
+        title:    Text(alert.title),
+        subtitle: Text('${alert.river} · ${alert.district}'),
+        trailing: Text(alert.severity.label,
+            style: TextStyle(color: color, fontWeight: FontWeight.bold)),
       ),
     );
   }
