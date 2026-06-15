@@ -1,7 +1,5 @@
 // lib/providers/merged_stations_provider.dart
-// Re-export shim — mergedStationsProvider is defined in
-// real_time_river_provider.dart.  Other files (district_heatmap_provider,
-// map_live_index_provider) import this path, so we forward it here.
+// Re-export shim — mergedStationsProvider lives in real_time_river_provider.dart.
 library;
 
 export 'real_time_river_provider.dart'
@@ -9,4 +7,7 @@ export 'real_time_river_provider.dart'
         mergedStationsProvider,
         wrdStationsProvider,
         realTimeRiverProvider,
-        wrdRiverStationsProvider;
+        wrdRiverStationsProvider,
+        wrdErrorProvider,
+        wrdIsLoadingProvider,
+        mergedCriticalCountProvider;

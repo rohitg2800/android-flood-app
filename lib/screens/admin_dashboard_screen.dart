@@ -4,16 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/alert_engine.dart';
 import '../providers/data_fetch_provider.dart';
 import '../theme/app_palette.dart';
-import '../theme/river_colors.dart';
-
-final activeAlertsProvider = Provider<List<FloodAlert>>((ref) => const []);
 
 class AdminDashboardScreen extends ConsumerWidget {
+  static const route = '/admin';
   const AdminDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final t      = RiverColors.of(context);
+    final cs     = Theme.of(context).colorScheme;
     final alerts = ref.watch(alertsProvider);
 
     final dangerCount = alerts.where((a) =>
@@ -34,7 +32,7 @@ class AdminDashboardScreen extends ConsumerWidget {
               value: alerts.length.toString(),
               color: AppPalette.warning),
           const SizedBox(height: 16),
-          ..._buildAlertRows(alerts: alerts, t: t),
+          ..._buildAlertRows(alerts: alerts, cs: cs),
         ],
       ),
     );
@@ -42,9 +40,9 @@ class AdminDashboardScreen extends ConsumerWidget {
 
   static List<Widget> _buildAlertRows({
     required List<FloodAlert> alerts,
-    required RiverColors t,
+    required ColorScheme cs,
   }) =>
-      alerts.map((a) => _AlertRow(alert: a, t: t)).toList();
+      alerts.map((a) => _AlertRow(alert: a, cs: cs)).toList();
 }
 
 class _SummaryCard extends StatelessWidget {
@@ -67,9 +65,9 @@ class _SummaryCard extends StatelessWidget {
 }
 
 class _AlertRow extends StatelessWidget {
-  final FloodAlert alert;
-  final RiverColors t;
-  const _AlertRow({required this.alert, required this.t});
+  final FloodAlert  alert;
+  final ColorScheme cs;
+  const _AlertRow({required this.alert, required this.cs});
 
   Color _severityColor(AlertSeverity s) {
     switch (s) {
@@ -86,8 +84,10 @@ class _AlertRow extends StatelessWidget {
     return Card(
       child: ListTile(
         leading:  Icon(Icons.water, color: color),
-        title:    Text(alert.title),
-        subtitle: Text('${alert.river} · ${alert.district}'),
+        title:    Text(alert.title,
+            style: TextStyle(color: cs.onSurface)),
+        subtitle: Text('${alert.river} · ${alert.district}',
+            style: TextStyle(color: cs.onSurfaceVariant)),
         trailing: Text(alert.severity.label,
             style: TextStyle(color: color, fontWeight: FontWeight.bold)),
       ),

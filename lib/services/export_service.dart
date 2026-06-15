@@ -9,7 +9,8 @@ class ExportRow {
   final String        stationName;
   final String        river;
   final String        district;
-  final double        current;       // currentLevel
+  /// Primary field name used by export_screen.dart: currentLevel
+  final double        currentLevel;
   final double        warning;
   final double        danger;
   final double        hfl;
@@ -19,15 +20,15 @@ class ExportRow {
     required this.stationName,
     required this.river,
     required this.district,
-    required this.current,
+    required this.currentLevel,
     required this.warning,
     required this.danger,
     required this.hfl,
     this.severity,
   });
 
-  // Alias getter so callers using .currentLevel still compile
-  double get currentLevel => current;
+  /// Backward-compat alias
+  double get current => currentLevel;
 }
 
 class ExportService {
@@ -39,11 +40,11 @@ class ExportService {
     final name = filename ??
         'opsflood_export_${DateTime.now().millisecondsSinceEpoch}.csv';
     final file = File('${dir.path}/$name');
-    final data = [
+    final data = <List<dynamic>>[
       ['Station','River','District','Current (m)','Warning (m)','Danger (m)','HFL (m)','Severity'],
-      ...rows.map((r) => [
+      ...rows.map<List<dynamic>>((r) => [
         r.stationName, r.river, r.district,
-        r.current.toStringAsFixed(2),
+        r.currentLevel.toStringAsFixed(2),
         r.warning.toStringAsFixed(2),
         r.danger.toStringAsFixed(2),
         r.hfl.toStringAsFixed(2),
@@ -54,22 +55,22 @@ class ExportService {
     return file;
   }
 
-  /// Returns the file path so callers can store it (e.g. setState(() => _lastFilePath = path))
+  /// Returns the saved file path so callers can do:
+  ///   setState(() => _lastFilePath = await exportAndShareCsv(rows));
   Future<String> exportAndShareCsv(List<ExportRow> rows,
       {String? filename}) async {
     final file = await exportCsv(rows, filename: filename);
-    await Share.shareXFiles([XFile(file.path)],
-        text: 'OpsFlood CSV Export');
+    await Share.shareXFiles([XFile(file.path)], text: 'OpsFlood CSV Export');
     return file.path;
   }
 
   Future<String> exportAndSharePdf(
     List<ExportRow> rows, {
     String? title,
-    String? reportTitle,   // alias
+    String? reportTitle,
     String? filename,
   }) async {
-    // PDF library not yet integrated — fallback to CSV share.
+    // PDF not yet implemented — falls back to CSV.
     return exportAndShareCsv(rows, filename: filename);
   }
 }

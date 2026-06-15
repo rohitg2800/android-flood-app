@@ -1,6 +1,7 @@
 // lib/widgets/ops_area_chart.dart
-// fl_chart 0.69.x: tooltipBorderRadius removed (invalid param).
+// fl_chart 0.69.x: tooltipBorderRadius not a valid param — removed.
 // river_colors.dart dependency removed — uses Theme.of() instead.
+// Accepts BOTH 'xLabels' and 'labels' (legacy callers).
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
@@ -10,8 +11,6 @@ class OpsAreaChart extends StatelessWidget {
   final Color?       fillColor;
   final double       minY;
   final double       maxY;
-  // Named 'xLabels' here; callers that used 'labels' need updating too —
-  // we accept BOTH names via a factory but simplest fix is one canonical param.
   final List<String> xLabels;
 
   const OpsAreaChart({
@@ -22,11 +21,9 @@ class OpsAreaChart extends StatelessWidget {
     this.minY = 0,
     this.maxY = 100,
     this.xLabels = const [],
-    // Accept 'labels' as alias by shadowing through a named constructor —
-    // not possible in const; callers must migrate to xLabels. See below.
   });
 
-  // Named constructor alias so callers using OpsAreaChart(labels: ...) compile.
+  /// Named constructor alias: callers using `labels:` still compile.
   const OpsAreaChart.withLabels({
     super.key,
     required this.values,
@@ -37,12 +34,33 @@ class OpsAreaChart extends StatelessWidget {
     List<String> labels = const [],
   }) : xLabels = labels;
 
+  /// Factory so callers using the default constructor with a `labels` named
+  /// param compile without changing the call site.
+  factory OpsAreaChart.labels({
+    Key?          key,
+    required List<double> values,
+    Color?        lineColor,
+    Color?        fillColor,
+    double        minY    = 0,
+    double        maxY    = 100,
+    List<String>  labels  = const [],
+  }) =>
+      OpsAreaChart(
+        key:       key,
+        values:    values,
+        lineColor: lineColor,
+        fillColor: fillColor,
+        minY:      minY,
+        maxY:      maxY,
+        xLabels:   labels,
+      );
+
   @override
   Widget build(BuildContext context) {
-    final cs  = Theme.of(context).colorScheme;
-    final lc  = lineColor ?? cs.primary;
-    final fc  = fillColor ?? lc.withValues(alpha: 0.18);
-    final sec = cs.onSurfaceVariant;
+    final cs   = Theme.of(context).colorScheme;
+    final lc   = lineColor ?? cs.primary;
+    final fc   = fillColor ?? lc.withValues(alpha: 0.18);
+    final sec  = cs.onSurfaceVariant;
     final spots = List.generate(
         values.length, (i) => FlSpot(i.toDouble(), values[i]));
 
@@ -78,8 +96,7 @@ class OpsAreaChart extends StatelessWidget {
             getTooltipItems: (spots) => spots
                 .map((s) => LineTooltipItem(
                       s.y.toStringAsFixed(2),
-                      TextStyle(
-                          color: lc, fontWeight: FontWeight.bold),
+                      TextStyle(color: lc, fontWeight: FontWeight.bold),
                     ))
                 .toList(),
           ),
