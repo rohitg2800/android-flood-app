@@ -1,50 +1,19 @@
-// lib/services/active_alert_controller.dart  v2.0
+// lib/services/active_alert_controller.dart  v2.1
 //
-// OpsFlood — Active Alert Rules Engine
-//
-// v2.0 (12 Jun 2026)  — CANONICAL PARENT WIRING
-//
-//   AAC-10 (BREAKING): DataFetchEngine.stream subscription REMOVED.
-//
-//   Problem (v1.x):
-//     ActiveAlertController subscribed directly to DataFetchEngine.instance.stream,
-//     a pipeline SEPARATE from mergedStationsProvider (the All Stations screen
-//     source of truth).  This caused:
-//       • DL/WL thresholds in LiveAlertBanner / DangerProximityBanner to differ
-//         from the corrected kBiharGauges values shown in All Stations.
-//       • Duplicate/stale alerts for stations whose DL was corrected in v4.2
-//         (Taibpur 35.65→66.00, Gangpur Siswan 64.10→57.04, Darauli 61.52→60.82…)
-//       • alertsProvider (FloodAlert cards) and ActiveAlertController (live banners)
-//         reading different level snapshots for the same station.
-//
-//   Fix (v2.0):
-//     • Remove _sub / DataFetchEngine subscription entirely.
-//     • Expose push(List<StationReading> stations) — called by
-//       alerts_parent_bridge_provider.dart whenever mergedStationsProvider
-//       rebuilds (i.e. same data that drives ALL screens).
-//     • _norm / severity / build-alert logic unchanged.
-//
-//   Callers:
-//     alerts_parent_bridge_provider.dart  (always-on Riverpod provider in
-//     main_shell.dart) converts RiverStation → StationReading via the same
-//     shim used by AlertEngine.evaluateMerged() and calls push().
-//
-// v1.1 history (preserved for reference):
-//   AAC-1: _kMaxAlerts 5→8
-//   AAC-3: _kClearWindow 5→15 min
-//   AAC-4: _kRorThreshold 0.5→0.3 m/h
-//   AAC-5: _kRainThreshold 20.0→10.0 mm/24h
+// v2.1 (15 Jun 2026) — remove DataFetchSnapshot wrapper in push().
+//   push(List<StationReading>) now calls _processReadings() directly so
+//   there is no List<StationReading> → List<FloodData> type conflict.
 library;
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'data_fetch_engine.dart';
+import 'data_fetch_engine.dart';   // StationReading
 
 // ── Severity enum (ordered low→high for comparisons) ─────────────────────────
 enum AlertSeverity { normal, rising, danger, critical, extreme }
 
 extension AlertSeverityX on AlertSeverity {
-  bool operator >(AlertSeverity other) => index > other.index;
+  bool operator >(AlertSeverity other)  => index > other.index;
   bool operator >=(AlertSeverity other) => index >= other.index;
 }
 
@@ -114,58 +83,42 @@ class ActiveAlertController {
   static const _kMaxAlerts      = 8;
   static const _kSuppressWindow = Duration(minutes: 30);
   static const _kClearWindow    = Duration(minutes: 15);
-  // v1.1 values — unchanged; thresholds now come via correct DL from merged
-  static const _kRorThreshold   = 0.3;   // m/h
-  static const _kRainThreshold  = 10.0;  // mm/24h
+  static const _kRorThreshold   = 0.3;    // m/h
+  static const _kRainThreshold  = 10.0;   // mm/24h
 
-  // ── internal state ───────────────────────────────────────────────────────────
   final _activeMap   = <String, AlertItem>{};
   final _normalSince = <String, DateTime>{};
   bool _started = false;
 
   final _ctrl = StreamController<List<AlertItem>>.broadcast();
 
-  /// Live stream of current alert items for the UI.
   Stream<List<AlertItem>> get stream => _ctrl.stream;
-
-  /// Current snapshot (sync read for widgets).
-  List<AlertItem> get alerts => _sortedAlerts();
+  List<AlertItem>         get alerts => _sortedAlerts();
 
   // ── lifecycle ─────────────────────────────────────────────────────────────────
-  /// v2.0: start() no longer subscribes to DataFetchEngine.
-  /// The bridge provider calls push() instead.
   void start() {
     if (_started) return;
     _started = true;
-    debugPrint('[AlertCtrl v2.0] started — waiting for mergedStations push()');
+    debugPrint('[AlertCtrl v2.1] started — waiting for mergedStations push()');
   }
 
   void stop() {
     _started = false;
-    debugPrint('[AlertCtrl v2.0] stopped');
+    debugPrint('[AlertCtrl v2.1] stopped');
   }
 
-  // ── push() — public entry-point fed by alerts_parent_bridge_provider ─────────
-  //
-  // Called with the converted StationReading list from mergedStationsProvider.
-  // This is the ONLY way the controller receives data in v2.0.
+  // ── push() — entry-point called by alerts_parent_bridge_provider ─────────────
+  // Processes StationReading list directly; no DataFetchSnapshot wrapper needed.
   void push(List<StationReading> stations) {
     if (stations.isEmpty) return;
-    final snap = DataFetchSnapshot(
-      stations:  stations,
-      sources:   const [],
-      fetchedAt: DateTime.now(),
-      isLoading: false,
-    );
-    _onSnapshot(snap);
+    _processReadings(stations);
   }
 
   // ── core processing ───────────────────────────────────────────────────────────
-  void _onSnapshot(DataFetchSnapshot snap) {
-    if (snap.isLoading || snap.stations.isEmpty) return;
+  void _processReadings(List<StationReading> readings) {
     final now = DateTime.now();
 
-    for (final s in snap.stations) {
+    for (final s in readings) {
       // Rule 1: SEED source never alerts
       if (s.source == 'SEED') continue;
 
@@ -184,8 +137,7 @@ class ActiveAlertController {
 
       _normalSince.remove(key);
 
-      final existing = _activeMap[key];
-
+      final existing   = _activeMap[key];
       final isSameTier = existing != null && existing.severity == severity;
       final isExpired  = existing == null ||
           now.difference(existing.lastSeenAt) >= _kSuppressWindow;
@@ -227,9 +179,7 @@ class ActiveAlertController {
     if (s.currentLevel >= s.warningLevel) return AlertSeverity.danger;
     final ror  = s.rateOfRiseMph ?? 0.0;
     final rain = s.rainfall24hMm ?? 0.0;
-    if (ror >= _kRorThreshold && rain >= _kRainThreshold) {
-      return AlertSeverity.rising;
-    }
+    if (ror >= _kRorThreshold && rain >= _kRainThreshold) return AlertSeverity.rising;
     return AlertSeverity.normal;
   }
 
@@ -248,8 +198,8 @@ class ActiveAlertController {
       AlertSeverity.normal   => 'NORMAL',
     };
     final message = '$tierLabel — ${s.stationName} (${s.river})';
+    final aboveDl = s.currentLevel - s.dangerLevel;
 
-    final aboveDl = (s.currentLevel - s.dangerLevel);
     final sub = switch (severity) {
       AlertSeverity.extreme  =>
           '${s.currentLevel.toStringAsFixed(2)} m — '
