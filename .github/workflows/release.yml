@@ -1,103 +1,129 @@
 # .github/workflows/release.yml
-# OpsFlood — Module 9: CI/CD Release Pipeline
-#
-# Triggers:
-#   • Push to main
-#   • Manual workflow_dispatch
-#
-# Steps:
-#   1. Checkout + cache Flutter
-#   2. flutter pub get
-#   3. dart format --output=none --set-exit-if-changed .
-#   4. flutter analyze
-#   5. flutter test
-#   6. flutter build appbundle --release
-#   7. Upload .aab as workflow artifact
+# Phase 4 — Full CI/CD Pipeline for OpsFlood Production Release
+# Triggers: push to main OR manual workflow_dispatch
+# Steps: analyze → test → build release AAB → (optional) upload to Play Store
 
-name: OpsFlood Release
+name: OpsFlood Production Release
 
 on:
   push:
     branches: [ main ]
+    tags:
+      - 'v*'
   workflow_dispatch:
+    inputs:
+      deploy_to_play_store:
+        description: 'Deploy to Play Store internal track'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['true', 'false']
 
 jobs:
-  build:
-    name: Build & Test
+  analyze_and_test:
+    name: Analyze & Test
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-
-    env:
-      FLUTTER_VERSION: '3.22.0'
-
     steps:
-      # ── 1. Checkout
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # ── 2. Set up Flutter (cached)
-      - name: Set up Flutter ${{ env.FLUTTER_VERSION }}
+      - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
+          flutter-version: '3.24.0'
+          channel: 'stable'
           cache: true
 
-      # ── 3. Install dependencies
-      - name: flutter pub get
+      - name: Install dependencies
         run: flutter pub get
 
-      # ── 4. Format check
-      - name: dart format check
-        run: dart format --output=none --set-exit-if-changed .
-        continue-on-error: true   # warn only — don't break build
+      - name: Create stub .env for CI
+        run: |
+          echo "# CI stub .env" > .env
+          echo "BACKEND_BASE_URL=https://opsflood-backend.up.railway.app" >> .env
 
-      # ── 5. Static analysis
-      - name: flutter analyze
+      - name: Flutter analyze
         run: flutter analyze --no-fatal-infos
 
-      # ── 6. Unit tests
-      - name: flutter test
+      - name: Flutter test
         run: flutter test --coverage
 
-      # ── 7. Decode keystore from secret
-      - name: Decode keystore
-        if: github.ref == 'refs/heads/main'
-        run: |
-          mkdir -p android/app/keystore
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode \
-            > android/app/keystore/upload.jks
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v3
+        with:
+          file: coverage/lcov.info
+        continue-on-error: true
 
-      # ── 8. Build release App Bundle
-      - name: flutter build appbundle
-        if: github.ref == 'refs/heads/main'
-        run: |
-          flutter build appbundle \
-            --release \
-            --obfuscate \
-            --split-debug-info=build/debug-info
-        env:
-          KEYSTORE_PATH:     android/app/keystore/upload.jks
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS:         ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD:      ${{ secrets.KEY_PASSWORD }}
+  build_release:
+    name: Build Release AAB
+    runs-on: ubuntu-latest
+    needs: analyze_and_test
+    steps:
+      - uses: actions/checkout@v4
 
-      # ── 9. Upload .aab artifact
-      - name: Upload App Bundle
-        if: github.ref == 'refs/heads/main'
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Create stub .env for CI
+        run: |
+          echo "# CI stub .env" > .env
+          echo "BACKEND_BASE_URL=https://opsflood-backend.up.railway.app" >> .env
+
+      - name: Decode keystore from base64 secret
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/keystore.jks
+
+      - name: Write keystore.properties from CI secrets
+        run: |
+          cat > android/keystore.properties << EOF
+          storeFile=../keystore.jks
+          storePassword=${{ secrets.KEYSTORE_STORE_PASSWORD }}
+          keyAlias=equinox_bh
+          keyPassword=${{ secrets.KEYSTORE_KEY_PASSWORD }}
+          EOF
+
+      - name: Build release App Bundle
+        run: |
+          flutter build appbundle --release \
+            --dart-define=BACKEND_BASE_URL=https://opsflood-backend.up.railway.app \
+            --dart-define=ADMOB_BANNER_ANDROID=${{ secrets.ADMOB_BANNER_ANDROID_PROD }} \
+            --dart-define=ADMOB_INTERSTITIAL_ANDROID=${{ secrets.ADMOB_INTERSTITIAL_ANDROID_PROD }}
+
+      - name: Upload AAB artifact
         uses: actions/upload-artifact@v4
         with:
-          name: opsflood-release-${{ github.run_number }}
+          name: opsflood-release-aab
           path: build/app/outputs/bundle/release/app-release.aab
           retention-days: 30
 
-      # ── 10. Upload debug symbols (for Play Console deobfuscation)
-      - name: Upload debug symbols
-        if: github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@v4
+      - name: Clean up keystore
+        if: always()
+        run: rm -f android/keystore.jks android/keystore.properties
+
+  deploy_play_store:
+    name: Deploy to Play Store (Internal Track)
+    runs-on: ubuntu-latest
+    needs: build_release
+    if: >
+      github.event_name == 'workflow_dispatch' &&
+      github.event.inputs.deploy_to_play_store == 'true'
+    steps:
+      - name: Download AAB
+        uses: actions/download-artifact@v4
         with:
-          name: debug-info-${{ github.run_number }}
-          path: build/debug-info/
-          retention-days: 30
+          name: opsflood-release-aab
+
+      - name: Upload to Play Store (Internal)
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_JSON_KEY }}
+          packageName: com.equinox.flood
+          releaseFiles: app-release.aab
+          track: internal
+          status: completed
