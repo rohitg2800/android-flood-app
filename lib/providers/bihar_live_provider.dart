@@ -1,6 +1,13 @@
-// lib/providers/bihar_live_provider.dart  (v3.3)
+// lib/providers/bihar_live_provider.dart  (v3.4)
 //
 // OpsFlood — All-Stations Live Provider
+//
+// v3.4 (15 Jun 2026) — Deduplicate stations by city key inside _buildState.
+//   The raw WRD/CWC feed can emit 2-3 gauge records for the same city
+//   (e.g. Birpur appears three times on the Kosi).  Without dedup, the
+//   At-Risk Cities card shows duplicates and the station count is inflated.
+//   Strategy: keep the highest-risk reading; on tie, keep the highest
+//   currentLevel (worst observed reading wins).
 //
 // v3.3 (12 Jun 2026) — Three city-card load-time fixes:
 //
@@ -189,12 +196,12 @@ class BiharStationData {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BiharLiveState  (v3.3 — adds O(1) city index)
+// BiharLiveState  (v3.4 — dedup at construction; adds O(1) city index)
 // ─────────────────────────────────────────────────────────────────────────────
 class BiharLiveState {
   final List<BiharStationData>        stations;
   final DateTime?                      lastFetched;
-  // Fix 2: index built once in constructor — O(1) city lookup.
+  // Fix 2 (v3.3): index built once in constructor — O(1) city lookup.
   final Map<String, BiharStationData> _index;
 
   BiharLiveState({this.stations = const [], this.lastFetched})
@@ -215,9 +222,8 @@ class BiharLiveState {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Notifier  (v3.3)
+// Risk order used for dedup and sort.
 // ─────────────────────────────────────────────────────────────────────────────
-
 const _kRiskOrder = {
   'CRITICAL': 0,
   'SEVERE':   1,
@@ -227,6 +233,21 @@ const _kRiskOrder = {
   'NORMAL':   5,
   'UNKNOWN':  6,
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// City-key normalisation — mirrors flood_providers._normCityKey so both
+// pipelines collapse the same duplicates.
+// ─────────────────────────────────────────────────────────────────────────────
+String _normCityKey(String name) => name
+    .toLowerCase()
+    .replaceAll(RegExp(r'\s*\(.*?\)'), '')   // strip qualifiers like "(U/S)"
+    .replaceAll(RegExp(r'[^a-z0-9\s]'),  ' ')
+    .replaceAll(RegExp(r' +'),            ' ')
+    .trim();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Notifier  (v3.4)
+// ─────────────────────────────────────────────────────────────────────────────
 
 class BiharLiveNotifier extends AsyncNotifier<BiharLiveState> {
   StreamSubscription<BiharLiveFeed>? _sub;
@@ -243,13 +264,10 @@ class BiharLiveNotifier extends AsyncNotifier<BiharLiveState> {
     _sub = engine.stream.listen(_onFeed);
     ref.onDispose(() => _sub?.cancel());
 
-    // Fix 1: Fast path — engine already has data (e.g. after hot-reload or
-    // provider re-creation after the engine has run at least once).
+    // Fix 1 (v3.3): Fast path — engine already has data (e.g. after hot-reload).
     if (engine.latest != null) return _buildState(engine.latest);
 
-    // Fix 1: Slow path — engine hasn't emitted yet (cold start).
-    // Suspend build() so the provider stays in AsyncLoading and the card
-    // correctly shows a shimmer instead of blank-no-spinner.
+    // Fix 1 (v3.3): Slow path — suspend build() so provider stays AsyncLoading.
     final completer = Completer<BiharLiveState>();
     late StreamSubscription<BiharLiveFeed> onceSub;
     onceSub = engine.stream.listen((feed) {
@@ -270,14 +288,44 @@ class BiharLiveNotifier extends AsyncNotifier<BiharLiveState> {
       return BiharLiveState(lastFetched: feed?.generatedAt);
     }
 
-    final stations = feed.items
+    // Step 1 — parse raw feed items into BiharStationData objects.
+    final rawStations = feed.items
         .where((i) =>
             i.kind == FeedItemKind.riverGauge ||
             i.kind == FeedItemKind.barrage    ||
             i.kind == FeedItemKind.telemetry)
         .map(BiharStationData.fromFeedItem)
         .where((s) => s.currentLevel != null && s.currentLevel! > 0)
-        .toList()
+        .toList();
+
+    // Step 2 — deduplicate by normalised city key.
+    // The raw WRD/CWC feed can emit multiple gauge records for the same city
+    // (e.g. Birpur appears 3× on the Kosi at different cross-sections).
+    // Keep the entry with the highest risk; on tie, keep the highest level.
+    final deduped = <String, BiharStationData>{};
+    for (final s in rawStations) {
+      final key = _normCityKey(s.city);
+      if (!deduped.containsKey(key)) {
+        deduped[key] = s;
+      } else {
+        final existing     = deduped[key]!;
+        final incomingRank = _kRiskOrder[s.riskLabel]        ?? 6;
+        final existingRank = _kRiskOrder[existing.riskLabel] ?? 6;
+        if (incomingRank < existingRank) {
+          // Incoming is higher risk — replace.
+          deduped[key] = s;
+        } else if (incomingRank == existingRank) {
+          // Same risk — keep the higher observed level.
+          final incomingLevel = s.currentLevel        ?? 0;
+          final existingLevel = existing.currentLevel ?? 0;
+          if (incomingLevel > existingLevel) deduped[key] = s;
+        }
+        // else: existing is higher risk — keep it.
+      }
+    }
+
+    // Step 3 — sort by risk (most critical first).
+    final stations = deduped.values.toList()
       ..sort((a, b) =>
           (_kRiskOrder[a.riskLabel] ?? 5)
               .compareTo(_kRiskOrder[b.riskLabel] ?? 5));
