@@ -1,0 +1,5 @@
+# fastlane/Pluginfile  Step 7.3
+# Managed by `fastlane install_plugins`.
+# Run: bundle exec fastlane install_plugins
+
+gem 'fastlane-plugin-flutter_version'

@@ -1,0 +1,131 @@
+# fastlane/Fastfile  Step 7.3
+# Lanes:
+#   test        — run flutter test locally before deploying
+#   internal    — upload AAB to Play Store internal track
+#   beta        — promote internal → open beta track
+#   production  — promote beta → production (manual rollout 10%)
+#
+# Usage:
+#   bundle exec fastlane internal   # from repo root
+#   bundle exec fastlane production rollout:0.5
+#
+# Required env vars (CI secrets or .env.secret):
+#   SUPPLY_JSON_KEY_DATA  — contents of Play API service-account JSON
+#   KEYSTORE_PATH         — path to release.keystore
+#   KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD
+
+default_platform(:android)
+
+APP_ID       = 'com.opsflood.app'
+AAB_PATH     = 'build/app/outputs/bundle/release/app-release.aab'
+CHANGELOG_EN = 'fastlane/metadata/android/en-US/changelogs/default.txt'
+
+platform :android do
+
+  # ── before_all: always run Flutter pub get first
+  before_all do
+    sh 'flutter pub get'
+    sh 'flutter gen-l10n'
+    sh 'dart run build_runner build --delete-conflicting-outputs'
+  end
+
+  # ─────────────────────────────────────────────────────
+  desc 'Run all Flutter tests'
+  lane :test do
+    sh 'flutter test --coverage --exclude-tags golden'
+    sh 'flutter analyze --fatal-infos'
+    UI.success 'All tests passed ✅'
+  end
+
+  # ─────────────────────────────────────────────────────
+  desc 'Build signed AAB and upload to Play Store → Internal track'
+  lane :internal do
+    # 1. Build
+    _build_aab
+
+    # 2. Upload
+    upload_to_play_store(
+      track:              'internal',
+      aab:                AAB_PATH,
+      package_name:       APP_ID,
+      json_key_data:      ENV['SUPPLY_JSON_KEY_DATA'],
+      release_status:     'completed',
+      skip_upload_apk:    true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      changelog_paths: [CHANGELOG_EN],
+    )
+    UI.success "Uploaded to Internal track ✅"
+  end
+
+  # ─────────────────────────────────────────────────────
+  desc 'Promote Internal → Open Beta'
+  lane :beta do
+    upload_to_play_store(
+      track:        'internal',
+      track_promote_to: 'beta',
+      package_name: APP_ID,
+      json_key_data: ENV['SUPPLY_JSON_KEY_DATA'],
+      skip_upload_aab:         true,
+      skip_upload_apk:         true,
+      skip_upload_images:      true,
+      skip_upload_screenshots: true,
+    )
+    UI.success "Promoted to Open Beta ✅"
+  end
+
+  # ─────────────────────────────────────────────────────
+  desc 'Promote Beta → Production with configurable rollout (default 10%)'
+  lane :production do |options|
+    rollout = (options[:rollout] || 0.1).to_f
+    UI.message "Rolling out to #{(rollout * 100).to_i}% of users"
+
+    upload_to_play_store(
+      track:              'beta',
+      track_promote_to:   'production',
+      rollout:            rollout.to_s,
+      package_name:       APP_ID,
+      json_key_data:      ENV['SUPPLY_JSON_KEY_DATA'],
+      skip_upload_aab:         true,
+      skip_upload_apk:         true,
+      skip_upload_images:      true,
+      skip_upload_screenshots: true,
+    )
+    UI.success "Live on Production (×#{rollout}) ✅"
+  end
+
+  # ── Private helpers ───────────────────────────────────────────────
+  private_lane :_build_aab do
+    # Decode keystore if running in CI (env var set)
+    if ENV['KEYSTORE_BASE64']
+      sh "echo $KEYSTORE_BASE64 | base64 --decode > android/app/release.keystore"
+      File.write('android/key.properties',
+        "storePassword=#{ENV['KEYSTORE_PASSWORD']}\n"\
+        "keyPassword=#{ENV['KEY_PASSWORD']}\n"\
+        "keyAlias=#{ENV['KEY_ALIAS']}\n"\
+        "storeFile=release.keystore\n"
+      )
+    end
+
+    # Derive version from latest git tag
+    tag          = sh('git describe --tags --abbrev=0').strip
+    version      = tag.delete_prefix('v')
+    build_number = sh('git rev-list --count HEAD').strip
+
+    sh "flutter build appbundle --release "\
+       "--build-name=#{version} --build-number=#{build_number}"
+  end
+
+  after_all do |lane|
+    # Clean up keystore from disk
+    FileUtils.rm_f('android/app/release.keystore')
+    FileUtils.rm_f('android/key.properties')
+  end
+
+  error do |lane, exception|
+    UI.error "Lane :#{lane} failed: #{exception.message}"
+    FileUtils.rm_f('android/app/release.keystore')
+    FileUtils.rm_f('android/key.properties')
+  end
+
+end

@@ -1,0 +1,5 @@
+# fastlane/Appfile  Step 7.3
+# Core app identity used by supply (upload_to_play_store).
+
+json_key_file("")           # leave blank — we pass json_key_data from env
+package_name("com.opsflood.app")
