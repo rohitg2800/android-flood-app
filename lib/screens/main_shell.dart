@@ -103,7 +103,10 @@ class _MainShellState extends ConsumerState<MainShell> {
             currentLevel: alert.currentLevel,
             dangerLevel:  alert.thresholdLevel,
             district:     alert.district,
-            onViewMap:    () => setState(() => _index = 3),
+            onViewMap:    () {
+              // Bihar alerts should bring user into the Bihar river map context.
+              navigatorKey.currentState?.pushNamed(Routes.biharRiverMap);
+            },
             onEvacuate:   () => navigatorKey.currentState?.pushNamed(Routes.evacuation),
           );
         });

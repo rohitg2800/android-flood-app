@@ -22,7 +22,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../providers/prediction_provider.dart';
+import '../models/flood_prediction.dart';
+import '../models/prediction_point.dart';
 import '../theme/river_theme.dart';
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Public widget

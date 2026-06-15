@@ -23,7 +23,9 @@ import '../theme/app_palette.dart';
 import '../models/flood_alert.dart';
 import '../models/river_station.dart';
 import '../providers/prediction_provider.dart';
+import '../models/flood_prediction.dart';
 import '../providers/real_time_river_provider.dart';
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  PredictScreen

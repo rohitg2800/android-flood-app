@@ -80,8 +80,21 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen>
     // Apply station filter from deep-link or bridge state.
     final filter = widget.stationFilter ?? bridge.pendingStationFilter;
     if (filter != null && filter.isNotEmpty) {
+      // Bihar live provider normalizes city keys by:
+      // - lowercasing
+      // - stripping parenthetical qualifiers like "(CWC)", "(D/S)", "(U/S)"
+      // - replacing non-alphanumerics with spaces
+      // Reuse the same logic here so notification payloads match BiharStationData.
+      String norm(String v) => v
+          .toLowerCase()
+          .replaceAll(RegExp(r'\s*\(.*?\)'), '')
+          .replaceAll(RegExp(r'[^a-z0-9\s]'), ' ')
+          .replaceAll(RegExp(r' +'), ' ')
+          .trim();
+
+      final fNorm = norm(filter);
       alerts = alerts
-          .where((s) => s.city.toLowerCase() == filter.toLowerCase())
+          .where((s) => norm(s.city) == fNorm)
           .toList();
     }
 

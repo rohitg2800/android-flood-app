@@ -12,7 +12,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/flood_data.dart';
 import '../providers/flood_providers.dart';
 import '../providers/prediction_provider.dart';
+import '../models/flood_prediction.dart';
 import '../theme/river_theme.dart';
+
 import '../app_router.dart';
 import '../widgets/watch_button.dart';          // Step 3.6
 import '../widgets/sync_status_banner.dart';    // Step 2.4
