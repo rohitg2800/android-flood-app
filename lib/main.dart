@@ -257,14 +257,18 @@ Future<void> main() async {
       DataFetchEngine.instance.start();
       ActiveAlertController.instance.start();
 
-      // Fix: evaluate() requires 2 positional args: gauges + subscriptions.
-      // Subscriptions are loaded lazily from Hive; pass empty list initially —
-      // the AlertEngine dedup + threshold logic gracefully handles no subs.
-      const List<dynamic> _emptySubs = [];
-      final Stream<FloodAlert> alertStream = DataFetchEngine.instance.alertStream
-          .map((snapshot) =>
-              AlertEngine.instance.evaluate(snapshot, _emptySubs))
-          .expand((alerts) => alerts);
+      // Wire alert engine: DataFetchEngine emits DataFetchSnapshot.
+      // AlertEngine.evaluate() expects (List<FloodData>, List<AlertSubscription>)
+      // and returns List<FloodAlert> synchronously.
+      // We convert snapshot -> floodDataList here; subs loaded lazily (empty OK).
+      final Stream<FloodAlert> alertStream = DataFetchEngine
+          .instance
+          .snapshotStream                          // Stream<DataFetchSnapshot>
+          .expand((snapshot) {
+            final List<FloodData> floodData = snapshot.toFloodDataList();
+            final List<AlertSubscription> subs = const [];
+            return AlertEngine.instance.evaluate(floodData, subs);
+          });
       AlertNotificationBridge.instance.start(alertStream);
     });
   }, (Object error, StackTrace stack) {
@@ -276,12 +280,11 @@ Future<void> main() async {
 }
 
 String _severityChannelFromData(Map<String, dynamic> data) {
-  switch ((data['severity'] as String? ?? '').toLowerCase()) {
-    case 'emergency': return 'flood_emergency';
-    case 'critical':  return 'flood_critical';
-    case 'warning':   return 'flood_warning';
-    default:          return 'flood_info';
-  }
+  final severity = (data['severity'] as String? ?? '').toLowerCase();
+  if (severity == 'emergency') return 'flood_emergency';
+  if (severity == 'critical')  return 'flood_critical';
+  if (severity == 'warning')   return 'flood_warning';
+  return 'flood_info';
 }
 
 class FloodWatchApp extends ConsumerWidget {
@@ -343,110 +346,77 @@ class FloodWatchApp extends ConsumerWidget {
       onGenerateRoute: (settings) {
         switch (settings.name) {
           case Routes.splash:
-          case SplashScreen.route:
             return _fade(const SplashScreen());
           case Routes.onboarding:
-          case OnboardingScreen.route:
             return _fade(const OnboardingScreen());
           case Routes.shell:
-          case '/home':
             return _fade(const MainShell());
           case Routes.dashboard:
-          case DashboardScreen.route:
             return _fade(const DashboardScreen());
-          case Routes.alerts:
-          case AlertsScreen.route: {
+          case Routes.alerts: {
             final stationFilter = settings.arguments as String?;
             return _fade(AlertsScreen(stationFilter: stationFilter));
           }
           case Routes.monitors:
-          case MonitorsScreen.route:
             return _fade(const MonitorsScreen());
           case Routes.predict:
-          case PredictScreen.route:
             return _fade(const PredictScreen());
           case Routes.settings:
-          case SettingsScreen.route:
             return _fade(const SettingsScreen());
           case Routes.sos:
-          case SosScreen.route:
             return _fade(const SosScreen());
           case Routes.evacuation:
-          case '/evacuation-routes':
             return _fade(const EvacuationRoutesScreen());
           case Routes.weather:
-          case WeatherScreen.route:
             return _fade(const WeatherScreen());
           case Routes.riverMonitor:
-          case RiverMonitorScreen.route:
             return _fade(const RiverMonitorScreen());
           case Routes.stateMatrix:
-          case StateMatrixScreen.route:
             return _fade(const StateMatrixScreen());
           case Routes.modelInfo:
-          case ModelInfoScreen.route:
             return _fade(const ModelInfoScreen());
           case Routes.biharRiverMap:
-          case BiharRiverMapScreen.route:
             return _fade(const BiharRiverMapScreen());
           case Routes.liveStations:
-          case LiveStationsScreen.route:
             return _fade(const LiveStationsScreen());
           case Routes.news:
-          case NewsFeedScreen.route:
             return _fade(const NewsFeedScreen());
           case Routes.map:
-          case MapScreen.route:
             return _fade(const MapScreen());
           case Routes.community:
-          case CommunityScreen.route:
             return _fade(const CommunityScreen());
           case Routes.export_:
-          case ExportScreen.route:
             return _fade(const ExportScreen());
           case Routes.notificationSettings:
-          case NotificationSettingsScreen.route:
             return _fade(const NotificationSettingsScreen());
           case Routes.incidentReport:
-          case IncidentReportScreen.route:
             return _fade(const IncidentReportScreen());
           case Routes.crowdReports:
-          case CrowdReportFeedScreen.route:
             return _fade(const CrowdReportFeedScreen());
           case Routes.aiPredictor:
-          case AiPredictionScreen.route:
             return _fade(const AiPredictionScreen());
           case Routes.indiaRiverExplorer:
-          case IndiaRiverExplorerScreen.route:
             return _fade(const IndiaRiverExplorerScreen());
           case Routes.rainfallForecast:
-          case RainfallForecastScreen.route:
             return _fade(const RainfallForecastScreen());
           case Routes.historicalAnalytics:
-          case HistoricalAnalyticsScreen.route:
             return _fade(const HistoricalAnalyticsScreen());
           case Routes.analytics:
-          case AnalyticsDashboardScreen.route:
             return _fade(const AnalyticsDashboardScreen());
           case Routes.profile:
-          case ProfileScreen.route:
             return _fade(const ProfileScreen());
           case Routes.adminDashboard:
-          case AdminDashboardScreen.route:
             return _fade(const AdminDashboardScreen());
-          case Routes.cityDetail:
-          case '/city_detail': {
+          case Routes.cityDetail: {
             final cityName = settings.arguments as String? ?? '';
             return _fade(CityDetailScreen(cityName: cityName));
           }
-          case Routes.riverDetail:
-          case '/river_detail': {
+          case Routes.riverDetail: {
             final rdArgs = settings.arguments;
             if (rdArgs is! FloodData) return _fade(const SplashScreen());
             return _fade(RiverDetailScreen(data: rdArgs));
           }
-          case Routes.stationDetail:
-          case '/cwc_station': {
+          case Routes.stationDetail: {
             final cwcArgs = settings.arguments;
             if (cwcArgs is! CwcStation) return _fade(const SplashScreen());
             return _fade(CwcStationDetailScreen(station: cwcArgs));

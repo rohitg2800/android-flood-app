@@ -1,5 +1,5 @@
 // lib/screens/river_detail_screen.dart
-// OpsFlood — River detail screen  (v3 — district row added)
+// OpsFlood — River detail screen  (v3.1 — fixed OpsAreaChart params)
 library;
 
 import 'package:flutter/material.dart';
@@ -59,10 +59,10 @@ class RiverDetailScreen extends StatelessWidget {
               color:    col,
             ),
             const SizedBox(height: 14),
-            _SectionTitle('Water Level'),
+            const _SectionTitle('Water Level'),
             _LevelGrid(data: data, col: col),
             const SizedBox(height: 14),
-            _SectionTitle('Risk Gauge'),
+            const _SectionTitle('Risk Gauge'),
             RiskBar(
               value:   data.capacityPercent.clamp(0, 100),
               warning: data.warningLevel > 0 && data.dangerLevel > 0
@@ -71,10 +71,10 @@ class RiverDetailScreen extends StatelessWidget {
               danger:  80,
             ),
             const SizedBox(height: 14),
-            _SectionTitle('Rainfall & Flow'),
+            const _SectionTitle('Rainfall & Flow'),
             _RainfallCard(data: data, col: col),
             const SizedBox(height: 14),
-            _SectionTitle('Flood Probability'),
+            const _SectionTitle('Flood Probability'),
             ProbabilityBarWidget(
               probabilities: {
                 'LOW':      (100 - data.capacityPercent.clamp(0, 100)),
@@ -87,21 +87,28 @@ class RiverDetailScreen extends StatelessWidget {
               topSeverity: data.riskLevel,
             ),
             const SizedBox(height: 14),
-            _SectionTitle('Recent Trend'),
-            OpsAreaChart(
-              values:  [
-                data.currentLevel,
-                data.warningLevel * 0.85,
-                data.currentLevel * 0.95,
-                data.currentLevel,
-                data.dangerLevel  * 0.75,
-                data.currentLevel * 1.02,
-              ],
-              labels:   ['T-5h', 'T-4h', 'T-3h', 'T-2h', 'T-1h', 'Now'],
-              warningY: data.warningLevel > 0 ? data.warningLevel : null,
-              dangerY:  data.dangerLevel  > 0 ? data.dangerLevel  : null,
-              yUnit:    ' m',
-              height:   180,
+            const _SectionTitle('Recent Trend'),
+            // OpsAreaChart only supports: values, xLabels, lineColor,
+            // fillColor, minY, maxY.  warningY / dangerY / yUnit / height
+            // are not widget params — use SizedBox for fixed height.
+            SizedBox(
+              height: 180,
+              child: OpsAreaChart(
+                values: [
+                  data.currentLevel,
+                  data.warningLevel * 0.85,
+                  data.currentLevel * 0.95,
+                  data.currentLevel,
+                  data.dangerLevel  * 0.75,
+                  data.currentLevel * 1.02,
+                ],
+                xLabels: const ['T-5h', 'T-4h', 'T-3h', 'T-2h', 'T-1h', 'Now'],
+                lineColor: col,
+                minY: 0,
+                maxY: (data.dangerLevel > 0
+                    ? data.dangerLevel * 1.2
+                    : (data.currentLevel * 1.5).clamp(1, double.maxFinite)),
+              ),
             ),
             const SizedBox(height: 24),
           ],
@@ -139,8 +146,10 @@ class _MetaCard extends StatelessWidget {
       child: Column(
         children: [
           _MetaRow(icon: Icons.water_outlined,        label: 'River',            value: river,    color: color),
-          if (district.isNotEmpty) ...[const Divider(color: AppPalette.abyss4, height: 14),
-            _MetaRow(icon: Icons.location_city_outlined, label: 'District (Zila)', value: district, color: color)],
+          if (district.isNotEmpty) ...[
+            const Divider(color: AppPalette.abyss4, height: 14),
+            _MetaRow(icon: Icons.location_city_outlined, label: 'District (Zila)', value: district, color: color),
+          ],
           const Divider(color: AppPalette.abyss4, height: 14),
           _MetaRow(icon: Icons.map_outlined, label: 'State', value: state, color: color),
         ],
