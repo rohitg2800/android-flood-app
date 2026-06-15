@@ -1,16 +1,6 @@
-// lib/screens/river_monitor_screen.dart  v2.0
+// lib/screens/river_monitor_screen.dart  v2.0.1
 //
-// v2.0 (15 Jun 2026) — ML severity fields wired throughout
-//
-//   Changes from v1.0:
-//   • _RiverCard: ML prediction row — predictedSeverity badge, riskScore
-//     gauge, confidencePercent, willBreachDanger breach banner, peakLevel72h
-//   • _HeroHeader stats: willBreachDanger count tile added
-//   • _SummaryStrip: breach count chip added
-//   • critCount / sevCount elevated by predictedSeverity where riskLevel
-//     doesn't already classify CRITICAL/SEVERE
-//   • List sorted by riskScore desc before rendering
-//   • All v1.0 UI (ripple, cylinder, wave, search, animated cards) retained
+// v2.0.1 (15 Jun 2026) — fix literal \n in spread operators
 
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -79,7 +69,6 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
     final lastFetch = ref.watch(lastFetchTimeProvider);
     final t         = RiverColors.of(context);
 
-    // Sort by riskScore desc (ML-ranked), fallback to original order
     final all = [...rawAll]..sort((a, b) {
         final sa = (a.riskScore ?? 0).toDouble();
         final sb = (b.riskScore ?? 0).toDouble();
@@ -88,11 +77,9 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
 
     final levels = _filtered(all);
 
-    // Base counts from riskLevel
     int critCount = all.where((d) => d.riskLevel.toUpperCase() == 'CRITICAL').length;
     int sevCount  = all.where((d) => d.riskLevel.toUpperCase() == 'SEVERE').length;
 
-    // Elevate via ML predictedSeverity where riskLevel doesn't already count them
     for (final d in all) {
       final ml = d.predictedSeverity?.toUpperCase();
       final rl = d.riskLevel.toUpperCase();
@@ -108,7 +95,6 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
-          // ── Animated hero header ────────────────────────────────────────
           SliverToBoxAdapter(
             child: AnimatedBuilder(
               animation: _headerAnim,
@@ -117,22 +103,21 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
                 child: Transform.translate(
                   offset: Offset(0, _headerSlide.value),
                   child: _HeroHeader(
-                    ripple:       _rippleAnim,
-                    t:            t,
-                    total:        all.length,
-                    critCount:    critCount,
-                    sevCount:     sevCount,
-                    normCount:    normCount,
-                    breachCount:  breachCount,
-                    offline:      offline,
-                    lastFetch:    lastFetch,
+                    ripple:      _rippleAnim,
+                    t:           t,
+                    total:       all.length,
+                    critCount:   critCount,
+                    sevCount:    sevCount,
+                    normCount:   normCount,
+                    breachCount: breachCount,
+                    offline:     offline,
+                    lastFetch:   lastFetch,
                   ),
                 ),
               ),
             ),
           ),
 
-          // ── Search bar ────────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
@@ -146,7 +131,6 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
             ),
           ),
 
-          // ── Summary strip ──────────────────────────────────────────────
           if (all.isNotEmpty)
             SliverToBoxAdapter(
               child: Padding(
@@ -158,7 +142,6 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
               ),
             ),
 
-          // ── Offline / stale banner ─────────────────────────────────────
           if (offline)
             SliverToBoxAdapter(
               child: _StatusBanner(
@@ -178,7 +161,6 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
               ),
             ),
 
-          // ── Content ───────────────────────────────────────────────────
           if (loading && all.isEmpty)
             const SliverFillRemaining(
               child: Center(child: CircularProgressIndicator()),
@@ -214,7 +196,7 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// _HeroHeader — v2.0: breach count tile added
+// _HeroHeader
 // ─────────────────────────────────────────────────────────────────────────────
 class _HeroHeader extends StatelessWidget {
   final AnimationController ripple;
@@ -236,126 +218,111 @@ class _HeroHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      child: Stack(
-        children: [
-          // animated gradient background
-          Container(
-            height: 220,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  t.accent.withOpacity(0.22),
-                  t.scaffoldBg,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+    return Stack(
+      children: [
+        Container(
+          height: 220,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [t.accent.withOpacity(0.22), t.scaffoldBg],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        Positioned.fill(
+          child: AnimatedBuilder(
+            animation: ripple,
+            builder: (_, __) => CustomPaint(
+              painter: _RipplePainter(
+                progress: ripple.value,
+                color: critCount > 0 ? AppPalette.critical : t.accent,
               ),
             ),
           ),
-
-          // ripple rings
-          Positioned.fill(
-            child: AnimatedBuilder(
-              animation: ripple,
-              builder: (_, __) {
-                final v = ripple.value;
-                return CustomPaint(
-                  painter: _RipplePainter(
-                    progress: v,
-                    color: critCount > 0 ? AppPalette.critical : t.accent,
-                  ),
-                );
-              },
-            ),
-          ),
-
-          // content
-          SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 40, height: 40,
-                        decoration: BoxDecoration(
-                          color: t.accent.withOpacity(0.18),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: t.accent.withOpacity(0.4)),
-                        ),
-                        child: Icon(Icons.monitor_heart_outlined,
-                            color: t.accent, size: 22),
+        ),
+        SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 40, height: 40,
+                      decoration: BoxDecoration(
+                        color: t.accent.withOpacity(0.18),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: t.accent.withOpacity(0.4)),
                       ),
-                      const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('River Monitor',
-                              style: TextStyle(
-                                  color: t.textPrimary,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: -0.5)),
-                          Text(
-                            offline
-                                ? '● Offline — cached data'
-                                : lastFetch != null
-                                    ? 'Live · ${DateFormat("HH:mm").format(lastFetch!)}'
-                                    : 'Bihar Flood Operations',
+                      child: Icon(Icons.monitor_heart_outlined,
+                          color: t.accent, size: 22),
+                    ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('River Monitor',
                             style: TextStyle(
-                                color: offline ? AppPalette.warning : t.accent,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600),
-                          ),
+                                color: t.textPrimary,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.5)),
+                        Text(
+                          offline
+                              ? '● Offline — cached data'
+                              : lastFetch != null
+                                  ? 'Live · ${DateFormat("HH:mm").format(lastFetch!)}'
+                                  : 'Bihar Flood Operations',
+                          style: TextStyle(
+                              color: offline ? AppPalette.warning : t.accent,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF7B2FF7).withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFF7B2FF7).withOpacity(0.4)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.auto_graph, color: Color(0xFF7B2FF7), size: 12),
+                          SizedBox(width: 4),
+                          Text('ML Ranked',
+                              style: TextStyle(
+                                  color: Color(0xFF7B2FF7),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800)),
                         ],
                       ),
-                      const Spacer(),
-                      // ML badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF7B2FF7).withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFF7B2FF7).withOpacity(0.4)),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.auto_graph, color: Color(0xFF7B2FF7), size: 12),
-                            SizedBox(width: 4),
-                            Text('ML Ranked',
-                                style: TextStyle(
-                                    color: Color(0xFF7B2FF7),
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w800)),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  // Stat tiles row — now includes Breach
-                  Row(
-                    children: [
-                      _StatTile(label: 'Total',    value: '$total',        color: t.accent,           icon: Icons.water_outlined),
-                      const SizedBox(width: 8),
-                      _StatTile(label: 'Critical', value: '$critCount',    color: AppPalette.critical, icon: Icons.warning_amber_rounded),
-                      const SizedBox(width: 8),
-                      _StatTile(label: 'Severe',   value: '$sevCount',     color: AppPalette.danger,   icon: Icons.warning_rounded),
-                      const SizedBox(width: 8),
-                      _StatTile(label: 'Breach↑',  value: '$breachCount',  color: const Color(0xFFFF1744), icon: Icons.crisis_alert_rounded),
-                    ],
-                  ),
-                ],
-              ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    _StatTile(label: 'Total',    value: '$total',       color: t.accent,               icon: Icons.water_outlined),
+                    const SizedBox(width: 8),
+                    _StatTile(label: 'Critical', value: '$critCount',   color: AppPalette.critical,    icon: Icons.warning_amber_rounded),
+                    const SizedBox(width: 8),
+                    _StatTile(label: 'Severe',   value: '$sevCount',    color: AppPalette.danger,      icon: Icons.warning_rounded),
+                    const SizedBox(width: 8),
+                    _StatTile(label: 'Breach↑',  value: '$breachCount', color: const Color(0xFFFF1744), icon: Icons.crisis_alert_rounded),
+                  ],
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -410,7 +377,7 @@ class _StatTile extends StatelessWidget {
   }
 }
 
-// ── Ripple painter ─────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 class _RipplePainter extends CustomPainter {
   final double progress;
   final Color color;
@@ -421,8 +388,8 @@ class _RipplePainter extends CustomPainter {
     final cx = size.width * 0.82;
     final cy = size.height * 0.3;
     for (int i = 0; i < 3; i++) {
-      final phase = (progress + i / 3) % 1.0;
-      final radius = 20 + phase * 100;
+      final phase   = (progress + i / 3) % 1.0;
+      final radius  = 20 + phase * 100;
       final opacity = (1 - phase) * 0.18;
       canvas.drawCircle(
         Offset(cx, cy),
@@ -440,7 +407,7 @@ class _RipplePainter extends CustomPainter {
       old.progress != progress || old.color != color;
 }
 
-// ── Search bar ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 class _SearchBar extends StatelessWidget {
   final TextEditingController ctrl;
   final String query;
@@ -448,8 +415,11 @@ class _SearchBar extends StatelessWidget {
   final ValueChanged<String> onChanged;
   final VoidCallback onClear;
   const _SearchBar({
-    required this.ctrl, required this.query, required this.t,
-    required this.onChanged, required this.onClear,
+    required this.ctrl,
+    required this.query,
+    required this.t,
+    required this.onChanged,
+    required this.onClear,
   });
 
   @override
@@ -490,7 +460,7 @@ class _SearchBar extends StatelessWidget {
   }
 }
 
-// ── Summary strip — v2.0: breach chip added ────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 class _SummaryStrip extends StatelessWidget {
   final RiverColors t;
   final int total, crit, sev, norm, breach;
@@ -509,17 +479,16 @@ class _SummaryStrip extends StatelessWidget {
       spacing: 8,
       runSpacing: 6,
       children: [
-        _chip(t.accent,                Icons.water,                    '$total stations'),
-        if (crit   > 0) _chip(AppPalette.critical,        Icons.warning_amber_rounded,  '$crit critical'),
-        if (sev    > 0) _chip(AppPalette.danger,           Icons.warning_rounded,        '$sev severe'),
-        if (norm   > 0) _chip(AppPalette.safe,             Icons.check_circle_outline,   '$norm normal'),
-        if (breach > 0) _chip(const Color(0xFFFF1744),     Icons.crisis_alert_rounded,   '$breach breach↑'),
+        _chip(t.accent,                     Icons.water,                  '$total stations'),
+        if (crit   > 0) _chip(AppPalette.critical,   Icons.warning_amber_rounded,  '$crit critical'),
+        if (sev    > 0) _chip(AppPalette.danger,      Icons.warning_rounded,        '$sev severe'),
+        if (norm   > 0) _chip(AppPalette.safe,        Icons.check_circle_outline,   '$norm normal'),
+        if (breach > 0) _chip(const Color(0xFFFF1744), Icons.crisis_alert_rounded,  '$breach breach↑'),
       ],
     );
   }
 
-  Widget _chip(Color c, IconData icon, String label) =>
-      Container(
+  Widget _chip(Color c, IconData icon, String label) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
           color: c.withOpacity(0.12),
@@ -541,15 +510,17 @@ class _SummaryStrip extends StatelessWidget {
       );
 }
 
-// ── Status banner ──────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 class _StatusBanner extends StatelessWidget {
   final IconData icon;
   final Color color;
   final String text;
   final RiverColors t;
   const _StatusBanner({
-    required this.icon, required this.color,
-    required this.text, required this.t,
+    required this.icon,
+    required this.color,
+    required this.text,
+    required this.t,
   });
 
   @override
@@ -579,7 +550,7 @@ class _StatusBanner extends StatelessWidget {
   }
 }
 
-// ── Animated list-item wrapper ──────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 class _AnimatedCard extends StatefulWidget {
   final int index;
   final Widget child;
@@ -625,7 +596,7 @@ class _AnimatedCardState extends State<_AnimatedCard>
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// _RiverCard — v2.0: full ML row wired
+// _RiverCard
 // ─────────────────────────────────────────────────────────────────────────────
 class _RiverCard extends StatefulWidget {
   final FloodData data;
@@ -686,7 +657,6 @@ class _RiverCardState extends State<_RiverCard>
     final rc       = _riskColor(d.riskLevel);
     final fillPct  = d.fillPercent ?? 0.0;
 
-    // ML fields
     final mlSev      = d.predictedSeverity;
     final mlColor    = _mlColor(mlSev);
     final riskScore  = d.riskScore;
@@ -724,7 +694,6 @@ class _RiverCardState extends State<_RiverCard>
               borderRadius: BorderRadius.circular(20),
               child: Stack(
                 children: [
-                  // 3D fill background (animated)
                   Positioned(
                     bottom: 0, left: 0, right: 0,
                     child: Container(
@@ -738,8 +707,6 @@ class _RiverCardState extends State<_RiverCard>
                       ),
                     ),
                   ),
-
-                  // wave overlay
                   Positioned(
                     bottom: (120 * _fillTween.value) - 8,
                     left: 0, right: 0,
@@ -748,15 +715,13 @@ class _RiverCardState extends State<_RiverCard>
                       painter: _WavePainter(color: rc, opacity: 0.30),
                     ),
                   ),
-
-                  // main content
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
 
-                        // ── ML breach banner
+                        // Breach banner
                         if (willBreach)
                           Container(
                             margin: const EdgeInsets.only(bottom: 10),
@@ -788,7 +753,7 @@ class _RiverCardState extends State<_RiverCard>
                             ),
                           ),
 
-                        // Row 1: cylinder + title + badge
+                        // Row 1: cylinder + title + ML chip + risk badge
                         Row(
                           children: [
                             _Cylinder3D(
@@ -820,8 +785,8 @@ class _RiverCardState extends State<_RiverCard>
                                 ],
                               ),
                             ),
-                            // ML severity chip
-                            if (mlSev != null) ...[\n                              Container(
+                            if (mlSev != null) ...[
+                              Container(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
@@ -846,7 +811,6 @@ class _RiverCardState extends State<_RiverCard>
                               ),
                               const SizedBox(width: 6),
                             ],
-                            // Risk badge
                             Container(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 10, vertical: 5),
@@ -880,7 +844,8 @@ class _RiverCardState extends State<_RiverCard>
                                   label: 'Level',
                                   value: '${d.currentLevel!.toStringAsFixed(2)} m',
                                   color: rc),
-                            if (d.dangerLevel != null) ...[\n                              const SizedBox(width: 12),
+                            if (d.dangerLevel != null) ...[
+                              const SizedBox(width: 12),
                               _Chip(
                                   t: t,
                                   icon: Icons.emergency_outlined,
@@ -888,7 +853,8 @@ class _RiverCardState extends State<_RiverCard>
                                   value: '${d.dangerLevel!.toStringAsFixed(2)} m',
                                   color: t.textSecondary),
                             ],
-                            if (peak != null) ...[\n                              const SizedBox(width: 12),
+                            if (peak != null) ...[
+                              const SizedBox(width: 12),
                               _Chip(
                                   t: t,
                                   icon: Icons.trending_up_rounded,
@@ -901,7 +867,7 @@ class _RiverCardState extends State<_RiverCard>
 
                         const SizedBox(height: 10),
 
-                        // Row 3: animated fill bar
+                        // Row 3: fill bar
                         Row(
                           children: [
                             Text('Fill',
@@ -944,7 +910,8 @@ class _RiverCardState extends State<_RiverCard>
                         ),
 
                         // Row 4: ML risk score bar
-                        if (riskScore != null) ...[\n                          const SizedBox(height: 8),
+                        if (riskScore != null) ...[
+                          const SizedBox(height: 8),
                           Row(
                             children: [
                               const Icon(Icons.query_stats_rounded,
@@ -1010,7 +977,7 @@ class _RiverCardState extends State<_RiverCard>
   }
 }
 
-// ── 3D Cylinder widget ────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 class _Cylinder3D extends StatelessWidget {
   final double fill;
   final Color  color;
@@ -1023,14 +990,12 @@ class _Cylinder3D extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: width, height: height,
-      child: CustomPaint(
-        painter: _CylinderPainter(fill: fill, color: color),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => SizedBox(
+        width: width, height: height,
+        child: CustomPaint(
+          painter: _CylinderPainter(fill: fill, color: color),
+        ),
+      );
 }
 
 class _CylinderPainter extends CustomPainter {
@@ -1105,7 +1070,7 @@ class _CylinderPainter extends CustomPainter {
       old.fill != fill || old.color != color;
 }
 
-// ── Wave painter ──────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 class _WavePainter extends CustomPainter {
   final Color  color;
   final double opacity;
@@ -1131,15 +1096,18 @@ class _WavePainter extends CustomPainter {
       old.color != color || old.opacity != opacity;
 }
 
-// ── Stat chip ─────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 class _Chip extends StatelessWidget {
   final RiverColors t;
   final IconData icon;
   final String label, value;
   final Color color;
   const _Chip({
-    required this.t, required this.icon,
-    required this.label, required this.value, required this.color,
+    required this.t,
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
   });
 
   @override
@@ -1169,7 +1137,7 @@ class _Chip extends StatelessWidget {
   }
 }
 
-// ── Empty state ───────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 class _EmptyState extends StatelessWidget {
   final RiverColors t;
   final String query;
@@ -1183,7 +1151,8 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.water_outlined, size: 64, color: t.accent.withOpacity(0.4)),
+            Icon(Icons.water_outlined, size: 64,
+                color: t.accent.withOpacity(0.4)),
             const SizedBox(height: 16),
             Text(
               query.isNotEmpty
