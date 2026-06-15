@@ -1,97 +1,87 @@
 // lib/services/backend_health_service.dart
+// Phase 5 — Backend Keep-Alive for Render free tier
 //
-// Backend health probe. Uses AppConfig timeouts — no magic numbers here.
+// Render free tier sleeps after 15 minutes of inactivity, causing
+// a 50-second cold start that looks like a crash to users.
+//
+// Fix: ping /health every 14 minutes from the app when foregrounded.
+// This is a soft keep-alive — errors are silently ignored.
+// On Render paid tier, this is a no-op (server never sleeps).
+library;
 
 import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'flood_api.dart';
-import '../config/app_config.dart';
+import 'env_config.dart';
 
-class BackendHealth {
-  final bool isOnline;
-  final bool modelReady;
-  final int artifactCount;
-  final int bundleCount;
-  final String version;
-  final bool dbReady;
-  final bool ingestionRunning;
-  final String sourceMode;
-  final String sourceLabel;
-  final DateTime? fetchedAt;
+class BackendHealthService {
+  BackendHealthService._();
+  static final BackendHealthService instance = BackendHealthService._();
 
-  const BackendHealth({
-    this.isOnline        = false,
-    this.modelReady      = false,
-    this.artifactCount   = 0,
-    this.bundleCount     = 0,
-    this.version         = 'unknown',
-    this.dbReady         = false,
-    this.ingestionRunning = false,
-    this.sourceMode      = '',
-    this.sourceLabel     = '',
-    this.fetchedAt,
-  });
+  final _dio = Dio(BaseOptions(
+    connectTimeout: const Duration(seconds: 8),
+    receiveTimeout: const Duration(seconds: 8),
+    sendTimeout:    const Duration(seconds: 8),
+  ));
 
-  static const BackendHealth offline = BackendHealth();
+  Timer?  _keepAliveTimer;
+  bool    _isRunning = false;
+  DateTime? _lastPingTime;
+  bool    _lastPingSuccess = false;
 
-  factory BackendHealth.fromJson(Map<String, dynamic> j) {
-    final db        = j['database']  as Map<String, dynamic>? ?? {};
-    final ingestion = j['ingestion'] as Map<String, dynamic>? ?? {};
-    final policy    = j['source_policy'] as Map<String, dynamic>? ?? {};
-    return BackendHealth(
-      isOnline:         j['status'] == 'ok',
-      modelReady:       j['model_ready'] == true,
-      artifactCount:    (j['artifact_count'] as num?)?.toInt() ?? 0,
-      bundleCount:      (j['bundle_count']   as num?)?.toInt() ?? 0,
-      version:          j['version']?.toString() ?? 'unknown',
-      dbReady:          db['ready'] == true,
-      ingestionRunning: ingestion['running'] == true,
-      sourceMode:       policy['mode']?.toString()  ?? '',
-      sourceLabel:      policy['label']?.toString() ?? '',
-      fetchedAt:        DateTime.tryParse(j['time']?.toString() ?? ''),
+  // ─────────────────────────────────────────────────────────────
+  /// Start the keep-alive timer. Call once from main() after Firebase init.
+  void start() {
+    if (_isRunning) return;
+    _isRunning = true;
+    // Ping immediately on start to warm up the backend
+    _ping();
+    // Then every 14 minutes (Render timeout is 15 min)
+    _keepAliveTimer = Timer.periodic(
+      const Duration(minutes: 14),
+      (_) => _ping(),
     );
-  }
-
-  String get statusLabel {
-    if (!isOnline)   return 'Offline';
-    if (!modelReady) return 'Online — Model Loading';
-    return 'Online ✅';
-  }
-}
-
-class BackendHealthNotifier extends ChangeNotifier {
-  BackendHealth _health = BackendHealth.offline;
-  bool          _loading = false;
-
-  BackendHealth get health  => _health;
-  bool          get loading => _loading;
-
-  // On first open the backend may be cold (~50s wake). We probe with
-  // coldStartTimeout and retry once automatically before marking offline.
-  Future<void> fetch({bool coldStart = true}) async {
-    if (_loading) return;
-    _loading = true;
-    notifyListeners();
-
-    for (int attempt = 1; attempt <= AppConfig.healthRetries; attempt++) {
-      try {
-        final raw = await FloodApi.instance.healthCheck(coldStart: coldStart);
-        if (raw['status'] == 'error' && attempt < AppConfig.healthRetries) {
-          await Future<void>.delayed(const Duration(seconds: 5));
-          continue;
-        }
-        _health = (raw['status'] == 'ok' || raw['model_ready'] != null)
-            ? BackendHealth.fromJson(raw)
-            : BackendHealth.offline;
-        break;
-      } catch (e) {
-        if (kDebugMode) debugPrint('[BackendHealth] $e');
-        _health = BackendHealth.offline;
-        break;
-      }
+    if (kDebugMode) {
+      debugPrint('[BackendHealth] Keep-alive started '
+          '(ping every 14 min → ${EnvConfig.backendBaseUrl}/health)');
     }
+  }
 
-    _loading = false;
-    notifyListeners();
+  // ─────────────────────────────────────────────────────────────
+  void stop() {
+    _keepAliveTimer?.cancel();
+    _keepAliveTimer = null;
+    _isRunning      = false;
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  /// Manual health check — returns true if backend is reachable.
+  Future<bool> checkNow() async => _ping();
+
+  // ─────────────────────────────────────────────────────────────
+  DateTime? get lastPingTime    => _lastPingTime;
+  bool      get lastPingSuccess => _lastPingSuccess;
+
+  // ─────────────────────────────────────────────────────────────
+  Future<bool> _ping() async {
+    try {
+      final res = await _dio.get(
+        '${EnvConfig.backendBaseUrl}/health',
+        options: Options(validateStatus: (s) => s != null && s < 500),
+      );
+      _lastPingSuccess = res.statusCode != null && res.statusCode! < 400;
+      _lastPingTime    = DateTime.now();
+      if (kDebugMode) {
+        debugPrint('[BackendHealth] Ping → ${res.statusCode} '
+            '(${_lastPingSuccess ? "OK" : "DEGRADED"})');
+      }
+      return _lastPingSuccess;
+    } catch (_) {
+      // Never throw — a failed ping must not surface as a user-facing error.
+      _lastPingSuccess = false;
+      _lastPingTime    = DateTime.now();
+      if (kDebugMode) debugPrint('[BackendHealth] Ping failed (offline?)');
+      return false;
+    }
   }
 }
