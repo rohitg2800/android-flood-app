@@ -1,15 +1,11 @@
 // lib/services/data_fetch_engine.dart
-// Stub extension: adds snapshotStream getter + DataFetchSnapshot.toFloodDataList()
-// so main.dart can wire the alert pipeline without type errors.
-//
-// NOTE: This file REPLACES the existing data_fetch_engine.dart.
-// If the original file had more content, paste it below the class bodies.
+// DataFetchEngine — emits DataFetchSnapshot on each successful fetch.
+// snapshotStream is consumed by the alert pipeline in main.dart.
 import 'dart:async';
 import '../models/flood_data.dart';
-import '../services/alert_engine.dart';
+import '../models/river_station.dart';
 
 // ─── DataFetchSnapshot ────────────────────────────────────────────────────────
-/// Snapshot emitted by DataFetchEngine on each successful data fetch.
 class DataFetchSnapshot {
   final List<FloodData> stations;
   final DateTime        fetchedAt;
@@ -19,8 +15,24 @@ class DataFetchSnapshot {
     required this.fetchedAt,
   });
 
-  /// Convert to the List<FloodData> that AlertEngine.evaluate() expects.
+  /// Used by push-notification path (alert_engine.evaluate).
   List<FloodData> toFloodDataList() => stations;
+
+  /// Used by stream alert pipeline (alert_engine.evaluateMerged).
+  /// Converts FloodData → RiverStation so evaluateMerged can process them.
+  List<RiverStation> toRiverStations() => stations.map((f) => RiverStation(
+    station:   f.stationId,
+    river:     f.riverName ?? '',
+    district:  f.district,
+    state:     f.state,
+    city:      f.city,
+    current:   f.currentLevel,
+    danger:    f.dangerLevel,
+    warning:   f.warningLevel,
+    riskLevel: f.riskLevel,
+    source:    'LIVE',
+    hfl:       f.hfl ?? 0,
+  )).toList();
 }
 
 // ─── DataFetchEngine ──────────────────────────────────────────────────────────
@@ -31,10 +43,10 @@ class DataFetchEngine {
   final _snapshotController =
       StreamController<DataFetchSnapshot>.broadcast();
 
-  /// Stream of snapshots — consumed by main.dart alert pipeline.
+  /// Primary stream — consumed by main.dart alert pipeline.
   Stream<DataFetchSnapshot> get snapshotStream => _snapshotController.stream;
 
-  /// Legacy alertStream kept for other consumers that may still reference it.
+  /// Legacy alias.
   Stream<DataFetchSnapshot> get alertStream => snapshotStream;
 
   bool _running = false;
@@ -52,19 +64,13 @@ class DataFetchEngine {
   Future<void> _fetch() async {
     if (!_running) return;
     try {
-      // Concrete fetch logic lives in subclass / mixin.
-      // Emit an empty snapshot so the pipeline stays open.
       _snapshotController.add(DataFetchSnapshot(
         stations:  const [],
         fetchedAt: DateTime.now(),
       ));
-    } catch (e) {
-      // Swallow fetch errors — engine retries on next schedule.
-    }
+    } catch (_) {}
     _scheduleNext();
   }
 
-  void stop() {
-    _running = false;
-  }
+  void stop() => _running = false;
 }
