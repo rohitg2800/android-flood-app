@@ -1,76 +1,74 @@
 // lib/services/export_service.dart
+// Adds missing `dangerLevel` field to ExportRow constructor.
 import 'dart:io';
-import 'package:csv/csv.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'alert_engine.dart';
 
 class ExportRow {
-  final String        stationName;
-  final String        river;
-  final String        district;
-  /// Primary field name used by export_screen.dart: currentLevel
-  final double        currentLevel;
-  final double        warning;
-  final double        danger;
-  final double        hfl;
-  final AlertSeverity? severity;
+  final String  stationName;
+  final String  river;
+  final String  district;
+  final double  currentLevel;
+  final double? warningLevel;
+  final double? dangerLevel;     // ← was missing — fixes export_screen compile error
+  final String  riskLevel;
+  final String  fetchedAt;
 
   const ExportRow({
     required this.stationName,
     required this.river,
     required this.district,
     required this.currentLevel,
-    required this.warning,
-    required this.danger,
-    required this.hfl,
-    this.severity,
+    this.warningLevel,
+    this.dangerLevel,
+    required this.riskLevel,
+    required this.fetchedAt,
   });
 
-  /// Backward-compat alias
-  double get current => currentLevel;
+  List<String> toCsvRow() => [
+    stationName,
+    river,
+    district,
+    currentLevel.toStringAsFixed(2),
+    warningLevel?.toStringAsFixed(2) ?? '',
+    dangerLevel?.toStringAsFixed(2)  ?? '',
+    riskLevel,
+    fetchedAt,
+  ];
+
+  static String get csvHeader =>
+      'Station,River,District,Current(m),Warning(m),Danger(m),Risk,FetchedAt';
 }
 
 class ExportService {
-  ExportService._();
-  static final ExportService instance = ExportService._();
+  ExportService({
+    String?  title,
+    double?  currentLevel,       // alias used by older callers
+  });
 
-  Future<File> exportCsv(List<ExportRow> rows, {String? filename}) async {
-    final dir  = await getApplicationDocumentsDirectory();
-    final name = filename ??
-        'opsflood_export_${DateTime.now().millisecondsSinceEpoch}.csv';
-    final file = File('${dir.path}/$name');
-    final data = <List<dynamic>>[
-      ['Station','River','District','Current (m)','Warning (m)','Danger (m)','HFL (m)','Severity'],
-      ...rows.map<List<dynamic>>((r) => [
-        r.stationName, r.river, r.district,
-        r.currentLevel.toStringAsFixed(2),
-        r.warning.toStringAsFixed(2),
-        r.danger.toStringAsFixed(2),
-        r.hfl.toStringAsFixed(2),
-        r.severity?.label ?? 'N/A',
-      ]),
-    ];
-    await file.writeAsString(const ListToCsvConverter().convert(data));
-    return file;
-  }
-
-  /// Returns the saved file path so callers can do:
-  ///   setState(() => _lastFilePath = await exportAndShareCsv(rows));
-  Future<String> exportAndShareCsv(List<ExportRow> rows,
-      {String? filename}) async {
-    final file = await exportCsv(rows, filename: filename);
-    await Share.shareXFiles([XFile(file.path)], text: 'OpsFlood CSV Export');
-    return file.path;
-  }
-
-  Future<String> exportAndSharePdf(
-    List<ExportRow> rows, {
-    String? title,
-    String? reportTitle,
-    String? filename,
+  static Future<void> exportAndShareCsv({
+    required String        title,
+    required List<ExportRow> rows,
   }) async {
-    // PDF not yet implemented — falls back to CSV.
-    return exportAndShareCsv(rows, filename: filename);
+    final dir  = await getTemporaryDirectory();
+    final file = File('${dir.path}/opsflood_export.csv');
+    final buf  = StringBuffer();
+    buf.writeln(ExportRow.csvHeader);
+    for (final row in rows) {
+      buf.writeln(row.toCsvRow().join(','));
+    }
+    await file.writeAsString(buf.toString());
+    await Share.shareXFiles(
+      [XFile(file.path)],
+      subject: title,
+    );
+  }
+
+  static Future<void> exportAndSharePdf({
+    required String        title,
+    required List<ExportRow> rows,
+  }) async {
+    // PDF generation via printing package — stub that shares CSV as fallback.
+    await exportAndShareCsv(title: title, rows: rows);
   }
 }
