@@ -1,23 +1,19 @@
-// lib/services/kosi_birpur_service.dart  v3.3
+// lib/services/kosi_birpur_service.dart  v3.4
 //
-// v3.3 (15 Jun 2026) — DATUM FIX:
-//   All 5 live sources were emitting Kosi Birpur levels in AMSL (metres above
-//   mean sea level), e.g. 212.05 m with a DL of 214.00 m AMSL.  Every other
-//   Bihar station in the pipeline uses LOCAL GAUGE DATUM heights (70-77 m
-//   range for Birpur), matching the kBiharGauges registry entry:
-//     Birpur (CWC): WL 73.70 m, DL 74.70 m, HFL 76.02 m
+// v3.4 (15 Jun 2026) — Bihar pipeline fix:
+//   The WRIS server redirects /WRIS/API/hydrograph → /wriswriswrisWRIS/API/...
+//   _getNoLoop() correctly detected the loop (isLoop=true) but then returned
+//   the raw 302 response.  _tryWRIS() then failed the statusCode==200 check
+//   silently and fell to seed.
 //
-//   Fix: subtract kBirpurDatumOffset (139.32 m, the AMSL elevation of local
-//   gauge zero on the Kosi barrage CWC bench-mark) from every AMSL reading
-//   before constructing KosiBirpurReading.  The threshold constants are also
-//   expressed in local datum now so KosiBirpurReading.statusLabel is correct.
+//   Fix:
+//   1. _getNoLoop() now returns null (not the 302) when a loop is detected,
+//      which lets _tryWRIS() skip cleanly via the null-guard.
+//   2. _tryWRIS() adds a content-type + JSON prefix guard before jsonDecode
+//      so HTML error pages never reach the parser.
+//   3. Redirects to a DIFFERENT path (non-loop) are still followed once.
 //
-//   Conversion examples:
-//     AMSL 212.05 → local  72.73 m  (ELEVATED, below WL 73.70)
-//     AMSL 213.00 → local  73.68 m  (≈ WARNING)
-//     AMSL 214.00 DL → local 74.68 m  (≈ DL 74.70, registry-consistent)
-//     seed 210.80 AMSL → local 71.48 m
-//
+// v3.3: Datum conversion AMSL → local gauge (139.32 m offset).
 // v3.2: bumped _tryFromCwcService timeout 6s→12s.
 // v3.1: Registry-locked DL/WL/HFL for all Bihar gauge items.
 library;
@@ -32,21 +28,19 @@ import 'package:http/io_client.dart';
 import 'befiqr_cwc_service.dart';
 
 // ── Official CWC thresholds for Kosi @ Birpur — LOCAL GAUGE DATUM (m) ──────
-// Datum offset: kBirpurDatumOffset = 139.32 m (AMSL of local gauge zero)
-// Source: CWC bench-mark, Birpur Barrage, Supaul.
-const double kBirpurDatumOffset      = 139.32;  // subtract from AMSL to get local gauge
-const double kBirpurDangerLevel      =  74.70;  // local gauge (was 214.00 AMSL)
-const double kBirpurWarningLevel     =  73.70;  // local gauge (was 213.00 AMSL)
-const double kBirpurNormalLevel      =  71.48;  // local gauge (was 210.80 AMSL)
-const double kBirpurHFL              =  76.02;  // local gauge (was 215.32 AMSL)
+const double kBirpurDatumOffset      = 139.32;
+const double kBirpurDangerLevel      =  74.70;
+const double kBirpurWarningLevel     =  73.70;
+const double kBirpurNormalLevel      =  71.48;
+const double kBirpurHFL              =  76.02;
 const double kBirpurWarningDischarge = 22000.0;
 const double kBirpurDangerDischarge  = 27014.0;
 
 // ─────────────────────────────────────────────────────────────────────────────
 class KosiBirpurReading {
-  final double  levelM;         // LOCAL GAUGE DATUM (m)
-  final double  dangerLevel;    // LOCAL GAUGE DATUM (m)
-  final double  warningLevel;   // LOCAL GAUGE DATUM (m)
+  final double  levelM;
+  final double  dangerLevel;
+  final double  warningLevel;
   final double? dischargeCumecs;
   final double? levelWrd;
   final String? trend;
@@ -93,13 +87,9 @@ class KosiBirpurReading {
 }
 
 // ── Datum conversion helper ───────────────────────────────────────────────────
-/// Convert an AMSL reading to local gauge datum.
-/// Returns null if the result is outside a plausible Kosi gauge range (50–90 m).
 double? _amslToLocal(double? amsl) {
   if (amsl == null) return null;
   final local = amsl - kBirpurDatumOffset;
-  // Sanity: local gauge at Birpur should be in 50-90 m range during normal to
-  // extreme flood conditions.  Reject implausible values.
   if (local < 50 || local > 90) return null;
   return local;
 }
@@ -111,32 +101,44 @@ http.Client _noRedirectClient() {
   return IOClient(inner);
 }
 
-Future<http.Response> _getNoLoop(String url,
-    {Map<String, String>? headers, Duration timeout = const Duration(seconds: 10)}) async {
+/// Performs a GET without auto-following redirects.
+/// Returns null if a redirect loop is detected.
+/// Returns the response on 200 or after one clean redirect.
+Future<http.Response?> _getNoLoop(
+  String url, {
+  Map<String, String>? headers,
+  Duration timeout = const Duration(seconds: 10),
+}) async {
   final client = _noRedirectClient();
   try {
     final req    = http.Request('GET', Uri.parse(url));
     if (headers != null) req.headers.addAll(headers);
     final stream = await client.send(req).timeout(timeout);
-    var resp      = await http.Response.fromStream(stream);
+    var resp     = await http.Response.fromStream(stream);
 
     if (resp.statusCode >= 300 && resp.statusCode < 400) {
       final loc = resp.headers['location'];
-      if (loc != null) {
-        final origPath  = Uri.parse(url).path.toLowerCase();
-        final redirPath = Uri.parse(loc).path.toLowerCase();
-        final isLoop = redirPath.contains(origPath) && redirPath != origPath;
-        if (!isLoop) {
-          final req2   = http.Request('GET', Uri.parse(loc));
-          if (headers != null) req2.headers.addAll(headers);
-          final stream2 = await client.send(req2).timeout(timeout);
-          resp = await http.Response.fromStream(stream2);
-        } else {
-          debugPrint('[WRIS] redirect loop detected, aborting: $loc');
-        }
+      if (loc == null) return null; // no Location header — give up
+
+      final origPath  = Uri.parse(url).path.toLowerCase();
+      final redirPath = Uri.parse(loc).path.toLowerCase();
+
+      // ── v3.4 fix: return null on loop (was returning the 302) ──────
+      final isLoop = redirPath.contains(origPath) && redirPath != origPath;
+      if (isLoop) {
+        debugPrint('[WRIS] redirect loop detected — aborting: $loc');
+        return null; // caller skips this URL cleanly
       }
+      // ── follow one clean redirect ──────────────────────────────────
+      final req2    = http.Request('GET', Uri.parse(loc));
+      if (headers != null) req2.headers.addAll(headers);
+      final stream2 = await client.send(req2).timeout(timeout);
+      resp = await http.Response.fromStream(stream2);
     }
     return resp;
+  } catch (e) {
+    debugPrint('[WRIS] _getNoLoop error ($url): $e');
+    return null;
   } finally {
     client.close();
   }
@@ -175,12 +177,11 @@ class KosiBirpurService {
     }
 
     final result = await completer.future.timeout(
-      _raceTimeout, onTimeout: () => null);
+        _raceTimeout, onTimeout: () => null);
     return result ?? _seed();
   }
 
   // ── Source A: BEAMS Bihar direct JSON ──────────────────────────────────────
-  // BEAMS returns levels in AMSL.  Convert to local gauge datum.
   Future<KosiBirpurReading?> _tryBeamsDirect() async {
     final urls = [
       'https://api.beams.bihar.gov.in/api/stations/live?river=KOSI&site=BIRPUR',
@@ -190,9 +191,9 @@ class KosiBirpurService {
       try {
         final resp = await http.get(
           Uri.parse(url),
-          headers: {'Accept': 'application/json', 'User-Agent': 'OpsFlood/3.3'},
+          headers: {'Accept': 'application/json', 'User-Agent': 'OpsFlood/3.4'},
         ).timeout(const Duration(seconds: 10));
-        if (resp.statusCode == 200) {
+        if (resp.statusCode == 200 && _isJsonBody(resp.body)) {
           final body  = jsonDecode(resp.body);
           final items = body is List ? body
               : (body['data'] as List? ?? body['stations'] as List? ?? []);
@@ -200,13 +201,12 @@ class KosiBirpurService {
             final name = (item['site'] ?? item['station_name'] ?? '').toString().toLowerCase();
             if (!name.contains('birpur')) continue;
             final rawLevel = _parseDbl(item['current_level'] ?? item['water_level'] ?? item['wl']);
-            // BEAMS reports in AMSL (>100 m) — convert to local gauge.
             final level = rawLevel != null && rawLevel > 100
                 ? _amslToLocal(rawLevel)
-                : rawLevel;  // already local if ≤100
+                : rawLevel;
             if (level != null) {
-              final rawDl  = _parseDbl(item['danger_level']);
-              final rawWl  = _parseDbl(item['warning_level']);
+              final rawDl = _parseDbl(item['danger_level']);
+              final rawWl = _parseDbl(item['warning_level']);
               final dl = (rawDl != null && rawDl > 100) ? (_amslToLocal(rawDl) ?? kBirpurDangerLevel)  : (rawDl  ?? kBirpurDangerLevel);
               final wl = (rawWl != null && rawWl > 100) ? (_amslToLocal(rawWl) ?? kBirpurWarningLevel) : (rawWl ?? kBirpurWarningLevel);
               debugPrint('[KosiBirpur] BEAMS-direct ✅ $level m (local gauge)');
@@ -227,8 +227,6 @@ class KosiBirpurService {
   }
 
   // ── Source B: BefiqrCwcService ─────────────────────────────────────────────
-  // CWC BeFIQR already returns local gauge datum for most stations.
-  // For Birpur it also uses local datum (73.70/74.70), so no conversion needed.
   Future<KosiBirpurReading?> _tryFromCwcService() async {
     try {
       final stations = await _cwcSvc.fetchStations().timeout(const Duration(seconds: 12));
@@ -237,8 +235,7 @@ class KosiBirpurService {
           s.river.toLowerCase().contains('kosi') &&
           s.site.toLowerCase().contains('birpur')).toList();
       if (birpur.isNotEmpty) {
-        final s = birpur.first;
-        // CWC BeFIQR: if level >100 it's AMSL, otherwise it's already local datum.
+        final s        = birpur.first;
         final rawLevel = s.currentLevel;
         final level    = rawLevel > 100 ? (_amslToLocal(rawLevel) ?? rawLevel) : rawLevel;
         final rawDl    = s.dangerLevel;
@@ -261,7 +258,9 @@ class KosiBirpurService {
     return null;
   }
 
-  // ── Source C: India-WRIS — AMSL, convert to local gauge ────────────────────
+  // ── Source C: India-WRIS ───────────────────────────────────────────────────
+  // v3.4: _getNoLoop now returns null on redirect loop (not 302).
+  //       Added _isJsonBody guard before jsonDecode.
   Future<KosiBirpurReading?> _tryWRIS() async {
     final uris = [
       'https://indiawris.gov.in/WRIS/API/hydrograph?station_id=GD_00441&parameter=WL&days=1',
@@ -272,44 +271,50 @@ class KosiBirpurService {
       try {
         final resp = await _getNoLoop(
           u,
-          headers: {'Accept': 'application/json', 'User-Agent': 'OpsFlood/3.3'},
+          headers: {'Accept': 'application/json', 'User-Agent': 'OpsFlood/3.4'},
           timeout: const Duration(seconds: 10),
         );
-        if (resp.statusCode == 200) {
-          final body = jsonDecode(resp.body);
-          final list = (body['data'] as List? ?? body['hydrograph'] as List?);
-          if (list != null && list.isNotEmpty) {
-            final latest = list.last as Map<String, dynamic>;
-            final val    = _parseDbl(latest['value'] ?? latest['wl'] ?? latest['level']);
-            final obsAt  = DateTime.tryParse(
-                latest['date']?.toString() ?? latest['time']?.toString() ?? '') ?? DateTime.now();
-            if (val != null && val > 100) {
-              // WRIS WL parameter — AMSL, convert.
-              final local = _amslToLocal(val);
-              if (local != null) {
-                debugPrint('[KosiBirpur] WRIS WL ✅ $local m local (AMSL $val)');
-                return KosiBirpurReading(
-                  levelM:       local,
-                  dangerLevel:  kBirpurDangerLevel,
-                  warningLevel: kBirpurWarningLevel,
-                  observedAt:   obsAt,
-                  source:       'India-WRIS',
-                );
-              }
-            }
-            if (val != null && val > 0 && val <= 100) {
-              // WRIS Q (discharge) parameter — derive level via rating curve.
-              final h = _dischargeToLevel(val);
-              debugPrint('[KosiBirpur] WRIS Q=$val → H=$h m local');
+        // v3.4: resp is null on loop — skip cleanly.
+        if (resp == null) {
+          debugPrint('[KosiBirpur] WRIS[$u] loop/null — skipping');
+          continue;
+        }
+        // v3.4: guard HTML error pages.
+        if (resp.statusCode != 200 || !_isJsonBody(resp.body)) {
+          debugPrint('[KosiBirpur] WRIS[$u] status=${resp.statusCode}, non-JSON — skipping');
+          continue;
+        }
+        final body = jsonDecode(resp.body);
+        final list = (body['data'] as List? ?? body['hydrograph'] as List?);
+        if (list != null && list.isNotEmpty) {
+          final latest = list.last as Map<String, dynamic>;
+          final val    = _parseDbl(latest['value'] ?? latest['wl'] ?? latest['level']);
+          final obsAt  = DateTime.tryParse(
+              latest['date']?.toString() ?? latest['time']?.toString() ?? '') ?? DateTime.now();
+          if (val != null && val > 100) {
+            final local = _amslToLocal(val);
+            if (local != null) {
+              debugPrint('[KosiBirpur] WRIS WL ✅ $local m local (AMSL $val)');
               return KosiBirpurReading(
-                levelM:          h,
-                dangerLevel:     kBirpurDangerLevel,
-                warningLevel:    kBirpurWarningLevel,
-                dischargeCumecs: val,
-                observedAt:      obsAt,
-                source:          'India-WRIS (Q→H)',
+                levelM:       local,
+                dangerLevel:  kBirpurDangerLevel,
+                warningLevel: kBirpurWarningLevel,
+                observedAt:   obsAt,
+                source:       'India-WRIS',
               );
             }
+          }
+          if (val != null && val > 0 && val <= 100) {
+            final h = _dischargeToLevel(val);
+            debugPrint('[KosiBirpur] WRIS Q=$val → H=$h m local');
+            return KosiBirpurReading(
+              levelM:          h,
+              dangerLevel:     kBirpurDangerLevel,
+              warningLevel:    kBirpurWarningLevel,
+              dischargeCumecs: val,
+              observedAt:      obsAt,
+              source:          'India-WRIS (Q→H)',
+            );
           }
         }
       } catch (e) {
@@ -328,11 +333,11 @@ class KosiBirpurService {
           'Content-Type': 'application/json',
           'Accept':       'application/json',
           'Referer':      'https://ffs.india-water.gov.in/',
-          'User-Agent':   'Mozilla/5.0 (OpsFlood/3.3)',
+          'User-Agent':   'Mozilla/5.0 (OpsFlood/3.4)',
         },
         body: jsonEncode({'station_id': 'BR-1', 'river': 'KOSI', 'state': 'BIHAR'}),
       ).timeout(const Duration(seconds: 10));
-      if (resp.statusCode == 200) {
+      if (resp.statusCode == 200 && _isJsonBody(resp.body)) {
         final body  = jsonDecode(resp.body) as Map<String, dynamic>;
         final data  = body['data'] as Map<String, dynamic>? ?? body;
         final raw   = _parseDbl(
@@ -363,8 +368,7 @@ class KosiBirpurService {
     return null;
   }
 
-  // ── Seed (local gauge datum) ───────────────────────────────────────────────
-  // 210.80 AMSL → 71.48 m local (normal pre-monsoon level)
+  // ── Seed ──────────────────────────────────────────────────────────────────
   KosiBirpurReading _seed() {
     debugPrint('[KosiBirpur] ⚠️ all sources failed — SEED (71.48 m local)');
     return KosiBirpurReading(
@@ -376,9 +380,7 @@ class KosiBirpurService {
     );
   }
 
-  // ── Utilities ────────────────────────────────────────────────────────────────
-  /// Discharge → local gauge height via simple linear rating curve.
-  /// Maps Q=0 → 65.0 m local, Q=kBirpurDangerDischarge → kBirpurDangerLevel.
+  // ── Utilities ─────────────────────────────────────────────────────────────
   static double _dischargeToLevel(double q) {
     final ratio = (q / kBirpurDangerDischarge).clamp(0.0, 1.2);
     return 65.0 + (kBirpurDangerLevel - 65.0) * (ratio < 1 ? ratio : 1.0);
@@ -390,4 +392,10 @@ class KosiBirpurService {
     return double.tryParse(
         v.toString().replaceAll(RegExp(r'[^\d.]'), '').trim());
   }
+}
+
+// ── JSON body guard (shared by all sources in this file) ──────────────────
+bool _isJsonBody(String body) {
+  final t = body.trimLeft();
+  return t.startsWith('{') || t.startsWith('[');
 }

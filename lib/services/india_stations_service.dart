@@ -4,6 +4,14 @@
 // Fetches stations from opsflood.onrender.com/api/v1/stations/all
 // and returns ONLY Bihar stations (state filter applied).
 // Merges with GloFAS discharge for every lat/lon.
+//
+// v1.1 (15 Jun 2026) — Bihar pipeline fix:
+//   • Guard against HTML error pages returned instead of JSON (Railway cold
+//     start / redirect). jsonDecode now only called when body starts with
+//     '{' or '['. Failure is logged explicitly instead of throwing
+//     FormatException silently swallowed by the outer catch.
+//   • Added backupUrl fallback: if primary returns non-JSON, retry once
+//     against AppConfig.backupUrl (if set).
 library;
 
 import 'dart:async';
@@ -17,12 +25,18 @@ import '../models/flood_data.dart';
 // Canonical Bihar state spellings returned by the backend.
 const _kBiharAliases = {
   'bihar',
-  'br',         // ISO code sometimes used
+  'br',
   'state of bihar',
 };
 
 bool _isBihar(String state) =>
     _kBiharAliases.contains(state.toLowerCase().trim());
+
+// Returns true when body is a JSON object or array (not HTML/empty).
+bool _isJsonBody(String body) {
+  final t = body.trimLeft();
+  return t.startsWith('{') || t.startsWith('[');
+}
 
 class IndiaStationsService {
   static final IndiaStationsService _instance = IndiaStationsService._();
@@ -38,16 +52,43 @@ class IndiaStationsService {
 
   /// Returns Bihar-only stations, merged with GloFAS discharge.
   Future<List<FloodData>> fetchAll() async {
+    // Try primary URL, then backupUrl if set.
+    final urls = [
+      '${AppConfig.baseUrl}/api/v1/stations/all',
+      if (AppConfig.backupUrl.isNotEmpty)
+        '${AppConfig.backupUrl}/api/v1/stations/all',
+    ];
+
+    for (final urlStr in urls) {
+      final result = await _fetchFrom(urlStr);
+      if (result != null) return result;
+    }
+    return [];
+  }
+
+  Future<List<FloodData>?> _fetchFrom(String urlStr) async {
     try {
-      final uri = Uri.parse('${AppConfig.baseUrl}/api/v1/stations/all');
+      final uri = Uri.parse(urlStr);
       final res = await _client
           .get(uri, headers: {'Accept': 'application/json'})
           .timeout(const Duration(seconds: 30));
 
       if (res.statusCode != 200) {
-        if (kDebugMode) debugPrint('[IndiaStations] HTTP ${res.statusCode}');
-        return [];
+        debugPrint('[IndiaStations] HTTP ${res.statusCode} from $urlStr');
+        return null;
       }
+
+      // ── Bihar pipeline fix v1.1 ──────────────────────────────────────
+      // Railway / render cold-start can return an HTML splash page instead
+      // of JSON. Detect early and skip rather than throw FormatException.
+      if (!_isJsonBody(res.body)) {
+        debugPrint(
+          '[IndiaStations] non-JSON response from $urlStr '
+          '(likely HTML error/redirect page) — skipping',
+        );
+        return null; // triggers fallback to backupUrl or [].
+      }
+      // ── end fix ───────────────────────────────────────────────────────
 
       final body = jsonDecode(res.body);
       List<dynamic> raw = [];
@@ -55,7 +96,10 @@ class IndiaStationsService {
         raw = body;
       } else if (body is Map) {
         for (final k in ['data', 'stations', 'results', 'items']) {
-          if (body[k] is List) { raw = body[k] as List; break; }
+          if (body[k] is List) {
+            raw = body[k] as List;
+            break;
+          }
         }
       }
       if (raw.isEmpty) return [];
@@ -67,10 +111,9 @@ class IndiaStationsService {
         return _isBihar(state);
       }).toList();
 
-      if (kDebugMode) {
-        debugPrint('[IndiaStations] ${raw.length} total → '
-            '${biharRaw.length} Bihar stations');
-      }
+      debugPrint(
+        '[IndiaStations] ${raw.length} total → ${biharRaw.length} Bihar stations',
+      );
 
       if (biharRaw.isEmpty) return [];
 
@@ -95,13 +138,11 @@ class IndiaStationsService {
         if (fd != null) results.add(fd);
       }
 
-      if (kDebugMode) {
-        debugPrint('[IndiaStations] returning ${results.length} Bihar FloodData');
-      }
+      debugPrint('[IndiaStations] returning ${results.length} Bihar FloodData');
       return results;
     } catch (e) {
-      if (kDebugMode) debugPrint('[IndiaStations] error: $e');
-      return [];
+      debugPrint('[IndiaStations] error from $urlStr: $e');
+      return null;
     }
   }
 
@@ -117,6 +158,7 @@ class IndiaStationsService {
       );
       final res = await _client.get(uri).timeout(const Duration(seconds: 10));
       if (res.statusCode != 200) return;
+      if (!_isJsonBody(res.body)) return;
       final j    = jsonDecode(res.body) as Map<String, dynamic>;
       final vals = _doubles((j['daily'] as Map?)?['river_discharge']);
       if (vals.isEmpty) return;
@@ -136,7 +178,6 @@ class IndiaStationsService {
   FloodData? _toFloodData(Map raw) {
     final city  = raw['city']?.toString() ?? raw['station_name']?.toString() ?? '';
     final state = raw['state']?.toString() ?? raw['state_name']?.toString() ?? '';
-    // Guard: only Bihar (redundant safety net on top of pre-filter above).
     if (city.isEmpty || state.isEmpty || !_isBihar(state)) return null;
 
     final current = _d(raw['current_level'] ?? raw['river_level']) ?? 0.0;
@@ -148,19 +189,19 @@ class IndiaStationsService {
     final rain    = _d(raw['rainfall_24h']) ?? 0.0;
 
     return FloodData(
-      stationId:           raw['station_id']?.toString() ?? '',
-      stationName:         city,
-      river:               raw['river_name']?.toString() ?? raw['river']?.toString() ?? '',
-      city:                city,
-      district:            raw['district']?.toString() ?? '',
-      state:               state,
-      riverName:           raw['river_name']?.toString() ?? raw['river']?.toString(),
-      currentLevel:        current,
-      warningLevel:        warning,
-      dangerLevel:         danger,
-      imdRainfallMm:       rain,
-      flowRate:            flow,
-      lastUpdated:         DateTime.now(),
+      stationId:     raw['station_id']?.toString() ?? '',
+      stationName:   city,
+      river:         raw['river_name']?.toString() ?? raw['river']?.toString() ?? '',
+      city:          city,
+      district:      raw['district']?.toString() ?? '',
+      state:         state,
+      riverName:     raw['river_name']?.toString() ?? raw['river']?.toString(),
+      currentLevel:  current,
+      warningLevel:  warning,
+      dangerLevel:   danger,
+      imdRainfallMm: rain,
+      flowRate:      flow,
+      lastUpdated:   DateTime.now(),
     );
   }
 
