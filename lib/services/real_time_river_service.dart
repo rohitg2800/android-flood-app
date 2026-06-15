@@ -1,10 +1,14 @@
 // lib/services/real_time_river_service.dart
 //
-// OpsFlood — Real-Time River Data Service
+// OpsFlood — Real-Time River Data Service  v2.1
 //
-// FIX: AppConstants.monitoredCities does not exist.
-//      The list lives on IndiaGeodata.monitoredCities (lib/constants/india_geodata.dart).
-//      All references updated accordingly.
+// v2.1 (15 Jun 2026):
+//   Read mc['hfl'] from monitoredCities when available.
+//   Fall back to dangerLevel * 1.10 only when 'hfl' is absent (legacy).
+//   This ensures RiverPulseCard ThresholdBar uses the correct Highest Flood
+//   Level (e.g. Birpur 76.02 m) rather than a computed over-estimate.
+//
+// v2.0: AppConstants.monitoredCities → IndiaGeodata.monitoredCities fix.
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
@@ -58,16 +62,19 @@ class RealTimeRiverService extends ChangeNotifier {
       try { await _lfe.refreshData(); } catch (_) {}
     }
 
-    // FIX: was AppConstants.monitoredCities — correct class is IndiaGeodata
     for (final mc in IndiaGeodata.monitoredCities) {
       final city  = mc['city']  as String;
       final state = mc['state'] as String;
       final river = mc['river'] as String;
       final wl    = _fp(mc['warning_level']);
       final dl    = _fp(mc['danger_level']);
+      // v2.1: use static hfl when provided; fall back to dl*1.10 otherwise.
+      final hfl   = mc.containsKey('hfl')
+          ? _fp(mc['hfl'])
+          : (dl > 0 ? dl * 1.10 : wl * 1.25);
       results.add(await _fetchCity(
         city: city, state: state, river: river,
-        warningLevel: wl, dangerLevel: dl,
+        warningLevel: wl, dangerLevel: dl, staticHfl: hfl,
       ));
     }
 
@@ -84,15 +91,18 @@ class RealTimeRiverService extends ChangeNotifier {
     required String state,
     required String river,
   }) async {
-    // FIX: was AppConstants.monitoredCities — correct class is IndiaGeodata
     final mc = IndiaGeodata.monitoredCities.firstWhere(
       (m) => (m['city'] as String).toLowerCase() == city.toLowerCase(),
       orElse: () => <String, dynamic>{},
     );
+    final dl  = _fp(mc['danger_level']);
+    final wl  = _fp(mc['warning_level']);
+    final hfl = mc.containsKey('hfl')
+        ? _fp(mc['hfl'])
+        : (dl > 0 ? dl * 1.10 : wl * 1.25);
     return _fetchCity(
       city: city, state: state, river: river,
-      warningLevel: _fp(mc['warning_level']),
-      dangerLevel:  _fp(mc['danger_level']),
+      warningLevel: wl, dangerLevel: dl, staticHfl: hfl,
     );
   }
 
@@ -109,15 +119,15 @@ class RealTimeRiverService extends ChangeNotifier {
     super.dispose();
   }
 
-  // ── Per-city fetch: WRD Bihar → GloFAS → NO_DATA ─────────────────────────
+  // ── Per-city fetch ────────────────────────────────────────────────────────
   Future<LiveRiverResult> _fetchCity({
     required String city,
     required String state,
     required String river,
     required double warningLevel,
     required double dangerLevel,
+    required double staticHfl,   // v2.1: explicit, never re-computed
   }) async {
-    final hfl = dangerLevel > 0 ? dangerLevel * 1.10 : warningLevel * 1.25;
 
     try {
       final wrdMatch = await _wrd.fetchBestMatch(city, river: river);
@@ -125,7 +135,8 @@ class RealTimeRiverService extends ChangeNotifier {
         final lv = wrdMatch.currentLevel!;
         final dl = wrdMatch.dangerLevel  ?? dangerLevel;
         final wl = wrdMatch.warningLevel ?? warningLevel;
-        final hl = wrdMatch.hfl          ?? hfl;
+        // Use live hfl if provided by WRD; otherwise use staticHfl.
+        final hl = wrdMatch.hfl ?? staticHfl;
         final risk = wrdMatch.riskLabel;
         _log('✓ $city | src=WRD_BIHAR | risk=$risk | level=${lv}m');
         return LiveRiverResult(
@@ -173,7 +184,7 @@ class RealTimeRiverService extends ChangeNotifier {
             current:      lv,
             warning:      wlEf,
             danger:       dlEf,
-            hfl:          hfl,
+            hfl:          staticHfl,   // always use the static value for GloFAS
             flowRate:     fd.flowRate,
             rainfallLastHour: fd.rainfall24h != null && fd.rainfall24h! > 0
                 ? fd.rainfall24h! / 24 : null,
@@ -203,7 +214,7 @@ class RealTimeRiverService extends ChangeNotifier {
         current:    0,
         warning:    warningLevel,
         danger:     dangerLevel,
-        hfl:        hfl,
+        hfl:        staticHfl,
         dataSource: 'NO_DATA',
         isLive:     false,
       ),

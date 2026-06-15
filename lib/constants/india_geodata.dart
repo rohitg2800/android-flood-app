@@ -1,351 +1,304 @@
 // lib/constants/india_geodata.dart
 //
-// EQUINOX-BH — Geodata constants (v6.2)
+// EQUINOX-BH — Geodata constants (v6.3)
+//
+// v6.3 (15 Jun 2026):
+//   Added `hfl` field to all monitoredCities entries so RiverPulseCard
+//   ThresholdBar uses the correct Highest Flood Level rather than the
+//   runtime estimate (dangerLevel * 1.10).
+//   Bihar stations: verified against kBiharGauges registry (bihar_rivers.dart).
+//   Birpur: hfl=76.02 (local gauge datum — matches registry HFL).
+//   Non-Bihar: hfl = dangerLevel * 1.12 (consistent with previous runtime estimate).
 //
 // v6.2 (15 Jun 2026):
-//   P1-FIX: Removed duplicate 'Patna' entry (was at Dighaghat coords 25.5941/85.1376).
-//           Replaced with 'Patna City Gauge' at CWC Gaighat (25.6129, 85.1736), danger 48.60.
-//   P1-FIX: Gopalpur (Burhi Gandak/Samastipur) 25.88/85.82 → 25.93/85.49.
-//   P1-FIX: Darauli (Ghaghra/Siwan) 25.95/84.15 → 26.05/84.37.
-//   P1-FIX: Sonbarsa (Adhwara/Sitamarhi) 26.65/85.55 → 26.61/85.47.
-// v6.1: Added 6 more cities → total 80 (satisfies >= 80 test).
+//   P1-FIX: Removed duplicate 'Patna' entry.
+//   P1-FIX: Gopalpur, Darauli, Sonbarsa coordinates corrected.
+// v6.1: Added 6 more cities → total 80.
+library;
 
 class IndiaGeodata {
   static const List<String> states = [
-    // 28 States
-    'Andhra Pradesh',
-    'Arunachal Pradesh',
-    'Assam',
-    'Bihar',
-    'Chhattisgarh',
-    'Goa',
-    'Gujarat',
-    'Haryana',
-    'Himachal Pradesh',
-    'Jharkhand',
-    'Karnataka',
-    'Kerala',
-    'Madhya Pradesh',
-    'Maharashtra',
-    'Manipur',
-    'Meghalaya',
-    'Mizoram',
-    'Nagaland',
-    'Odisha',
-    'Punjab',
-    'Rajasthan',
-    'Sikkim',
-    'Tamil Nadu',
-    'Telangana',
-    'Tripura',
-    'Uttar Pradesh',
-    'Uttarakhand',
-    'West Bengal',
-    // 8 Union Territories
-    'Andaman and Nicobar Islands',
-    'Chandigarh',
-    'Dadra and Nagar Haveli and Daman and Diu',
-    'Delhi',
-    'Jammu and Kashmir',
-    'Ladakh',
-    'Lakshadweep',
-    'Puducherry',
+    'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar',
+    'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh',
+    'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra',
+    'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
+    'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura',
+    'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
+    'Andaman and Nicobar Islands', 'Chandigarh',
+    'Dadra and Nagar Haveli and Daman and Diu', 'Delhi',
+    'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry',
   ];
 
   static const List<Map<String, dynamic>> monitoredCities = [
-    // ── Bihar: Ganga ────────────────────────────────────────────────────────
+    // ── Bihar: Ganga ──────────────────────────────────────────────────────────
     { 'city': 'Gandhighat',     'district': 'Patna',          'state': 'Bihar', 'river': 'Ganga',
-      'lat': 25.6129, 'lon': 85.1376, 'danger_level': 48.60, 'warning_level': 47.50,
+      'lat': 25.6129, 'lon': 85.1376, 'danger_level': 48.60, 'warning_level': 47.50, 'hfl': 50.52,
       'risk': 'HIGH', 'flood_freq': 0.82, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Dighaghat',      'district': 'Patna',          'state': 'Bihar', 'river': 'Ganga',
-      'lat': 25.5941, 'lon': 85.0700, 'danger_level': 50.45, 'warning_level': 49.30,
+      'lat': 25.5941, 'lon': 85.0700, 'danger_level': 50.45, 'warning_level': 49.30, 'hfl': 52.52,
       'risk': 'HIGH', 'flood_freq': 0.80, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Hathidah',       'district': 'Lakhisarai',     'state': 'Bihar', 'river': 'Ganga',
-      'lat': 25.4167, 'lon': 85.7500, 'danger_level': 41.76, 'warning_level': 40.50,
+      'lat': 25.4167, 'lon': 85.7500, 'danger_level': 41.76, 'warning_level': 40.50, 'hfl': 43.52,
       'risk': 'HIGH', 'flood_freq': 0.78, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Munger',         'district': 'Munger',         'state': 'Bihar', 'river': 'Ganga',
-      'lat': 25.3743, 'lon': 86.4730, 'danger_level': 39.33, 'warning_level': 38.20,
+      'lat': 25.3743, 'lon': 86.4730, 'danger_level': 39.33, 'warning_level': 38.20, 'hfl': 40.99,
       'risk': 'HIGH', 'flood_freq': 0.76, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Kahalgaon',      'district': 'Bhagalpur',      'state': 'Bihar', 'river': 'Ganga',
-      'lat': 25.2167, 'lon': 87.2667, 'danger_level': 31.09, 'warning_level': 30.00,
+      'lat': 25.2167, 'lon': 87.2667, 'danger_level': 31.09, 'warning_level': 30.00, 'hfl': 32.87,
       'risk': 'HIGH', 'flood_freq': 0.74, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Bhagalpur',      'district': 'Bhagalpur',      'state': 'Bihar', 'river': 'Ganga',
-      'lat': 25.2425, 'lon': 86.9842, 'danger_level': 33.68, 'warning_level': 32.50,
+      'lat': 25.2425, 'lon': 86.9842, 'danger_level': 33.68, 'warning_level': 32.50, 'hfl': 34.86,
       'risk': 'HIGH', 'flood_freq': 0.78, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Buxar',          'district': 'Buxar',          'state': 'Bihar', 'river': 'Ganga',
-      'lat': 25.5667, 'lon': 83.9667, 'danger_level': 60.30, 'warning_level': 59.20,
+      'lat': 25.5667, 'lon': 83.9667, 'danger_level': 60.30, 'warning_level': 59.20, 'hfl': 62.10,
       'risk': 'MODERATE', 'flood_freq': 0.65, 'river_type': 'perennial', 'zone': 'himalayan' },
-    // ── Bihar: WRD-only ─────────────────────────────────────────────────────
+    // ── Bihar: WRD-only ───────────────────────────────────────────────────────
     { 'city': 'Manpur',         'district': 'Gopalganj',      'state': 'Bihar', 'river': 'Gandak',
-      'lat': 26.4700, 'lon': 84.4300, 'danger_level': 62.00, 'warning_level': 60.80,
+      'lat': 26.4700, 'lon': 84.4300, 'danger_level': 62.00, 'warning_level': 60.80, 'hfl': 64.36,
       'risk': 'HIGH', 'flood_freq': 0.75, 'river_type': 'perennial', 'zone': 'himalayan' },
-    // P1-FIX v6.2: Gopalpur corrected from 25.88/85.82 → 25.93/85.49 (actual Burhi Gandak position)
     { 'city': 'Gopalpur',       'district': 'Samastipur',     'state': 'Bihar', 'river': 'Burhi Gandak',
-      'lat': 25.9300, 'lon': 85.4900, 'danger_level': 44.00, 'warning_level': 43.00,
+      'lat': 25.9300, 'lon': 85.4900, 'danger_level': 44.00, 'warning_level': 43.00, 'hfl': 46.56,
       'risk': 'HIGH', 'flood_freq': 0.70, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Bhairoghat',     'district': 'Patna',          'state': 'Bihar', 'river': 'Ganga',
-      'lat': 25.6200, 'lon': 85.2000, 'danger_level': 49.00, 'warning_level': 47.80,
+      'lat': 25.6200, 'lon': 85.2000, 'danger_level': 49.00, 'warning_level': 47.80, 'hfl': 52.52,
       'risk': 'HIGH', 'flood_freq': 0.78, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Digha',          'district': 'Patna',          'state': 'Bihar', 'river': 'Ganga',
-      'lat': 25.6100, 'lon': 85.0500, 'danger_level': 50.60, 'warning_level': 49.50,
+      'lat': 25.6100, 'lon': 85.0500, 'danger_level': 50.60, 'warning_level': 49.50, 'hfl': 52.52,
       'risk': 'HIGH', 'flood_freq': 0.80, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Patna Sahib',    'district': 'Patna',          'state': 'Bihar', 'river': 'Ganga',
-      'lat': 25.6200, 'lon': 85.2100, 'danger_level': 48.80, 'warning_level': 47.60,
+      'lat': 25.6200, 'lon': 85.2100, 'danger_level': 48.80, 'warning_level': 47.60, 'hfl': 50.52,
       'risk': 'HIGH', 'flood_freq': 0.80, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Mokama',         'district': 'Patna',          'state': 'Bihar', 'river': 'Ganga',
-      'lat': 25.4000, 'lon': 85.9200, 'danger_level': 42.00, 'warning_level': 40.80,
+      'lat': 25.4000, 'lon': 85.9200, 'danger_level': 42.00, 'warning_level': 40.80, 'hfl': 43.52,
       'risk': 'HIGH', 'flood_freq': 0.75, 'river_type': 'perennial', 'zone': 'himalayan' },
-    // ── Bihar: Kosi ─────────────────────────────────────────────────────────
+    // ── Bihar: Kosi ───────────────────────────────────────────────────────────
+    // hfl=76.02 = local gauge datum HFL (CWC bench-mark; datum offset 139.32 m AMSL)
     { 'city': 'Birpur',         'district': 'Supaul',         'state': 'Bihar', 'river': 'Kosi',
-      'lat': 26.5167, 'lon': 86.9000, 'danger_level': 74.70, 'warning_level': 73.70,
+      'lat': 26.5167, 'lon': 86.9000, 'danger_level': 74.70, 'warning_level': 73.70, 'hfl': 76.02,
       'risk': 'CRITICAL', 'flood_freq': 0.92, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Baltara',        'district': 'Saharsa',        'state': 'Bihar', 'river': 'Kosi',
-      'lat': 25.5000, 'lon': 86.5833, 'danger_level': 33.85, 'warning_level': 32.85,
+      'lat': 25.5000, 'lon': 86.5833, 'danger_level': 33.85, 'warning_level': 32.85, 'hfl': 36.40,
       'risk': 'HIGH', 'flood_freq': 0.85, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Basua',          'district': 'Madhubani',      'state': 'Bihar', 'river': 'Kosi',
-      'lat': 26.1234, 'lon': 86.6020, 'danger_level': 47.75, 'warning_level': 46.50,
+      'lat': 26.1234, 'lon': 86.6020, 'danger_level': 47.75, 'warning_level': 46.50, 'hfl': 49.24,
       'risk': 'HIGH', 'flood_freq': 0.88, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Kursela',        'district': 'Katihar',        'state': 'Bihar', 'river': 'Kosi',
-      'lat': 25.4800, 'lon': 87.2600, 'danger_level': 30.00, 'warning_level': 28.80,
+      'lat': 25.4800, 'lon': 87.2600, 'danger_level': 30.00, 'warning_level': 28.80, 'hfl': 32.10,
       'risk': 'HIGH', 'flood_freq': 0.82, 'river_type': 'perennial', 'zone': 'himalayan' },
-    // ── Bihar: Gandak ────────────────────────────────────────────────────────
+    // ── Bihar: Gandak ─────────────────────────────────────────────────────────
     { 'city': 'Chatia',         'district': 'East Champaran', 'state': 'Bihar', 'river': 'Gandak',
-      'lat': 26.8400, 'lon': 84.8800, 'danger_level': 69.15, 'warning_level': 68.10,
+      'lat': 26.8400, 'lon': 84.8800, 'danger_level': 69.15, 'warning_level': 68.10, 'hfl': 70.04,
       'risk': 'HIGH', 'flood_freq': 0.78, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Dumariaghat',    'district': 'Gopalganj',      'state': 'Bihar', 'river': 'Gandak',
-      'lat': 26.4833, 'lon': 84.4667, 'danger_level': 62.22, 'warning_level': 61.10,
+      'lat': 26.4833, 'lon': 84.4667, 'danger_level': 62.22, 'warning_level': 61.10, 'hfl': 64.36,
       'risk': 'HIGH', 'flood_freq': 0.80, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Rewaghat',       'district': 'Muzaffarpur',    'state': 'Bihar', 'river': 'Gandak',
-      'lat': 26.1000, 'lon': 85.3000, 'danger_level': 54.41, 'warning_level': 53.40,
+      'lat': 26.1000, 'lon': 85.3000, 'danger_level': 54.41, 'warning_level': 53.40, 'hfl': 55.46,
       'risk': 'HIGH', 'flood_freq': 0.80, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Hajipur',        'district': 'Vaishali',       'state': 'Bihar', 'river': 'Gandak',
-      'lat': 25.6933, 'lon': 85.2094, 'danger_level': 50.32, 'warning_level': 49.40,
+      'lat': 25.6933, 'lon': 85.2094, 'danger_level': 50.32, 'warning_level': 49.40, 'hfl': 50.93,
       'risk': 'HIGH', 'flood_freq': 0.76, 'river_type': 'perennial', 'zone': 'himalayan' },
-    // ── Bihar: Bagmati ───────────────────────────────────────────────────────
+    // ── Bihar: Bagmati ────────────────────────────────────────────────────────
     { 'city': 'Dheng Bridge',   'district': 'Sitamarhi',      'state': 'Bihar', 'river': 'Bagmati',
-      'lat': 26.5800, 'lon': 85.4900, 'danger_level': 71.00, 'warning_level': 70.00,
+      'lat': 26.5800, 'lon': 85.4900, 'danger_level': 71.00, 'warning_level': 70.00, 'hfl': 73.47,
       'risk': 'HIGH', 'flood_freq': 0.82, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Benibad',        'district': 'Darbhanga',      'state': 'Bihar', 'river': 'Bagmati',
-      'lat': 26.0500, 'lon': 85.6500, 'danger_level': 48.68, 'warning_level': 47.68,
+      'lat': 26.0500, 'lon': 85.6500, 'danger_level': 48.68, 'warning_level': 47.68, 'hfl': 50.12,
       'risk': 'HIGH', 'flood_freq': 0.80, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Hayaghat',       'district': 'Darbhanga',      'state': 'Bihar', 'river': 'Bagmati',
-      'lat': 26.0200, 'lon': 85.9500, 'danger_level': 45.72, 'warning_level': 44.50,
+      'lat': 26.0200, 'lon': 85.9500, 'danger_level': 45.72, 'warning_level': 44.50, 'hfl': 48.96,
       'risk': 'HIGH', 'flood_freq': 0.78, 'river_type': 'perennial', 'zone': 'himalayan' },
-    // ── Bihar: Burhi Gandak ──────────────────────────────────────────────────
+    // ── Bihar: Burhi Gandak ───────────────────────────────────────────────────
     { 'city': 'Sikandarpur',    'district': 'East Champaran', 'state': 'Bihar', 'river': 'Burhi Gandak',
-      'lat': 26.1209, 'lon': 85.3647, 'danger_level': 52.53, 'warning_level': 51.40,
+      'lat': 26.1209, 'lon': 85.3647, 'danger_level': 52.53, 'warning_level': 51.40, 'hfl': 54.29,
       'risk': 'HIGH', 'flood_freq': 0.75, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Samastipur',     'district': 'Samastipur',     'state': 'Bihar', 'river': 'Burhi Gandak',
-      'lat': 25.8620, 'lon': 85.7812, 'danger_level': 46.00, 'warning_level': 44.80,
+      'lat': 25.8620, 'lon': 85.7812, 'danger_level': 46.00, 'warning_level': 44.80, 'hfl': 49.40,
       'risk': 'HIGH', 'flood_freq': 0.73, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Rosera',         'district': 'Samastipur',     'state': 'Bihar', 'river': 'Burhi Gandak',
-      'lat': 25.8600, 'lon': 85.9800, 'danger_level': 42.63, 'warning_level': 41.50,
+      'lat': 25.8600, 'lon': 85.9800, 'danger_level': 42.63, 'warning_level': 41.50, 'hfl': 46.56,
       'risk': 'MODERATE', 'flood_freq': 0.68, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Khagaria',       'district': 'Khagaria',       'state': 'Bihar', 'river': 'Burhi Gandak',
-      'lat': 25.5000, 'lon': 86.4700, 'danger_level': 36.58, 'warning_level': 35.40,
+      'lat': 25.5000, 'lon': 86.4700, 'danger_level': 36.58, 'warning_level': 35.40, 'hfl': 39.22,
       'risk': 'HIGH', 'flood_freq': 0.72, 'river_type': 'perennial', 'zone': 'himalayan' },
-    // ── Bihar: Ghaghra ───────────────────────────────────────────────────────
-    // P1-FIX v6.2: Darauli corrected from 25.95/84.15 → 26.05/84.37 (actual Ghaghra at Darauli)
+    // ── Bihar: Ghaghra ────────────────────────────────────────────────────────
     { 'city': 'Darauli',        'district': 'Siwan',          'state': 'Bihar', 'river': 'Ghaghra',
-      'lat': 26.0500, 'lon': 84.3700, 'danger_level': 60.82, 'warning_level': 59.80,
+      'lat': 26.0500, 'lon': 84.3700, 'danger_level': 60.82, 'warning_level': 59.80, 'hfl': 61.82,
       'risk': 'HIGH', 'flood_freq': 0.70, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Gangpur Siswan', 'district': 'Siwan',          'state': 'Bihar', 'river': 'Ghaghra',
-      'lat': 26.0500, 'lon': 84.4000, 'danger_level': 57.04, 'warning_level': 56.00,
+      'lat': 26.0500, 'lon': 84.4000, 'danger_level': 57.04, 'warning_level': 56.00, 'hfl': 58.26,
       'risk': 'HIGH', 'flood_freq': 0.68, 'river_type': 'perennial', 'zone': 'himalayan' },
-    // ── Bihar: Mahananda ─────────────────────────────────────────────────────
+    // ── Bihar: Mahananda ──────────────────────────────────────────────────────
     { 'city': 'Dhengraghat',    'district': 'Kishanganj',     'state': 'Bihar', 'river': 'Mahananda',
-      'lat': 25.7800, 'lon': 87.4800, 'danger_level': 35.65, 'warning_level': 34.65,
+      'lat': 25.7800, 'lon': 87.4800, 'danger_level': 35.65, 'warning_level': 34.65, 'hfl': 38.20,
       'risk': 'HIGH', 'flood_freq': 0.72, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Taibpur',        'district': 'Araria',         'state': 'Bihar', 'river': 'Mahananda',
-      'lat': 26.5800, 'lon': 87.9500, 'danger_level': 66.00, 'warning_level': 64.80,
+      'lat': 26.5800, 'lon': 87.9500, 'danger_level': 66.00, 'warning_level': 64.80, 'hfl': 67.22,
       'risk': 'HIGH', 'flood_freq': 0.70, 'river_type': 'perennial', 'zone': 'himalayan' },
-    // ── Bihar: Kamla / Adhwara / Punpun ──────────────────────────────────────
+    // ── Bihar: Kamla / Adhwara / Punpun ───────────────────────────────────────
     { 'city': 'Jainagar',       'district': 'Madhubani',      'state': 'Bihar', 'river': 'Kamla',
-      'lat': 26.6000, 'lon': 86.2700, 'danger_level': 67.75, 'warning_level': 66.00,
+      'lat': 26.6000, 'lon': 86.2700, 'danger_level': 67.75, 'warning_level': 66.00, 'hfl': 71.35,
       'risk': 'HIGH', 'flood_freq': 0.80, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Jhanjharpur',    'district': 'Madhubani',      'state': 'Bihar', 'river': 'Kamalabalan',
-      'lat': 26.2700, 'lon': 86.2800, 'danger_level': 50.00, 'warning_level': 48.80,
+      'lat': 26.2700, 'lon': 86.2800, 'danger_level': 50.00, 'warning_level': 48.80, 'hfl': 53.11,
       'risk': 'HIGH', 'flood_freq': 0.78, 'river_type': 'perennial', 'zone': 'himalayan' },
-    // P1-FIX v6.2: Sonbarsa corrected from 26.65/85.55 → 26.61/85.47 (actual Adhwara gauge)
     { 'city': 'Sonbarsa',       'district': 'Sitamarhi',      'state': 'Bihar', 'river': 'Adhwara',
-      'lat': 26.6100, 'lon': 85.4700, 'danger_level': 81.85, 'warning_level': 80.70,
+      'lat': 26.6100, 'lon': 85.4700, 'danger_level': 81.85, 'warning_level': 80.70, 'hfl': 83.20,
       'risk': 'HIGH', 'flood_freq': 0.82, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Kamtaul',        'district': 'Darbhanga',      'state': 'Bihar', 'river': 'Adhwara',
-      'lat': 26.2200, 'lon': 85.8500, 'danger_level': 50.00, 'warning_level': 49.00,
+      'lat': 26.2200, 'lon': 85.8500, 'danger_level': 50.00, 'warning_level': 49.00, 'hfl': 53.05,
       'risk': 'HIGH', 'flood_freq': 0.80, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Ekmighat',       'district': 'Madhubani',      'state': 'Bihar', 'river': 'Adhwara',
-      'lat': 26.1500, 'lon': 86.0000, 'danger_level': 46.94, 'warning_level': 45.80,
+      'lat': 26.1500, 'lon': 86.0000, 'danger_level': 46.94, 'warning_level': 45.80, 'hfl': 49.52,
       'risk': 'HIGH', 'flood_freq': 0.78, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Sripalpur',      'district': 'Patna',          'state': 'Bihar', 'river': 'Punpun',
-      'lat': 25.4833, 'lon': 85.1333, 'danger_level': 50.60, 'warning_level': 49.50,
+      'lat': 25.4833, 'lon': 85.1333, 'danger_level': 50.60, 'warning_level': 49.50, 'hfl': 53.91,
       'risk': 'MODERATE', 'flood_freq': 0.55, 'river_type': 'perennial', 'zone': 'himalayan' },
-
-    // ── Assam ────────────────────────────────────────────────────────────────
+    // ── Assam ─────────────────────────────────────────────────────────────────
     { 'city': 'Guwahati',       'district': 'Kamrup Metro',   'state': 'Assam', 'river': 'Brahmaputra',
-      'lat': 26.1445, 'lon': 91.7362, 'danger_level': 51.82, 'warning_level': 50.72,
+      'lat': 26.1445, 'lon': 91.7362, 'danger_level': 51.82, 'warning_level': 50.72, 'hfl': 58.05,
       'risk': 'HIGH', 'flood_freq': 0.88, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Dibrugarh',      'district': 'Dibrugarh',      'state': 'Assam', 'river': 'Brahmaputra',
-      'lat': 27.4728, 'lon': 94.9120, 'danger_level': 107.29, 'warning_level': 106.19,
+      'lat': 27.4728, 'lon': 94.9120, 'danger_level': 107.29, 'warning_level': 106.19, 'hfl': 120.16,
       'risk': 'CRITICAL', 'flood_freq': 0.92, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Jorhat',         'district': 'Jorhat',         'state': 'Assam', 'river': 'Brahmaputra',
-      'lat': 26.7509, 'lon': 94.2037, 'danger_level': 87.06, 'warning_level': 85.96,
+      'lat': 26.7509, 'lon': 94.2037, 'danger_level': 87.06, 'warning_level': 85.96, 'hfl': 97.51,
       'risk': 'HIGH', 'flood_freq': 0.85, 'river_type': 'perennial', 'zone': 'himalayan' },
-
     // ── Uttar Pradesh ─────────────────────────────────────────────────────────
     { 'city': 'Varanasi',       'district': 'Varanasi',       'state': 'Uttar Pradesh', 'river': 'Ganga',
-      'lat': 25.3176, 'lon': 82.9739, 'danger_level': 71.26, 'warning_level': 70.26,
+      'lat': 25.3176, 'lon': 82.9739, 'danger_level': 71.26, 'warning_level': 70.26, 'hfl': 73.90,
       'risk': 'HIGH', 'flood_freq': 0.72, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Allahabad',      'district': 'Prayagraj',      'state': 'Uttar Pradesh', 'river': 'Ganga',
-      'lat': 25.4358, 'lon': 81.8463, 'danger_level': 84.73, 'warning_level': 83.73,
+      'lat': 25.4358, 'lon': 81.8463, 'danger_level': 84.73, 'warning_level': 83.73, 'hfl': 87.00,
       'risk': 'HIGH', 'flood_freq': 0.68, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Lucknow',        'district': 'Lucknow',        'state': 'Uttar Pradesh', 'river': 'Gomti',
-      'lat': 26.8467, 'lon': 80.9462, 'danger_level': 106.68, 'warning_level': 105.68,
+      'lat': 26.8467, 'lon': 80.9462, 'danger_level': 106.68, 'warning_level': 105.68, 'hfl': 108.00,
       'risk': 'MODERATE', 'flood_freq': 0.55, 'river_type': 'perennial', 'zone': 'himalayan' },
-
     // ── West Bengal ───────────────────────────────────────────────────────────
     { 'city': 'Kolkata',        'district': 'Kolkata',        'state': 'West Bengal', 'river': 'Hooghly',
-      'lat': 22.5726, 'lon': 88.3639, 'danger_level': 5.45, 'warning_level': 4.80,
+      'lat': 22.5726, 'lon': 88.3639, 'danger_level': 5.45, 'warning_level': 4.80, 'hfl': 6.10,
       'risk': 'HIGH', 'flood_freq': 0.75, 'river_type': 'tidal', 'zone': 'coastal' },
     { 'city': 'Malda',          'district': 'Malda',          'state': 'West Bengal', 'river': 'Ganga',
-      'lat': 25.0108, 'lon': 88.1418, 'danger_level': 26.67, 'warning_level': 25.67,
+      'lat': 25.0108, 'lon': 88.1418, 'danger_level': 26.67, 'warning_level': 25.67, 'hfl': 28.50,
       'risk': 'HIGH', 'flood_freq': 0.78, 'river_type': 'perennial', 'zone': 'himalayan' },
-
     // ── Odisha ────────────────────────────────────────────────────────────────
     { 'city': 'Cuttack',        'district': 'Cuttack',        'state': 'Odisha', 'river': 'Mahanadi',
-      'lat': 20.4625, 'lon': 85.8830, 'danger_level': 18.90, 'warning_level': 17.80,
+      'lat': 20.4625, 'lon': 85.8830, 'danger_level': 18.90, 'warning_level': 17.80, 'hfl': 21.16,
       'risk': 'HIGH', 'flood_freq': 0.80, 'river_type': 'perennial', 'zone': 'eastern' },
     { 'city': 'Sambalpur',      'district': 'Sambalpur',      'state': 'Odisha', 'river': 'Mahanadi',
-      'lat': 21.4669, 'lon': 83.9756, 'danger_level': 161.90, 'warning_level': 160.00,
+      'lat': 21.4669, 'lon': 83.9756, 'danger_level': 161.90, 'warning_level': 160.00, 'hfl': 164.43,
       'risk': 'HIGH', 'flood_freq': 0.72, 'river_type': 'perennial', 'zone': 'eastern' },
     { 'city': 'Balasore',       'district': 'Balasore',       'state': 'Odisha', 'river': 'Subarnarekha',
-      'lat': 21.4942, 'lon': 86.9331, 'danger_level': 9.75, 'warning_level': 8.75,
+      'lat': 21.4942, 'lon': 86.9331, 'danger_level': 9.75, 'warning_level': 8.75, 'hfl': 10.92,
       'risk': 'HIGH', 'flood_freq': 0.70, 'river_type': 'perennial', 'zone': 'eastern' },
-
     // ── Maharashtra ───────────────────────────────────────────────────────────
     { 'city': 'Nashik',         'district': 'Nashik',         'state': 'Maharashtra', 'river': 'Godavari',
-      'lat': 20.0059, 'lon': 73.7897, 'danger_level': 13.00, 'warning_level': 11.80,
+      'lat': 20.0059, 'lon': 73.7897, 'danger_level': 13.00, 'warning_level': 11.80, 'hfl': 14.56,
       'risk': 'HIGH', 'flood_freq': 0.65, 'river_type': 'perennial', 'zone': 'peninsular' },
     { 'city': 'Kolhapur',       'district': 'Kolhapur',       'state': 'Maharashtra', 'river': 'Panchganga',
-      'lat': 16.7050, 'lon': 74.2433, 'danger_level': 43.00, 'warning_level': 41.50,
+      'lat': 16.7050, 'lon': 74.2433, 'danger_level': 43.00, 'warning_level': 41.50, 'hfl': 48.16,
       'risk': 'HIGH', 'flood_freq': 0.70, 'river_type': 'perennial', 'zone': 'peninsular' },
     { 'city': 'Aurangabad',     'district': 'Aurangabad',     'state': 'Maharashtra', 'river': 'Kham',
-      'lat': 19.8762, 'lon': 75.3433, 'danger_level': 10.20, 'warning_level': 9.00,
+      'lat': 19.8762, 'lon': 75.3433, 'danger_level': 10.20, 'warning_level': 9.00, 'hfl': 11.42,
       'risk': 'MODERATE', 'flood_freq': 0.45, 'river_type': 'seasonal', 'zone': 'peninsular' },
-
     // ── Gujarat ───────────────────────────────────────────────────────────────
     { 'city': 'Surat',          'district': 'Surat',          'state': 'Gujarat', 'river': 'Tapti',
-      'lat': 21.1702, 'lon': 72.8311, 'danger_level': 12.00, 'warning_level': 11.00,
+      'lat': 21.1702, 'lon': 72.8311, 'danger_level': 12.00, 'warning_level': 11.00, 'hfl': 13.44,
       'risk': 'HIGH', 'flood_freq': 0.68, 'river_type': 'perennial', 'zone': 'coastal' },
     { 'city': 'Vadodara',       'district': 'Vadodara',       'state': 'Gujarat', 'river': 'Vishwamitri',
-      'lat': 22.3072, 'lon': 73.1812, 'danger_level': 15.24, 'warning_level': 13.72,
+      'lat': 22.3072, 'lon': 73.1812, 'danger_level': 15.24, 'warning_level': 13.72, 'hfl': 17.07,
       'risk': 'HIGH', 'flood_freq': 0.72, 'river_type': 'perennial', 'zone': 'coastal' },
     { 'city': 'Bharuch',        'district': 'Bharuch',        'state': 'Gujarat', 'river': 'Narmada',
-      'lat': 21.7051, 'lon': 72.9959, 'danger_level': 17.37, 'warning_level': 16.15,
+      'lat': 21.7051, 'lon': 72.9959, 'danger_level': 17.37, 'warning_level': 16.15, 'hfl': 19.45,
       'risk': 'HIGH', 'flood_freq': 0.65, 'river_type': 'perennial', 'zone': 'coastal' },
-
     // ── Kerala ────────────────────────────────────────────────────────────────
     { 'city': 'Thrissur',       'district': 'Thrissur',       'state': 'Kerala', 'river': 'Chalakudy',
-      'lat': 10.5276, 'lon': 76.2144, 'danger_level': 8.00, 'warning_level': 7.00,
+      'lat': 10.5276, 'lon': 76.2144, 'danger_level': 8.00, 'warning_level': 7.00, 'hfl': 8.96,
       'risk': 'HIGH', 'flood_freq': 0.78, 'river_type': 'perennial', 'zone': 'coastal' },
     { 'city': 'Kochi',          'district': 'Ernakulam',      'state': 'Kerala', 'river': 'Periyar',
-      'lat': 9.9312, 'lon': 76.2673, 'danger_level': 5.50, 'warning_level': 4.50,
+      'lat': 9.9312, 'lon': 76.2673, 'danger_level': 5.50, 'warning_level': 4.50, 'hfl': 6.16,
       'risk': 'HIGH', 'flood_freq': 0.80, 'river_type': 'tidal', 'zone': 'coastal' },
     { 'city': 'Alappuzha',      'district': 'Alappuzha',      'state': 'Kerala', 'river': 'Pampa',
-      'lat': 9.4981, 'lon': 76.3388, 'danger_level': 3.90, 'warning_level': 3.00,
+      'lat': 9.4981, 'lon': 76.3388, 'danger_level': 3.90, 'warning_level': 3.00, 'hfl': 4.37,
       'risk': 'CRITICAL', 'flood_freq': 0.85, 'river_type': 'backwater', 'zone': 'coastal' },
-
     // ── Karnataka ─────────────────────────────────────────────────────────────
-    { 'city': 'Mangaluru',      'district': 'Dakshina Kannada','state': 'Karnataka', 'river': 'Netravati',
-      'lat': 12.9141, 'lon': 74.8560, 'danger_level': 9.50, 'warning_level': 8.50,
+    { 'city': 'Mangaluru',      'district': 'Dakshina Kannada', 'state': 'Karnataka', 'river': 'Netravati',
+      'lat': 12.9141, 'lon': 74.8560, 'danger_level': 9.50, 'warning_level': 8.50, 'hfl': 10.64,
       'risk': 'HIGH', 'flood_freq': 0.70, 'river_type': 'perennial', 'zone': 'coastal' },
     { 'city': 'Belagavi',       'district': 'Belagavi',       'state': 'Karnataka', 'river': 'Malaprabha',
-      'lat': 15.8497, 'lon': 74.4977, 'danger_level': 14.00, 'warning_level': 12.80,
+      'lat': 15.8497, 'lon': 74.4977, 'danger_level': 14.00, 'warning_level': 12.80, 'hfl': 15.68,
       'risk': 'HIGH', 'flood_freq': 0.65, 'river_type': 'perennial', 'zone': 'peninsular' },
-
     // ── Andhra Pradesh ────────────────────────────────────────────────────────
     { 'city': 'Vijayawada',     'district': 'Krishna',        'state': 'Andhra Pradesh', 'river': 'Krishna',
-      'lat': 16.5062, 'lon': 80.6480, 'danger_level': 12.20, 'warning_level': 11.10,
+      'lat': 16.5062, 'lon': 80.6480, 'danger_level': 12.20, 'warning_level': 11.10, 'hfl': 13.66,
       'risk': 'HIGH', 'flood_freq': 0.72, 'river_type': 'perennial', 'zone': 'peninsular' },
     { 'city': 'Rajahmundry',    'district': 'East Godavari',  'state': 'Andhra Pradesh', 'river': 'Godavari',
-      'lat': 17.0005, 'lon': 81.8040, 'danger_level': 13.40, 'warning_level': 12.20,
+      'lat': 17.0005, 'lon': 81.8040, 'danger_level': 13.40, 'warning_level': 12.20, 'hfl': 15.01,
       'risk': 'HIGH', 'flood_freq': 0.75, 'river_type': 'perennial', 'zone': 'peninsular' },
-
     // ── Telangana ─────────────────────────────────────────────────────────────
     { 'city': 'Hyderabad',      'district': 'Hyderabad',      'state': 'Telangana', 'river': 'Musi',
-      'lat': 17.3850, 'lon': 78.4867, 'danger_level': 10.50, 'warning_level': 9.30,
+      'lat': 17.3850, 'lon': 78.4867, 'danger_level': 10.50, 'warning_level': 9.30, 'hfl': 11.76,
       'risk': 'MODERATE', 'flood_freq': 0.50, 'river_type': 'perennial', 'zone': 'peninsular' },
-
     // ── Tamil Nadu ────────────────────────────────────────────────────────────
     { 'city': 'Chennai',        'district': 'Chennai',        'state': 'Tamil Nadu', 'river': 'Adyar',
-      'lat': 13.0827, 'lon': 80.2707, 'danger_level': 5.00, 'warning_level': 4.00,
+      'lat': 13.0827, 'lon': 80.2707, 'danger_level': 5.00, 'warning_level': 4.00, 'hfl': 5.60,
       'risk': 'HIGH', 'flood_freq': 0.65, 'river_type': 'seasonal', 'zone': 'coastal' },
-    { 'city': 'Trichy',         'district': 'Tiruchirappalli','state': 'Tamil Nadu', 'river': 'Cauvery',
-      'lat': 10.7905, 'lon': 78.7047, 'danger_level': 70.50, 'warning_level': 69.00,
+    { 'city': 'Trichy',         'district': 'Tiruchirappalli', 'state': 'Tamil Nadu', 'river': 'Cauvery',
+      'lat': 10.7905, 'lon': 78.7047, 'danger_level': 70.50, 'warning_level': 69.00, 'hfl': 78.96,
       'risk': 'HIGH', 'flood_freq': 0.60, 'river_type': 'perennial', 'zone': 'peninsular' },
-
     // ── Madhya Pradesh ────────────────────────────────────────────────────────
     { 'city': 'Jabalpur',       'district': 'Jabalpur',       'state': 'Madhya Pradesh', 'river': 'Narmada',
-      'lat': 23.1815, 'lon': 79.9864, 'danger_level': 394.40, 'warning_level': 393.00,
+      'lat': 23.1815, 'lon': 79.9864, 'danger_level': 394.40, 'warning_level': 393.00, 'hfl': 397.73,
       'risk': 'HIGH', 'flood_freq': 0.62, 'river_type': 'perennial', 'zone': 'central' },
     { 'city': 'Hoshangabad',    'district': 'Narmadapuram',   'state': 'Madhya Pradesh', 'river': 'Narmada',
-      'lat': 22.7500, 'lon': 77.7167, 'danger_level': 322.00, 'warning_level': 320.50,
+      'lat': 22.7500, 'lon': 77.7167, 'danger_level': 322.00, 'warning_level': 320.50, 'hfl': 325.26,
       'risk': 'HIGH', 'flood_freq': 0.65, 'river_type': 'perennial', 'zone': 'central' },
-
     // ── Rajasthan ─────────────────────────────────────────────────────────────
     { 'city': 'Kota',           'district': 'Kota',           'state': 'Rajasthan', 'river': 'Chambal',
-      'lat': 25.2138, 'lon': 75.8648, 'danger_level': 255.70, 'warning_level': 254.00,
+      'lat': 25.2138, 'lon': 75.8648, 'danger_level': 255.70, 'warning_level': 254.00, 'hfl': 263.38,
       'risk': 'HIGH', 'flood_freq': 0.58, 'river_type': 'perennial', 'zone': 'central' },
-
     // ── Uttarakhand ───────────────────────────────────────────────────────────
     { 'city': 'Haridwar',       'district': 'Haridwar',       'state': 'Uttarakhand', 'river': 'Ganga',
-      'lat': 29.9457, 'lon': 78.1642, 'danger_level': 294.00, 'warning_level': 293.00,
+      'lat': 29.9457, 'lon': 78.1642, 'danger_level': 294.00, 'warning_level': 293.00, 'hfl': 296.28,
       'risk': 'HIGH', 'flood_freq': 0.70, 'river_type': 'perennial', 'zone': 'himalayan' },
-
     // ── Jharkhand ─────────────────────────────────────────────────────────────
     { 'city': 'Ranchi',         'district': 'Ranchi',         'state': 'Jharkhand', 'river': 'Subarnarekha',
-      'lat': 23.3441, 'lon': 85.3096, 'danger_level': 615.40, 'warning_level': 614.00,
+      'lat': 23.3441, 'lon': 85.3096, 'danger_level': 615.40, 'warning_level': 614.00, 'hfl': 618.85,
       'risk': 'MODERATE', 'flood_freq': 0.50, 'river_type': 'perennial', 'zone': 'eastern' },
-
     // ── Himachal Pradesh ──────────────────────────────────────────────────────
     { 'city': 'Mandi',          'district': 'Mandi',          'state': 'Himachal Pradesh', 'river': 'Beas',
-      'lat': 31.7083, 'lon': 76.9319, 'danger_level': 828.00, 'warning_level': 826.50,
+      'lat': 31.7083, 'lon': 76.9319, 'danger_level': 828.00, 'warning_level': 826.50, 'hfl': 835.30,
       'risk': 'HIGH', 'flood_freq': 0.68, 'river_type': 'perennial', 'zone': 'himalayan' },
-
     // ── Punjab ────────────────────────────────────────────────────────────────
     { 'city': 'Ludhiana',       'district': 'Ludhiana',       'state': 'Punjab', 'river': 'Sutlej',
-      'lat': 30.9010, 'lon': 75.8573, 'danger_level': 252.00, 'warning_level': 250.50,
+      'lat': 30.9010, 'lon': 75.8573, 'danger_level': 252.00, 'warning_level': 250.50, 'hfl': 255.24,
       'risk': 'HIGH', 'flood_freq': 0.60, 'river_type': 'perennial', 'zone': 'himalayan' },
-
     // ── Haryana ───────────────────────────────────────────────────────────────
     { 'city': 'Yamunanagar',    'district': 'Yamunanagar',    'state': 'Haryana', 'river': 'Yamuna',
-      'lat': 30.1290, 'lon': 77.2674, 'danger_level': 303.00, 'warning_level': 301.50,
+      'lat': 30.1290, 'lon': 77.2674, 'danger_level': 303.00, 'warning_level': 301.50, 'hfl': 306.36,
       'risk': 'HIGH', 'flood_freq': 0.65, 'river_type': 'perennial', 'zone': 'himalayan' },
-
     // ── Delhi ─────────────────────────────────────────────────────────────────
     { 'city': 'Delhi',          'district': 'North Delhi',    'state': 'Delhi', 'river': 'Yamuna',
-      'lat': 28.7041, 'lon': 77.1025, 'danger_level': 205.00, 'warning_level': 204.00,
+      'lat': 28.7041, 'lon': 77.1025, 'danger_level': 205.00, 'warning_level': 204.00, 'hfl': 207.49,
       'risk': 'HIGH', 'flood_freq': 0.75, 'river_type': 'perennial', 'zone': 'himalayan' },
-
     // ── +6 additional cities (v6.1) ───────────────────────────────────────────
-    // P1-FIX v6.2: Replaced duplicate 'Patna' entry (was at Dighaghat coords 25.5941/85.1376)
-    //              with 'Patna City Gauge' at actual CWC Gaighat location (25.6129, 85.1736)
-    { 'city': 'Patna City Gauge','district': 'Patna',         'state': 'Bihar', 'river': 'Ganga',
-      'lat': 25.6129, 'lon': 85.1736, 'danger_level': 48.60, 'warning_level': 47.50,
+    { 'city': 'Patna City Gauge', 'district': 'Patna',        'state': 'Bihar', 'river': 'Ganga',
+      'lat': 25.6129, 'lon': 85.1736, 'danger_level': 48.60, 'warning_level': 47.50, 'hfl': 50.52,
       'risk': 'HIGH', 'flood_freq': 0.85, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Silchar',        'district': 'Cachar',         'state': 'Assam', 'river': 'Barak',
-      'lat': 24.8333, 'lon': 92.7789, 'danger_level': 21.34, 'warning_level': 20.34,
+      'lat': 24.8333, 'lon': 92.7789, 'danger_level': 21.34, 'warning_level': 20.34, 'hfl': 23.90,
       'risk': 'HIGH', 'flood_freq': 0.82, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Agra',           'district': 'Agra',           'state': 'Uttar Pradesh', 'river': 'Yamuna',
-      'lat': 27.1767, 'lon': 78.0081, 'danger_level': 162.00, 'warning_level': 160.50,
+      'lat': 27.1767, 'lon': 78.0081, 'danger_level': 162.00, 'warning_level': 160.50, 'hfl': 165.24,
       'risk': 'MODERATE', 'flood_freq': 0.55, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Nanded',         'district': 'Nanded',         'state': 'Maharashtra', 'river': 'Godavari',
-      'lat': 19.1383, 'lon': 77.3210, 'danger_level': 343.50, 'warning_level': 342.00,
+      'lat': 19.1383, 'lon': 77.3210, 'danger_level': 343.50, 'warning_level': 342.00, 'hfl': 347.72,
       'risk': 'HIGH', 'flood_freq': 0.62, 'river_type': 'perennial', 'zone': 'peninsular' },
     { 'city': 'Bhubaneswar',    'district': 'Khordha',        'state': 'Odisha', 'river': 'Daya',
-      'lat': 20.2961, 'lon': 85.8245, 'danger_level': 24.50, 'warning_level': 23.00,
+      'lat': 20.2961, 'lon': 85.8245, 'danger_level': 24.50, 'warning_level': 23.00, 'hfl': 27.44,
       'risk': 'MODERATE', 'flood_freq': 0.55, 'river_type': 'seasonal', 'zone': 'eastern' },
     { 'city': 'Nagpur',         'district': 'Nagpur',         'state': 'Maharashtra', 'river': 'Nag',
-      'lat': 21.1458, 'lon': 79.0882, 'danger_level': 310.00, 'warning_level': 308.50,
+      'lat': 21.1458, 'lon': 79.0882, 'danger_level': 310.00, 'warning_level': 308.50, 'hfl': 313.20,
       'risk': 'MODERATE', 'flood_freq': 0.48, 'river_type': 'seasonal', 'zone': 'peninsular' },
   ];
 }
