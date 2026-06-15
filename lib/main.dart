@@ -2,7 +2,9 @@
 import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -84,25 +86,14 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// Extract a clean station name from any notification title or payload.
-///
-/// Handles all known title formats produced by AlertNotificationBridge:
-///   '🚨 EMERGENCY: Gandhighat'
-///   '🔴 CRITICAL: Triveni'
-///   '⚠️ Warning: Hathidah'
-///   'ℹ️ Advisory: Buxar'
-/// And also raw FCM titles pushed from server:
-///   'Triveni: DANGER LEVEL BREACHED'
-///   'Gandhighat: WARNING LEVEL BREACHED'
 String _parseStation(String? raw) {
   if (raw == null || raw.trim().isEmpty) return '';
 
-  // Remove leading emoji + spaces
   final stripped = raw.replaceAll(
       RegExp(r'^[\u{1F600}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\s]+',
           unicode: true),
       '');
 
-  // Pattern A — "TYPE: Station"  e.g. "CRITICAL: Triveni"
   final colonIdx = stripped.indexOf(':');
   if (colonIdx > 0) {
     final before = stripped.substring(0, colonIdx).trim().toUpperCase();
@@ -113,14 +104,11 @@ String _parseStation(String? raw) {
       'DANGER', 'ALERT',
     };
 
-    // If the part BEFORE the colon is an alert keyword → station is AFTER
     if (alertKeywords.contains(before)) return after;
 
-    // If the part AFTER the colon contains alert keywords → station is BEFORE
     final afterUpper = after.toUpperCase();
     if (alertKeywords.any((k) => afterUpper.contains(k))) return before;
 
-    // Default: take the shorter side as the station name
     return before.length <= after.length ? before : after;
   }
 
@@ -128,15 +116,13 @@ String _parseStation(String? raw) {
 }
 
 /// Navigate to the best screen for this notification.
-/// Called from both local-notification tap and FCM tap handlers.
 void _navigateFromNotification({
-  String? payload,   // alert.id from local notification
-  String? title,     // notification title (fallback)
-  String? body,      // notification body (unused for now)
+  String? payload,
+  String? title,
+  String? body,
 }) {
   final nav = navigatorKey.currentState;
   if (nav == null) {
-    // App not yet fully built — retry once after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _navigateFromNotification(payload: payload, title: title, body: body);
     });
@@ -145,31 +131,24 @@ void _navigateFromNotification({
 
   debugPrint('[Notif] navigate  payload=$payload  title=$title');
 
-  // ── 1. Try payload first (alert.id format: "stationId_severity_timestamp") ──
   String stationName = '';
   if (payload != null && payload.isNotEmpty) {
-    // alert.id is typically built as "<station>_<severity>_<epoch>" in AlertEngine
-    // Extract the station part (everything before the first underscore if numeric)
     final parts = payload.split('_');
     if (parts.length >= 2) {
-      // Last part is usually epoch (all digits), second-last is severity keyword
-      // Take everything that is NOT the severity / epoch suffix
       final severityWords = {'danger', 'warning', 'critical', 'emergency', 'info', 'advisory'};
       final stationParts = <String>[];
       for (final p in parts) {
         if (severityWords.contains(p.toLowerCase())) break;
-        if (RegExp(r'^\d{10,}$').hasMatch(p)) break; // epoch timestamp
+        if (RegExp(r'^\d{10,}$').hasMatch(p)) break;
         stationParts.add(p);
       }
       stationName = stationParts.join(' ').trim();
     }
-    // Fallback: use full payload as station if it looks like a name
     if (stationName.isEmpty && !payload.contains('_')) {
       stationName = payload.trim();
     }
   }
 
-  // ── 2. Fall back to parsing the title ──
   if (stationName.isEmpty) {
     stationName = _parseStation(title);
   }
@@ -177,16 +156,11 @@ void _navigateFromNotification({
   debugPrint('[Notif] resolved station: "$stationName"');
 
   if (stationName.isNotEmpty) {
-    // Navigate to the live station detail with the station name.
-    // CwcStationDetailScreen expects a CwcStation object, but we only
-    // have the name here. Route to /alerts with a filter argument instead,
-    // which is always safe and shows the alert in context.
     nav.pushNamed(
       Routes.alerts,
       arguments: stationName,
     );
   } else {
-    // Unknown payload — just open Alerts tab
     nav.pushNamed(Routes.alerts);
   }
 }
@@ -198,122 +172,152 @@ void _onNotificationTap(NotificationResponse response) {
 }
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  // ── Crash boundary: wrap everything so no unhandled exception escapes ──
+  await runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
 
-  await dotenv.load(fileName: '.env').catchError((_) {});
-
-  try {
-    if (Firebase.apps.isEmpty) {
-      await Firebase.initializeApp(
-          options: DefaultFirebaseOptions.currentPlatform);
-    }
-  } catch (e) {
-    debugPrint('[Firebase] already initialised: $e');
-  }
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-  await Hive.initFlutter();
-  Hive.registerAdapter(IncidentTypeAdapter());
-  Hive.registerAdapter(CommunityIncidentAdapter());
-  await Hive.openBox<CommunityIncident>('community_incidents');
-
-  final prefs = await SharedPreferences.getInstance();
-  final savedLangCode = prefs.getString('app_locale') ?? 'en';
-
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor:          Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-    ),
-  );
-
-  runApp(
-    ProviderScope(
-      overrides: [
-        localeProvider.overrideWith(() => LocaleNotifier(savedLangCode)),
-      ],
-      child: const FloodWatchApp(),
-    ),
-  );
-
-  WidgetsBinding.instance.addPostFrameCallback((_) async {
-    // ── Local notifications init ────────────────────────────────────────
-    const androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-    const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
-    await _localNotifications.initialize(
-      const InitializationSettings(android: androidSettings, iOS: iosSettings),
-      onDidReceiveNotificationResponse: _onNotificationTap,
-    );
-
-    // ── FCM: app launched from a terminated-state notification ──────────
-    final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
-    if (initialMessage != null) {
-      debugPrint('[FCM] launched from notification: ${initialMessage.notification?.title}');
-      _navigateFromNotification(
-        payload: initialMessage.data['alertId'] as String?,
-        title:   initialMessage.notification?.title,
-        body:    initialMessage.notification?.body,
-      );
+    // ── Firebase init (must happen before Crashlytics) ──────────────────
+    try {
+      if (Firebase.apps.isEmpty) {
+        await Firebase.initializeApp(
+            options: DefaultFirebaseOptions.currentPlatform);
+      }
+    } catch (e) {
+      debugPrint('[Firebase] already initialised: $e');
     }
 
-    // ── FCM: app in background, user taps notification ─────────────────
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      debugPrint('[FCM] onMessageOpenedApp: ${message.notification?.title}');
-      _navigateFromNotification(
-        payload: message.data['alertId'] as String?,
-        title:   message.notification?.title,
-        body:    message.notification?.body,
+    // ── Crashlytics: route Flutter framework errors ─────────────────────
+    // In release mode, send all errors to Crashlytics.
+    // In debug mode, re-throw so the red screen still appears.
+    FlutterError.onError = (FlutterErrorDetails details) {
+      if (kReleaseMode) {
+        FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+      } else {
+        FlutterError.presentError(details);
+      }
+    };
+
+    // ── PlatformDispatcher: catch isolate / async errors ────────────────
+    PlatformDispatcher.instance.onError = (error, stack) {
+      if (kReleaseMode) {
+        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      }
+      return true;
+    };
+
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+    await dotenv.load(fileName: '.env').catchError((_) {});
+
+    await Hive.initFlutter();
+    Hive.registerAdapter(IncidentTypeAdapter());
+    Hive.registerAdapter(CommunityIncidentAdapter());
+    await Hive.openBox<CommunityIncident>('community_incidents');
+
+    final prefs = await SharedPreferences.getInstance();
+    final savedLangCode = prefs.getString('app_locale') ?? 'en';
+
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor:          Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+      ),
+    );
+
+    runApp(
+      ProviderScope(
+        overrides: [
+          localeProvider.overrideWith(() => LocaleNotifier(savedLangCode)),
+        ],
+        child: const FloodWatchApp(),
+      ),
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // ── Local notifications init ──────────────────────────────────────
+      const androidSettings =
+          AndroidInitializationSettings('@mipmap/ic_launcher');
+      const iosSettings = DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
       );
-    });
-
-    // ── FCM: app in foreground — show as local notification ────────────
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      final notif = message.notification;
-      if (notif == null) return;
-      debugPrint('[FCM FG] ${notif.title}');
-      // Re-fire as local notification so the user still sees it
-      _localNotifications.show(
-        message.hashCode & 0x7FFFFFFF,
-        notif.title,
-        notif.body,
-        NotificationDetails(
-          android: AndroidNotificationDetails(
-            _severityChannelFromData(message.data),
-            'Flood Alerts',
-            importance: Importance.max,
-            priority:   Priority.high,
-            icon:       '@mipmap/ic_launcher',
-          ),
-          iOS: const DarwinNotificationDetails(
-            presentAlert: true,
-            presentBadge: true,
-            presentSound: true,
-          ),
-        ),
-        payload: message.data['alertId'] as String? ?? notif.title,
+      await _localNotifications.initialize(
+        const InitializationSettings(android: androidSettings, iOS: iosSettings),
+        onDidReceiveNotificationResponse: _onNotificationTap,
       );
+
+      // ── FCM: app launched from a terminated-state notification ────────
+      final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+      if (initialMessage != null) {
+        debugPrint('[FCM] launched from notification: ${initialMessage.notification?.title}');
+        _navigateFromNotification(
+          payload: initialMessage.data['alertId'] as String?,
+          title:   initialMessage.notification?.title,
+          body:    initialMessage.notification?.body,
+        );
+      }
+
+      // ── FCM: app in background, user taps notification ─────────────
+      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+        debugPrint('[FCM] onMessageOpenedApp: ${message.notification?.title}');
+        _navigateFromNotification(
+          payload: message.data['alertId'] as String?,
+          title:   message.notification?.title,
+          body:    message.notification?.body,
+        );
+      });
+
+      // ── FCM: app in foreground — show as local notification ──────────
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        final notif = message.notification;
+        if (notif == null) return;
+        debugPrint('[FCM FG] ${notif.title}');
+        _localNotifications.show(
+          message.hashCode & 0x7FFFFFFF,
+          notif.title,
+          notif.body,
+          NotificationDetails(
+            android: AndroidNotificationDetails(
+              _severityChannelFromData(message.data),
+              'Flood Alerts',
+              importance: Importance.max,
+              priority:   Priority.high,
+              icon:       '@mipmap/ic_launcher',
+            ),
+            iOS: const DarwinNotificationDetails(
+              presentAlert: true,
+              presentBadge: true,
+              presentSound: true,
+            ),
+          ),
+          payload: message.data['alertId'] as String? ?? notif.title,
+        );
+      });
+
+      unawaited(NotificationChannelService.instance.init());
+      unawaited(FcmTopicManager.instance.init());
+      unawaited(RtdasThresholdSyncService.instance.start());
+
+      DataFetchEngine.instance.start();
+      ActiveAlertController.instance.start();
+
+      final Stream<FloodAlert> alertStream = DataFetchEngine.instance.alertStream
+          .map((snapshot) => AlertEngine.instance.evaluate(snapshot))
+          .expand((alerts) => alerts);
+      AlertNotificationBridge.instance.start(alertStream);
     });
-
-    unawaited(NotificationChannelService.instance.init());
-    unawaited(FcmTopicManager.instance.init());
-    unawaited(RtdasThresholdSyncService.instance.start());
-
-    DataFetchEngine.instance.start();
-    ActiveAlertController.instance.start();
-
-    final Stream<FloodAlert> alertStream = DataFetchEngine.instance.alertStream
-        .map((snapshot) => AlertEngine.instance.evaluate(snapshot))
-        .expand((alerts) => alerts);
-    AlertNotificationBridge.instance.start(alertStream);
+  }, (Object error, StackTrace stack) {
+    // ── runZonedGuarded error handler ────────────────────────────────────
+    // Catches all errors that escape the zone (including async gaps).
+    debugPrint('[CRASH ZONE] $error\n$stack');
+    if (kReleaseMode) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    }
   });
 }
 
@@ -363,7 +367,7 @@ class FloodWatchApp extends ConsumerWidget {
     return MaterialApp(
       title:                      'FloodWatch',
       debugShowCheckedModeBanner: false,
-      navigatorKey:               navigatorKey,   // ← wires up global navigation
+      navigatorKey:               navigatorKey,
       theme:                      lightSlot,
       darkTheme:                  darkSlot,
       themeMode:                  themeNotifier.flutterMode,
@@ -402,7 +406,6 @@ class FloodWatchApp extends ConsumerWidget {
             return _fade(const DashboardScreen());
           case Routes.alerts:
           case AlertsScreen.route: {
-            // Accept an optional station-name string argument to pre-filter alerts
             final stationFilter = settings.arguments as String?;
             return _fade(AlertsScreen(stationFilter: stationFilter));
           }
