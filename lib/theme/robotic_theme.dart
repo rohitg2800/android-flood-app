@@ -42,12 +42,13 @@ class RoboticColors {
 }
 
 // ─── RiverColors for robotic modes ──────────────────────────────────────
-// These extend RiverColors so every screen’s rc.cardBg / rc.accent /
+// These extend RiverColors so every screen's rc.cardBg / rc.accent /
 // rc.scaffoldBg / rc.sparklineColor etc. all respond to tactical themes.
 
 const _roboticDarkColors = RiverColors(
   riverNormal:    Color(0xFF00FFB2),   // neon mint — safe level
   riverWarning:   Color(0xFFFFAA00),   // amber
+  riverSevere:    Color(0xFFFF6600),   // orange-red — between warning & danger
   riverDanger:    Color(0xFFFF6600),   // orange
   riverCritical:  Color(0xFFFF3B3B),   // red
   riverSurface:   Color(0xFF0A0D12),
@@ -71,6 +72,7 @@ const _roboticDarkColors = RiverColors(
 const _roboticLightColors = RiverColors(
   riverNormal:    Color(0xFF00A86B),   // green — safe
   riverWarning:   Color(0xFFF57C00),   // orange
+  riverSevere:    Color(0xFFE65000),   // deep orange — between warning & danger
   riverDanger:    Color(0xFFE64A19),   // deep orange
   riverCritical:  Color(0xFFD32F2F),   // red
   riverSurface:   Color(0xFFFFFFFF),
@@ -114,7 +116,7 @@ class RoboticTheme {
       isDark ? _roboticDarkColors : _roboticLightColors;
 
   /// Primary method — called as roboticTheme.toThemeData() in main.dart.
-  /// RiverColors is injected as a ThemeExtension so every screen’s
+  /// RiverColors is injected as a ThemeExtension so every screen's
   /// RiverColors.of(context) resolves the correct tactical palette.
   ThemeData toThemeData() {
     final brightness = isDark ? Brightness.dark : Brightness.light;
