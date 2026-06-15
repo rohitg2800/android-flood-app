@@ -1,76 +1,78 @@
-// lib/providers/subscription_provider.dart  v1.0 — Step 3.2
-// StateNotifierProvider for AlertSubscription list.
-// Persisted to Hive box 'subscriptions'.
+// lib/providers/subscription_provider.dart  Step 3.2
+// StateNotifier that manages user's station subscriptions, persisted to Hive.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/alert_subscription.dart';
 
-const _kBox = 'subscriptions';
+const _kBoxName = 'alert_subscriptions';
 
-class SubscriptionNotifier extends StateNotifier<List<AlertSubscription>> {
-  SubscriptionNotifier() : super([]) {
-    _load();
-  }
-
-  void _load() {
-    if (!Hive.isBoxOpen(_kBox)) return;
-    final box = Hive.box<AlertSubscription>(_kBox);
-    state = box.values.toList();
-  }
-
-  /// Add or update subscription for a station.
-  Future<void> subscribe(AlertSubscription sub) async {
-    final box = await Hive.openBox<AlertSubscription>(_kBox);
-    await box.put(sub.stationId, sub);
-    state = box.values.toList();
-  }
-
-  /// Remove subscription for a station.
-  Future<void> unsubscribe(String stationId) async {
-    final box = await Hive.openBox<AlertSubscription>(_kBox);
-    await box.delete(stationId);
-    state = box.values.toList();
-  }
-
-  /// Update a specific field on an existing subscription.
-  Future<void> updateSubscription(
-    String stationId, {
-    double? customThresholdLevel,
-    bool?   notifyOnBreachOnly,
-    double? radiusKm,
-  }) async {
-    final box = await Hive.openBox<AlertSubscription>(_kBox);
-    final existing = box.get(stationId);
-    if (existing == null) return;
-    final updated = existing.copyWith(
-      customThresholdLevel: customThresholdLevel,
-      notifyOnBreachOnly:   notifyOnBreachOnly,
-      radiusKm:             radiusKm,
-    );
-    await box.put(stationId, updated);
-    state = box.values.toList();
-  }
-
-  bool isSubscribed(String stationId) =>
-      state.any((s) => s.stationId == stationId);
-
-  AlertSubscription? getSubscription(String stationId) {
-    try {
-      return state.firstWhere((s) => s.stationId == stationId);
-    } catch (_) {
-      return null;
-    }
-  }
-}
+// ── Provider ────────────────────────────────────────────────────────────────
 
 final subscriptionProvider =
     StateNotifierProvider<SubscriptionNotifier, List<AlertSubscription>>(
   (ref) => SubscriptionNotifier(),
 );
 
-/// Convenience selector: is a specific station being watched?
-final isWatchedProvider = Provider.family<bool, String>(
-  (ref, stationId) =>
-      ref.watch(subscriptionProvider.notifier).isSubscribed(stationId),
-);
+/// Returns true if the given stationId is currently watched.
+final isWatchedProvider = Provider.family<bool, String>((ref, stationId) {
+  return ref
+      .watch(subscriptionProvider)
+      .any((s) => s.stationId == stationId);
+});
+
+// ── Notifier ────────────────────────────────────────────────────────────────
+
+class SubscriptionNotifier
+    extends StateNotifier<List<AlertSubscription>> {
+  SubscriptionNotifier() : super([]) {
+    _load();
+  }
+
+  Box<AlertSubscription>? _box;
+
+  Future<void> _load() async {
+    if (!Hive.isAdapterRegistered(10)) {
+      Hive.registerAdapter(AlertSubscriptionAdapter());
+    }
+    _box = await Hive.openBox<AlertSubscription>(_kBoxName);
+    state = _box!.values.toList();
+  }
+
+  // ── Public API ──────────────────────────────────────────────────────
+
+  Future<void> subscribe(AlertSubscription sub) async {
+    // Prevent duplicates
+    if (state.any((s) => s.stationId == sub.stationId)) return;
+    await _box?.add(sub);
+    state = [...state, sub];
+  }
+
+  Future<void> unsubscribe(String stationId) async {
+    final box = _box;
+    if (box == null) return;
+    final keys = box.keys.where(
+        (k) => box.get(k)?.stationId == stationId);
+    for (final k in keys) await box.delete(k);
+    state = state.where((s) => s.stationId != stationId).toList();
+  }
+
+  Future<void> update(AlertSubscription updated) async {
+    final box = _box;
+    if (box == null) return;
+    final key = box.keys.firstWhere(
+        (k) => box.get(k)?.stationId == updated.stationId,
+        orElse: () => null);
+    if (key != null) await box.put(key, updated);
+    state = [
+      for (final s in state)
+        if (s.stationId == updated.stationId) updated else s,
+    ];
+  }
+
+  bool isWatched(String stationId) =>
+      state.any((s) => s.stationId == stationId);
+
+  AlertSubscription? getFor(String stationId) =>
+      state.where((s) => s.stationId == stationId).firstOrNull;
+}

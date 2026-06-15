@@ -1,6 +1,6 @@
 // GENERATED CODE — DO NOT MODIFY BY HAND
-// Pre-generated Hive TypeAdapter for AlertSubscription (Step 3.1)
-// Replaces build_runner output (removed due to analyzer conflict).
+// alert_subscription.g.dart  (pre-generated, Step 3.1)
+// ignore_for_file: type=lint
 
 part of 'alert_subscription.dart';
 
@@ -15,25 +15,27 @@ class AlertSubscriptionAdapter extends TypeAdapter<AlertSubscription> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return AlertSubscription(
-      stationId:            fields[0] as String,
-      cityName:             fields[1] as String,
-      customThresholdLevel: fields[2] as double?,
-      notifyOnBreachOnly:   fields[3] as bool,
-      radiusKm:             fields[4] as double,
-      createdAt:            fields[5] as DateTime,
+      stationId:             fields[0] as String,
+      cityName:              fields[1] as String,
+      riverName:             fields[2] as String,
+      customThresholdMetres: fields[3] as double?,
+      notifyRadiusKm:        fields[4] as double,
+      breachOnlyMode:        fields[5] as bool,
+      createdAt:             fields[6] as DateTime,
     );
   }
 
   @override
   void write(BinaryWriter writer, AlertSubscription obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(7)
       ..writeByte(0)..write(obj.stationId)
       ..writeByte(1)..write(obj.cityName)
-      ..writeByte(2)..write(obj.customThresholdLevel)
-      ..writeByte(3)..write(obj.notifyOnBreachOnly)
-      ..writeByte(4)..write(obj.radiusKm)
-      ..writeByte(5)..write(obj.createdAt);
+      ..writeByte(2)..write(obj.riverName)
+      ..writeByte(3)..write(obj.customThresholdMetres)
+      ..writeByte(4)..write(obj.notifyRadiusKm)
+      ..writeByte(5)..write(obj.breachOnlyMode)
+      ..writeByte(6)..write(obj.createdAt);
   }
 
   @override

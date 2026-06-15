@@ -1,62 +1,58 @@
-// lib/models/alert_subscription.dart  v1.0 — Step 3.1
-// AlertSubscription: persisted per-station watch entry.
-// Stored in Hive box 'subscriptions' (manual adapter — no build_runner).
+// lib/models/alert_subscription.dart  Step 3.1
+// Hive-persisted model representing a user's watch subscription on a gauge station.
 
-import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 part 'alert_subscription.g.dart';
 
 @HiveType(typeId: 10)
-class AlertSubscription {
+class AlertSubscription extends HiveObject {
   @HiveField(0) final String stationId;
   @HiveField(1) final String cityName;
-  /// null = use default warning/danger thresholds from FloodData
-  @HiveField(2) final double? customThresholdLevel;
-  /// true = only notify when predicted breach (willBreachDanger), not at every level rise
-  @HiveField(3) final bool notifyOnBreachOnly;
-  /// radius in km; 0 = always notify regardless of user location
-  @HiveField(4) final double radiusKm;
-  @HiveField(5) final DateTime createdAt;
+  @HiveField(2) final String riverName;
+  /// Custom threshold in metres. null = use station's own danger level.
+  @HiveField(3) final double? customThresholdMetres;
+  /// Radius in km within which the user wants to receive alerts.
+  @HiveField(4) final double notifyRadiusKm;
+  /// If true, only notify when a BREACH is predicted (predicted24h >= danger).
+  @HiveField(5) final bool breachOnlyMode;
+  @HiveField(6) final DateTime createdAt;
 
-  const AlertSubscription({
+  AlertSubscription({
     required this.stationId,
     required this.cityName,
-    this.customThresholdLevel,
-    this.notifyOnBreachOnly = false,
-    this.radiusKm = 50.0,
+    required this.riverName,
+    this.customThresholdMetres,
+    this.notifyRadiusKm = 50.0,
+    this.breachOnlyMode = false,
     required this.createdAt,
   });
 
-  Map<String, dynamic> toJson() => {
-        'stationId':             stationId,
-        'cityName':              cityName,
-        'customThresholdLevel':  customThresholdLevel,
-        'notifyOnBreachOnly':    notifyOnBreachOnly,
-        'radiusKm':              radiusKm,
-        'createdAt':             createdAt.toIso8601String(),
-      };
-
-  factory AlertSubscription.fromJson(Map<String, dynamic> j) =>
-      AlertSubscription(
-        stationId:            j['stationId'] as String,
-        cityName:             j['cityName'] as String,
-        customThresholdLevel: (j['customThresholdLevel'] as num?)?.toDouble(),
-        notifyOnBreachOnly:   j['notifyOnBreachOnly'] as bool? ?? false,
-        radiusKm:             (j['radiusKm'] as num?)?.toDouble() ?? 50.0,
-        createdAt:            DateTime.parse(j['createdAt'] as String),
-      );
-
   AlertSubscription copyWith({
-    double? customThresholdLevel,
-    bool?   notifyOnBreachOnly,
-    double? radiusKm,
-  }) =>
-      AlertSubscription(
-        stationId:            stationId,
-        cityName:             cityName,
-        customThresholdLevel: customThresholdLevel ?? this.customThresholdLevel,
-        notifyOnBreachOnly:   notifyOnBreachOnly   ?? this.notifyOnBreachOnly,
-        radiusKm:             radiusKm             ?? this.radiusKm,
-        createdAt:            createdAt,
-      );
+    double? customThresholdMetres,
+    double? notifyRadiusKm,
+    bool?   breachOnlyMode,
+  }) {
+    return AlertSubscription(
+      stationId:             stationId,
+      cityName:              cityName,
+      riverName:             riverName,
+      customThresholdMetres: customThresholdMetres ?? this.customThresholdMetres,
+      notifyRadiusKm:        notifyRadiusKm        ?? this.notifyRadiusKm,
+      breachOnlyMode:        breachOnlyMode        ?? this.breachOnlyMode,
+      createdAt:             createdAt,
+    );
+  }
+
+  @override
+  String toString() =>
+      'AlertSubscription($cityName / $stationId, '
+      'radius: ${notifyRadiusKm}km, '
+      'threshold: ${customThresholdMetres ?? "danger"}m, '
+      'breachOnly: $breachOnlyMode)';
 }
+
+// ── Pre-generated TypeAdapter (hive_generator removed to avoid analyzer conflict)
+// Regenerate with: dart run build_runner build --delete-conflicting-outputs
+@GeneratedAdapters([AlertSubscription])
+void _placeholder() {}

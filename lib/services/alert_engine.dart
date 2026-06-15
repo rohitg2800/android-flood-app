@@ -1,29 +1,30 @@
-// lib/services/alert_engine.dart  v2.0 — Step 3.3
+// lib/services/alert_engine.dart  Step 3.3
 // Upgraded alert engine:
-//   • Deduplication — skip if same alert fired within 6h
-//   • Geofence — skip if user GPS is outside subscriptionRadiusKm
-//   • Custom threshold — cross-refs SubscriptionNotifier
-//   • Default threshold fallback — uses warning/dangerLevel from FloodData
+//   • Deduplication via SharedPreferences hash (skip re-alert within 6h)
+//   • Geofence check: only alert if user is within subscription's radius
+//   • Custom threshold: honour subscription.customThresholdMetres if set
+//   • breachOnlyMode: skip if predicted24h < threshold
 
 import 'dart:convert';
+import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/flood_data.dart';
 import '../models/alert_subscription.dart';
 
-const _kDedupKey    = 'alert_dedup_v2';
-const _kDedupWindow = Duration(hours: 6);
+const _kDedupeKey  = 'alert_dedup_v1';
+const _kDedupeHours = 6;
 
 class AlertEngine {
   AlertEngine._();
   static final AlertEngine instance = AlertEngine._();
 
-  final FlutterLocalNotificationsPlugin _notif =
-      FlutterLocalNotificationsPlugin();
-
+  final _notif = FlutterLocalNotificationsPlugin();
   bool _initialised = false;
 
+  // ── Init ────────────────────────────────────────────────────────────────
   Future<void> init() async {
     if (_initialised) return;
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -34,131 +35,144 @@ class AlertEngine {
     _initialised = true;
   }
 
-  /// Main entry point. Call with fresh FloodData list + current subscriptions.
-  Future<void> evaluate(
-    List<FloodData>          gauges,
-    List<AlertSubscription>  subscriptions,
-  ) async {
+  // ── Main evaluation loop ────────────────────────────────────────────────
+  /// Called with the latest gauge list + user's subscriptions.
+  /// Fires a local notification for each subscription that:
+  ///   1. Is not deduped within 6h
+  ///   2. User is within the subscription radius  (or GPS unavailable)
+  ///   3. Current level exceeds the subscription threshold (or danger level)
+  ///   4. If breachOnlyMode — predicted24h must also exceed threshold
+  Future<void> evaluate({
+    required List<FloodData>           gauges,
+    required List<AlertSubscription>   subscriptions,
+    Position?                          userPosition,
+  }) async {
     await init();
-    Position? userPos = await _getUserPosition();
-    final prefs       = await SharedPreferences.getInstance();
-    final dedupMap    = _loadDedup(prefs);
+    final prefs = await SharedPreferences.getInstance();
+    final dedup = _loadDedup(prefs);
 
-    for (final gauge in gauges) {
-      final sub = subscriptions
-          .where((s) => s.stationId == gauge.stationId)
-          .firstOrNull;
+    for (final sub in subscriptions) {
+      final gauge = gauges.where(
+          (g) => g.stationId == sub.stationId).firstOrNull;
+      if (gauge == null) continue;
 
-      // ─ Determine effective threshold ───────────────────────────────────
-      double threshold;
-      if (sub?.customThresholdLevel != null) {
-        threshold = sub!.customThresholdLevel!;
-      } else {
-        // Default: fire at warning level for watched stations, danger for all
-        threshold = sub != null
-            ? (gauge.warningLevel ?? gauge.dangerLevel)
-            : gauge.dangerLevel;
+      final threshold = sub.customThresholdMetres ?? gauge.dangerLevel;
+
+      // ── (1) Threshold check
+      if (gauge.currentLevel < threshold) continue;
+
+      // ── (2) Breach-only mode
+      if (sub.breachOnlyMode) {
+        final peak24 = gauge.peakLevel72h ?? gauge.currentLevel;
+        if (peak24 < threshold) continue;
       }
 
-      final isBreach = gauge.currentLevel >= threshold;
-      if (!isBreach) continue;
-
-      // ─ notifyOnBreachOnly gate ──────────────────────────────────────
-      if (sub != null && sub.notifyOnBreachOnly) {
-        final willBreach = gauge.willBreachDanger ?? false;
-        if (!willBreach) continue;
+      // ── (3) Geofence check (skip if GPS unavailable — default fire)
+      if (userPosition != null) {
+        final dist = _haversineKm(
+          userPosition.latitude, userPosition.longitude,
+          gauge.lat ?? 0,         gauge.lon ?? 0,
+        );
+        if (dist > sub.notifyRadiusKm) continue;
       }
 
-      // ─ Deduplication ─────────────────────────────────────────────────
-      final key = '${gauge.stationId}_${gauge.riskLevel}_${DateTime.now().day}';
-      if (_isDedupBlocked(dedupMap, key)) continue;
+      // ── (4) Deduplication
+      final hashKey = '${sub.stationId}|${gauge.riskLevel}|${_dayKey()}';
+      if (dedup.contains(hashKey)) continue;
+      dedup.add(hashKey);
 
-      // ─ Geofence check ─────────────────────────────────────────────────
-      if (userPos != null && gauge.latitude != null && gauge.longitude != null) {
-        final radiusKm = sub?.radiusKm ?? 50.0;
-        if (radiusKm > 0) {
-          final distM = Geolocator.distanceBetween(
-            userPos.latitude, userPos.longitude,
-            gauge.latitude!, gauge.longitude!,
-          );
-          if (distM > radiusKm * 1000) continue;
-        }
-      }
-
-      // ─ Fire notification ─────────────────────────────────────────────────
-      await _fireNotification(gauge);
-      _markDedup(dedupMap, key);
-    }
-
-    await _saveDedup(prefs, dedupMap);
-  }
-
-  Future<Position?> _getUserPosition() async {
-    try {
-      final perm = await Geolocator.checkPermission();
-      if (perm == LocationPermission.denied ||
-          perm == LocationPermission.deniedForever) return null;
-      return await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.low,
-          timeLimit: Duration(seconds: 5),
-        ),
+      // ── Fire notification
+      await _fire(
+        id:      sub.stationId.hashCode.abs() % 100000,
+        title:   '🚨 ${sub.cityName} — ${gauge.riskLevel.toUpperCase()}',
+        body:    '${gauge.riverName ?? "River"} at '
+                 '${gauge.currentLevel.toStringAsFixed(2)} m '
+                 '(threshold ${threshold.toStringAsFixed(2)} m)',
+        payload: sub.stationId,
       );
-    } catch (_) {
-      return null;
     }
+
+    await _saveDedup(prefs, dedup);
   }
 
-  Future<void> _fireNotification(FloodData gauge) async {
-    final id = gauge.stationId.hashCode.abs() % 100000;
+  // ── Notification dispatch ─────────────────────────────────────────────────
+  Future<void> _fire({
+    required int    id,
+    required String title,
+    required String body,
+    String?         payload,
+  }) async {
+    const android = AndroidNotificationDetails(
+      'flood_alerts',
+      'Flood Alerts',
+      channelDescription: 'Real-time flood level alerts',
+      importance: Importance.max,
+      priority:   Priority.high,
+      color:      Color(0xFFE53935),
+    );
+    const ios = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
     await _notif.show(
-      id,
-      '🚨 ${gauge.city} — ${gauge.riskLevel.toUpperCase()}',
-      'Level: ${gauge.currentLevel.toStringAsFixed(2)} m '
-      '(danger: ${gauge.dangerLevel.toStringAsFixed(2)} m)',
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'flood_alerts', 'Flood Alerts',
-          channelDescription: 'Critical flood level alerts',
-          importance: Importance.max,
-          priority: Priority.high,
-          enableVibration: true,
-        ),
-        iOS: DarwinNotificationDetails(presentAlert: true, presentSound: true),
-      ),
+      id, title, body,
+      const NotificationDetails(android: android, iOS: ios),
+      payload: payload,
     );
   }
 
-  // ── Dedup helpers ────────────────────────────────────────────────────────
-  Map<String, int> _loadDedup(SharedPreferences prefs) {
-    final raw = prefs.getString(_kDedupKey);
+  // ── Dedup helpers ───────────────────────────────────────────────────────
+  Set<String> _loadDedup(SharedPreferences prefs) {
+    final raw = prefs.getString(_kDedupeKey);
     if (raw == null) return {};
     try {
-      final m = jsonDecode(raw) as Map<String, dynamic>;
-      return m.map((k, v) => MapEntry(k, v as int));
+      final List<dynamic> list = jsonDecode(raw);
+      // Purge entries older than _kDedupeHours hours
+      final now    = DateTime.now();
+      final cutoff = now.subtract(const Duration(hours: _kDedupeHours));
+      return list
+          .cast<String>()
+          .where((entry) {
+            final parts = entry.split('|');
+            if (parts.length < 3) return false;
+            final day = parts.last;
+            try {
+              final dt = DateTime.parse(day);
+              return dt.isAfter(cutoff);
+            } catch (_) {
+              return false;
+            }
+          })
+          .toSet();
     } catch (_) {
       return {};
     }
   }
 
-  bool _isDedupBlocked(Map<String, int> map, String key) {
-    final ts = map[key];
-    if (ts == null) return false;
-    final fired = DateTime.fromMillisecondsSinceEpoch(ts);
-    return DateTime.now().difference(fired) < _kDedupWindow;
-  }
-
-  void _markDedup(Map<String, int> map, String key) {
-    map[key] = DateTime.now().millisecondsSinceEpoch;
-    // Prune entries older than 24h to keep prefs small
-    map.removeWhere((_, ts) {
-      final fired = DateTime.fromMillisecondsSinceEpoch(ts);
-      return DateTime.now().difference(fired) > const Duration(hours: 24);
-    });
-  }
-
   Future<void> _saveDedup(
-      SharedPreferences prefs, Map<String, int> map) async {
-    await prefs.setString(_kDedupKey, jsonEncode(map));
+      SharedPreferences prefs, Set<String> dedup) async {
+    await prefs.setString(_kDedupeKey, jsonEncode(dedup.toList()));
   }
+
+  /// Key = ISO 8601 date+hour, giving 1h granularity buckets.
+  String _dayKey() {
+    final now = DateTime.now();
+    return '${now.toIso8601String().substring(0, 13)}'; // "2026-06-15T11"
+  }
+
+  // ── Haversine distance ─────────────────────────────────────────────────────
+  double _haversineKm(
+      double lat1, double lon1, double lat2, double lon2) {
+    const R    = 6371.0;
+    final dLat = _rad(lat2 - lat1);
+    final dLon = _rad(lon2 - lon1);
+    final a    = sin(dLat / 2) * sin(dLat / 2) +
+        cos(_rad(lat1)) * cos(_rad(lat2)) *
+        sin(dLon / 2) * sin(dLon / 2);
+    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
+    return R * c;
+  }
+
+  double _rad(double deg) => deg * pi / 180;
 }
