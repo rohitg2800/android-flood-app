@@ -6,13 +6,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/alert_engine.dart';
 import '../../models/river_station.dart';
 import '../../theme/app_palette.dart';
-import '../../theme/river_colors.dart';
 import '../../providers/merged_stations_provider.dart';
 import 'district_bottom_sheet.dart';
-import '../../constants/india_geodata.dart';
 
 class BiharDistrictHeatmap extends ConsumerStatefulWidget {
-  const BiharDistrictHeatmap({super.key});
+  /// Optional: if null the widget reads from mergedStationsProvider.
+  final List<RiverStation>? stations;
+  const BiharDistrictHeatmap({super.key, this.stations});
   @override
   ConsumerState<BiharDistrictHeatmap> createState() =>
       _BiharDistrictHeatmapState();
@@ -22,10 +22,9 @@ class _BiharDistrictHeatmapState
     extends ConsumerState<BiharDistrictHeatmap> {
   @override
   Widget build(BuildContext context) {
-    final stations = ref.watch(mergedStationsProvider);
-    final t        = RiverColors.of(context);
+    final stations =
+        widget.stations ?? ref.watch(mergedStationsProvider);
 
-    // Group stations by district (city field)
     final Map<String, List<RiverStation>> byDistrict = {};
     for (final s in stations) {
       byDistrict.putIfAbsent(s.city, () => []).add(s);
@@ -41,35 +40,36 @@ class _BiharDistrictHeatmapState
           urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
           userAgentPackageName: 'com.opsflood.app',
         ),
-        // District polygon overlays
         PolygonLayer(
           polygons: byDistrict.entries.map((entry) {
-            final sev    = _worstSeverity(entry.value);
+            final sev      = _worstSeverity(entry.value);
             final isDanger = sev == AlertSeverity.emergency ||
                              sev == AlertSeverity.critical;
             return Polygon(
-              points: _districtPolygon(entry.key),
-              color:        _severityFill(sev),
-              borderColor:  _severityBorder(sev),
+              points:            _districtPolygon(entry.key),
+              color:             _severityFill(sev),
+              borderColor:       _severityBorder(sev),
               borderStrokeWidth: isDanger ? 2.5 : 1.0,
             );
           }).toList(),
         ),
-        // Station markers
         MarkerLayer(
-          markers: stations.map((s) {
+          markers: stations
+              .where((s) => s.lat != null && s.lon != null)
+              .map((s) {
             final sev = _stationSeverity(s);
             final col = _severityBorder(sev);
             return Marker(
-              point: LatLng(s.lat, s.lon),
-              width: 20,
+              point:  LatLng(s.lat!, s.lon!),
+              width:  20,
               height: 20,
               child: GestureDetector(
-                onTap: () => _showSheet(context, s.city, byDistrict[s.city] ?? [s]),
+                onTap: () => _showSheet(
+                    context, s.city, byDistrict[s.city] ?? [s]),
                 child: Container(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: col.withValues(alpha: 0.85),
+                    color:  col.withValues(alpha: 0.85),
                     border: Border.all(color: Colors.white, width: 1.5),
                   ),
                 ),
@@ -93,12 +93,12 @@ class _BiharDistrictHeatmapState
   }
 }
 
-/// Returns a simple bounding-box polygon for a district from geodata.
+/// Simple bounding-box polygon centred on rough district coordinates.
+/// Falls back to a Bihar-centred polygon if the district is unknown.
 List<LatLng> _districtPolygon(String district) {
-  final entry = kBiharDistrictCentroids[district];
-  if (entry == null) return [];
-  final lat = entry.latitude;
-  final lon = entry.longitude;
+  final centre = _kDistrictCentres[district];
+  final lat = centre?.$1 ?? 25.5;
+  final lon = centre?.$2 ?? 85.1;
   const d = 0.25;
   return [
     LatLng(lat + d, lon - d),
@@ -107,6 +107,28 @@ List<LatLng> _districtPolygon(String district) {
     LatLng(lat - d, lon - d),
   ];
 }
+
+/// Rough district centroids for Bihar (lat, lon).
+const Map<String, (double, double)> _kDistrictCentres = {
+  'Patna':        (25.594095, 85.137566),
+  'Muzaffarpur':  (26.120889, 85.364723),
+  'Darbhanga':    (26.152002, 85.897797),
+  'Supaul':       (26.123549, 86.599485),
+  'Bhagalpur':    (25.244541, 86.972142),
+  'Samastipur':   (25.862600, 85.781300),
+  'Vaishali':     (25.690000, 85.210000),
+  'Saran':        (25.917300, 84.940000),
+  'Sitamarhi':    (26.591500, 85.490300),
+  'Madhubani':    (26.358200, 86.071800),
+  'Gopalganj':    (26.467600, 84.436600),
+  'Siwan':        (26.222700, 84.354900),
+  'East Champaran': (26.655400, 84.917600),
+  'West Champaran': (27.025000, 84.431700),
+  'Araria':       (26.147700, 87.471700),
+  'Kishanganj':   (26.099900, 87.940800),
+  'Purnea':       (25.777700, 87.479800),
+  'Katihar':      (25.539700, 87.573800),
+};
 
 AlertSeverity _worstSeverity(List<RiverStation> stations) {
   AlertSeverity worst = AlertSeverity.info;
@@ -127,18 +149,26 @@ AlertSeverity _stationSeverity(RiverStation s) {
 
 Color _severityFill(AlertSeverity sev) {
   switch (sev) {
-    case AlertSeverity.emergency: return AppPalette.critical.withValues(alpha: 0.28);
-    case AlertSeverity.critical:  return AppPalette.danger.withValues(alpha: 0.22);
-    case AlertSeverity.warning:   return AppPalette.warning.withValues(alpha: 0.18);
-    case AlertSeverity.info:      return AppPalette.safe.withValues(alpha: 0.08);
+    case AlertSeverity.emergency:
+      return AppPalette.critical.withValues(alpha: 0.28);
+    case AlertSeverity.critical:
+      return AppPalette.danger.withValues(alpha: 0.22);
+    case AlertSeverity.warning:
+      return AppPalette.warning.withValues(alpha: 0.18);
+    case AlertSeverity.info:
+      return AppPalette.safe.withValues(alpha: 0.08);
   }
 }
 
 Color _severityBorder(AlertSeverity sev) {
   switch (sev) {
-    case AlertSeverity.emergency: return AppPalette.critical.withValues(alpha: 0.80);
-    case AlertSeverity.critical:  return AppPalette.danger.withValues(alpha: 0.70);
-    case AlertSeverity.warning:   return AppPalette.warning.withValues(alpha: 0.60);
-    case AlertSeverity.info:      return AppPalette.safe.withValues(alpha: 0.30);
+    case AlertSeverity.emergency:
+      return AppPalette.critical.withValues(alpha: 0.80);
+    case AlertSeverity.critical:
+      return AppPalette.danger.withValues(alpha: 0.70);
+    case AlertSeverity.warning:
+      return AppPalette.warning.withValues(alpha: 0.60);
+    case AlertSeverity.info:
+      return AppPalette.safe.withValues(alpha: 0.30);
   }
 }

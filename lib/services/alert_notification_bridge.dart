@@ -3,7 +3,14 @@ import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'alert_engine.dart';
-import '../constants/fcm_topics.dart';
+
+// Inline topic constants so we don't need a missing fcm_topics.dart file.
+class _Topics {
+  static const emergency = 'flood_emergency_topic';
+  static const critical  = 'flood_critical_topic';
+  static const warning   = 'flood_warning_topic';
+  static const info      = 'flood_info_topic';
+}
 
 class AlertNotificationBridge {
   AlertNotificationBridge._();
@@ -45,10 +52,9 @@ class AlertNotificationBridge {
           _channelId(alert.severity),
           'Flood Alerts',
           channelDescription: 'Real-time flood level alerts',
-          importance:    Importance.max,
-          priority:      Priority.high,
+          importance:      Importance.max,
+          priority:        Priority.high,
           enableVibration: true,
-          icon: _icon(alert.severity),
         ),
         iOS: const DarwinNotificationDetails(
             presentAlert: true, presentSound: true),
@@ -58,8 +64,7 @@ class AlertNotificationBridge {
 
   Future<void> _subscribeToTopic(AlertSeverity s) async {
     try {
-      await FirebaseMessaging.instance
-          .subscribeToTopic(_severityTopic(s));
+      await FirebaseMessaging.instance.subscribeToTopic(_severityTopic(s));
     } catch (_) {}
   }
 
@@ -70,7 +75,7 @@ class AlertNotificationBridge {
       case AlertSeverity.critical:
         return '\u{1F534} CRITICAL — ${alert.stationName}';
       case AlertSeverity.warning:
-        return '\u{26A0}\uFE0F WARNING — ${alert.stationName}';
+        return '\u26A0\uFE0F WARNING — ${alert.stationName}';
       case AlertSeverity.info:
         return '\u2139\uFE0F WATCH — ${alert.stationName}';
     }
@@ -97,15 +102,6 @@ class AlertNotificationBridge {
     }
   }
 
-  static String _icon(AlertSeverity s) {
-    switch (s) {
-      case AlertSeverity.emergency: return '\u{1F6A8}';
-      case AlertSeverity.critical:  return '\u{1F534}';
-      case AlertSeverity.warning:   return '\u26A0\uFE0F';
-      case AlertSeverity.info:      return '\u2139\uFE0F';
-    }
-  }
-
   static String _channelId(AlertSeverity s) {
     switch (s) {
       case AlertSeverity.emergency: return 'flood_emergency';
@@ -117,10 +113,10 @@ class AlertNotificationBridge {
 
   static String _severityTopic(AlertSeverity s) {
     switch (s) {
-      case AlertSeverity.emergency: return FcmTopics.emergency;
-      case AlertSeverity.critical:  return FcmTopics.critical;
-      case AlertSeverity.warning:   return FcmTopics.warning;
-      case AlertSeverity.info:      return FcmTopics.info;
+      case AlertSeverity.emergency: return _Topics.emergency;
+      case AlertSeverity.critical:  return _Topics.critical;
+      case AlertSeverity.warning:   return _Topics.warning;
+      case AlertSeverity.info:      return _Topics.info;
     }
   }
 }

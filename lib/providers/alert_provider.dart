@@ -1,4 +1,5 @@
 // lib/providers/alert_provider.dart
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/alert_engine.dart';
 import 'data_fetch_provider.dart';
@@ -13,6 +14,9 @@ final alertProviderInstance = ChangeNotifierProvider<AlertProvider>(
   },
 );
 
+// Alias so legacy screens can still do ref.watch(alertProvider)
+final alertProvider = alertProviderInstance;
+
 class AlertProvider extends ChangeNotifier {
   List<FloodAlert> _alerts = [];
 
@@ -25,6 +29,10 @@ class AlertProvider extends ChangeNotifier {
   List<FloodAlert> get watches  => _alerts.where(
       (a) => a.severity == AlertSeverity.info).toList();
 
+  int get dangerCount =>
+      _alerts.where((a) =>
+          a.severity == AlertSeverity.critical ||
+          a.severity == AlertSeverity.emergency).length;
   int get infoCount =>
       _alerts.where((a) => a.severity == AlertSeverity.info).length;
 

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../services/alert_engine.dart';
 import '../../models/river_station.dart';
 import '../../theme/app_palette.dart';
-import '../../theme/river_colors.dart';
 
 class DistrictBottomSheet extends StatelessWidget {
   final String             district;
@@ -21,8 +20,8 @@ class DistrictBottomSheet extends StatelessWidget {
   }
 
   static AlertSeverity _sev(RiverStation s) {
-    if (s.hfl > 0 && s.current >= s.hfl)       return AlertSeverity.emergency;
-    if (s.danger > 0 && s.current >= s.danger)  return AlertSeverity.emergency;
+    if (s.hfl > 0 && s.current >= s.hfl)        return AlertSeverity.emergency;
+    if (s.danger > 0 && s.current >= s.danger)   return AlertSeverity.emergency;
     if (s.warning > 0 && s.current >= s.warning) return AlertSeverity.critical;
     if (s.progressPct >= 0.75)                   return AlertSeverity.warning;
     return AlertSeverity.info;
@@ -48,7 +47,8 @@ class DistrictBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t     = RiverColors.of(context);
+    // Use Theme.of() — no dependency on RiverColors.surface
+    final cs    = Theme.of(context).colorScheme;
     final worst = _worst;
     final color = _sevColor(worst);
 
@@ -59,8 +59,9 @@ class DistrictBottomSheet extends StatelessWidget {
       expand: false,
       builder: (_, ctrl) => Container(
         decoration: BoxDecoration(
-          color: t.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          color: cs.surface,
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           children: [
@@ -68,8 +69,9 @@ class DistrictBottomSheet extends StatelessWidget {
             Container(
               width: 40, height: 4,
               decoration: BoxDecoration(
-                  color: t.textSecondary.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(2)),
+                color: cs.onSurface.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
             Padding(
               padding: const EdgeInsets.all(16),
@@ -78,7 +80,7 @@ class DistrictBottomSheet extends StatelessWidget {
                   Expanded(
                     child: Text(district,
                         style: TextStyle(
-                            color: t.textPrimary,
+                            color: cs.onSurface,
                             fontSize: 18,
                             fontWeight: FontWeight.bold)),
                   ),
@@ -86,7 +88,7 @@ class DistrictBottomSheet extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.15),
+                      color:  color.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(_sevLabel(worst),
@@ -108,13 +110,13 @@ class DistrictBottomSheet extends StatelessWidget {
                   final c   = _sevColor(sev);
                   return ListTile(
                     leading: Icon(Icons.water, color: c),
-                    title:   Text(s.station,
-                        style: TextStyle(color: t.textPrimary)),
+                    title: Text(s.station,
+                        style: TextStyle(color: cs.onSurface)),
                     subtitle: Text(
                         '${s.river} · ${s.current.toStringAsFixed(2)} m '
                         '/ DL ${s.danger.toStringAsFixed(2)} m',
                         style: TextStyle(
-                            color: t.textSecondary, fontSize: 12)),
+                            color: cs.onSurfaceVariant, fontSize: 12)),
                     trailing: Text(_sevLabel(sev),
                         style: TextStyle(
                             color: c,
