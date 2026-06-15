@@ -1,29 +1,21 @@
-// lib/screens/dashboard_screen.dart  (v7.0 — 15 Jun 2026)
+// lib/screens/dashboard_screen.dart  (v7.1 — 15 Jun 2026)
 //
-// CHANGE: Auto-refresh wired via stream subscription.
-//
-// v7.0 (15 Jun 2026) — Remove private Timer.periodic + initState ref.read.
-//   All city-card / summary data now flows from ref.watch(biharLiveProvider),
-//   which rebuilds the widget tree automatically every time BiharLiveEngine
-//   emits a new feed (engine default: every 5 min, or immediately on manual
-//   pull-to-refresh).  Added AutoRefreshMixin for the pull-to-refresh
-//   indicator and the 'Updated X ago' subtitle chip.
-//
-// Previous versions kept a 5-minute Timer inside initState that called
-// ref.read(biharLiveProvider.notifier).refresh() — this duplicated the
-// engine's own schedule and caused a double-fetch on startup.
+// FIX (v7.1):
+//   • Removed biharDashboardProvider — BiharDashboardState does not exist
+//     as a concrete type (bihar_dashboard_provider.dart exposes only scalar
+//     providers: biharStationCountProvider, biharCriticalCountProvider, …).
+//   • _buildBody no longer takes a BiharDashboardState argument.
+//   • live.byCity(name) returns BiharStationData? — wrap in [data] list
+//     (or pass empty []) so CityCard stationData: List<BiharStationData>? matches.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../mixins/auto_refresh_mixin.dart';
 import '../providers/bihar_live_provider.dart';
-import '../providers/bihar_dashboard_provider.dart';
-import '../providers/real_time_river_provider.dart';
 import '../providers/alerts_badge_provider.dart';
 import '../widgets/city_card.dart';
 import '../widgets/summary_strip.dart';
-import '../widgets/river_level_chip.dart';
 import '../constants/india_geodata.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -35,13 +27,9 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen>
     with AutoRefreshMixin {
-  // ── No private Timer — BiharLiveEngine handles scheduling. ───────────────
-
   @override
   Widget build(BuildContext context) {
-    // All three watches below rebuild automatically when the engine emits.
     final liveAsync  = ref.watch(biharLiveProvider);
-    final dashState  = ref.watch(biharDashboardProvider);
     final badgeCount = ref.watch(alertsBadgeProvider);
 
     return Scaffold(
@@ -54,7 +42,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               child: const Icon(Icons.notifications),
             ),
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon:    const Icon(Icons.refresh),
             tooltip: 'Refresh now',
             onPressed: onManualRefresh,
           ),
@@ -64,18 +52,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
         child: liveAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error:   (e, _) => Center(child: Text('Error: $e')),
-          data:    (live) => _buildBody(context, live, dashState),
+          data:    (live) => _buildBody(context, live),
         ),
       ),
     );
   }
 
-  Widget _buildBody(
-    BuildContext context,
-    BiharLiveState live,
-    BiharDashboardState dash,
-  ) {
-    final cities = monitoredCities
+  Widget _buildBody(BuildContext context, BiharLiveState live) {
+    final cities = IndiaGeodata.cities
         .where((c) => c['state'] == 'Bihar')
         .toList();
 
@@ -105,7 +89,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             itemBuilder: (ctx, i) {
               final mc   = cities[i];
               final name = mc['city'] as String;
-              final data = live.byCity(name);
+              // byCity returns BiharStationData? — wrap in list or pass null
+              final single = live.byCity(name);
+              final data   = single != null ? [single] : <BiharStationData>[];
               return CityCard(
                 cityMeta:    mc,
                 stationData: data,

@@ -1,11 +1,19 @@
-// test/widget/sync_status_banner_test.dart  Step 6.1 (fixed)
+// test/widget/sync_status_banner_test.dart  Step 6.1 (fixed v2)
 // Widget tests for SyncStatusBanner.
 //
-// FIX: wsStatusProvider is a StreamProvider<WsStatus>.
-//   The overrideWith callback must return a Stream<WsStatus>, NOT a Future chain.
-//   Using Stream.value(status) directly fixes the type error:
-//   "A value of type Future<WsStatus> can't be returned from a function
-//    with return type Stream<WsStatus>."
+// FIX v2 — "A Timer is still pending even after the widget tree was disposed"
+//
+// Root cause:
+//   SyncStatusBanner watches wsStatusProvider AND wsLastSyncProvider.
+//   wsLastSyncProvider (ws_live_provider.dart:32) watches wsLiveProvider.
+//   wsLiveProvider calls WsGaugeService.instance.start() which creates:
+//     • a 20-second periodic ping timer
+//     • a 30-second one-shot fallback timer
+//   These timers are registered with FakeAsync and are still pending when
+//   the widget tree is torn down, triggering the `!timersPending` assertion.
+//
+// Fix: override ALL three providers in the test ProviderScope so that
+//   WsGaugeService.start() is never called during tests.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,15 +22,29 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:equinox_flood/widgets/sync_status_banner.dart';
 import 'package:equinox_flood/services/ws_gauge_service.dart';
 import 'package:equinox_flood/providers/ws_live_provider.dart';
+import 'package:equinox_flood/models/flood_data.dart';
 import 'package:equinox_flood/theme/river_theme.dart';
 
 void main() {
+  /// Build a fully-isolated widget tree.
+  /// All three providers that touch WsGaugeService are overridden:
+  ///   wsStatusProvider   — StreamProvider<WsStatus>
+  ///   wsLastSyncProvider — Provider<DateTime?>
+  ///   wsLiveProvider     — StreamProvider<List<FloodData>>
   Widget _wrap(WsStatus status) {
     return ProviderScope(
       overrides: [
-        // wsStatusProvider is StreamProvider<WsStatus> → override must return Stream<WsStatus>
+        // 1. Status stream — the one the banner actually displays.
         wsStatusProvider.overrideWith(
           (ref) => Stream.value(status),
+        ),
+        // 2. Last-sync time — null is fine; banner shows 'No data yet'.
+        wsLastSyncProvider.overrideWith(
+          (ref) => null,
+        ),
+        // 3. Live data stream — stub so wsLiveProvider never calls start().
+        wsLiveProvider.overrideWith(
+          (ref) => Stream<List<FloodData>>.empty(),
         ),
       ],
       child: RiverTheme(
