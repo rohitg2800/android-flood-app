@@ -1,19 +1,12 @@
 // lib/theme/theme_3d.dart
-// OpsFlood — Global 3-D UI System v1
+// OpsFlood — Global 3-D UI System v2
 //
-// Provides:
-//   • Td3Card          — any card with depth shadow + specular highlight
-//   • Td3Button        — press-to-sink 3-D button
-//   • Td3Chip          — pill chip with emboss
-//   • Td3ProgressBar   — layered depth progress track
-//   • Td3StatTile      — KPI tile with raised number + depth glow
-//   • Td3Badge         — floating badge with hard drop-shadow
-//   • Td3SectionHeader — uppercase section label (optional accentColor)
-//   • Td3Divider       — 1-px rule
-//   • Td3AppBar        — SliverAppBar with layered bottom edge (optional subtitle)
-//   • Td3BottomNav     — BottomNavBar with floating pill indicator
-//   • Td3InputField    — recessed 3-D input (optional `required` + `readOnly` + `suffixWidget` flags)
-//   • Td3Painters      — CustomPainter helpers (gloss overlay, depth edge)
+// Changes from v1:
+//  • All withOpacity() replaced with withValues(alpha:)
+//  • Td3SectionHeader: accent gradient underline bar + glow
+//  • Td3Card: uses t.stroke instead of hardcoded 0x1AFFFFFF border
+//  • Td3Badge: supports `severity` string for auto status-colour
+//  • Td3StatTile: tighter layout stays overflow-safe
 library;
 
 import 'dart:math' as math;
@@ -27,11 +20,11 @@ import 'river_theme.dart';
 class Td3 {
   Td3._();
 
-  static const double elevFlush   = 0;
-  static const double elevLow     = 2;
-  static const double elevMid     = 4;
-  static const double elevHigh    = 8;
-  static const double elevFloat   = 14;
+  static const double elevFlush  = 0;
+  static const double elevLow    = 2;
+  static const double elevMid    = 4;
+  static const double elevHigh   = 8;
+  static const double elevFloat  = 14;
 
   static const double glossStrong = 0.22;
   static const double glossMid    = 0.13;
@@ -47,71 +40,50 @@ class Td3 {
   static const Duration pressDown = Duration(milliseconds: 80);
   static const Duration pressUp   = Duration(milliseconds: 160);
 
-  static List<BoxShadow> cardShadow(Color accent, {double elev = elevMid}) =>
-      [
-        BoxShadow(
-          color: shadowDark,
-          blurRadius: elev * 0.8,
-          spreadRadius: -elev * 0.3,
-          offset: Offset(0, elev * 0.5),
-        ),
-        BoxShadow(
-          color: shadowLight,
-          blurRadius: elev * 3,
-          spreadRadius: 0,
-          offset: Offset(0, elev * 1.5),
-        ),
-        BoxShadow(
-          color: accent.withValues(alpha: 0.08),
-          blurRadius: elev * 4,
-          spreadRadius: elev * 0.2,
-          offset: Offset(0, elev * 2),
-        ),
-      ];
+  static List<BoxShadow> cardShadow(Color accent, {double elev = elevMid}) => [
+    BoxShadow(
+      color:        shadowDark,
+      blurRadius:   elev * 0.8,
+      spreadRadius: -elev * 0.3,
+      offset:       Offset(0, elev * 0.5),
+    ),
+    BoxShadow(
+      color:      shadowLight,
+      blurRadius: elev * 3,
+      offset:     Offset(0, elev * 1.5),
+    ),
+    BoxShadow(
+      color:        accent.withValues(alpha: 0.08),
+      blurRadius:   elev * 4,
+      spreadRadius: elev * 0.2,
+      offset:       Offset(0, elev * 2),
+    ),
+  ];
 
   static List<BoxShadow> pressedShadow() => [
-        BoxShadow(
-          color: shadowDark,
-          blurRadius: 2,
-          spreadRadius: 1,
-          offset: const Offset(0, 1),
-        ),
-      ];
+    BoxShadow(
+      color:        shadowDark,
+      blurRadius:   2,
+      spreadRadius: 1,
+      offset:       const Offset(0, 1),
+    ),
+  ];
 
   static List<BoxShadow> badgeShadow(Color c) => [
-        BoxShadow(
-            color: c.withValues(alpha: 0.50),
-            blurRadius: 6,
-            offset: const Offset(0, 3)),
-        BoxShadow(
-            color: shadowDark,
-            blurRadius: 2,
-            offset: const Offset(0, 1)),
-      ];
+    BoxShadow(color: c.withValues(alpha: 0.50), blurRadius: 6, offset: const Offset(0, 3)),
+    BoxShadow(color: shadowDark, blurRadius: 2, offset: const Offset(0, 1)),
+  ];
 
   static Border depthBorder({
     Color? topColor,
     Color? bottomColor,
     double width = 1.0,
-  }) =>
-      Border(
-        top: BorderSide(
-          color: topColor ?? const Color(0x33FFFFFF),
-          width: width,
-        ),
-        bottom: BorderSide(
-          color: bottomColor ?? edgeMid,
-          width: width,
-        ),
-        left: BorderSide(
-          color: const Color(0x18FFFFFF),
-          width: width * 0.5,
-        ),
-        right: BorderSide(
-          color: edgeDark.withAlpha(0x22),
-          width: width * 0.5,
-        ),
-      );
+  }) => Border(
+    top:    BorderSide(color: topColor    ?? const Color(0x33FFFFFF), width: width),
+    bottom: BorderSide(color: bottomColor ?? edgeMid,                 width: width),
+    left:   BorderSide(color: const Color(0x18FFFFFF),                width: width * 0.5),
+    right:  BorderSide(color: const Color(0x22000000),                width: width * 0.5),
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -156,7 +128,7 @@ class Td3Card extends StatelessWidget {
           Material(
             type: MaterialType.transparency,
             child: Padding(
-              padding: padding ?? const EdgeInsets.all(0),
+              padding: padding ?? EdgeInsets.zero,
               child: child,
             ),
           ),
@@ -174,26 +146,14 @@ class Td3Card extends StatelessWidget {
 
     content = Container(
       decoration: BoxDecoration(
-        color: c,
+        color:        c,
         borderRadius: br,
-        boxShadow: Td3.cardShadow(ac, elev: elevation),
+        boxShadow:    Td3.cardShadow(ac, elev: elevation),
+        border:       Border.all(color: t.stroke.withValues(alpha: 0.5), width: 0.75),
       ),
       child: Stack(
         children: [
           content,
-          Positioned.fill(
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: br,
-                  border: Border.all(
-                    color: const Color(0x1AFFFFFF),
-                    width: 0.75,
-                  ),
-                ),
-              ),
-            ),
-          ),
           if (showDepthEdge)
             Positioned.fill(
               child: IgnorePointer(
@@ -201,17 +161,9 @@ class Td3Card extends StatelessWidget {
                   decoration: BoxDecoration(
                     borderRadius: br,
                     border: Border.all(
-                      color: const Color(0x22000000),
+                      color: Colors.white.withValues(alpha: 0.06),
                       width: 0.75,
                     ),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x1A000000),
-                        blurRadius: 0,
-                        spreadRadius: 0,
-                        offset: Offset(0, 1),
-                      ),
-                    ],
                   ),
                 ),
               ),
@@ -281,9 +233,9 @@ class _Td3ButtonState extends State<Td3Button>
       onTapCancel: ()  => setState(() => _pressed = false),
       child: AnimatedContainer(
         duration: _pressed ? Td3.pressDown : Td3.pressUp,
-        curve: Curves.easeOut,
-        width:  widget.width ?? double.infinity,
-        height: widget.height,
+        curve:    Curves.easeOut,
+        width:    widget.width ?? double.infinity,
+        height:   widget.height,
         transform: Matrix4.translationValues(0, sinkY, 0),
         decoration: BoxDecoration(
           borderRadius: br,
@@ -307,15 +259,14 @@ class _Td3ButtonState extends State<Td3Button>
               ? Td3.pressedShadow()
               : [
                   BoxShadow(
-                    color: c.withValues(alpha: 0.45),
+                    color:      c.withValues(alpha: 0.45),
                     blurRadius: 14,
-                    spreadRadius: 0,
-                    offset: const Offset(0, 5),
+                    offset:     const Offset(0, 5),
                   ),
                   BoxShadow(
-                    color: Td3.shadowDark,
+                    color:      Td3.shadowDark,
                     blurRadius: 4,
-                    offset: const Offset(0, 2),
+                    offset:     const Offset(0, 2),
                   ),
                 ],
         ),
@@ -329,7 +280,7 @@ class _Td3ButtonState extends State<Td3Button>
                         width: 22, height: 22,
                         child: CircularProgressIndicator(
                           strokeWidth: 2.5,
-                          valueColor: AlwaysStoppedAnimation(tc),
+                          valueColor:  AlwaysStoppedAnimation(tc),
                         ),
                       )
                     : Row(
@@ -342,9 +293,9 @@ class _Td3ButtonState extends State<Td3Button>
                           Text(
                             widget.label,
                             style: TextStyle(
-                              color: tc,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
+                              color:       tc,
+                              fontSize:    15,
+                              fontWeight:  FontWeight.w700,
                               letterSpacing: 0.3,
                             ),
                           ),
@@ -355,10 +306,7 @@ class _Td3ButtonState extends State<Td3Button>
                 Positioned.fill(
                   child: IgnorePointer(
                     child: CustomPaint(
-                      painter: _GlossPainter(
-                        radius: br,
-                        opacity: Td3.glossStrong,
-                      ),
+                      painter: _GlossPainter(radius: br, opacity: Td3.glossStrong),
                     ),
                   ),
                 ),
@@ -408,7 +356,7 @@ class Td3Chip extends StatelessWidget {
     final c  = color ?? t.accent;
     final bg = selected ? c.withValues(alpha: 0.18) : t.cardBg;
     final br = BorderRadius.circular(24);
-    final fs = fontSize ?? 12;
+    final fs = fontSize ?? 12.0;
 
     return GestureDetector(
       onTap: onTap,
@@ -416,7 +364,7 @@ class Td3Chip extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: bg,
+          color:        bg,
           borderRadius: br,
           border: Border.all(
             color: selected
@@ -425,13 +373,7 @@ class Td3Chip extends StatelessWidget {
             width: selected ? 1.5 : 1.0,
           ),
           boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: c.withValues(alpha: 0.20),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  )
-                ]
+              ? [BoxShadow(color: c.withValues(alpha: 0.20), blurRadius: 8, offset: const Offset(0, 2))]
               : [],
         ),
         child: Row(
@@ -444,9 +386,9 @@ class Td3Chip extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                fontSize: fs,
+                fontSize:   fs,
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                color: selected ? c : t.textSecondary,
+                color:      selected ? c : t.textSecondary,
               ),
             ),
           ],
@@ -461,10 +403,10 @@ class Td3Chip extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class Td3ProgressBar extends StatelessWidget {
-  final double value;
-  final Color? color;
-  final Color? fillColor;
-  final double height;
+  final double  value;
+  final Color?  color;
+  final Color?  fillColor;
+  final double  height;
   final String? label;
 
   const Td3ProgressBar({
@@ -478,9 +420,9 @@ class Td3ProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t  = RiverColors.of(context);
-    final c  = fillColor ?? color ?? t.accent;
-    final v  = value.clamp(0.0, 1.0);
+    final t = RiverColors.of(context);
+    final c = fillColor ?? color ?? t.accent;
+    final v = value.clamp(0.0, 1.0);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -492,18 +434,11 @@ class Td3ProgressBar extends StatelessWidget {
         Container(
           height: height,
           decoration: BoxDecoration(
-            color: t.cardBgElevated,
+            color:        t.cardBgElevated,
             borderRadius: BorderRadius.circular(height / 2),
-            border: Border.all(
-              color: Colors.black.withValues(alpha: 0.14),
-              width: 0.75,
-            ),
+            border:       Border.all(color: Colors.black.withValues(alpha: 0.14), width: 0.75),
             boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.12),
-                blurRadius: 3,
-                offset: const Offset(0, 1),
-              ),
+              BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 3, offset: const Offset(0, 1)),
             ],
           ),
           child: ClipRRect(
@@ -516,13 +451,13 @@ class Td3ProgressBar extends StatelessWidget {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [_lighten(c, 0.10), c, _darken(c, 0.08)],
-                        stops: const [0.0, 0.5, 1.0],
+                        stops:  const [0.0, 0.5, 1.0],
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: c.withValues(alpha: 0.50),
+                          color:      c.withValues(alpha: 0.50),
                           blurRadius: height * 1.5,
-                          offset: Offset(0, height * 0.3),
+                          offset:     Offset(0, height * 0.3),
                         ),
                       ],
                     ),
@@ -532,7 +467,7 @@ class Td3ProgressBar extends StatelessWidget {
                   child: IgnorePointer(
                     child: CustomPaint(
                       painter: _GlossPainter(
-                        radius: BorderRadius.circular(height / 2),
+                        radius:  BorderRadius.circular(height / 2),
                         opacity: Td3.glossSoft,
                       ),
                     ),
@@ -548,7 +483,7 @@ class Td3ProgressBar extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Td3StatTile  — fix: mainAxisSize.min + tighter padding + smaller value font
+// Td3StatTile
 // ─────────────────────────────────────────────────────────────────────────────
 
 class Td3StatTile extends StatelessWidget {
@@ -574,35 +509,33 @@ class Td3StatTile extends StatelessWidget {
     final t = RiverColors.of(context);
     return Td3Card(
       accentColor: valueColor,
-      elevation: Td3.elevHigh,
-      onTap: onTap,
+      elevation:   Td3.elevHigh,
+      onTap:       onTap,
       child: Padding(
-        // Reduced from vertical:14 → vertical:10 to prevent overflow in
-        // tight tiles (e.g. _StatTile row constrained to ~64 px height).
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Column(
-          mainAxisSize: MainAxisSize.min,   // ← key fix: shrink-wrap
+          mainAxisSize:     MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (icon != null) ...[
-              Icon(icon, color: valueColor, size: 16),   // 18 → 16
-              const SizedBox(height: 4),                 // 8  → 4
+              Icon(icon, color: valueColor, size: 16),
+              const SizedBox(height: 4),
             ],
             Text(
               value,
               style: TextStyle(
-                color: valueColor ?? t.accent,
-                fontSize: 22,               // 26 → 22
+                color:      valueColor ?? t.accent,
+                fontSize:   22,
                 fontWeight: FontWeight.w800,
-                height: 1.0,
+                height:     1.0,
               ),
             ),
-            const SizedBox(height: 2),      // 4  → 2
+            const SizedBox(height: 2),
             Text(
               label,
               style: TextStyle(
-                color: t.textSecondary,
-                fontSize: 11,
+                color:      t.textSecondary,
+                fontSize:   11,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -621,6 +554,9 @@ class Td3Badge extends StatelessWidget {
   final String  text;
   final Color?  color;
   final double  fontSize;
+  /// Optional flood-alert severity string ('SAFE','WARNING','SEVERE','DANGER','CRITICAL')
+  /// If provided, overrides [color].
+  final String? severity;
 
   const Td3Badge({
     super.key,
@@ -628,32 +564,31 @@ class Td3Badge extends StatelessWidget {
     String? label,
     this.color,
     this.fontSize = 10,
-  })  : assert(text != null || label != null,
-            'Td3Badge requires either text or label'),
+    this.severity,
+  })  : assert(text != null || label != null, 'Td3Badge requires text or label'),
         text = text ?? label!;
 
   @override
   Widget build(BuildContext context) {
     final t = RiverColors.of(context);
-    final c = color ?? t.accent;
+    final c = severity != null
+        ? AppPalette.statusColor(severity!)
+        : (color ?? t.accent);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
       decoration: BoxDecoration(
-        color: c,
+        color:        c,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: Td3.badgeShadow(c),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.25),
-          width: 0.75,
-        ),
+        boxShadow:    Td3.badgeShadow(c),
+        border:       Border.all(color: Colors.white.withValues(alpha: 0.25), width: 0.75),
       ),
       child: Text(
         text,
         style: TextStyle(
-          fontSize: fontSize,
-          fontWeight: FontWeight.w800,
-          color: Colors.white,
+          fontSize:    fontSize,
+          fontWeight:  FontWeight.w800,
+          color:       Colors.white,
           letterSpacing: 0.3,
         ),
       ),
@@ -662,28 +597,62 @@ class Td3Badge extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Td3SectionHeader
+// Td3SectionHeader  (v2 — accent gradient underline)
 // ─────────────────────────────────────────────────────────────────────────────
 
 class Td3SectionHeader extends StatelessWidget {
   final String text;
   final Color? accentColor;
+  final bool   showLine;
 
-  const Td3SectionHeader(this.text, {super.key, this.accentColor});
+  const Td3SectionHeader(
+    this.text, {
+    super.key,
+    this.accentColor,
+    this.showLine = true,
+  });
 
   @override
   Widget build(BuildContext context) {
     final t = RiverColors.of(context);
+    final c = accentColor ?? t.accent;
+
     return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 6),
-      child: Text(
-        text.toUpperCase(),
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: accentColor ?? t.textSecondary,
-          letterSpacing: 1.2,
-        ),
+      padding: const EdgeInsets.only(left: 4, bottom: 10, top: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            text.toUpperCase(),
+            style: TextStyle(
+              fontSize:      11,
+              fontWeight:    FontWeight.w800,
+              color:         c,
+              letterSpacing: 1.4,
+            ),
+          ),
+          if (showLine) ...[
+            const SizedBox(height: 5),
+            Container(
+              height: 2,
+              width:  40,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(2),
+                gradient: LinearGradient(
+                  colors: [c, c.withValues(alpha: 0.0)],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color:      c.withValues(alpha: 0.50),
+                    blurRadius: 6,
+                    offset:     const Offset(0, 1),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -701,7 +670,7 @@ class Td3Divider extends StatelessWidget {
     final t = RiverColors.of(context);
     return Container(
       height: 1,
-      color: t.divider.withValues(alpha: 0.5),
+      color:  t.divider.withValues(alpha: 0.5),
     );
   }
 }
@@ -732,27 +701,19 @@ class Td3AppBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = RiverColors.of(context);
     return SliverAppBar(
-      pinned:         pinned,
-      expandedHeight: subtitle != null ? expandedHeight + 18 : expandedHeight,
+      pinned:          pinned,
+      expandedHeight:  subtitle != null ? expandedHeight + 18 : expandedHeight,
       backgroundColor: t.bg,
-      leading: leading,
-      actions: actions,
+      leading:         leading,
+      actions:         actions,
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(1),
         child: Container(
           height: 1,
           decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(
-                color: t.divider.withValues(alpha: 0.8),
-              ),
-            ),
+            border: Border(bottom: BorderSide(color: t.divider.withValues(alpha: 0.8))),
             boxShadow: [
-              BoxShadow(
-                color: Td3.shadowLight,
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
+              BoxShadow(color: Td3.shadowLight, blurRadius: 6, offset: const Offset(0, 2)),
             ],
           ),
         ),
@@ -761,25 +722,25 @@ class Td3AppBar extends StatelessWidget {
         titlePadding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 12),
         title: subtitle != null
             ? Column(
-                mainAxisSize: MainAxisSize.min,
+                mainAxisSize:     MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
                     style: TextStyle(
-                      color: t.textPrimary,
-                      fontSize: 18,
+                      color:      t.textPrimary,
+                      fontSize:   18,
                       fontWeight: FontWeight.w700,
-                      height: 1.1,
+                      height:     1.1,
                     ),
                   ),
                   Text(
                     subtitle!,
                     style: TextStyle(
-                      color: t.textSecondary,
-                      fontSize: 11,
+                      color:      t.textSecondary,
+                      fontSize:   11,
                       fontWeight: FontWeight.w500,
-                      height: 1.3,
+                      height:     1.3,
                     ),
                   ),
                 ],
@@ -787,8 +748,8 @@ class Td3AppBar extends StatelessWidget {
             : Text(
                 title,
                 style: TextStyle(
-                  color: t.textPrimary,
-                  fontSize: 18,
+                  color:      t.textPrimary,
+                  fontSize:   18,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -823,15 +784,9 @@ class Td3BottomNav extends StatelessWidget {
       height: 64 + MediaQuery.of(context).padding.bottom,
       decoration: BoxDecoration(
         color: t.bg,
-        border: Border(
-          top: BorderSide(color: t.divider, width: 0.75),
-        ),
+        border: Border(top: BorderSide(color: t.divider, width: 0.75)),
         boxShadow: [
-          BoxShadow(
-            color: Td3.shadowMid,
-            blurRadius: 12,
-            offset: const Offset(0, -4),
-          ),
+          BoxShadow(color: Td3.shadowMid, blurRadius: 12, offset: const Offset(0, -4)),
         ],
       ),
       child: Stack(
@@ -845,24 +800,22 @@ class Td3BottomNav extends StatelessWidget {
                 return Expanded(
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
-                    onTap: () => onTap(i),
+                    onTap:    () => onTap(i),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
                           selected ? item.activeIcon : item.icon,
                           color: selected ? t.accent : t.textSecondary,
-                          size: 22,
+                          size:  22,
                         ),
                         const SizedBox(height: 2),
                         Text(
                           item.label,
                           style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: selected
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                            color: selected ? t.accent : t.textSecondary,
+                            fontSize:   10,
+                            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                            color:      selected ? t.accent : t.textSecondary,
                           ),
                         ),
                       ],
@@ -872,22 +825,23 @@ class Td3BottomNav extends StatelessWidget {
               }),
             ),
           ),
+          // Animated active-tab indicator pill
           AnimatedPositioned(
             duration: const Duration(milliseconds: 280),
-            curve: Curves.easeOutCubic,
-            left: (sw / items.length) * currentIndex + 12,
-            top:  6,
-            width: (sw / items.length) - 24,
-            height: 3,
+            curve:    Curves.easeOutCubic,
+            left:     (sw / items.length) * currentIndex + 12,
+            top:      6,
+            width:    (sw / items.length) - 24,
+            height:   3,
             child: Container(
               decoration: BoxDecoration(
-                color: t.accent,
+                color:        t.accent,
                 borderRadius: BorderRadius.circular(2),
                 boxShadow: [
                   BoxShadow(
-                    color: t.accent.withValues(alpha: 0.5),
+                    color:      t.accent.withValues(alpha: 0.5),
                     blurRadius: 6,
-                    offset: const Offset(0, 1),
+                    offset:     const Offset(0, 1),
                   ),
                 ],
               ),
@@ -936,8 +890,8 @@ class Td3InputField extends StatefulWidget {
     this.onChanged,
     this.keyboardType,
     this.obscureText = false,
-    this.required = false,
-    this.readOnly = false,
+    this.required    = false,
+    this.readOnly    = false,
     this.suffixWidget,
   });
 
@@ -963,8 +917,8 @@ class _Td3InputFieldState extends State<Td3InputField> {
 
   @override
   Widget build(BuildContext context) {
-    final t  = RiverColors.of(context);
-    final br = BorderRadius.circular(12);
+    final t         = RiverColors.of(context);
+    final br        = BorderRadius.circular(12);
     final labelText = widget.required ? '${widget.label} *' : widget.label;
 
     return Column(
@@ -973,9 +927,9 @@ class _Td3InputFieldState extends State<Td3InputField> {
         Text(
           labelText,
           style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: t.textSecondary,
+            fontSize:      12,
+            fontWeight:    FontWeight.w600,
+            color:         t.textSecondary,
             letterSpacing: 0.5,
           ),
         ),
@@ -983,7 +937,7 @@ class _Td3InputFieldState extends State<Td3InputField> {
         AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
-            color: t.cardBgElevated,
+            color:        t.cardBgElevated,
             borderRadius: br,
             border: Border.all(
               color: _focused
@@ -992,40 +946,26 @@ class _Td3InputFieldState extends State<Td3InputField> {
               width: _focused ? 1.5 : 1.0,
             ),
             boxShadow: _focused
-                ? [
-                    BoxShadow(
-                      color: t.accent.withValues(alpha: 0.15),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 3,
-                      offset: const Offset(0, 1),
-                    ),
-                  ],
+                ? [BoxShadow(color: t.accent.withValues(alpha: 0.15), blurRadius: 8, offset: const Offset(0, 2))]
+                : [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 3, offset: const Offset(0, 1))],
           ),
           child: TextField(
-            focusNode:      _focus,
-            controller:     widget.controller,
-            onChanged:      widget.onChanged,
-            keyboardType:   widget.keyboardType,
-            obscureText:    widget.obscureText,
-            readOnly:       widget.readOnly,
-            style: TextStyle(color: t.textPrimary, fontSize: 14),
+            focusNode:    _focus,
+            controller:   widget.controller,
+            onChanged:    widget.onChanged,
+            keyboardType: widget.keyboardType,
+            obscureText:  widget.obscureText,
+            readOnly:     widget.readOnly,
+            style:        TextStyle(color: t.textPrimary, fontSize: 14),
             decoration: InputDecoration(
-              hintText:      widget.hint,
-              hintStyle:     TextStyle(color: t.textSecondary),
-              prefixIcon:    widget.icon != null
+              hintText:       widget.hint,
+              hintStyle:      TextStyle(color: t.textSecondary),
+              prefixIcon:     widget.icon != null
                   ? Icon(widget.icon, color: t.textSecondary, size: 18)
                   : null,
-              suffixIcon:    widget.suffixWidget,
-              border:        InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 14, vertical: 12,
-              ),
+              suffixIcon:     widget.suffixWidget,
+              border:         InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             ),
           ),
         ),
@@ -1078,7 +1018,7 @@ class _GlossPainter extends CustomPainter {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Utility
+// Utility  (kept for rare direct use)
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ignore: unused_element
