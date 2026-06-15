@@ -82,11 +82,13 @@ if _is_package_context():
     from backend.routers.fcm import router as fcm_router
     from backend.routers.data_gov_cwc import router as data_gov_cwc_router
     from backend.routers.model_artifacts import router as model_artifacts_router
+    from backend.routers.metrics import router as metrics_router          # P3
     # ── Flutter-facing routes ────────────────────────────────────────────────
     from backend.routers.glofas import router as glofas_router
     from backend.routers.rainfall import router as rainfall_router
     from backend.routers.cwc_stations import router as cwc_stations_router
     from backend.routers.news import router as news_router
+    from backend.ml.bootstrap_model import ensure_model_exists            # P2
 else:
     from data_pipeline import IngestionTarget, OperationalDataPipeline, ScheduledIngestionService
     from state_severity_matrix import (
@@ -116,11 +118,13 @@ else:
     from routers.fcm import router as fcm_router
     from routers.data_gov_cwc import router as data_gov_cwc_router
     from routers.model_artifacts import router as model_artifacts_router
+    from routers.metrics import router as metrics_router                  # P3
     # ── Flutter-facing routes ────────────────────────────────────────────────
     from routers.glofas import router as glofas_router
     from routers.rainfall import router as rainfall_router
     from routers.cwc_stations import router as cwc_stations_router
     from routers.news import router as news_router
+    from ml.bootstrap_model import ensure_model_exists                   # P2
 
 
 warnings.filterwarnings('ignore')
@@ -512,6 +516,23 @@ def start_wrd_bihar_eager_warm() -> None:
     t.start()
 
 
+# ---------------------------------------------------------------------------
+# P2: Bootstrap model — ensure saved model exists before serving predictions
+# ---------------------------------------------------------------------------
+
+def _run_model_bootstrap() -> None:
+    """Runs in a daemon thread at startup. Non-blocking, non-fatal."""
+    try:
+        ensure_model_exists()
+    except Exception as exc:
+        logger.warning(f"[Bootstrap] Model bootstrap failed (non-fatal): {exc}")
+
+
+def start_model_bootstrap() -> None:
+    t = threading.Thread(target=_run_model_bootstrap, name="model_bootstrap", daemon=True)
+    t.start()
+
+
 # ── FastAPI application ─────────────────────────────────────────────────────────────────────
 app = FastAPI(
     title="OpsFlood API",
@@ -538,6 +559,7 @@ app.include_router(cwc_ffs_router)
 app.include_router(fcm_router)
 app.include_router(data_gov_cwc_router)
 app.include_router(model_artifacts_router)
+app.include_router(metrics_router)             # P3: /metrics endpoints
 # ── Flutter-facing routes ────────────────────────────────────────────────
 app.include_router(glofas_router)
 app.include_router(rainfall_router)
@@ -548,6 +570,13 @@ app.include_router(news_router)            # GET /api/news
 @app.on_event("startup")
 async def startup_event():
     logger.info("OpsFlood API starting up — version 1.3.0")
+
+    # P2: Bootstrap model artifact if saved_models/ is empty (daemon thread — non-blocking)
+    try:
+        start_model_bootstrap()
+        logger.info("[Bootstrap] Model bootstrap thread launched")
+    except Exception as exc:
+        logger.warning(f"[Bootstrap] Thread launch failed (non-fatal): {exc}")
 
     try:
         start_wrd_bihar_eager_warm()
