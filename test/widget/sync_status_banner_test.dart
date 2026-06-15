@@ -1,25 +1,32 @@
 // test/widget/sync_status_banner_test.dart  Step 6.1
 // Widget tests for SyncStatusBanner:
-//   • renders nothing (zero height) when status is Live
-//   • shows orange banner when status is Connecting
-//   • shows red banner when status is Offline
-//   • shows amber banner when status is Stale (> 5 min old)
+//   • renders hidden (height 0) when status is WsStatus.connected (Live)
+//   • shows Connecting banner when status is WsStatus.connecting
+//   • shows Offline banner  when status is WsStatus.offline
+//   • shows Polling banner  when status is WsStatus.fallback (Stale)
 //
-// fix(D): flood_app → equinox_flood package name (pubspec.yaml name:)
+// fix(E): Rewrote to use WsStatus / wsStatusProvider (actual API).
+//   The old test used SyncStatus/syncStatusProvider which never existed;
+//   SyncStatusBanner internally watches wsStatusProvider (WsStatus enum).
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:equinox_flood/widgets/sync_status_banner.dart';
-import 'package:equinox_flood/providers/flood_providers.dart';
+import 'package:equinox_flood/services/ws_gauge_service.dart';
+import 'package:equinox_flood/providers/ws_live_provider.dart';
 import 'package:equinox_flood/theme/river_theme.dart';
 
 void main() {
-  Widget _wrap(SyncStatus status) {
+  Widget _wrap(WsStatus status) {
     return ProviderScope(
       overrides: [
-        syncStatusProvider.overrideWith((_) => status),
+        wsStatusProvider.overrideWith(
+          (ref) => Stream.value(status).first
+              .then((s) => AsyncValue.data(s))
+              .then((_) => status),
+        ),
       ],
       child: RiverTheme(
         child: const MaterialApp(
@@ -29,40 +36,33 @@ void main() {
     );
   }
 
-  // ── 1. Live → hidden
-  testWidgets('SyncStatusBanner is invisible when Live', (tester) async {
-    await tester.pumpWidget(_wrap(SyncStatus.live));
+  // ── 1. Connected → banner hidden (height=0)
+  testWidgets('SyncStatusBanner is hidden when Connected', (tester) async {
+    await tester.pumpWidget(_wrap(WsStatus.connected));
     await tester.pumpAndSettle();
-
-    // SizedBox.shrink renders as 0-size
-    final sized = tester.widget<SizedBox>(find.byType(SizedBox).first);
-    expect(sized.height, isNull); // SizedBox.shrink has no height set
-    // Alternatively: no text visible
+    // LIVE state → AnimatedContainer height=0, no text visible
     expect(find.text('LIVE'), findsNothing);
   });
 
-  // ── 2. Connecting → orange chip
-  testWidgets('SyncStatusBanner shows Connecting chip', (tester) async {
-    await tester.pumpWidget(_wrap(SyncStatus.connecting));
+  // ── 2. Connecting → banner shown with 'Connecting…'
+  testWidgets('SyncStatusBanner shows Connecting banner', (tester) async {
+    await tester.pumpWidget(_wrap(WsStatus.connecting));
     await tester.pumpAndSettle();
-
     expect(find.textContaining('Connecting'), findsOneWidget);
   });
 
-  // ── 3. Offline → red chip with icon
-  testWidgets('SyncStatusBanner shows Offline chip', (tester) async {
-    await tester.pumpWidget(_wrap(SyncStatus.offline));
+  // ── 3. Offline → banner shown with 'Offline' text + cloud_off icon
+  testWidgets('SyncStatusBanner shows Offline banner', (tester) async {
+    await tester.pumpWidget(_wrap(WsStatus.offline));
     await tester.pumpAndSettle();
-
     expect(find.textContaining('Offline'), findsOneWidget);
-    expect(find.byIcon(Icons.wifi_off_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.cloud_off_rounded), findsOneWidget);
   });
 
-  // ── 4. Stale → amber chip
-  testWidgets('SyncStatusBanner shows Stale chip', (tester) async {
-    await tester.pumpWidget(_wrap(SyncStatus.stale));
+  // ── 4. Fallback → banner shown with 'Polling' text
+  testWidgets('SyncStatusBanner shows Polling banner for fallback', (tester) async {
+    await tester.pumpWidget(_wrap(WsStatus.fallback));
     await tester.pumpAndSettle();
-
-    expect(find.textContaining('Stale'), findsOneWidget);
+    expect(find.textContaining('Polling'), findsOneWidget);
   });
 }

@@ -3,6 +3,8 @@
 //   • saveGaugeList / loadGaugeList  — persists the latest FloodData list
 //   • appendGaugeHistory / loadGaugeHistory — 7-day rolling level history
 //   • isStale flag: true if cache is older than 30 minutes
+//
+// v4.3.1: add setInstanceForTesting() so widget tests can inject a mock.
 
 import 'dart:convert';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -17,7 +19,15 @@ const _kMaxHistoryDays = 7;
 
 class LocalCacheService {
   LocalCacheService._();
-  static final LocalCacheService instance = LocalCacheService._();
+  static LocalCacheService _instance = LocalCacheService._();
+  static LocalCacheService get instance => _instance;
+
+  /// Test-only: inject a mock or stub in place of the real singleton.
+  /// Call this in setUp() before the widget is pumped.
+  @visibleForTesting
+  static void setInstanceForTesting(LocalCacheService mock) {
+    _instance = mock;
+  }
 
   Box? _gaugeBox;
   Box? _historyBox;
@@ -72,7 +82,7 @@ class LocalCacheService {
     return raw != null ? DateTime.tryParse(raw) : null;
   }
 
-  // ── 7-day gauge level history ────────────────────────────────────────────────
+  // ── 7-day gauge level history ──────────────────────────────────────────────
   // Stores a list of `{ts: iso8601, level: double}` JSON objects per station.
 
   Future<void> appendGaugeHistory(
