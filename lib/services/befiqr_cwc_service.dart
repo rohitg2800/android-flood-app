@@ -1,16 +1,19 @@
-// lib/services/befiqr_cwc_service.dart  v3.2
+// lib/services/befiqr_cwc_service.dart  v3.3
 //
 // Live CWC + WRD Bihar station data — 5-source parallel scraper
 //
-// v3.2 (15 Jun 2026) — expose static seedStations getter:
-//   source_policy_provider.dart needs the 32-station embedded snapshot for
-//   its tertiary (offline) fallback WITHOUT making a network call.  The
-//   private _seedStations getter is now accessible via the public static
-//   BefiqrCwcService.seedStations.
+// v3.3 (15 Jun 2026) — resilience hardening:
+//   • Per-request timeout kept at 12s (set in v3.1).
+//   • Rate-limit guard: on HTTP 429 or 503, read Retry-After header and
+//     wait that duration (capped at 30s) before retrying once.
+//   • Max 3 attempts per source with exponential back-off (0s, 2s, 4s).
+//   • Structured error logging via debugPrint with source tag, attempt
+//     number, status code, and elapsed time for easy logcat filtering.
+//   • _doGet() helper centralises timeout + retry logic so each source
+//     method stays clean.
 //
-// v3.1 fixes:
-//   • All individual source timeouts bumped 6s→12s.
-//   • Race timeout bumped 8s→15s.
+// v3.2 — expose static seedStations getter (source_policy_provider.dart).
+// v3.1 — individual source timeouts bumped 6s→12s; race timeout 8s→15s.
 //
 // SOURCE PRIORITY — all fired in parallel, first non-empty list wins:
 //  A. CWC Open Data REST API     (data.gov.in / cwc.gov.in)  — stable JSON
@@ -182,46 +185,92 @@ List<CwcStation> get _seedStations {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class BefiqrCwcService {
-  // URL constants
   static const _beamsUrl    = 'https://beams.fmiscwrdbihar.gov.in/Alerttotalinfo/realtimetotal.aspx';
   static const _befiqrUrl   = 'https://irrigation.befiqr.in/state/table/cwc-stations';
-
-  // CWC Open Data API — resource ID for Bihar flood gauge stations
   static const _cwcApiUrl   =
       'https://api.data.gov.in/resource/6176b6b7-77a1-4bf7-bc37-a2e4a67f3e4d'
       '?api-key=579b464db66ec23bdd000001cdd3946e44ce4aebb209dbe7b49b3c55'
       '&format=json&limit=50&filters%5Bstate%5D=Bihar';
-
-  // CWC Bihar bulletin — JSON snapshot published daily by CWC
   static const _cwcBulletinUrl =
       'https://cwc.gov.in/fld_mng/bihar_flood_bulletin.json';
-
-  // GloFAS CEMS — EU-hosted, never geoblocked
   static const _glofasUrl =
       'https://emergency.copernicus.eu/CEMS-fis/api/v1/stations'
       '?country=IN&state=Bihar&format=json';
 
-  // v3.1: bumped from 8s → 15s
-  static const _raceTimeout = Duration(seconds: 15);
+  static const _raceTimeout   = Duration(seconds: 15);
+  static const _perReqTimeout = Duration(seconds: 12);
+  static const _maxRetries    = 3;
+  // back-off delays: attempt 0 → 0s, 1 → 2s, 2 → 4s
+  static const _backOffSeconds = [0, 2, 4];
+  // cap on Retry-After wait to avoid blocking the race for too long
+  static const _maxRetryAfterSeconds = 30;
 
   // ── v3.2: public static accessor for the embedded seed snapshot ──────────
-  //
-  // Used by source_policy_provider.dart's DataSource.localSeed branch so it
-  // can serve offline data without making any network call. The getter
-  // returns a fresh list (fetchedAt == now) on every call — callers that
-  // want to cache it should do so themselves.
   static List<CwcStation> get seedStations => _seedStations;
+
+  // ── v3.3: centralised HTTP helper with timeout + retry-after + back-off ──
+  //
+  // tag    : source name for logcat filtering (e.g. 'BEAMS', 'CWC-OpenData')
+  // headers: request headers
+  // Returns the successful [http.Response] or throws the last exception.
+  Future<http.Response> _doGet(
+    String tag,
+    String url,
+    Map<String, String> headers,
+  ) async {
+    Object? lastErr;
+    for (int attempt = 0; attempt < _maxRetries; attempt++) {
+      // exponential back-off before retry (skip on first attempt)
+      if (attempt > 0) {
+        await Future.delayed(
+            Duration(seconds: _backOffSeconds[attempt]));
+      }
+      final sw = Stopwatch()..start();
+      try {
+        final resp = await http
+            .get(Uri.parse(url), headers: headers)
+            .timeout(_perReqTimeout);
+        sw.stop();
+
+        // Rate-limit / overload guard
+        if (resp.statusCode == 429 || resp.statusCode == 503) {
+          final retryAfterRaw = resp.headers['retry-after'];
+          final waitSeconds   = int.tryParse(retryAfterRaw ?? '') ?? 5;
+          final capped        = waitSeconds.clamp(1, _maxRetryAfterSeconds);
+          debugPrint(
+              '[BefiqrCwcService][$tag] attempt $attempt — '
+              'HTTP ${resp.statusCode}, Retry-After ${capped}s '
+              '(elapsed ${sw.elapsedMilliseconds}ms)');
+          await Future.delayed(Duration(seconds: capped));
+          lastErr = Exception('HTTP ${resp.statusCode}');
+          continue;
+        }
+
+        debugPrint(
+            '[BefiqrCwcService][$tag] attempt $attempt — '
+            'HTTP ${resp.statusCode} (${sw.elapsedMilliseconds}ms)');
+        return resp;
+      } catch (e) {
+        sw.stop();
+        lastErr = e;
+        debugPrint(
+            '[BefiqrCwcService][$tag] attempt $attempt — '
+            'error: $e (${sw.elapsedMilliseconds}ms)');
+      }
+    }
+    throw lastErr ?? Exception('[$tag] failed after $_maxRetries attempts');
+  }
 
   /// Fetch all Bihar CWC stations.
   /// Fires 5 sources in parallel — first non-empty list wins.
   /// Never throws — falls back to seed if all fail within 15s.
   Future<List<CwcStation>> fetchStations() async {
     final futures = <Future<List<CwcStation>>>[
-      _tryCwcOpenData(),    // A — stable REST JSON
-      _fetchBeams(),        // B — BEAMS Bihar HTML
-      _tryCwcBulletin(),    // C — CWC bulletin JSON
-      _tryGloFAS(),         // D — EU-hosted, no geoblocking
-      _tryBefiqr(),         // E — legacy HTML mirror
+      _tryCwcOpenData(),
+      _fetchBeams(),
+      _tryCwcBulletin(),
+      _tryGloFAS(),
+      _tryBefiqr(),
     ];
 
     final completer = Completer<List<CwcStation>>();
@@ -251,24 +300,21 @@ class BefiqrCwcService {
     );
 
     if (result.isNotEmpty) return result;
-
-    debugPrint('[BefiqrCwcService] ⚠️ all sources failed — using seed');
+    debugPrint('[BefiqrCwcService] ⚠️  all 5 sources failed — using seed (${_seedStations.length} stations)');
     return _seedStations;
   }
 
   // ── Source A: CWC Open Data REST API ───────────────────────────────────────
   Future<List<CwcStation>> _tryCwcOpenData() async {
     try {
-      final resp = await http.get(
-        Uri.parse(_cwcApiUrl),
-        headers: {'Accept': 'application/json', 'User-Agent': 'OpsFlood/3.2'},
-      ).timeout(const Duration(seconds: 12));
-
+      final resp = await _doGet('CWC-OpenData', _cwcApiUrl, {
+        'Accept':     'application/json',
+        'User-Agent': 'OpsFlood/3.3',
+      });
       if (resp.statusCode == 200) {
         final body  = jsonDecode(resp.body) as Map<String, dynamic>;
         final recs  = (body['records'] as List?)?.cast<Map<String, dynamic>>();
         if (recs == null || recs.isEmpty) return [];
-
         final now      = DateTime.now();
         final stations = <CwcStation>[];
         for (final r in recs) {
@@ -287,13 +333,11 @@ class BefiqrCwcService {
             fetchedAt:    DateTime.tryParse(r['obs_date']?.toString() ?? '') ?? now,
           ));
         }
-        if (stations.isNotEmpty) {
-          debugPrint('[BefiqrCwcService] CWC-OpenData ✅ ${stations.length} stations');
-        }
+        if (stations.isNotEmpty) debugPrint('[BefiqrCwcService][CWC-OpenData] ✅ ${stations.length} stations');
         return stations;
       }
     } catch (e) {
-      debugPrint('[BefiqrCwcService] CWC-OpenData failed: $e');
+      debugPrint('[BefiqrCwcService][CWC-OpenData] ❌ $e');
     }
     return [];
   }
@@ -301,24 +345,18 @@ class BefiqrCwcService {
   // ── Source B: BEAMS Bihar HTML ──────────────────────────────────────────────
   Future<List<CwcStation>> _fetchBeams() async {
     try {
-      final resp = await http.get(
-        Uri.parse(_beamsUrl),
-        headers: {
-          'Accept':          'text/html,application/xhtml+xml',
-          'User-Agent':      'Mozilla/5.0 (OpsFlood/3.2)',
-          'Accept-Language': 'en-IN,en;q=0.9',
-        },
-      ).timeout(const Duration(seconds: 12));
-
+      final resp = await _doGet('BEAMS', _beamsUrl, {
+        'Accept':          'text/html,application/xhtml+xml',
+        'User-Agent':      'Mozilla/5.0 (OpsFlood/3.3)',
+        'Accept-Language': 'en-IN,en;q=0.9',
+      });
       if (resp.statusCode == 200) {
         final stations = _parseBeamsHtml(resp.body);
-        if (stations.isNotEmpty) {
-          debugPrint('[BefiqrCwcService] BEAMS ✅ ${stations.length} stations');
-        }
+        if (stations.isNotEmpty) debugPrint('[BefiqrCwcService][BEAMS] ✅ ${stations.length} stations');
         return stations;
       }
     } catch (e) {
-      debugPrint('[BefiqrCwcService] BEAMS failed: $e');
+      debugPrint('[BefiqrCwcService][BEAMS] ❌ $e');
     }
     return [];
   }
@@ -326,16 +364,14 @@ class BefiqrCwcService {
   // ── Source C: CWC Bihar Bulletin JSON ────────────────────────────────────
   Future<List<CwcStation>> _tryCwcBulletin() async {
     try {
-      final resp = await http.get(
-        Uri.parse(_cwcBulletinUrl),
-        headers: {'Accept': 'application/json', 'User-Agent': 'OpsFlood/3.2'},
-      ).timeout(const Duration(seconds: 12));
-
+      final resp = await _doGet('CWC-Bulletin', _cwcBulletinUrl, {
+        'Accept':     'application/json',
+        'User-Agent': 'OpsFlood/3.3',
+      });
       if (resp.statusCode == 200) {
-        final body     = jsonDecode(resp.body);
-        final list     = (body['stations'] as List? ?? body as List?)?.cast<Map<String, dynamic>>();
+        final body = jsonDecode(resp.body);
+        final list = (body['stations'] as List? ?? body as List?)?.cast<Map<String, dynamic>>();
         if (list == null || list.isEmpty) return [];
-
         final now      = DateTime.now();
         final stations = <CwcStation>[];
         for (final r in list) {
@@ -354,13 +390,11 @@ class BefiqrCwcService {
             fetchedAt:    DateTime.tryParse(r['obs_date']?.toString() ?? '') ?? now,
           ));
         }
-        if (stations.isNotEmpty) {
-          debugPrint('[BefiqrCwcService] CWC-Bulletin ✅ ${stations.length} stations');
-        }
+        if (stations.isNotEmpty) debugPrint('[BefiqrCwcService][CWC-Bulletin] ✅ ${stations.length} stations');
         return stations;
       }
     } catch (e) {
-      debugPrint('[BefiqrCwcService] CWC-Bulletin failed: $e');
+      debugPrint('[BefiqrCwcService][CWC-Bulletin] ❌ $e');
     }
     return [];
   }
@@ -368,29 +402,25 @@ class BefiqrCwcService {
   // ── Source D: GloFAS CEMS Bihar stations ──────────────────────────────────
   Future<List<CwcStation>> _tryGloFAS() async {
     try {
-      final resp = await http.get(
-        Uri.parse(_glofasUrl),
-        headers: {'Accept': 'application/json', 'User-Agent': 'OpsFlood/3.2'},
-      ).timeout(const Duration(seconds: 12));
-
+      final resp = await _doGet('GloFAS', _glofasUrl, {
+        'Accept':     'application/json',
+        'User-Agent': 'OpsFlood/3.3',
+      });
       if (resp.statusCode == 200) {
         final body = jsonDecode(resp.body);
         final list = (body['features'] as List? ??
                       body['stations'] as List?)?.cast<Map<String, dynamic>>();
         if (list == null || list.isEmpty) return [];
-
         final now      = DateTime.now();
         final stations = <CwcStation>[];
         for (final feat in list) {
           final props  = feat['properties'] as Map<String, dynamic>? ?? feat;
           final level  = _parseDbl(props['water_level'] ?? props['level_m']);
           final danger = _parseDbl(props['danger_level'] ?? props['threshold_m']);
-          final river  = props['river']?.toString() ?? '';
-          final site   = props['name']?.toString()  ?? props['station_name']?.toString() ?? '';
           if (level == null || danger == null || danger <= 0) continue;
           stations.add(CwcStation(
-            river:        river,
-            site:         site,
+            river:        props['river']?.toString() ?? '',
+            site:         props['name']?.toString()  ?? props['station_name']?.toString() ?? '',
             currentLevel: level,
             dangerLevel:  danger,
             warningLevel: _parseDbl(props['warning_level']),
@@ -400,13 +430,11 @@ class BefiqrCwcService {
             fetchedAt:    DateTime.tryParse(props['valid_time']?.toString() ?? '') ?? now,
           ));
         }
-        if (stations.isNotEmpty) {
-          debugPrint('[BefiqrCwcService] GloFAS ✅ ${stations.length} stations');
-        }
+        if (stations.isNotEmpty) debugPrint('[BefiqrCwcService][GloFAS] ✅ ${stations.length} stations');
         return stations;
       }
     } catch (e) {
-      debugPrint('[BefiqrCwcService] GloFAS failed: $e');
+      debugPrint('[BefiqrCwcService][GloFAS] ❌ $e');
     }
     return [];
   }
@@ -414,25 +442,22 @@ class BefiqrCwcService {
   // ── Source E: befiqr HTML mirror (legacy) ───────────────────────────────
   Future<List<CwcStation>> _tryBefiqr() async {
     try {
-      final resp = await http.get(
-        Uri.parse(_befiqrUrl),
-        headers: {'Accept': 'text/html,application/xhtml+xml'},
-      ).timeout(const Duration(seconds: 12));
+      final resp = await _doGet('befiqr', _befiqrUrl, {
+        'Accept': 'text/html,application/xhtml+xml',
+        'User-Agent': 'OpsFlood/3.3',
+      });
       if (resp.statusCode == 200) {
         final stations = parseHtmlTable(resp.body);
-        if (stations.isNotEmpty) {
-          debugPrint('[BefiqrCwcService] befiqr ✅ ${stations.length} stations');
-        }
+        if (stations.isNotEmpty) debugPrint('[BefiqrCwcService][befiqr] ✅ ${stations.length} stations');
         return stations;
       }
     } catch (e) {
-      debugPrint('[BefiqrCwcService] befiqr failed: $e');
+      debugPrint('[BefiqrCwcService][befiqr] ❌ $e');
     }
     return [];
   }
 
-  // ── BEAMS HTML parser ──────────────────────────────────────────────────────────
-
+  // ── BEAMS HTML parser ──────────────────────────────────────────────────────
   static List<CwcStation> _parseBeamsHtml(String htmlBody) {
     final stations = <CwcStation>[];
     final now      = DateTime.now();
@@ -459,7 +484,7 @@ class BefiqrCwcService {
       final status     = cells.length > 18 ? cells[18].trim() : null;
       final obsDate    = cells.length > 13 ? (_parseBEAMSDate(cells[13]) ?? now) : now;
 
-      if (wrdLevel == null || wrdLevel <= 0)   continue;
+      if (wrdLevel  == null || wrdLevel  <= 0) continue;
       if (wrdDanger == null || wrdDanger <= 0) continue;
 
       final offset      = _wrdOffset(riverRaw);
@@ -473,7 +498,7 @@ class BefiqrCwcService {
         currentLevel: amslLevel,
         dangerLevel:  amslDanger,
         warningLevel: amslWarning,
-        trend:        trend?.isNotEmpty == true ? trend : null,
+        trend:        trend?.isNotEmpty == true  ? trend  : null,
         status:       status?.isNotEmpty == true ? status : null,
         source:       'BEAMS',
         isFromSeed:   false,
@@ -484,11 +509,10 @@ class BefiqrCwcService {
   }
 
   // ── befiqr HTML parser (public — used by KosiBirpurService) ───────────────
-
   static List<CwcStation> parseHtmlTable(String html) {
     final stations = <CwcStation>[];
     final now      = DateTime.now();
-    final rowRe    = RegExp(r'<tr[^>]*>(.*?)</tr>',  dotAll: true);
+    final rowRe    = RegExp(r'<tr[^>]*>(.*?)</tr>',    dotAll: true);
     final cellRe   = RegExp(r'<t[dh][^>]*>(.*?)</t[dh]>', dotAll: true);
     final tagRe    = RegExp(r'<[^>]+>');
     bool headerSkipped = false;
@@ -518,8 +542,7 @@ class BefiqrCwcService {
     return stations;
   }
 
-  // ── Utilities ────────────────────────────────────────────────────────────────────
-
+  // ── Utilities ────────────────────────────────────────────────────────────
   static DateTime? _parseBEAMSDate(String s) {
     try {
       const months = {
@@ -547,13 +570,13 @@ class BefiqrCwcService {
         v.toString().replaceAll(RegExp(r'[^\d.]'), '').trim());
   }
 
-  // ── Analytics helpers ──────────────────────────────────────────────────────────
-
+  // ── Analytics helpers ────────────────────────────────────────────────────
   static double riskScore(CwcStation s) =>
       (s.currentLevel / s.dangerLevel * 100).clamp(0, 100);
 
   static List<CwcStation> topRisk(List<CwcStation> stations, {int n = 5}) {
-    final sorted = [...stations]..sort((a, b) => riskScore(b).compareTo(riskScore(a)));
+    final sorted = [...stations]
+        ..sort((a, b) => riskScore(b).compareTo(riskScore(a)));
     return sorted.take(n).toList();
   }
 
@@ -562,6 +585,8 @@ class BefiqrCwcService {
 
   static List<CwcStation> fromJsonString(String raw) {
     final list = jsonDecode(raw) as List<dynamic>;
-    return list.map((e) => CwcStation.fromJson(e as Map<String, dynamic>)).toList();
+    return list
+        .map((e) => CwcStation.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 }
