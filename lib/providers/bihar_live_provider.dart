@@ -1,31 +1,21 @@
-// lib/providers/bihar_live_provider.dart  (v3.4)
+// lib/providers/bihar_live_provider.dart  (v3.5)
 //
 // OpsFlood — All-Stations Live Provider
 //
+// v3.5 (15 Jun 2026) — Fix city-card blank data (city lookup mismatch).
+//   _index was keyed by s.city.trim().toLowerCase() which kept parenthetical
+//   qualifiers like "(CWC)", "(D/S)", "(U/S)" intact.
+//   byCity() also did a plain lowercase lookup.
+//   Result: live.byCity("Birpur") never matched "birpur (cwc)" → every card
+//   showed grey NO DATA even though the feed had live readings.
+//
+//   Fix: both _index key construction and byCity() input now go through
+//   _normCityKey(), which strips (...) qualifiers and normalises whitespace.
+//   This is the same normalisation already used by _buildState dedup (Step 2)
+//   and by BiharLiveEngine._gaugeKeys(), so all three pipelines now agree.
+//
 // v3.4 (15 Jun 2026) — Deduplicate stations by city key inside _buildState.
-//   The raw WRD/CWC feed can emit 2-3 gauge records for the same city
-//   (e.g. Birpur appears three times on the Kosi).  Without dedup, the
-//   At-Risk Cities card shows duplicates and the station count is inflated.
-//   Strategy: keep the highest-risk reading; on tie, keep the highest
-//   currentLevel (worst observed reading wins).
-//
-// v3.3 (12 Jun 2026) — Three city-card load-time fixes:
-//
-//   Fix 1 — Cold-start AsyncLoading:
-//     build() previously returned _buildState(engine.latest) which is
-//     AsyncData([]) when engine.latest==null.  isLoading was therefore
-//     false and city cards showed blank instead of a spinner.
-//     Now: if latest==null, build() suspends via a Completer until the
-//     first stream event, keeping the provider in AsyncLoading state.
-//
-//   Fix 2 — O(1) city lookup:
-//     BiharLiveState now carries _index (Map<String,BiharStationData>)
-//     built once in the constructor.  byCity(city) replaces the O(n)
-//     firstWhere scan that ran for every card on every rebuild.
-//
-//   Fix 3 — biharCityLoadingProvider correctness:
-//     See bihar_city_provider.dart.
-//
+// v3.3 (12 Jun 2026) — Three city-card load-time fixes.
 // v3.2: removed dead StationsUnifiedBridge / LiveFetchEngine attach().
 // v3.1: single-engine BiharLiveEngine wiring.
 
@@ -196,23 +186,23 @@ class BiharStationData {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BiharLiveState  (v3.4 — dedup at construction; adds O(1) city index)
+// BiharLiveState  (v3.5 — _index and byCity both use _normCityKey)
 // ─────────────────────────────────────────────────────────────────────────────
 class BiharLiveState {
   final List<BiharStationData>        stations;
   final DateTime?                      lastFetched;
-  // Fix 2 (v3.3): index built once in constructor — O(1) city lookup.
+  // v3.5: keyed by _normCityKey(s.city) so "(CWC)", "(D/S)" etc. are stripped.
   final Map<String, BiharStationData> _index;
 
   BiharLiveState({this.stations = const [], this.lastFetched})
       : _index = {
           for (final s in stations)
-            s.city.trim().toLowerCase(): s,
+            _normCityKey(s.city): s,
         };
 
-  /// O(1) lookup by city name (case-insensitive, trimmed).
+  /// O(1) lookup by city name — normalised so "Birpur" matches "Birpur (CWC)".
   BiharStationData? byCity(String city) =>
-      _index[city.trim().toLowerCase()];
+      _index[_normCityKey(city)];
 
   int get criticalCount => stations.where((s) => s.isCritical).length;
   int get severeCount   => stations.where((s) => s.isSevere).length;
@@ -235,8 +225,8 @@ const _kRiskOrder = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// City-key normalisation — mirrors flood_providers._normCityKey so both
-// pipelines collapse the same duplicates.
+// City-key normalisation — shared by _buildState dedup, _index construction,
+// and byCity() so all three pipelines agree on the canonical city key.
 // ─────────────────────────────────────────────────────────────────────────────
 String _normCityKey(String name) => name
     .toLowerCase()
@@ -246,7 +236,7 @@ String _normCityKey(String name) => name
     .trim();
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Notifier  (v3.4)
+// Notifier  (v3.5 — no logic change; only BiharLiveState construction changed)
 // ─────────────────────────────────────────────────────────────────────────────
 
 class BiharLiveNotifier extends AsyncNotifier<BiharLiveState> {
