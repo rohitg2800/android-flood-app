@@ -4,22 +4,74 @@
 .flutter-plugins-dependencies
 .packages
 build/
-*.g.dart          # generated — but only if not pre-committed
-pubspec.lock      # keep for reproducible builds — remove this line if you want
+*.g.dart
+
+# ── pubspec.lock (keep for reproducible builds) ───────────────────────
+# pubspec.lock
 
 # ── Environment & Secrets ────────────────────────────────────────────
 .env
 .env.*
-!.env.example      # allow the example template
+!.env.example
 
-# ── Android signing ───────────────────────────────────────────────────
+# ── Android signing & secrets ─────────────────────────────────────────
 *.jks
 *.keystore
 android/key.properties
-android/app/google-services.json  # injected by flutterfire configure in CI
+android/app/google-services.json
+android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+android/app/src/main/kotlin/in/
+
+# ── iOS / macOS generated / ephemeral ────────────────────────────────
+ios/Flutter/ephemeral/
+ios/Flutter/flutter_export_environment.sh
+ios/Runner/GeneratedPluginRegistrant.m
+macos/Flutter/GeneratedPluginRegistrant.swift
+macos/Flutter/ephemeral/
+
+# ── Windows plugin symlinks (ephemeral) ──────────────────────────────
+windows/flutter/ephemeral/
 
 # ── Firebase ──────────────────────────────────────────────────────────
 lib/firebase_options.dart
+google-services.json
+
+# ── Python virtual environments ───────────────────────────────────────
+.venv/
+.venv311/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.python-version
+
+# ── ML model artifacts ────────────────────────────────────────────────
+# PyTorch model weights & training plots — large binaries, not source code.
+# The training_summary.json IS committed (lightweight manifest).
+backend/ml/saved_models/*.pt
+backend/ml/saved_models/*.png
+backend/ml/scalers/*.joblib
+# Keep the manifest
+!backend/ml/saved_models/training_summary.json
+
+# ── Raw training data ─────────────────────────────────────────────────
+data/raw/*.csv
+
+# ── Backend __pycache__ dirs ──────────────────────────────────────────
+backend/__pycache__/
+backend/ml/__pycache__/
+backend/routers/__pycache__/
+backend/tests/__pycache__/
+
+# ── Build / release artefacts ─────────────────────────────────────────
+*.zip
+*.apk
+*.aab
+build_log.txt
+analyze_output.txt
+bihar_live_data.json
+equinox-flood-v*.zip
+flood-app-*.zip
 
 # ── Fastlane ──────────────────────────────────────────────────────────
 fastlane/report.xml
@@ -31,17 +83,17 @@ fastlane/.env.*
 
 # ── Test artefacts ─────────────────────────────────────────────────────
 coverage/
-test/golden/failures/       # only failure diffs; committed goldens stay
+test/golden/failures/
 
 # ── IDE ────────────────────────────────────────────────────────────────
 .idea/
 .vscode/
 *.iml
 
-# ── macOS ────────────────────────────────────────────────────────────────
+# ── macOS ─────────────────────────────────────────────────────────────
 .DS_Store
 
-# ── Misc ────────────────────────────────────────────────────────────────
+# ── Misc logs & locks ─────────────────────────────────────────────────
 *.log
 *.lock
-!pubspec.lock   # re-allow pubspec.lock for reproducibility
+!pubspec.lock
