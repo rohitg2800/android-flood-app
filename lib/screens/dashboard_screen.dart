@@ -1,8 +1,8 @@
-// lib/screens/dashboard_screen.dart  (v8.1)
+// lib/screens/dashboard_screen.dart  (v8.2)
 //
-// Fix: removed `const` from every SliverToBoxAdapter that wraps a screen
-// widget.  Screen constructors are not const, so the compiler rejected them.
-// All logic identical to v8.0.
+// Fix: corrected all embedded screen class names to match actual definitions:
+//   AIPredictionScreen  →  AiPredictionScreen
+// All other logic identical to v8.1.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,16 +15,16 @@ import '../widgets/summary_strip.dart';
 import '../constants/india_geodata.dart';
 import '../theme/river_theme.dart';
 
-import 'ai_prediction_screen.dart';
-import 'river_monitor_screen.dart';
-import 'live_stations_screen.dart';
-import 'bihar_river_map_screen.dart';
-import 'rainfall_forecast_screen.dart';
-import 'weather_screen.dart';
-import 'state_matrix_screen.dart';
-import 'news_feed_screen.dart';
-import 'alerts_screen.dart';
-import 'analytics_dashboard_screen.dart';
+import 'ai_prediction_screen.dart';       // AiPredictionScreen
+import 'river_monitor_screen.dart';       // RiverMonitorScreen
+import 'live_stations_screen.dart';       // LiveStationsScreen
+import 'bihar_river_map_screen.dart';     // BiharRiverMapScreen
+import 'rainfall_forecast_screen.dart';   // RainfallForecastScreen
+import 'weather_screen.dart';             // WeatherScreen
+import 'state_matrix_screen.dart';        // StateMatrixScreen
+import 'news_feed_screen.dart';           // NewsFeedScreen
+import 'alerts_screen.dart';             // AlertsScreen
+import 'analytics_dashboard_screen.dart'; // AnalyticsDashboardScreen
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -150,8 +150,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     );
   }
 
-  Widget _buildBody(
-      BuildContext ctx, BiharLiveState live, RiverColors t) {
+  Widget _buildBody(BuildContext ctx, BiharLiveState live, RiverColors t) {
     final cities = IndiaGeodata.monitoredCities
         .where((c) => c['state'] == 'Bihar')
         .toList();
@@ -204,14 +203,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             ),
           ),
 
-        // 3 — AI Prediction
+        // 3 — AI Prediction  (class: AiPredictionScreen)
         _sectionHeader(ctx, t,
             key: 'ai', icon: Icons.auto_graph_rounded,
             color: const Color(0xFF7B2FF7),
             title: 'AI Flood Prediction', subtitle: 'ML forecast'),
         if (_expanded['ai'] == true)
           SliverToBoxAdapter(
-            child: SizedBox(height: 520, child: AIPredictionScreen()),
+            child: SizedBox(height: 520, child: AiPredictionScreen()),
           ),
 
         // 4 — River Monitor
