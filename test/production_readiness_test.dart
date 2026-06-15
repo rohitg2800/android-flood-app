@@ -3,14 +3,10 @@
 // Covers: flood data serialisation, data validator, env config,
 //         alert severity thresholds, cache TTL logic.
 //
-// fix(D): Updated FloodData constructor calls to match v5 canonical API:
-//   • stationId / stationName / district (not city / state)
-//   • normalLevel  (v5 field — previously caused 'No named parameter' error)
-//   • rainfall24hMm (v5 field name; was rainfall24h)
-//   • latitude / longitude  (not lat / lon in constructor; lat/lon are getters)
-//   • fetchedAt  (v5 field)
-//   • riskScore is int? (was incorrectly passed as double 0.65)
-//   • status removed — it is a computed getter, not a constructor param
+// fix(E): Removed normalLevel/fetchedAt from FloodData() constructor calls.
+//   normalLevel is not a FloodData field (v5 has no such param).
+//   fetchedAt is a computed getter (lastUpdated ?? observedAt ?? epoch),
+//   not a constructor parameter. Use lastUpdated: to set it indirectly.
 library;
 
 import 'package:flutter_test/flutter_test.dart';
@@ -29,12 +25,10 @@ void main() {
         currentLevel:      52.3,
         dangerLevel:       58.0,
         warningLevel:      54.0,
-        // v5 fields
-        normalLevel:       46.0,
         rainfall24hMm:     42.5,
         latitude:          25.5941,
         longitude:         85.1376,
-        fetchedAt:         DateTime(2026, 6, 15, 9, 0),
+        lastUpdated:       DateTime(2026, 6, 15, 9, 0),
         // ML fields
         predictedSeverity: 'MODERATE',
         riskScore:         65,       // int (0–100)
@@ -56,6 +50,8 @@ void main() {
       expect(restored.lat,               closeTo(25.5941, 0.0001));
       expect(restored.lon,               closeTo(85.1376, 0.0001));
       expect(restored.riskLabel,         isNotEmpty);
+      // fetchedAt resolves via lastUpdated
+      expect(restored.fetchedAt,         equals(DateTime(2026, 6, 15, 9, 0)));
     });
 
     test('fromJson handles missing optional ML fields gracefully', () {
@@ -67,7 +63,6 @@ void main() {
         'current_level': 34.2,
         'danger_level':  40.0,
         'warning_level': 37.0,
-        'normal_level':  30.0,
         'trend':         'stable',
         'last_updated':  '2026-06-15T08:00:00Z',
         'latitude': 26.12, 'longitude': 85.39,
@@ -90,8 +85,7 @@ void main() {
         currentLevel: 48.0,
         dangerLevel:  55.0,
         warningLevel: 51.0,
-        normalLevel:  44.0,       // v5
-        rainfall24hMm: 0.0,       // v5
+        rainfall24hMm: 0.0,
         latitude:     25.24,
         longitude:    86.97,
       );
