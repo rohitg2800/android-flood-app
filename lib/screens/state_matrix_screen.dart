@@ -1,11 +1,6 @@
-// lib/screens/state_matrix_screen.dart  (v5.0 — 15 Jun 2026)
+// lib/screens/state_matrix_screen.dart  (v5.1 — 15 Jun 2026)
 //
-// CHANGE: Auto-refresh wired via stream subscription.
-//
-// v5.0 (15 Jun 2026) — Replace one-shot load + manual refresh button with
-//   ref.watch(biharLiveProvider) so the matrix cells rebuild automatically
-//   from the BiharLiveEngine stream.
-//   AutoRefreshMixin adds pull-to-refresh gesture + 'Updated X ago' footer.
+// FIX: Added static const route = '/state-matrix'  (referenced by analytics_dashboard_screen)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,6 +9,8 @@ import '../mixins/auto_refresh_mixin.dart';
 import '../providers/bihar_live_provider.dart';
 
 class StateMatrixScreen extends ConsumerStatefulWidget {
+  static const String route = '/state-matrix';
+
   const StateMatrixScreen({super.key});
 
   @override
@@ -48,7 +45,6 @@ class _StateMatrixScreenState extends ConsumerState<StateMatrixScreen>
   }
 
   Widget _buildMatrix(BuildContext context, BiharLiveState live) {
-    // Group stations by district.
     final byDistrict = <String, List<BiharStationData>>{};
     for (final s in live.stations) {
       byDistrict.putIfAbsent(s.district.isEmpty ? 'Unknown' : s.district,

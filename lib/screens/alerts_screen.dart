@@ -1,12 +1,9 @@
-// lib/screens/alerts_screen.dart  (v5.0 — 15 Jun 2026)
+// lib/screens/alerts_screen.dart  (v5.1 — 15 Jun 2026)
 //
-// CHANGE: Auto-refresh wired via stream subscription.
-//
-// v5.0 (15 Jun 2026) — Replace one-shot initState fetch with
-//   ref.watch(biharLiveProvider) + ref.watch(alertsBadgeProvider).
-//   The alerts list now rebuilds whenever the live engine emits a new feed.
-//   Badge count in the AppBar title chip updates in the same rebuild cycle.
-//   AutoRefreshMixin provides pull-to-refresh and 'Updated X ago' label.
+// FIX: Removed AlertsParentBridgeState type annotation from _buildAlertList.
+//   alertsParentBridgeProvider returns void — it is a side-effect provider.
+//   The screen no longer passes it as a typed parameter; it is only watched
+//   to keep the bridge alive while the screen is mounted.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,7 +26,8 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen>
   Widget build(BuildContext context) {
     final liveAsync  = ref.watch(biharLiveProvider);
     final badgeCount = ref.watch(alertsBadgeProvider);
-    final bridge     = ref.watch(alertsParentBridgeProvider);
+    // Side-effect only — keep bridge alive while screen is mounted.
+    ref.watch(alertsParentBridgeProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -59,7 +57,7 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen>
         child: liveAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error:   (e, _) => Center(child: Text('Error: $e')),
-          data:    (live) => _buildAlertList(context, live, bridge),
+          data:    (live) => _buildAlertList(context, live),
         ),
       ),
     );
@@ -68,7 +66,6 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen>
   Widget _buildAlertList(
     BuildContext context,
     BiharLiveState live,
-    AlertsParentBridgeState bridge,
   ) {
     final alerts = live.stations
         .where((s) => s.isCritical || s.isSevere || s.isWarning)

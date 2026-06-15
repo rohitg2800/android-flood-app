@@ -1,13 +1,8 @@
-// lib/screens/bihar_river_map_screen.dart  (v7.0 — 15 Jun 2026)
+// lib/screens/bihar_river_map_screen.dart  (v7.1 — 15 Jun 2026)
 //
-// CHANGE: Auto-refresh wired via stream subscription.
-//
-// v7.0 (15 Jun 2026) — Replace pull-to-refresh-only pattern with
-//   ref.watch(mergedStationsProvider) so map marker colours / popups
-//   update automatically whenever BiharLiveEngine emits a new feed.
-//   AutoRefreshMixin retains the pull-to-refresh gesture for manual use.
-//   Removed the local '_refreshing' bool + setState() cycle that was
-//   needed to manually trigger a re-render after a pull.
+// FIXES:
+//   • s.lng → s.lon  (RiverStation has .lon not .lng)
+//   • Added static const route = '/bihar-river-map'  (used by analytics_dashboard_screen)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,6 +14,8 @@ import '../providers/real_time_river_provider.dart';
 import '../models/river_station.dart';
 
 class BiharRiverMapScreen extends ConsumerStatefulWidget {
+  static const String route = '/bihar-river-map';
+
   const BiharRiverMapScreen({super.key});
 
   @override
@@ -32,7 +29,6 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
 
   @override
   Widget build(BuildContext context) {
-    // ref.watch → automatic rebuild on every engine emission.
     final stations  = ref.watch(mergedStationsProvider);
     final isLoading = ref.watch(wrdIsLoadingProvider);
 
@@ -103,7 +99,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
             : Colors.green;
 
     return Marker(
-      point:  LatLng(s.lat ?? 25.78, s.lng ?? 85.17),
+      point:  LatLng(s.lat ?? 25.78, s.lon ?? 85.17),  // FIX: was s.lng
       width:  36,
       height: 36,
       child: GestureDetector(

@@ -37,3 +37,9 @@ final stationAlertsProvider =
             .where((a) =>
                 a.stationName.toLowerCase() == stationName.toLowerCase())
             .toList());
+
+/// Total count of all active alerts.
+/// Used by alerts_badge_provider.dart → criticalAlertCountProvider.
+final alertCountProvider = Provider<int>((ref) {
+  return ref.watch(alertsProvider).length;
+});

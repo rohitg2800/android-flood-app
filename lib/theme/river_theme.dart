@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  EQUINOX-BR05  –  Golden Ops Design Language  (v7 — Full Theme Wiring)
+//  EQUINOX-BR05  –  Golden Ops Design Language  (v7.1 — RiverTheme widget added)
 // ─────────────────────────────────────────────────────────────────────────────
 
 class AppPalette {
@@ -176,18 +176,9 @@ class RiverColors extends ThemeExtension<RiverColors> {
   final Color navInactive;
   final Color scaffoldBg;
 
-  // ── Convenience aliases used across the codebase ──────────────────────────
-
-  /// Alias: t.bgBase → cardBg
   Color get bgBase => cardBg;
-
-  /// Alias: t.bg → scaffoldBg  (used by theme_3d.dart Td3AppBar / Td3BottomNav)
   Color get bg => scaffoldBg;
-
-  /// Alias: t.divider → stroke  (used by theme_3d.dart borders / Td3Chip)
   Color get divider => stroke;
-
-  /// Alias: t.danger → riverDanger
   Color get danger => riverDanger;
 
   static RiverColors of(BuildContext context) =>
@@ -346,7 +337,7 @@ class RiverColors extends ThemeExtension<RiverColors> {
       accentGlow:     Color.lerp(accentGlow,     other.accentGlow,     t)!,
       metricColor:    Color.lerp(metricColor,    other.metricColor,    t)!,
       navBg:          Color.lerp(navBg,          other.navBg,          t)!,
-      navActive:      Color.lerp(navActive,      other.navActive,      t)!,
+      navActive:      Color.lerp(navActive,       other.navActive,     t)!,
       navInactive:    Color.lerp(navInactive,    other.navInactive,    t)!,
       scaffoldBg:     Color.lerp(scaffoldBg,     other.scaffoldBg,     t)!,
     );
@@ -456,6 +447,44 @@ class RiverColors extends ThemeExtension<RiverColors> {
         hintStyle: TextStyle(color: ext.textSecondary),
         labelStyle: TextStyle(color: accent),
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RiverTheme — convenience MaterialApp/widget wrapper used in tests and previews.
+//
+// Usage:
+//   RiverTheme(child: MaterialApp(home: MyScreen()))
+//
+// Applies RiverColors.darkTheme() so that all RiverColors.of(context) calls
+// resolve correctly inside widget tests without needing a full app setup.
+// ─────────────────────────────────────────────────────────────────────────────
+
+class RiverTheme extends StatelessWidget {
+  final Widget child;
+  final String mode;  // 'dark' | 'light' | 'sunset' | 'ocean'
+
+  const RiverTheme({
+    super.key,
+    required this.child,
+    this.mode = 'dark',
+  });
+
+  ThemeData get _theme {
+    switch (mode) {
+      case 'light':  return RiverColors.lightTheme();
+      case 'sunset': return RiverColors.sunsetTheme();
+      case 'ocean':  return RiverColors.oceanTheme();
+      default:       return RiverColors.darkTheme();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Theme(
+      data: _theme,
+      child: child,
     );
   }
 }

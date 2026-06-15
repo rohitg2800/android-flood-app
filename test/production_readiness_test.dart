@@ -3,10 +3,17 @@
 // Covers: flood data serialisation, data validator, env config,
 //         alert severity thresholds, cache TTL logic.
 //
-// fix(E): Removed normalLevel/fetchedAt from FloodData() constructor calls.
-//   normalLevel is not a FloodData field (v5 has no such param).
-//   fetchedAt is a computed getter (lastUpdated ?? observedAt ?? epoch),
-//   not a constructor parameter. Use lastUpdated: to set it indirectly.
+// FIX: progressPct test expected value.
+//   FloodData.progressPct = currentLevel / hfl (NOT currentLevel / dangerLevel).
+//   When no hfl is provided, hfl defaults to dangerLevel * 1.3.
+//   For base: currentLevel=48.0, dangerLevel=55.0 → hfl=71.5
+//   → expected progressPct = 48.0 / 71.5 ≈ 0.6713
+//   The old assertion used closeTo(base.progressPct, 0.001) which compared
+//   against base's value — but it was failing because base and updated share
+//   the same computed hfl, so updated.progressPct == base.progressPct is
+//   always true. The actual test failure (0.7272 actual vs 0.6713 expected)
+//   means the test had a hardcoded wrong expected literal. Fixed: compare
+//   updated.progressPct == base.progressPct using closeTo(base.progressPct, 0.001).
 library;
 
 import 'package:flutter_test/flutter_test.dart';
@@ -29,9 +36,8 @@ void main() {
         latitude:          25.5941,
         longitude:         85.1376,
         lastUpdated:       DateTime(2026, 6, 15, 9, 0),
-        // ML fields
         predictedSeverity: 'MODERATE',
-        riskScore:         65,       // int (0–100)
+        riskScore:         65,
         confidencePercent: 78.0,
         willBreachDanger:  false,
         peakLevel72h:      55.2,
@@ -46,11 +52,9 @@ void main() {
       expect(restored.riskScore,         equals(65));
       expect(restored.willBreachDanger,  isFalse);
       expect(restored.peakLevel72h,      closeTo(55.2, 0.001));
-      // v5 alias getters
       expect(restored.lat,               closeTo(25.5941, 0.0001));
       expect(restored.lon,               closeTo(85.1376, 0.0001));
       expect(restored.riskLabel,         isNotEmpty);
-      // fetchedAt resolves via lastUpdated
       expect(restored.fetchedAt,         equals(DateTime(2026, 6, 15, 9, 0)));
     });
 
@@ -71,7 +75,6 @@ void main() {
       expect(data.predictedSeverity, isNull);
       expect(data.riskScore,         isNull);
       expect(data.willBreachDanger,  isNull);
-      // v5 alias getters should still resolve
       expect(data.lat,   closeTo(26.12, 0.01));
       expect(data.lon,   closeTo(85.39, 0.01));
     });
@@ -92,11 +95,18 @@ void main() {
       final updated = base.copyWith(currentLevel: 52.0);
       expect(updated.stationName,  equals('Bhagalpur (CWC)'));
       expect(updated.currentLevel, equals(52.0));
-      expect(updated.dangerLevel,  equals(55.0)); // unchanged
-      expect(updated.district,     equals('Bhagalpur')); // unchanged
-      // v5 getters
+      expect(updated.dangerLevel,  equals(55.0));
+      expect(updated.district,     equals('Bhagalpur'));
       expect(updated.riskLabel,    isNotEmpty);
-      expect(updated.progressPct,  closeTo(base.progressPct, 0.001));
+      // progressPct = currentLevel / hfl.
+      // base: hfl = dangerLevel * 1.3 = 71.5  → progressPct = 48/71.5 ≈ 0.6713
+      // updated: same hfl (55.0*1.3=71.5),    → progressPct = 52/71.5 ≈ 0.7273
+      // copyWith preserves unchanged fields means hfl is unchanged — test that
+      // updated.progressPct uses the same hfl denominator as base.
+      final expectedBase    = 48.0 / (55.0 * 1.3); // ≈ 0.6713
+      final expectedUpdated = 52.0 / (55.0 * 1.3); // ≈ 0.7273
+      expect(base.progressPct,    closeTo(expectedBase,    0.001));
+      expect(updated.progressPct, closeTo(expectedUpdated, 0.001));
     });
   });
 
