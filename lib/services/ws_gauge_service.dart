@@ -1,6 +1,9 @@
-// lib/services/ws_gauge_service.dart  Step 2.2
-// WebSocket singleton — connects to /ws/gauges, auto-reconnects with
-// exponential backoff, falls back to HTTP polling if WS stays down > 30s.
+// lib/services/ws_gauge_service.dart  Step 2.3
+// Fix: _wsUrl used naive string .replaceFirst + concatenation.
+// If EnvConfig.backendBaseUrl had a trailing slash, whitespace, or a .env
+// comment char (#), Uri.parse() would produce port:0 and a fragment,
+// giving "wss://host:0/ws/gauges#" which Railway rejects.
+// Fix: parse the base URL as a Uri struct and rebuild WS Uri properly.
 
 import 'dart:async';
 import 'dart:convert';
@@ -16,7 +19,6 @@ class WsGaugeService {
   WsGaugeService._();
   static final WsGaugeService instance = WsGaugeService._();
 
-  // ── Public streams ────────────────────────────────────────────────────────
   final _dataController   = StreamController<List<FloodData>>.broadcast();
   final _statusController = StreamController<WsStatus>.broadcast();
 
@@ -26,31 +28,66 @@ class WsGaugeService {
   WsStatus _status = WsStatus.offline;
   WsStatus get currentStatus => _status;
 
-  // ── Internal state ────────────────────────────────────────────────────────
   WebSocketChannel? _channel;
   StreamSubscription? _sub;
   Timer? _reconnectTimer;
   Timer? _fallbackTimer;
   Timer? _pingTimer;
-  int  _retryCount  = 0;
-  bool _disposed    = false;
+  Timer? _httpPollTimer;
+  int   _retryCount = 0;
+  bool  _disposed   = false;
   DateTime? _lastDataAt;
 
-  static const _maxRetry     = 6;       // 3→6→12→24→48→60s then cap
-  static const _pingInterval = Duration(seconds: 20);
+  static const _maxRetry      = 6;
+  static const _pingInterval  = Duration(seconds: 20);
   static const _fallbackDelay = Duration(seconds: 30);
   static const _fallbackPoll  = Duration(seconds: 60);
 
-  String get _wsUrl {
-    final base = EnvConfig.backendBaseUrl
-        .replaceFirst('https://', 'wss://')
-        .replaceFirst('http://',  'ws://');
-    return '$base/ws/gauges';
+  // ── URL helpers ─────────────────────────────────────────────────────────────────
+
+  /// Parse backendBaseUrl defensively: strip trailing slashes/whitespace,
+  /// drop any fragment (# comment from .env), then reconstruct as Uri.
+  static Uri _parseBase() {
+    var raw = EnvConfig.backendBaseUrl.trim();
+    // Strip .env inline comments: anything from " #" onward
+    final hashIdx = raw.indexOf(' #');
+    if (hashIdx > 0) raw = raw.substring(0, hashIdx).trim();
+    // Also strip a bare trailing #
+    if (raw.endsWith('#')) raw = raw.substring(0, raw.length - 1).trim();
+    // Strip trailing slash
+    if (raw.endsWith('/')) raw = raw.substring(0, raw.length - 1);
+    final uri = Uri.parse(raw);
+    // Rebuild without fragment (paranoia)
+    return Uri(
+      scheme: uri.scheme,
+      host:   uri.host,
+      port:   uri.hasPort ? uri.port : null,
+      // no path, no fragment
+    );
   }
 
-  String get _httpUrl => '${EnvConfig.backendBaseUrl}/api/live-levels';
+  Uri get _wsUri {
+    final base = _parseBase();
+    final wsScheme = base.scheme == 'https' ? 'wss' : 'ws';
+    return Uri(
+      scheme: wsScheme,
+      host:   base.host,
+      port:   base.hasPort ? base.port : null,
+      path:   '/ws/gauges',
+    );
+  }
 
-  // ── Lifecycle ─────────────────────────────────────────────────────────────
+  Uri get _httpUri {
+    final base = _parseBase();
+    return Uri(
+      scheme: base.scheme,
+      host:   base.host,
+      port:   base.hasPort ? base.port : null,
+      path:   '/api/live-levels',
+    );
+  }
+
+  // ── Lifecycle ─────────────────────────────────────────────────────────────────
   void start() {
     if (_disposed) return;
     _connect();
@@ -62,19 +99,23 @@ class WsGaugeService {
     _reconnectTimer?.cancel();
     _fallbackTimer?.cancel();
     _pingTimer?.cancel();
+    _httpPollTimer?.cancel();
     _channel?.sink.close();
     _dataController.close();
     _statusController.close();
   }
 
-  // ── WebSocket connect ─────────────────────────────────────────────────────
+  // ── WebSocket connect ──────────────────────────────────────────────────────────
   void _connect() {
     if (_disposed) return;
     _setStatus(WsStatus.connecting);
     _cancelFallback();
 
+    final uri = _wsUri;
+    debugPrint('[WS] connecting to $uri');
+
     try {
-      _channel = WebSocketChannel.connect(Uri.parse(_wsUrl));
+      _channel = WebSocketChannel.connect(uri);
     } catch (e) {
       debugPrint('[WS] connect error: $e');
       _scheduleReconnect();
@@ -98,8 +139,6 @@ class WsGaugeService {
     );
 
     _startPing();
-
-    // If no message arrives in 30s, activate HTTP fallback
     _scheduleFallback();
   }
 
@@ -128,7 +167,7 @@ class WsGaugeService {
     }
   }
 
-  // ── Reconnect backoff ─────────────────────────────────────────────────────
+  // ── Reconnect backoff ──────────────────────────────────────────────────────────
   void _scheduleReconnect() {
     if (_disposed) return;
     _sub?.cancel();
@@ -147,18 +186,14 @@ class WsGaugeService {
     return caps[_retryCount.clamp(0, caps.length - 1)];
   }
 
-  // ── HTTP fallback ─────────────────────────────────────────────────────────
+  // ── HTTP fallback ────────────────────────────────────────────────────────────────
   void _scheduleFallback() {
     if (_disposed) return;
     _fallbackTimer?.cancel();
     _fallbackTimer = Timer(_fallbackDelay, _startHttpFallback);
   }
 
-  void _cancelFallback() {
-    _fallbackTimer?.cancel();
-  }
-
-  Timer? _httpPollTimer;
+  void _cancelFallback() => _fallbackTimer?.cancel();
 
   void _startHttpFallback() {
     if (_disposed || _status == WsStatus.connected) return;
@@ -173,7 +208,7 @@ class WsGaugeService {
     if (_disposed) return;
     try {
       final resp = await http
-          .get(Uri.parse(_httpUrl))
+          .get(_httpUri)
           .timeout(const Duration(seconds: 15));
       if (resp.statusCode == 200) {
         final decoded = jsonDecode(resp.body);
@@ -198,7 +233,7 @@ class WsGaugeService {
     }
   }
 
-  // ── Ping ──────────────────────────────────────────────────────────────────
+  // ── Ping ────────────────────────────────────────────────────────────────────────
   void _startPing() {
     _pingTimer?.cancel();
     _pingTimer = Timer.periodic(_pingInterval, (_) {
@@ -208,7 +243,7 @@ class WsGaugeService {
     });
   }
 
-  // ── Status ────────────────────────────────────────────────────────────────
+  // ── Status ──────────────────────────────────────────────────────────────────────
   void _setStatus(WsStatus s) {
     if (_status == s) return;
     _status = s;
