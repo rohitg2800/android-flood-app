@@ -1,7 +1,8 @@
-// lib/screens/city_detail_screen.dart  v5.8 — ML section wired
-// Adds predictionProvider ML card between the gauge and quick actions.
-// FIX: removed data.dataSource references — FloodData has no dataSource field.
-// Use stationId instead for the Station ID row in the metadata card.
+// lib/screens/city_detail_screen.dart  v6.0
+// Changes from v5.8:
+//   • WatchButton added to SliverAppBar actions (Step 3.6)
+//   • SyncStatusBanner inserted as first body sliver (Step 2.4)
+//   • SparklineCard inserted between GaugeCard and MlCard (Step 4.6)
 
 library;
 
@@ -10,9 +11,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/flood_data.dart';
 import '../providers/flood_providers.dart';
-import '../providers/prediction_provider.dart';  // v5.8 ML
+import '../providers/prediction_provider.dart';
 import '../theme/river_theme.dart';
 import '../app_router.dart';
+import '../widgets/watch_button.dart';          // Step 3.6
+import '../widgets/sync_status_banner.dart';    // Step 2.4
+import '../widgets/sparkline_card.dart';        // Step 4.6
 
 class CityDetailScreen extends ConsumerStatefulWidget {
   final String cityName;
@@ -90,7 +94,6 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
     final fillPct = data.fillPercent ?? 0.0;
     final pctVal  = (fillPct / 100).clamp(0.0, 1.0);
 
-    // v5.8 — watch predictionProvider keyed on stationId
     final predAsync = ref.watch(predictionProvider(data.stationId));
 
     return Scaffold(
@@ -124,6 +127,12 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
               ),
             ),
             actions: [
+              // ── v6.0: Watch button (Step 3.6)
+              WatchButton(
+                stationId: data.stationId,
+                cityName:  data.city,
+                riverName: data.riverName ?? '',
+              ),
               IconButton(
                 icon: Icon(Icons.sos_rounded, color: AppPalette.critical),
                 tooltip: 'SOS',
@@ -136,6 +145,11 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
                     Navigator.of(context).pushNamed(Routes.biharRiverMap),
               ),
             ],
+          ),
+
+          // ── v6.0: Sync status banner (Step 2.4)
+          const SliverToBoxAdapter(
+            child: SyncStatusBanner(),
           ),
 
           // ── Threshold warning banner
@@ -162,7 +176,19 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
             ),
           ),
 
-          // ── v5.8 ML prediction card ──────────────────────────────────────
+          // ── v6.0: Sparkline 7-day history (Step 4.6)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+              child: SparklineCard(
+                stationId:   data.stationId,
+                dangerLevel: data.dangerLevel,
+                accentColor: rc,
+              ),
+            ),
+          ),
+
+          // ── ML prediction card
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
@@ -173,7 +199,6 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
               ),
             ),
           ),
-          // ─────────────────────────────────────────────────────────────────
 
           // ── Quick actions
           SliverToBoxAdapter(
@@ -204,7 +229,7 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
   }
 }
 
-// ── v5.8 ML loading placeholder ───────────────────────────────────────────────
+// ── ML loading placeholder ────────────────────────────────────────────────────────────
 
 class _MlLoadingCard extends StatelessWidget {
   final RiverColors t;
@@ -222,28 +247,25 @@ class _MlLoadingCard extends StatelessWidget {
       child: Row(
         children: [
           SizedBox(
-            width: 16,
-            height: 16,
+            width: 16, height: 16,
             child: CircularProgressIndicator(
               strokeWidth: 2,
               valueColor: AlwaysStoppedAnimation<Color>(AppPalette.gold),
             ),
           ),
           const SizedBox(width: 12),
-          Text(
-            'Loading ML prediction…',
-            style: TextStyle(
-                color: t.textSecondary,
-                fontSize: 12,
-                fontWeight: FontWeight.w600),
-          ),
+          Text('Loading ML prediction…',
+              style: TextStyle(
+                  color: t.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600)),
         ],
       ),
     );
   }
 }
 
-// ── v5.8 ML prediction card ───────────────────────────────────────────────────
+// ── ML prediction card ──────────────────────────────────────────────────────────────
 
 class _MlCard extends StatelessWidget {
   final FloodPrediction pred;
@@ -304,20 +326,16 @@ class _MlCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Header row
           Row(
             children: [
               Icon(Icons.auto_awesome_rounded, color: AppPalette.gold, size: 16),
               const SizedBox(width: 8),
-              Text(
-                'ML Flood Prediction',
-                style: TextStyle(
-                    color: t.textPrimary,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800),
-              ),
+              Text('ML Flood Prediction',
+                  style: TextStyle(
+                      color: t.textPrimary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800)),
               const Spacer(),
-              // Severity badge
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
@@ -325,19 +343,15 @@ class _MlCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: sev.withOpacity(0.5)),
                 ),
-                child: Text(
-                  pred.severity,
-                  style: TextStyle(
-                      color: sev,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.5),
-                ),
+                child: Text(pred.severity,
+                    style: TextStyle(
+                        color: sev,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.5)),
               ),
             ],
           ),
-
-          // ── "Linear fallback" chip (shown only when backend is unavailable)
           if (!pred.fromBackend) ...[
             const SizedBox(height: 8),
             Container(
@@ -350,22 +364,17 @@ class _MlCard extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.offline_bolt_outlined,
-                      color: AppPalette.gold, size: 11),
+                  Icon(Icons.offline_bolt_outlined, color: AppPalette.gold, size: 11),
                   const SizedBox(width: 4),
-                  Text(
-                    'Linear fallback',
-                    style: TextStyle(
-                        color: AppPalette.gold,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700),
-                  ),
+                  Text('Linear fallback',
+                      style: TextStyle(
+                          color: AppPalette.gold,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700)),
                 ],
               ),
             ),
           ],
-
-          // ── BREACH RISK banner (shown when predicted24h >= dangerLevel)
           if (pred.predicted24h >= pred.dangerLevel) ...[
             const SizedBox(height: 10),
             Container(
@@ -378,8 +387,7 @@ class _MlCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.warning_rounded,
-                      color: AppPalette.critical, size: 16),
+                  Icon(Icons.warning_rounded, color: AppPalette.critical, size: 16),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -394,10 +402,7 @@ class _MlCard extends StatelessWidget {
               ),
             ),
           ],
-
           const SizedBox(height: 12),
-
-          // ── Risk score bar
           Row(
             children: [
               Text('Risk',
@@ -418,54 +423,32 @@ class _MlCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
-                '${pred.riskScore.toInt()}',
-                style: TextStyle(
-                    color: bar, fontSize: 13, fontWeight: FontWeight.w900),
-              ),
+              Text('${pred.riskScore.toInt()}',
+                  style: TextStyle(
+                      color: bar, fontSize: 13, fontWeight: FontWeight.w900)),
             ],
           ),
-
           const SizedBox(height: 12),
-
-          // ── Three chips: Confidence | Peak 72h | Trend
           Row(
             children: [
-              _MlChip(
-                icon: Icons.verified_outlined,
-                label: 'Conf.',
-                value: '${pred.confidencePct.toStringAsFixed(0)}%',
-                color: t.accent,
-                t: t,
-              ),
+              _MlChip(icon: Icons.verified_outlined,   label: 'Conf.',
+                  value: '${pred.confidencePct.toStringAsFixed(0)}%',
+                  color: t.accent, t: t),
               const SizedBox(width: 8),
-              _MlChip(
-                icon: Icons.show_chart_rounded,
-                label: 'Peak 72h',
-                value: '${pred.predicted72h.toStringAsFixed(2)} m',
-                color: AppPalette.cyan,
-                t: t,
-              ),
+              _MlChip(icon: Icons.show_chart_rounded,  label: 'Peak 72h',
+                  value: '${pred.predicted72h.toStringAsFixed(2)} m',
+                  color: AppPalette.cyan, t: t),
               const SizedBox(width: 8),
-              _MlChip(
-                icon: _trendIcon(),
-                label: 'Trend',
-                value: pred.trend,
-                color: trend,
-                t: t,
-              ),
+              _MlChip(icon: _trendIcon(),              label: 'Trend',
+                  value: pred.trend, color: trend, t: t),
             ],
           ),
-
-          // ── Outlook text
           const SizedBox(height: 12),
-          Text(
-            pred.outlook,
-            style: TextStyle(
-                color: t.textSecondary,
-                fontSize: 12,
-                fontStyle: FontStyle.italic),
-          ),
+          Text(pred.outlook,
+              style: TextStyle(
+                  color: t.textSecondary,
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic)),
         ],
       ),
     );
@@ -473,15 +456,8 @@ class _MlCard extends StatelessWidget {
 }
 
 class _MlChip extends StatelessWidget {
-  final IconData    icon;
-  final String      label, value;
-  final Color       color;
-  final RiverColors t;
-  const _MlChip({
-    required this.icon,  required this.label,
-    required this.value, required this.color,
-    required this.t,
-  });
+  final IconData icon; final String label, value; final Color color; final RiverColors t;
+  const _MlChip({required this.icon, required this.label, required this.value, required this.color, required this.t});
 
   @override
   Widget build(BuildContext context) {
@@ -497,22 +473,9 @@ class _MlChip extends StatelessWidget {
           children: [
             Icon(icon, color: color, size: 14),
             const SizedBox(height: 3),
-            Text(
-              label,
-              style: TextStyle(
-                  color: t.textSecondary,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w600),
-            ),
-            Text(
-              value,
-              style: TextStyle(
-                  color: color,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+            Text(label, style: TextStyle(color: t.textSecondary, fontSize: 9, fontWeight: FontWeight.w600)),
+            Text(value, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w800),
+                maxLines: 1, overflow: TextOverflow.ellipsis),
           ],
         ),
       ),
@@ -520,7 +483,8 @@ class _MlChip extends StatelessWidget {
   }
 }
 
-// ── Hero Background
+// ── Hero background (unchanged from v5.8) ───────────────────────────────────────
+
 class _HeroBackground extends StatelessWidget {
   final Color    riskColor;
   final double   fillPct;
@@ -570,7 +534,7 @@ class _HeroBackground extends StatelessWidget {
                   AnimatedBuilder(
                     animation: scaleAnim,
                     builder: (_, __) => Transform.scale(
-                      scale: scaleAnim.value,
+                      scale:     scaleAnim.value,
                       alignment: Alignment.centerLeft,
                       child: Text(
                         cityName,
@@ -580,9 +544,7 @@ class _HeroBackground extends StatelessWidget {
                           fontWeight: FontWeight.w900,
                           letterSpacing: -1,
                           shadows: [
-                            Shadow(
-                                color: riskColor.withOpacity(0.3),
-                                blurRadius: 12),
+                            Shadow(color: riskColor.withOpacity(0.3), blurRadius: 12),
                           ],
                         ),
                       ),
@@ -596,18 +558,13 @@ class _HeroBackground extends StatelessWidget {
                       style: TextStyle(color: t.textSecondary, fontSize: 13)),
                   const SizedBox(height: 12),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                     decoration: BoxDecoration(
                       color: riskColor.withOpacity(0.18),
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                          color: riskColor.withOpacity(0.55), width: 1.5),
+                      border: Border.all(color: riskColor.withOpacity(0.55), width: 1.5),
                       boxShadow: [
-                        BoxShadow(
-                            color: riskColor.withOpacity(0.25),
-                            blurRadius: 16,
-                            spreadRadius: 1),
+                        BoxShadow(color: riskColor.withOpacity(0.25), blurRadius: 16, spreadRadius: 1),
                       ],
                     ),
                     child: Row(
@@ -627,9 +584,7 @@ class _HeroBackground extends StatelessWidget {
                   const SizedBox(height: 10),
                   Text('≈ ${fillPct.toStringAsFixed(1)}% fill',
                       style: TextStyle(
-                          color: riskColor,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700)),
+                          color: riskColor, fontSize: 12, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 4),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(4),
@@ -662,8 +617,7 @@ class _ConcentricRingsPainter extends CustomPainter {
     for (int i = 0; i < 3; i++) {
       final r = [40.0, 65.0, 92.0][i] * pulse;
       canvas.drawCircle(
-        Offset(cx, cy),
-        r,
+        Offset(cx, cy), r,
         Paint()
           ..color = color.withOpacity((0.22 - i * 0.06).clamp(0.02, 0.22))
           ..style = PaintingStyle.stroke
@@ -677,11 +631,10 @@ class _ConcentricRingsPainter extends CustomPainter {
       o.color != color || o.pulse != pulse;
 }
 
-// ── Threshold banner
+// ── Threshold banner (unchanged) ──────────────────────────────────────────────────
+
 class _ThresholdBanner extends StatelessWidget {
-  final String risk;
-  final Color  rc;
-  final RiverColors t;
+  final String risk; final Color rc; final RiverColors t;
   const _ThresholdBanner({required this.risk, required this.rc, required this.t});
 
   @override
@@ -721,28 +674,19 @@ class _ThresholdBanner extends StatelessWidget {
   }
 }
 
-// ── Stats grid 2x2
+// ── Stats grid (unchanged) ───────────────────────────────────────────────────────────
+
 class _StatsGrid extends StatelessWidget {
-  final FloodData  data;
-  final Color      rc;
-  final RiverColors t;
-  final double    fillPct;
-  const _StatsGrid({
-    required this.data, required this.rc,
-    required this.t,    required this.fillPct,
-  });
+  final FloodData data; final Color rc; final RiverColors t; final double fillPct;
+  const _StatsGrid({required this.data, required this.rc, required this.t, required this.fillPct});
 
   @override
   Widget build(BuildContext context) {
     final stats = [
-      _S('Current Level', '${data.currentLevel.toStringAsFixed(2)} m',
-          Icons.water_drop_outlined, rc),
-      _S('Danger Level', '${data.dangerLevel.toStringAsFixed(2)} m',
-          Icons.emergency_outlined, AppPalette.danger),
-      _S('Fill %', '${fillPct.toStringAsFixed(1)}%',
-          Icons.show_chart_rounded, t.accent),
-      _S('State', data.state,
-          Icons.location_on_outlined, t.textSecondary),
+      _S('Current Level', '${data.currentLevel.toStringAsFixed(2)} m', Icons.water_drop_outlined, rc),
+      _S('Danger Level',  '${data.dangerLevel.toStringAsFixed(2)} m',  Icons.emergency_outlined,   AppPalette.danger),
+      _S('Fill %',        '${fillPct.toStringAsFixed(1)}%',            Icons.show_chart_rounded,   t.accent),
+      _S('State',          data.state,                                  Icons.location_on_outlined, t.textSecondary),
     ];
     return GridView.count(
       crossAxisCount: 2,
@@ -756,16 +700,10 @@ class _StatsGrid extends StatelessWidget {
   }
 }
 
-class _S {
-  final String label, value;
-  final IconData icon;
-  final Color color;
-  const _S(this.label, this.value, this.icon, this.color);
-}
+class _S { final String label, value; final IconData icon; final Color color; const _S(this.label, this.value, this.icon, this.color); }
 
 class _StatCell extends StatelessWidget {
-  final _S s;
-  final RiverColors t;
+  final _S s; final RiverColors t;
   const _StatCell({required this.s, required this.t});
 
   @override
@@ -776,12 +714,7 @@ class _StatCell extends StatelessWidget {
         color: s.color.withOpacity(0.09),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: s.color.withOpacity(0.3)),
-        boxShadow: [
-          BoxShadow(
-              color: s.color.withOpacity(0.07),
-              blurRadius: 8,
-              offset: const Offset(0, 3)),
-        ],
+        boxShadow: [BoxShadow(color: s.color.withOpacity(0.07), blurRadius: 8, offset: const Offset(0, 3))],
       ),
       child: Row(
         children: [
@@ -792,18 +725,9 @@ class _StatCell extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment:  MainAxisAlignment.center,
               children: [
-                Text(s.label,
-                    style: TextStyle(
-                        color: t.textSecondary,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600)),
-                Text(s.value,
-                    style: TextStyle(
-                        color: s.color,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
+                Text(s.label, style: TextStyle(color: t.textSecondary, fontSize: 10, fontWeight: FontWeight.w600)),
+                Text(s.value, style: TextStyle(color: s.color, fontSize: 14, fontWeight: FontWeight.w800),
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
               ],
             ),
           ),
@@ -813,30 +737,23 @@ class _StatCell extends StatelessWidget {
   }
 }
 
-// ── Animated fill gauge card
+// ── Animated fill gauge card (unchanged) ──────────────────────────────────────────
+
 class _GaugeCard extends StatefulWidget {
-  final double fillPct, pctVal;
-  final Color  rc;
-  final RiverColors t;
-  const _GaugeCard({
-    required this.fillPct, required this.pctVal,
-    required this.rc,      required this.t,
-  });
+  final double fillPct, pctVal; final Color rc; final RiverColors t;
+  const _GaugeCard({required this.fillPct, required this.pctVal, required this.rc, required this.t});
   @override
   State<_GaugeCard> createState() => _GaugeCardState();
 }
 
-class _GaugeCardState extends State<_GaugeCard>
-    with SingleTickerProviderStateMixin {
+class _GaugeCardState extends State<_GaugeCard> with SingleTickerProviderStateMixin {
   late final AnimationController _ac;
   late final Animation<double>   _anim;
 
   @override
   void initState() {
     super.initState();
-    _ac = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1400))
-      ..forward();
+    _ac = AnimationController(vsync: this, duration: const Duration(milliseconds: 1400))..forward();
     _anim = Tween<double>(begin: 0, end: widget.pctVal)
         .animate(CurvedAnimation(parent: _ac, curve: Curves.easeOutCubic));
   }
@@ -846,20 +763,14 @@ class _GaugeCardState extends State<_GaugeCard>
 
   @override
   Widget build(BuildContext context) {
-    final t  = widget.t;
-    final rc = widget.rc;
+    final t = widget.t; final rc = widget.rc;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: t.cardBg,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: rc.withOpacity(0.3)),
-        boxShadow: [
-          BoxShadow(
-              color: rc.withOpacity(0.10),
-              blurRadius: 20,
-              offset: const Offset(0, 6)),
-        ],
+        boxShadow: [BoxShadow(color: rc.withOpacity(0.10), blurRadius: 20, offset: const Offset(0, 6))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -868,18 +779,13 @@ class _GaugeCardState extends State<_GaugeCard>
             children: [
               Icon(Icons.water_drop_outlined, color: rc, size: 18),
               const SizedBox(width: 8),
-              Text('Fill Level',
-                  style: TextStyle(
-                      color: t.textPrimary,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800)),
+              Text('Fill Level', style: TextStyle(color: t.textPrimary, fontSize: 15, fontWeight: FontWeight.w800)),
               const Spacer(),
               AnimatedBuilder(
                 animation: _anim,
                 builder: (_, __) => Text(
                   '${(_anim.value * 100).toStringAsFixed(1)}%',
-                  style: TextStyle(
-                      color: rc, fontSize: 22, fontWeight: FontWeight.w900),
+                  style: TextStyle(color: rc, fontSize: 22, fontWeight: FontWeight.w900),
                 ),
               ),
             ],
@@ -899,8 +805,7 @@ class _GaugeCardState extends State<_GaugeCard>
                         child: Container(
                           height: 20,
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                                colors: [rc, rc.withOpacity(0.7)]),
+                            gradient: LinearGradient(colors: [rc, rc.withOpacity(0.7)]),
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
@@ -926,13 +831,11 @@ class _GaugeCardState extends State<_GaugeCard>
   }
 }
 
-// ── Quick action buttons
+// ── Quick actions (unchanged) ─────────────────────────────────────────────────────────
+
 class _QuickActions extends StatelessWidget {
-  final String cityName, riskLevel;
-  final RiverColors t;
-  const _QuickActions({
-    required this.cityName, required this.riskLevel, required this.t,
-  });
+  final String cityName, riskLevel; final RiverColors t;
+  const _QuickActions({required this.cityName, required this.riskLevel, required this.t});
 
   @override
   Widget build(BuildContext context) {
@@ -940,40 +843,21 @@ class _QuickActions extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Quick Actions',
-            style: TextStyle(
-                color: t.textPrimary,
-                fontSize: 15,
-                fontWeight: FontWeight.w800)),
+            style: TextStyle(color: t.textPrimary, fontSize: 15, fontWeight: FontWeight.w800)),
         const SizedBox(height: 12),
         Row(
           children: [
-            _ActionBtn(
-              icon: Icons.directions_run,
-              label: 'Evacuate',
-              color: Colors.deepOrange,
-              onTap: () => Navigator.of(context).pushNamed(Routes.evacuation),
-            ),
+            _ActionBtn(icon: Icons.directions_run,      label: 'Evacuate', color: Colors.deepOrange,
+                onTap: () => Navigator.of(context).pushNamed(Routes.evacuation)),
             const SizedBox(width: 10),
-            _ActionBtn(
-              icon: Icons.map_outlined,
-              label: 'View Map',
-              color: Colors.blue,
-              onTap: () => Navigator.of(context).pushNamed(Routes.biharRiverMap),
-            ),
+            _ActionBtn(icon: Icons.map_outlined,        label: 'View Map', color: Colors.blue,
+                onTap: () => Navigator.of(context).pushNamed(Routes.biharRiverMap)),
             const SizedBox(width: 10),
-            _ActionBtn(
-              icon: Icons.auto_graph,
-              label: 'Predict',
-              color: const Color(0xFF7B2FF7),
-              onTap: () => Navigator.of(context).pushNamed(Routes.predict),
-            ),
+            _ActionBtn(icon: Icons.auto_graph,          label: 'Predict',  color: const Color(0xFF7B2FF7),
+                onTap: () => Navigator.of(context).pushNamed(Routes.predict)),
             const SizedBox(width: 10),
-            _ActionBtn(
-              icon: Icons.report_problem_outlined,
-              label: 'Report',
-              color: Colors.red,
-              onTap: () => Navigator.of(context).pushNamed(Routes.incidentReport),
-            ),
+            _ActionBtn(icon: Icons.report_problem_outlined, label: 'Report', color: Colors.red,
+                onTap: () => Navigator.of(context).pushNamed(Routes.incidentReport)),
           ],
         ),
       ],
@@ -982,14 +866,8 @@ class _QuickActions extends StatelessWidget {
 }
 
 class _ActionBtn extends StatelessWidget {
-  final IconData icon;
-  final String   label;
-  final Color    color;
-  final VoidCallback onTap;
-  const _ActionBtn({
-    required this.icon, required this.label,
-    required this.color, required this.onTap,
-  });
+  final IconData icon; final String label; final Color color; final VoidCallback onTap;
+  const _ActionBtn({required this.icon, required this.label, required this.color, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -1007,9 +885,7 @@ class _ActionBtn extends StatelessWidget {
             children: [
               Icon(icon, color: color, size: 22),
               const SizedBox(height: 5),
-              Text(label,
-                  style: TextStyle(
-                      color: color, fontSize: 10, fontWeight: FontWeight.w700)),
+              Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w700)),
             ],
           ),
         ),
@@ -1018,38 +894,30 @@ class _ActionBtn extends StatelessWidget {
   }
 }
 
-// ── Metadata card
+// ── Metadata card (unchanged) ───────────────────────────────────────────────────────────
+
 class _MetaCard extends StatelessWidget {
-  final FloodData  data;
-  final RiverColors t;
+  final FloodData data; final RiverColors t;
   const _MetaCard({required this.data, required this.t});
 
   @override
   Widget build(BuildContext context) {
-    // FIX: FloodData has no dataSource field.
-    // Use stationId for the Station ID row instead.
     final rows = [
       if ((data.riverName ?? '').isNotEmpty)
-        _MR('River',      data.riverName!,              Icons.water_outlined),
-      _MR('District',     data.district,                Icons.location_city_outlined),
-      _MR('State',        data.state,                   Icons.map_outlined),
-      _MR('Station ID',   data.stationId,               Icons.badge_outlined),
+        _MR('River',       data.riverName!,           Icons.water_outlined),
+      _MR('District',      data.district,             Icons.location_city_outlined),
+      _MR('State',         data.state,                Icons.map_outlined),
+      _MR('Station ID',    data.stationId,            Icons.badge_outlined),
       if (data.lastUpdated != null)
-        _MR('Last Updated', _fmt(data.lastUpdated!),    Icons.access_time_rounded),
+        _MR('Last Updated', _fmt(data.lastUpdated!),  Icons.access_time_rounded),
     ];
-
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: t.cardBg,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: t.divider.withOpacity(0.3)),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4)),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1059,10 +927,7 @@ class _MetaCard extends StatelessWidget {
               Icon(Icons.info_outline_rounded, color: t.accent, size: 18),
               const SizedBox(width: 8),
               Text('Station Details',
-                  style: TextStyle(
-                      color: t.textPrimary,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800)),
+                  style: TextStyle(color: t.textPrimary, fontSize: 15, fontWeight: FontWeight.w800)),
             ],
           ),
           const SizedBox(height: 14),
@@ -1072,21 +937,13 @@ class _MetaCard extends StatelessWidget {
                   children: [
                     Icon(r.icon, color: t.accent, size: 15),
                     const SizedBox(width: 10),
-                    Text(r.label,
-                        style: TextStyle(
-                            color: t.textSecondary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600)),
+                    Text(r.label, style: TextStyle(color: t.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
                     const Spacer(),
                     Flexible(
                       child: Text(r.value,
                           textAlign: TextAlign.end,
-                          style: TextStyle(
-                              color: t.textPrimary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis),
+                          style: TextStyle(color: t.textPrimary, fontSize: 12, fontWeight: FontWeight.w700),
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
                     ),
                   ],
                 ),
@@ -1103,16 +960,12 @@ class _MetaCard extends StatelessWidget {
   }
 }
 
-class _MR {
-  final String label, value;
-  final IconData icon;
-  const _MR(this.label, this.value, this.icon);
-}
+class _MR { final String label, value; final IconData icon; const _MR(this.label, this.value, this.icon); }
 
-// ── Not-found scaffold
+// ── Not-found scaffold (unchanged) ─────────────────────────────────────────────────────
+
 class _NotFoundScaffold extends StatelessWidget {
-  final String cityName;
-  final RiverColors t;
+  final String cityName; final RiverColors t;
   const _NotFoundScaffold({required this.cityName, required this.t});
 
   @override
@@ -1131,21 +984,15 @@ class _NotFoundScaffold extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.search_off_rounded,
-                  size: 64, color: t.textSecondary),
+              Icon(Icons.search_off_rounded, size: 64, color: t.textSecondary),
               const SizedBox(height: 16),
               Text('No data found for "$cityName"',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                      color: t.textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700)),
+                  style: TextStyle(color: t.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
-              Text(
-                'Data may not be available for this location yet.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: t.textSecondary, fontSize: 13),
-              ),
+              Text('Data may not be available for this location yet.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: t.textSecondary, fontSize: 13)),
               const SizedBox(height: 24),
               ElevatedButton.icon(
                 icon: const Icon(Icons.arrow_back_rounded),
