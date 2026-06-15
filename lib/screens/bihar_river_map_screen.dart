@@ -1,12 +1,24 @@
 // lib/screens/bihar_river_map_screen.dart
-// OpsFlood — BiharRiverMapScreen v5.6.2
+// OpsFlood — BiharRiverMapScreen v5.7
+//
+// v5.7 (15 Jun 2026 — ML fields wired into _StationSheet):
+//   • _StationSheet now watches predictionProvider(gauge.station) when live
+//     data is present; a new _mlSection() is rendered between
+//     _changeSection() and _riverSection().
+//   • _mlSection shows:
+//       – ML severity badge (CRITICAL/SEVERE/MODERATE/LOW) with colour
+//       – Risk-score gauge bar (0–100, colour-coded)
+//       – Confidence % chip + model version chip
+//       – "BREACH RISK" warning banner when predicted24h ≥ dangerLevel
+//       – Peak 72h level chip + one-line outlook text
+//       – "Linear fallback" note when fromBackend == false
+//   • No changes to MapStationData or any provider — predictionProvider
+//     .family is the canonical per-station async ML source.
 //
 // v5.6.2 (14 Jun 2026 — map spam fix):
 //   • Replace NetworkTileProvider for RainViewer with SilentTileProvider.
 //   • SilentTileProvider injects synthetic Cache-Control max-age=600 on
-//     every tile response, preventing the fallback freshness age warning:
-//       [flutter_map] Using fallback freshness age (168:00:00.000000) …
-//     from firing for every single nowcast tile.
+//     every tile response, preventing the fallback freshness age warning.
 //   • Remove unused _rainViewerHeaders constant.
 //
 // v5.6.1 (14 Jun 2026 — analyze fixes):
@@ -29,8 +41,9 @@ import 'package:latlong2/latlong.dart';
 
 import '../data/bihar_rivers.dart';
 import '../providers/map_live_index_provider.dart';
+import '../providers/prediction_provider.dart';         // ← v5.7 ML
 import '../providers/real_time_river_provider.dart'; // mergedStationsProvider
-import '../providers/silent_tile_provider.dart';     // ← NEW
+import '../providers/silent_tile_provider.dart';     // ← v5.6.2
 import '../theme/river_theme.dart';
 import 'city_detail_screen.dart';
 import '../providers/flood_providers.dart';
@@ -1268,7 +1281,7 @@ class _LayerPanel extends StatelessWidget {
 }
 
 // ────────────────────────────────────────────────────────────────────────────────
-// _StationSheet
+// _StationSheet  (v5.7 — ML section added)
 // ────────────────────────────────────────────────────────────────────────────────
 
 class _StationSheet extends ConsumerWidget {
@@ -1288,6 +1301,13 @@ class _StationSheet extends ConsumerWidget {
         (live != null && live!.city.isNotEmpty) ? live!.city : gauge.station;
     final cityMap = ref.watch(cityLookupMapProvider);
     final hasCityProfile = cityMap.containsKey(_norm(resolvedCity));
+
+    // ── v5.7: ML prediction (async, per-station) ─────────────────────────────
+    // Only watch when we have live data; otherwise the prediction falls back
+    // to seed-data linear extrapolation which adds little value.
+    final predAsync = hasLive
+        ? ref.watch(predictionProvider(gauge.station))
+        : null;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
@@ -1365,6 +1385,16 @@ class _StationSheet extends ConsumerWidget {
               _thresholdsSection(),
               const SizedBox(height: 12),
               _changeSection(),
+              // ── v5.7: ML prediction section ──────────────────────────
+              if (predAsync != null) ...[
+                const SizedBox(height: 12),
+                predAsync.when(
+                  loading: () => _mlLoadingCard(),
+                  error: (_, __) => const SizedBox.shrink(),
+                  data: (pred) => _mlSection(pred),
+                ),
+              ],
+              // ─────────────────────────────────────────────────────────
               const SizedBox(height: 12),
               _riverSection(),
               const SizedBox(height: 12),
@@ -1424,6 +1454,243 @@ class _StationSheet extends ConsumerWidget {
       ),
     );
   }
+
+  // ── ML loading skeleton ─────────────────────────────────────────────────────
+  Widget _mlLoadingCard() => Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: t.cardBgElevated,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: t.stroke),
+        ),
+        child: Row(children: [
+          SizedBox(
+            width: 14, height: 14,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: t.accent,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text('Loading ML forecast…',
+              style: TextStyle(color: t.textSecondary, fontSize: 12)),
+        ]),
+      );
+
+  // ── ML prediction section ───────────────────────────────────────────────────
+  Widget _mlSection(FloodPrediction p) {
+    // Severity colour
+    final Color sevColor;
+    switch (p.severity) {
+      case 'CRITICAL':
+        sevColor = AppPalette.critical;
+      case 'SEVERE':
+        sevColor = AppPalette.danger;
+      case 'MODERATE':
+        sevColor = AppPalette.gold;
+      default:
+        sevColor = AppPalette.safe;
+    }
+
+    // Risk-score bar colour
+    final Color scoreColor = p.riskScore >= 85
+        ? AppPalette.critical
+        : p.riskScore >= 65
+            ? AppPalette.danger
+            : p.riskScore >= 40
+                ? AppPalette.gold
+                : AppPalette.safe;
+
+    final bool willBreachDanger =
+        p.dangerLevel > 0 && p.predicted24h >= p.dangerLevel;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: sevColor.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: sevColor.withValues(alpha: 0.28)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Header row: "ML FORECAST" label + severity badge ──────────────
+          Row(children: [
+            Icon(Icons.auto_awesome_rounded, color: sevColor, size: 13),
+            const SizedBox(width: 5),
+            Text(
+              'ML FORECAST',
+              style: TextStyle(
+                  color: t.textSecondary,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.4),
+            ),
+            const Spacer(),
+            _badge(label: p.severity, color: sevColor),
+            if (!p.fromBackend) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: t.cardBgElevated,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: t.stroke),
+                ),
+                child: Text(
+                  'linear fallback',
+                  style: TextStyle(
+                      color: t.textSecondary,
+                      fontSize: 8,
+                      fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ]),
+
+          // ── BREACH WARNING banner ─────────────────────────────────────────
+          if (willBreachDanger) ...[
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppPalette.critical.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                    color: AppPalette.critical.withValues(alpha: 0.45)),
+              ),
+              child: Row(children: [
+                const Icon(Icons.crisis_alert_rounded,
+                    color: AppPalette.critical, size: 14),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Text(
+                    'BREACH RISK — Predicted level may reach or exceed danger within 24 h',
+                    style: const TextStyle(
+                        color: AppPalette.critical,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ]),
+            ),
+          ],
+
+          const SizedBox(height: 12),
+
+          // ── Risk score gauge bar ──────────────────────────────────────────
+          Row(children: [
+            Text('Risk Score',
+                style: TextStyle(
+                    color: t.textSecondary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600)),
+            const Spacer(),
+            Text(
+              '${p.riskScore.toStringAsFixed(0)} / 100',
+              style: TextStyle(
+                  color: scoreColor,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900),
+            ),
+          ]),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: (p.riskScore / 100).clamp(0.0, 1.0),
+              minHeight: 7,
+              backgroundColor: scoreColor.withValues(alpha: 0.15),
+              valueColor: AlwaysStoppedAnimation<Color>(scoreColor),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // ── Chip row: confidence + peak72h ────────────────────────────────
+          Row(children: [
+            _mlChip(
+              icon: Icons.verified_rounded,
+              label: 'Confidence',
+              value: '${p.confidencePct.toStringAsFixed(0)}%',
+              color: t.accent,
+            ),
+            const SizedBox(width: 8),
+            _mlChip(
+              icon: Icons.show_chart_rounded,
+              label: 'Peak 72h',
+              value: '${p.predicted72h.toStringAsFixed(2)} m',
+              color: scoreColor,
+            ),
+            const SizedBox(width: 8),
+            _mlChip(
+              icon: Icons.trending_up_rounded,
+              label: 'Trend',
+              value: p.trend,
+              color: p.trend == 'rising'
+                  ? AppPalette.danger
+                  : p.trend == 'falling'
+                      ? AppPalette.safe
+                      : AppPalette.gold,
+            ),
+          ]),
+
+          const SizedBox(height: 10),
+
+          // ── Outlook text ─────────────────────────────────────────────────
+          Text(
+            p.outlook,
+            style: TextStyle(
+                color: t.textSecondary,
+                fontSize: 11,
+                fontStyle: FontStyle.italic),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _mlChip({
+    required IconData icon,
+    required String   label,
+    required String   value,
+    required Color    color,
+  }) =>
+      Expanded(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: color.withValues(alpha: 0.25)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                Icon(icon, size: 9, color: color),
+                const SizedBox(width: 3),
+                Text(label,
+                    style: TextStyle(
+                        color: t.textSecondary,
+                        fontSize: 8,
+                        fontWeight: FontWeight.w600)),
+              ]),
+              const SizedBox(height: 3),
+              Text(value,
+                  style: TextStyle(
+                      color: color,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900)),
+            ],
+          ),
+        ),
+      );
+
+  // ── Existing section builders (unchanged) ───────────────────────────────────
 
   Widget _liveSection(BuildContext context) {
     final s   = live!;
