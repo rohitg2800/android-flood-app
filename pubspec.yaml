@@ -1,7 +1,7 @@
 name: equinox_flood
 description: OpsFlood — Real-time Bihar flood monitoring app
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.1.0+2
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -25,15 +25,19 @@ dependencies:
   flutter_dotenv: ^6.0.1
 
   # Firebase suite
-  firebase_core:      ^4.9.0
-  firebase_auth:      ^6.5.2
-  firebase_messaging: ^16.2.2
-  cloud_firestore:    ^6.4.1
-  firebase_storage:   ^13.0.2
+  firebase_core:         ^4.9.0
+  firebase_auth:         ^6.5.2
+  firebase_messaging:    ^16.2.2
+  firebase_crashlytics:  ^4.4.0
+  cloud_firestore:       ^6.4.1
+  firebase_storage:      ^13.0.2
 
   # Background tasks
+  # flutter_background_service REMOVED: conflicts with workmanager on Android 12+
+  # (ForegroundServiceStartNotAllowedException). All background work is handled
+  # exclusively by WorkManager via ai_prediction_background_service.dart.
+  # See lib/services/background_service.dart for the no-op shim + explanation.
   workmanager: ^0.9.0+3
-  flutter_background_service: ^5.0.6
 
   # Charts
   fl_chart: ^1.2.0
@@ -139,7 +143,11 @@ flutter:
   generate: true
 
   assets:
-    - .env
+    # .env intentionally NOT listed here.
+    # Reason: bundling .env as a Flutter asset makes its contents readable
+    # by anyone who decompiles the APK with apktool.
+    # All secrets are server-side (Railway/Render). Only non-secret config
+    # lives in lib/config/app_config.dart via --dart-define at build time.
     - assets/icon/
     - assets/fonts/
     - assets/icons/
