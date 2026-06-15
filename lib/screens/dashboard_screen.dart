@@ -1,19 +1,16 @@
-// lib/screens/dashboard_screen.dart  v8.7-dash
+// lib/screens/dashboard_screen.dart  v8.8
 //
-// CHANGES v8.7-dash (14 Jun 2026):
-//   • All counts now read from mergedStationsProvider (the single source of truth).
-//     Summary row: extreme / severe+extreme / aboveNormal / normal buckets.
-//   • Live Station count = stations where isLive==true, with a pulsing green dot.
-//   • At-Risk Cities: top 8 from merged list sorted by riskScore, with
-//     graphical level-bar (current / danger) and DangerClass colour.
-//   • Live Stations section: shows top 12 live stations with level bar,
-//     source badge (LiveEngine / WRD / CWC / DataFetch) and last-updated time.
-//   • Source breakdown footer: "155 LiveEngine · 14 DataFetch · 1 Birpur = 170"
-//     derived directly from mergedStationsProvider slice counts.
-//   • AppBar subtitle shows total merged count.
-// fix: null-coalesce String? dataSource / lastUpdated at every call-site.
+// v8.8 (15 Jun 2026) — ML severity fields wired throughout
 //
-library;
+//   Changes from v8.7:
+//   • Remove bare library; directive
+//   • _AtRiskTile: predictedSeverity chip, riskScore bar,
+//     willBreachDanger banner, peakLevel72h label
+//   • _LiveStationTile: predictedSeverity micro-chip, riskScore bar,
+//     confidencePercent subtitle
+//   • _buildAtRiskCities: sorted by riskScore desc
+//   • Summary row: breach count chip (willBreachDanger stations)
+//   • All existing v8.7 logic unchanged
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -21,6 +18,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/river_theme.dart';
 import '../theme/theme_3d.dart';
 import '../models/river_station.dart';
+import '../models/flood_data.dart';
 import '../providers/real_time_river_provider.dart';
 import '../providers/flood_provider.dart';
 import '../providers/alert_provider.dart';
@@ -72,7 +70,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     ref.read(floodProvider).refresh();
   }
 
-  // ── Source label helpers ────────────────────────────────────────────────
   String _sourceLabel(String src) {
     if (src.contains('LIVE_ENGINE') || src.contains('LiveEngine') ||
         src.contains('BIHAR_LIVE_ENGINE')) return 'LiveEngine';
@@ -100,23 +97,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     final fp     = ref.watch(floodProvider);
     final ap     = ref.watch(alertProvider);
     final merged = ref.watch(mergedStationsProvider);
+    final live   = ref.watch(liveFloodDataProvider);
 
-    // ── Counts from merged list ──────────────────────────────────────────────
     final totalCount   = merged.length;
     final liveCount    = merged.where((s) => s.isLive).length;
-    final extremeCount = merged
-        .where((s) => s.dangerClass == DangerClass.extreme).length;
-    final severeCount  = merged
-        .where((s) =>
-            s.dangerClass == DangerClass.severe ||
-            s.dangerClass == DangerClass.extreme)
-        .length;
-    final warningCount = merged
-        .where((s) => s.dangerClass == DangerClass.aboveNormal).length;
-    final normalCount  = merged
-        .where((s) => s.dangerClass == DangerClass.normal).length;
+    final extremeCount = merged.where((s) => s.dangerClass == DangerClass.extreme).length;
+    final severeCount  = merged.where((s) =>
+        s.dangerClass == DangerClass.severe ||
+        s.dangerClass == DangerClass.extreme).length;
+    final warningCount = merged.where((s) => s.dangerClass == DangerClass.aboveNormal).length;
+    final normalCount  = merged.where((s) => s.dangerClass == DangerClass.normal).length;
 
-    // ── Source breakdown (null-coalesce dataSource) ──────────────────────
+    // ML breach count from liveFloodData
+    final breachCount = live.where((fd) => fd.willBreachDanger == true).length;
+
     final leCount   = merged.where((s) => _sourceLabel(s.dataSource ?? '') == 'LiveEngine').length;
     final cwcCount  = merged.where((s) => _sourceLabel(s.dataSource ?? '') == 'CWC').length;
     final dfCount   = merged.where((s) => _sourceLabel(s.dataSource ?? '') == 'DataFetch').length;
@@ -133,7 +127,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           slivers: [
             Td3AppBar(
               title: 'OpsFlood Bihar',
-              subtitle: '$totalCount stations · $liveCount live',
+              subtitle: '$totalCount stations · $liveCount live'
+                  '${breachCount > 0 ? "  ⚠ $breachCount breach" : ""}',
               actions: [
                 IconButton(
                   icon: Icon(Icons.sos_rounded, color: t.riverDanger, size: 26),
@@ -146,16 +141,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               padding: const EdgeInsets.all(16),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  _buildSummaryRow(t, extremeCount, severeCount, warningCount, normalCount),
+                  _buildSummaryRow(t, extremeCount, severeCount, warningCount, normalCount, breachCount),
                   const SizedBox(height: 12),
-                  _buildSourceBreakdown(
-                      t, totalCount, leCount, cwcCount, dfCount, wrdCount, seedCount),
+                  _buildSourceBreakdown(t, totalCount, leCount, cwcCount, dfCount, wrdCount, seedCount),
                   const SizedBox(height: 16),
                   _buildQuickActions(context, t),
                   const SizedBox(height: 16),
-                  _buildAtRiskCities(context, t, merged),
+                  _buildAtRiskCities(context, t, merged, live),
                   const SizedBox(height: 16),
-                  _buildLiveStations(context, t, merged),
+                  _buildLiveStations(context, t, merged, live),
                 ]),
               ),
             ),
@@ -167,56 +161,88 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
 
   // ── Summary row ─────────────────────────────────────────────────────────
   Widget _buildSummaryRow(RiverColors t, int extreme, int severe,
-      int warning, int normal) {
-    return Row(
+      int warning, int normal, int breach) {
+    return Column(
       children: [
-        Expanded(
-          child: _StatChip(
-            label: 'CRITICAL',
-            value: '$severe',
-            valueColor: t.riverDanger,
-            icon: Icons.warning_rounded,
-            iconColor: t.riverDanger,
-            onTap: () => Navigator.pushNamed(context, AlertsScreen.route),
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: _StatChip(
+                label: 'CRITICAL',
+                value: '$severe',
+                valueColor: t.riverDanger,
+                icon: Icons.warning_rounded,
+                iconColor: t.riverDanger,
+                onTap: () => Navigator.pushNamed(context, AlertsScreen.route),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _StatChip(
+                label: 'WARNING',
+                value: '$warning',
+                valueColor: t.riverWarning,
+                icon: Icons.notifications_active_rounded,
+                iconColor: t.riverWarning,
+                onTap: () => Navigator.pushNamed(context, AlertsScreen.route),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _StatChip(
+                label: 'NORMAL',
+                value: '$normal',
+                valueColor: t.riverNormal,
+                icon: Icons.check_circle_outline_rounded,
+                iconColor: t.riverNormal,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _StatChip(
+                label: 'EXTREME',
+                value: '$extreme',
+                valueColor: const Color(0xFFFF1744),
+                icon: Icons.flood_rounded,
+                iconColor: const Color(0xFFFF1744),
+                onTap: () => Navigator.pushNamed(context, AlertsScreen.route),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _StatChip(
-            label: 'WARNING',
-            value: '$warning',
-            valueColor: t.riverWarning,
-            icon: Icons.notifications_active_rounded,
-            iconColor: t.riverWarning,
-            onTap: () => Navigator.pushNamed(context, AlertsScreen.route),
+        // ML breach prediction banner
+        if (breach > 0) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFF1744).withOpacity(0.10),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFFF1744).withOpacity(0.4)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.query_stats_rounded,
+                    color: Color(0xFFFF1744), size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'ML Model: $breach station${breach > 1 ? "s" : ""} predicted to breach danger level within 72h',
+                    style: const TextStyle(
+                        color: Color(0xFFFF1744),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _StatChip(
-            label: 'NORMAL',
-            value: '$normal',
-            valueColor: t.riverNormal,
-            icon: Icons.check_circle_outline_rounded,
-            iconColor: t.riverNormal,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _StatChip(
-            label: 'EXTREME',
-            value: '$extreme',
-            valueColor: const Color(0xFFFF1744),
-            icon: Icons.flood_rounded,
-            iconColor: const Color(0xFFFF1744),
-            onTap: () => Navigator.pushNamed(context, AlertsScreen.route),
-          ),
-        ),
+        ],
       ],
     );
   }
 
-  // ── Source breakdown banner ───────────────────────────────────────────────
+  // ── Source breakdown banner ────────────────────────────────────────────
   Widget _buildSourceBreakdown(RiverColors t, int total,
       int le, int cwc, int df, int wrd, int seed) {
     return Td3Card(
@@ -238,11 +264,31 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.3),
                 ),
+                const Spacer(),
+                // ML severity health dot
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF7B2FF7).withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: const Color(0xFF7B2FF7).withOpacity(0.4)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.auto_graph, color: Color(0xFF7B2FF7), size: 10),
+                      SizedBox(width: 3),
+                      Text('ML', style: TextStyle(
+                          color: Color(0xFF7B2FF7),
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800)),
+                    ],
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 8),
-            _SourceBar(
-                total: total, le: le, cwc: cwc, df: df, wrd: wrd, seed: seed),
+            _SourceBar(total: total, le: le, cwc: cwc, df: df, wrd: wrd, seed: seed),
             const SizedBox(height: 8),
             Wrap(
               spacing: 10,
@@ -301,14 +347,30 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     );
   }
 
-  // ── At-Risk Cities ────────────────────────────────────────────────────────
+  // ── At-Risk Cities ─────────────────────────────────────────────────────────
   Widget _buildAtRiskCities(
-      BuildContext context, RiverColors t, List<RiverStation> merged) {
+      BuildContext context, RiverColors t,
+      List<RiverStation> merged, List<FloodData> live) {
+    // Build lookup: city key -> FloodData (for ML fields)
+    final fdMap = <String, FloodData>{
+      for (final fd in live) fd.city.toLowerCase().trim(): fd,
+    };
+
     final atRisk = merged
         .where((s) => s.dangerClass != DangerClass.normal)
-        .take(8)
-        .toList();
-    if (atRisk.isEmpty) return const SizedBox.shrink();
+        .toList()
+      // Sort by ML riskScore desc, fall back to dangerClass ordinal
+      ..sort((a, b) {
+          final fdA = fdMap[a.city.toLowerCase().trim()];
+          final fdB = fdMap[b.city.toLowerCase().trim()];
+          final scoreA = fdA?.riskScore ?? (a.dangerClass.index * 20);
+          final scoreB = fdB?.riskScore ?? (b.dangerClass.index * 20);
+          return scoreB.compareTo(scoreA);
+        });
+
+    final topRisk = atRisk.take(8).toList();
+    if (topRisk.isEmpty) return const SizedBox.shrink();
+
     return Td3Card(
       elevation: Td3.elevMid,
       child: Column(
@@ -327,15 +389,29 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                         fontWeight: FontWeight.w700,
                         fontSize: 14)),
                 const Spacer(),
-                Text('${atRisk.length} stations',
-                    style:
-                        TextStyle(color: t.textSecondary, fontSize: 11)),
+                // ML badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF7B2FF7).withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Text('ML ranked',
+                      style: TextStyle(
+                          color: Color(0xFF7B2FF7),
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700)),
+                ),
+                const SizedBox(width: 8),
+                Text('${topRisk.length} stations',
+                    style: TextStyle(color: t.textSecondary, fontSize: 11)),
               ],
             ),
           ),
           const SizedBox(height: 4),
-          ...atRisk.map((s) => _AtRiskTile(
+          ...topRisk.map((s) => _AtRiskTile(
                 station: s,
+                floodData: fdMap[s.city.toLowerCase().trim()],
                 theme: t,
                 onTap: () => Navigator.push(
                     context,
@@ -351,9 +427,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
 
   // ── Live Stations list ────────────────────────────────────────────────────
   Widget _buildLiveStations(
-      BuildContext context, RiverColors t, List<RiverStation> merged) {
-    final live = merged.where((s) => s.isLive).take(12).toList();
-    if (live.isEmpty) return const SizedBox.shrink();
+      BuildContext context, RiverColors t,
+      List<RiverStation> merged, List<FloodData> live) {
+    final fdMap = <String, FloodData>{
+      for (final fd in live) fd.city.toLowerCase().trim(): fd,
+    };
+
+    final liveStations = merged.where((s) => s.isLive).toList()
+      ..sort((a, b) {
+          final fdA = fdMap[a.city.toLowerCase().trim()];
+          final fdB = fdMap[b.city.toLowerCase().trim()];
+          final scoreA = fdA?.riskScore ?? 0;
+          final scoreB = fdB?.riskScore ?? 0;
+          return scoreB.compareTo(scoreA);
+        });
+
+    final top = liveStations.take(12).toList();
+    if (top.isEmpty) return const SizedBox.shrink();
+
     return Td3Card(
       elevation: Td3.elevMid,
       child: Column(
@@ -380,7 +471,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             ),
           ),
           const SizedBox(height: 4),
-          ...live.map((s) => _LiveStationTile(station: s, theme: t)),
+          ...top.map((s) => _LiveStationTile(
+                station: s,
+                floodData: fdMap[s.city.toLowerCase().trim()],
+                theme: t)),
           const SizedBox(height: 6),
         ],
       ),
@@ -389,43 +483,93 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// At-Risk tile with graphical level bar
+// _AtRiskTile  — v8.8: ML fields wired
 // ─────────────────────────────────────────────────────────────────────────────
 class _AtRiskTile extends StatelessWidget {
   final RiverStation station;
+  final FloodData?   floodData; // may be null if not in liveFloodData
   final RiverColors  theme;
   final VoidCallback onTap;
-  const _AtRiskTile(
-      {required this.station, required this.theme, required this.onTap});
+  const _AtRiskTile({
+    required this.station,
+    required this.floodData,
+    required this.theme,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final t  = theme;
     final s  = station;
+    final fd = floodData;
     final dc = s.dangerClass;
 
     Color  barColor;
-    String label;
+    String dcLabel;
     switch (dc) {
-      case DangerClass.extreme:     barColor = const Color(0xFFFF1744); label = 'EXTREME'; break;
-      case DangerClass.severe:      barColor = const Color(0xFFFF6D00); label = 'DANGER';  break;
-      case DangerClass.aboveNormal: barColor = const Color(0xFFFFD740); label = 'WARNING'; break;
-      default:                      barColor = const Color(0xFF69F0AE); label = 'NORMAL';  break;
+      case DangerClass.extreme:     barColor = const Color(0xFFFF1744); dcLabel = 'EXTREME'; break;
+      case DangerClass.severe:      barColor = const Color(0xFFFF6D00); dcLabel = 'DANGER';  break;
+      case DangerClass.aboveNormal: barColor = const Color(0xFFFFD740); dcLabel = 'WARNING'; break;
+      default:                      barColor = const Color(0xFF69F0AE); dcLabel = 'NORMAL';  break;
     }
 
+    // Prefer ML severity colour if available
+    final mlSev = fd?.predictedSeverity?.toUpperCase();
+    Color mlColor = barColor;
+    if (mlSev != null) {
+      switch (mlSev) {
+        case 'CRITICAL': mlColor = const Color(0xFFFF1744); break;
+        case 'SEVERE':   mlColor = const Color(0xFFFF5500); break;
+        case 'MODERATE': mlColor = const Color(0xFF10E88A); break;
+        default:         mlColor = const Color(0xFF10E88A);
+      }
+    }
+
+    final riskScore      = fd?.riskScore;
+    final confidence     = fd?.confidencePercent;
+    final willBreach     = fd?.willBreachDanger ?? false;
+    final peak           = fd?.peakLevel72h;
     final max   = s.hfl    > 0 ? s.hfl    : (s.danger > 0 ? s.danger + 2 : 1.0);
     final frac  = (s.current / max).clamp(0.0, 1.0);
     final dFrac = (s.danger  / max).clamp(0.0, 1.0);
-    // null-coalesce String? fields
     final srcLabel = s.dataSource ?? '';
 
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ── Breach warning banner
+            if (willBreach)
+              Container(
+                margin: const EdgeInsets.only(bottom: 5),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF1744).withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: const Color(0xFFFF1744).withOpacity(0.5)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.crisis_alert_rounded,
+                        color: Color(0xFFFF1744), size: 11),
+                    const SizedBox(width: 4),
+                    Text(
+                      peak != null
+                          ? 'BREACH PREDICTED  ·  Peak ${peak.toStringAsFixed(2)} m'
+                          : 'DANGER BREACH PREDICTED within 72h',
+                      style: const TextStyle(
+                          color: Color(0xFFFF1744),
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800),
+                    ),
+                  ],
+                ),
+              ),
+
             Row(
               children: [
                 Expanded(
@@ -443,16 +587,40 @@ class _AtRiskTile extends StatelessWidget {
                     ],
                   ),
                 ),
+                // ML predicted severity chip
+                if (mlSev != null) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: mlColor.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: mlColor.withOpacity(0.5)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.auto_graph,
+                            color: Color(0xFF7B2FF7), size: 9),
+                        const SizedBox(width: 3),
+                        Text(mlSev,
+                            style: TextStyle(
+                                color: mlColor,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                ],
+                // DangerClass badge
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 7, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                   decoration: BoxDecoration(
                     color: barColor.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(6),
-                    border:
-                        Border.all(color: barColor.withOpacity(0.5)),
+                    border: Border.all(color: barColor.withOpacity(0.5)),
                   ),
-                  child: Text(label,
+                  child: Text(dcLabel,
                       style: TextStyle(
                           color: barColor,
                           fontSize: 9,
@@ -460,9 +628,7 @@ class _AtRiskTile extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  s.current > 0
-                      ? '${s.current.toStringAsFixed(2)} m'
-                      : '——',
+                  s.current > 0 ? '${s.current.toStringAsFixed(2)} m' : '——',
                   style: TextStyle(
                       color: barColor,
                       fontSize: 12,
@@ -470,7 +636,10 @@ class _AtRiskTile extends StatelessWidget {
                 ),
               ],
             ),
+
             const SizedBox(height: 5),
+
+            // Level bar
             LayoutBuilder(builder: (ctx, constraints) {
               final w = constraints.maxWidth;
               return Stack(
@@ -494,26 +663,70 @@ class _AtRiskTile extends StatelessWidget {
                     Positioned(
                       left: (w * dFrac).clamp(0, w - 1.5),
                       child: Container(
-                          width: 1.5, height: 5, color: t.riverDanger),
+                          width: 1.5, height: 5,
+                          color: t.riverDanger),
                     ),
                 ],
               );
             }),
-            const SizedBox(height: 2),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Current: ${s.current > 0 ? s.current.toStringAsFixed(2) : "——"} m',
-                  style: TextStyle(
-                      color: t.textSecondary, fontSize: 9)),
-                Text(
-                  'DL: ${s.danger.toStringAsFixed(2)} m',
-                  style: TextStyle(
-                      color: t.riverDanger.withOpacity(0.8),
-                      fontSize: 9)),
-              ],
-            ),
+
+            // ML risk score + confidence row
+            if (riskScore != null) ...[
+              const SizedBox(height: 5),
+              Row(
+                children: [
+                  const Icon(Icons.query_stats_rounded,
+                      color: Color(0xFF7B2FF7), size: 11),
+                  const SizedBox(width: 4),
+                  Text('Risk Score: $riskScore / 100',
+                      style: const TextStyle(
+                          color: Color(0xFF7B2FF7),
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700)),
+                  const Spacer(),
+                  if (confidence != null)
+                    Text(
+                      'Conf: ${confidence.toStringAsFixed(0)}%',
+                      style: TextStyle(
+                          color: t.textSecondary, fontSize: 9)),
+                  const SizedBox(width: 8),
+                  Text(
+                    'DL: ${s.danger.toStringAsFixed(2)} m',
+                    style: TextStyle(
+                        color: t.riverDanger.withOpacity(0.8),
+                        fontSize: 9)),
+                ],
+              ),
+              const SizedBox(height: 3),
+              // Risk score bar
+              ClipRRect(
+                borderRadius: BorderRadius.circular(2),
+                child: LinearProgressIndicator(
+                  value: riskScore / 100.0,
+                  minHeight: 3,
+                  backgroundColor: const Color(0xFF7B2FF7).withOpacity(0.12),
+                  valueColor: AlwaysStoppedAnimation(
+                    riskScore >= 80
+                        ? const Color(0xFFFF1744)
+                        : riskScore >= 60
+                            ? const Color(0xFFFF6D00)
+                            : const Color(0xFF7B2FF7),
+                  ),
+                ),
+              ),
+            ] else ...[
+              const SizedBox(height: 2),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Current: ${s.current > 0 ? s.current.toStringAsFixed(2) : "——"} m',
+                      style: TextStyle(color: t.textSecondary, fontSize: 9)),
+                  Text('DL: ${s.danger.toStringAsFixed(2)} m',
+                      style: TextStyle(
+                          color: t.riverDanger.withOpacity(0.8), fontSize: 9)),
+                ],
+              ),
+            ],
           ],
         ),
       ),
@@ -522,13 +735,17 @@ class _AtRiskTile extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Live Station tile
+// _LiveStationTile  — v8.8: ML fields wired
 // ─────────────────────────────────────────────────────────────────────────────
 class _LiveStationTile extends StatelessWidget {
   final RiverStation station;
+  final FloodData?   floodData;
   final RiverColors  theme;
-  const _LiveStationTile(
-      {required this.station, required this.theme});
+  const _LiveStationTile({
+    required this.station,
+    required this.floodData,
+    required this.theme,
+  });
 
   String _srcLabel(String src) {
     if (src.contains('LIVE_ENGINE') || src.contains('LiveEngine') ||
@@ -551,6 +768,7 @@ class _LiveStationTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final t  = theme;
     final s  = station;
+    final fd = floodData;
     final dc = s.dangerClass;
 
     Color levelColor;
@@ -561,77 +779,138 @@ class _LiveStationTile extends StatelessWidget {
       default:                      levelColor = const Color(0xFF69F0AE); break;
     }
 
-    final max   = s.hfl   > 0 ? s.hfl   : (s.danger > 0 ? s.danger + 2 : 1.0);
-    final frac  = (s.current / max).clamp(0.0, 1.0);
-    // null-coalesce String? fields
-    final src   = s.dataSource  ?? '';
-    final time  = s.lastUpdated ?? '--:--';
-    final sc    = _srcLabel(src);
-    final scCol = _srcColor(src);
+    final max        = s.hfl   > 0 ? s.hfl   : (s.danger > 0 ? s.danger + 2 : 1.0);
+    final frac       = (s.current / max).clamp(0.0, 1.0);
+    final src        = s.dataSource  ?? '';
+    final time       = s.lastUpdated ?? '--:--';
+    final sc         = _srcLabel(src);
+    final scCol      = _srcColor(src);
+    final mlSev      = fd?.predictedSeverity?.toUpperCase();
+    final riskScore  = fd?.riskScore;
+    final confidence = fd?.confidencePercent;
+    final willBreach = fd?.willBreachDanger ?? false;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 30,
-            padding: const EdgeInsets.symmetric(vertical: 2),
-            decoration: BoxDecoration(
-              color: scCol.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: scCol.withOpacity(0.5)),
-            ),
-            child: Text(sc,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                    color: scCol,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w800)),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          Row(
+            children: [
+              // Source badge
+              Container(
+                width: 30,
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                decoration: BoxDecoration(
+                  color: scCol.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: scCol.withOpacity(0.5)),
+                ),
+                child: Text(sc,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        color: scCol,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800)),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(s.city,
-                          overflow: TextOverflow.ellipsis,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(s.city,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  color: t.textPrimary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600)),
+                        ),
+                        // ML severity micro-chip
+                        if (mlSev != null) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 5, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF7B2FF7).withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(mlSev,
+                                style: const TextStyle(
+                                    color: Color(0xFF7B2FF7),
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.w800)),
+                          ),
+                          const SizedBox(width: 4),
+                        ],
+                        // Breach indicator
+                        if (willBreach) ...[
+                          const Icon(Icons.crisis_alert_rounded,
+                              color: Color(0xFFFF1744), size: 12),
+                          const SizedBox(width: 4),
+                        ],
+                        Text(
+                          s.current > 0
+                              ? '${s.current.toStringAsFixed(2)} m'
+                              : '——',
                           style: TextStyle(
-                              color: t.textPrimary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600)),
+                              color: levelColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700),
+                        ),
+                      ],
                     ),
-                    Text(
-                      s.current > 0
-                          ? '${s.current.toStringAsFixed(2)} m'
-                          : '——',
-                      style: TextStyle(
-                          color: levelColor,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700),
+                    const SizedBox(height: 3),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(2),
+                      child: LinearProgressIndicator(
+                        value: frac,
+                        minHeight: 3,
+                        backgroundColor: t.divider.withOpacity(0.3),
+                        valueColor: AlwaysStoppedAnimation<Color>(levelColor),
+                      ),
                     ),
+                    // ML risk score micro-bar
+                    if (riskScore != null) ...[
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(2),
+                              child: LinearProgressIndicator(
+                                value: riskScore / 100.0,
+                                minHeight: 2,
+                                backgroundColor:
+                                    const Color(0xFF7B2FF7).withOpacity(0.10),
+                                valueColor: AlwaysStoppedAnimation(
+                                  riskScore >= 80
+                                      ? const Color(0xFFFF1744)
+                                      : const Color(0xFF7B2FF7),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          if (confidence != null)
+                            Text('${confidence.toStringAsFixed(0)}%✓',
+                                style: TextStyle(
+                                    color: t.textSecondary,
+                                    fontSize: 8)),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
-                const SizedBox(height: 3),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(2),
-                  child: LinearProgressIndicator(
-                    value: frac,
-                    minHeight: 3,
-                    backgroundColor: t.divider.withOpacity(0.3),
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(levelColor),
-                  ),
-                ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 8),
+              Text(time,
+                  style: TextStyle(
+                      color: t.textSecondary, fontSize: 10)),
+            ],
           ),
-          const SizedBox(width: 8),
-          Text(time,
-              style: TextStyle(
-                  color: t.textSecondary, fontSize: 10)),
         ],
       ),
     );
@@ -643,9 +922,10 @@ class _LiveStationTile extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class _SourceBar extends StatelessWidget {
   final int total, le, cwc, df, wrd, seed;
-  const _SourceBar(
-      {required this.total, required this.le, required this.cwc,
-       required this.df,    required this.wrd, required this.seed});
+  const _SourceBar({
+    required this.total, required this.le, required this.cwc,
+    required this.df,    required this.wrd, required this.seed,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -768,8 +1048,7 @@ class _QuickActionTile extends StatelessWidget {
             decoration: BoxDecoration(
               color: qa.color.withOpacity(0.15),
               borderRadius: BorderRadius.circular(14),
-              border:
-                  Border.all(color: qa.color.withOpacity(0.5), width: 1),
+              border: Border.all(color: qa.color.withOpacity(0.5), width: 1),
             ),
             child: Icon(qa.icon, color: qa.color, size: 24),
           ),
@@ -830,13 +1109,4 @@ class _StatChip extends StatelessWidget {
                       fontWeight: FontWeight.w800)),
               Text(label,
                   style: TextStyle(
-                      color: t.textSecondary,
-                      fontSize: 9,
-                      letterSpacing: 0.5)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+                      color: t.
