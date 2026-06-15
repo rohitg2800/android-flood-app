@@ -1,25 +1,34 @@
-// lib/providers/ws_live_provider.dart  v1.0 — Step 2.3
-// StreamProvider<List<FloodData>> powered by WsGaugeService.
-// Also exposes connection status + last-sync time for the SyncStatusBanner.
+// lib/providers/ws_live_provider.dart  Step 2.3
+// StreamProvider that exposes the WsGaugeService stream as a Riverpod provider.
+// All screens should prefer watching wsLiveProvider over liveLevelsProvider
+// for real-time updates. Falls back gracefully via the service's HTTP fallback.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/flood_data.dart';
 import '../services/ws_gauge_service.dart';
 
-/// Live gauge data — backed by WS, falls back to HTTP polling automatically.
+// ── Main data provider ─────────────────────────────────────────────────────
+
 final wsLiveProvider = StreamProvider<List<FloodData>>((ref) {
-  final svc = ref.watch(wsGaugeServiceProvider);
+  final svc = WsGaugeService.instance;
+  svc.start();         // idempotent — safe to call multiple times
+  ref.onDispose(() {   // do NOT dispose singleton; just cancel this sub
+    // WsGaugeService is a singleton; we never fully dispose it here
+  });
   return svc.stream;
 });
 
-/// Current connection mode — used by SyncStatusBanner.
+// ── Status provider ────────────────────────────────────────────────────────
+
 final wsStatusProvider = StreamProvider<WsStatus>((ref) {
-  final svc = ref.watch(wsGaugeServiceProvider);
-  return svc.status;
+  return WsGaugeService.instance.statusStream;
 });
 
-/// Last successful data-receive timestamp — used by SyncStatusBanner.
-final lastSyncProvider = StreamProvider<DateTime>((ref) {
-  final svc = ref.watch(wsGaugeServiceProvider);
-  return svc.lastSync;
+// ── Last-sync time provider ────────────────────────────────────────────────
+// Returns a DateTime? — null if no data has been received yet.
+
+final wsLastSyncProvider = Provider<DateTime?>((ref) {
+  // Re-evaluate whenever wsLiveProvider emits (keeps timestamp fresh)
+  ref.watch(wsLiveProvider);
+  return WsGaugeService.instance.lastDataAt;
 });

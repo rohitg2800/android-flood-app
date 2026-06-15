@@ -1,51 +1,50 @@
-// lib/services/ws_gauge_service.dart  v1.0 — Step 2.2
-// Singleton WebSocket service that maintains a live connection to the
-// backend /ws/gauges endpoint and exposes a Stream<List<FloodData>>.
-// Falls back to HTTP polling when WS is unavailable.
+// lib/services/ws_gauge_service.dart  Step 2.2
+// WebSocket singleton — connects to /ws/gauges, auto-reconnects with
+// exponential backoff, falls back to HTTP polling if WS stays down > 30s.
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math' as math;
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:http/http.dart' as http;
 import '../models/flood_data.dart';
 import '../config/env_config.dart';
 
-enum WsStatus { connecting, connected, polling, offline }
+enum WsStatus { connecting, connected, fallback, offline }
 
 class WsGaugeService {
   WsGaugeService._();
   static final WsGaugeService instance = WsGaugeService._();
 
   // ── Public streams ────────────────────────────────────────────────────────
-  final _dataCtrl    = StreamController<List<FloodData>>.broadcast();
-  final _statusCtrl  = StreamController<WsStatus>.broadcast();
-  final _syncCtrl    = StreamController<DateTime>.broadcast();
+  final _dataController   = StreamController<List<FloodData>>.broadcast();
+  final _statusController = StreamController<WsStatus>.broadcast();
 
-  Stream<List<FloodData>> get stream => _dataCtrl.stream;
-  Stream<WsStatus>        get status => _statusCtrl.stream;
-  Stream<DateTime>        get lastSync => _syncCtrl.stream;
+  Stream<List<FloodData>> get stream       => _dataController.stream;
+  Stream<WsStatus>        get statusStream => _statusController.stream;
+
+  WsStatus _status = WsStatus.offline;
+  WsStatus get currentStatus => _status;
 
   // ── Internal state ────────────────────────────────────────────────────────
   WebSocketChannel? _channel;
-  Timer?            _reconnectTimer;
-  Timer?            _pingTimer;
-  Timer?            _fallbackTimer;
-  Timer?            _pollTimer;
-  int               _retryCount = 0;
-  bool              _disposed   = false;
-  WsStatus          _currentStatus = WsStatus.connecting;
+  StreamSubscription? _sub;
+  Timer? _reconnectTimer;
+  Timer? _fallbackTimer;
+  Timer? _pingTimer;
+  int  _retryCount  = 0;
+  bool _disposed    = false;
+  DateTime? _lastDataAt;
 
-  static const int    _maxRetry       = 6;      // max backoff steps
-  static const int    _fallbackSec    = 30;     // WS timeout before HTTP fallback
-  static const int    _pollIntervalSec = 45;    // HTTP polling interval
-  static const int    _pingIntervalSec = 20;    // WS keepalive ping
+  static const _maxRetry     = 6;       // 3→6→12→24→48→60s then cap
+  static const _pingInterval = Duration(seconds: 20);
+  static const _fallbackDelay = Duration(seconds: 30);
+  static const _fallbackPoll  = Duration(seconds: 60);
 
   String get _wsUrl {
     final base = EnvConfig.backendBaseUrl
         .replaceFirst('https://', 'wss://')
-        .replaceFirst('http://', 'ws://');
+        .replaceFirst('http://',  'ws://');
     return '$base/ws/gauges';
   }
 
@@ -59,119 +58,118 @@ class WsGaugeService {
 
   void dispose() {
     _disposed = true;
-    _cancelTimers();
+    _sub?.cancel();
+    _reconnectTimer?.cancel();
+    _fallbackTimer?.cancel();
+    _pingTimer?.cancel();
     _channel?.sink.close();
-    _dataCtrl.close();
-    _statusCtrl.close();
-    _syncCtrl.close();
+    _dataController.close();
+    _statusController.close();
   }
 
-  // ── WebSocket connection ──────────────────────────────────────────────────
+  // ── WebSocket connect ─────────────────────────────────────────────────────
   void _connect() {
     if (_disposed) return;
-    _emit(WsStatus.connecting);
+    _setStatus(WsStatus.connecting);
+    _cancelFallback();
 
     try {
       _channel = WebSocketChannel.connect(Uri.parse(_wsUrl));
-      _startFallbackTimer();
-
-      _channel!.stream.listen(
-        _onMessage,
-        onError: _onError,
-        onDone:  _onDone,
-        cancelOnError: false,
-      );
-
-      _startPing();
     } catch (e) {
+      debugPrint('[WS] connect error: $e');
       _scheduleReconnect();
+      _scheduleFallback();
+      return;
     }
+
+    _sub?.cancel();
+    _sub = _channel!.stream.listen(
+      _onMessage,
+      onError: (e) {
+        debugPrint('[WS] stream error: $e');
+        _scheduleReconnect();
+        _scheduleFallback();
+      },
+      onDone: () {
+        debugPrint('[WS] connection closed');
+        _scheduleReconnect();
+        _scheduleFallback();
+      },
+    );
+
+    _startPing();
+
+    // If no message arrives in 30s, activate HTTP fallback
+    _scheduleFallback();
   }
 
   void _onMessage(dynamic raw) {
-    _cancelFallbackTimer();
-    _cancelPollTimer();
     _retryCount = 0;
-
-    if (_currentStatus != WsStatus.connected) {
-      _emit(WsStatus.connected);
-    }
+    _cancelFallback();
+    _setStatus(WsStatus.connected);
+    _lastDataAt = DateTime.now();
 
     try {
-      final decoded = jsonDecode(raw as String);
-      // Backend sends either a list directly or { "data": [...] }
-      final List<dynamic> list = decoded is List
-          ? decoded
-          : (decoded['data'] as List<dynamic>? ?? []);
-
-      final gauges = list
-          .map((j) => FloodData.fromJson(j as Map<String, dynamic>))
-          .toList();
-
-      if (gauges.isNotEmpty) {
-        _dataCtrl.add(gauges);
-        _syncCtrl.add(DateTime.now());
+      final decoded = raw is String ? jsonDecode(raw) : raw;
+      List<dynamic> list;
+      if (decoded is List) {
+        list = decoded;
+      } else if (decoded is Map && decoded.containsKey('data')) {
+        list = decoded['data'] as List<dynamic>;
+      } else {
+        return;
       }
-    } catch (_) {
-      // Malformed frame — keep connection alive, skip frame
+      final gauges = list
+          .map((e) => FloodData.fromJson(e as Map<String, dynamic>))
+          .toList();
+      _dataController.add(gauges);
+    } catch (e) {
+      debugPrint('[WS] parse error: $e');
     }
   }
 
-  void _onError(dynamic err) {
-    _emit(WsStatus.offline);
-    _scheduleReconnect();
-  }
-
-  void _onDone() {
-    if (_currentStatus == WsStatus.connected) {
-      _scheduleReconnect();
-    }
-  }
-
-  // ── Ping keepalive ────────────────────────────────────────────────────────
-  void _startPing() {
-    _pingTimer?.cancel();
-    _pingTimer = Timer.periodic(
-      const Duration(seconds: _pingIntervalSec),
-      (_) {
-        try {
-          _channel?.sink.add(jsonEncode({'type': 'ping'}));
-        } catch (_) {}
-      },
-    );
-  }
-
-  // ── Fallback: switch to HTTP polling if WS doesn't connect within 30s ─────
-  void _startFallbackTimer() {
-    _fallbackTimer?.cancel();
-    _fallbackTimer = Timer(
-      const Duration(seconds: _fallbackSec),
-      _startHttpPolling,
-    );
-  }
-
-  void _cancelFallbackTimer() {
-    _fallbackTimer?.cancel();
-    _fallbackTimer = null;
-  }
-
-  void _startHttpPolling() {
+  // ── Reconnect backoff ─────────────────────────────────────────────────────
+  void _scheduleReconnect() {
     if (_disposed) return;
-    _emit(WsStatus.polling);
-    _fetchHttp(); // immediate first poll
-    _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(
-      const Duration(seconds: _pollIntervalSec),
-      (_) => _fetchHttp(),
-    );
+    _sub?.cancel();
+    _pingTimer?.cancel();
+    _channel?.sink.close();
+
+    final delay = Duration(seconds: _backoffSeconds());
+    debugPrint('[WS] reconnecting in ${delay.inSeconds}s (attempt $_retryCount)');
+    _retryCount = (_retryCount + 1).clamp(0, _maxRetry);
+    _reconnectTimer?.cancel();
+    _reconnectTimer = Timer(delay, _connect);
   }
 
-  void _cancelPollTimer() {
-    _pollTimer?.cancel();
-    _pollTimer = null;
+  int _backoffSeconds() {
+    const caps = [3, 6, 12, 24, 48, 60];
+    return caps[_retryCount.clamp(0, caps.length - 1)];
   }
 
-  Future<void> _fetchHttp() async {
+  // ── HTTP fallback ─────────────────────────────────────────────────────────
+  void _scheduleFallback() {
+    if (_disposed) return;
+    _fallbackTimer?.cancel();
+    _fallbackTimer = Timer(_fallbackDelay, _startHttpFallback);
+  }
+
+  void _cancelFallback() {
+    _fallbackTimer?.cancel();
+  }
+
+  Timer? _httpPollTimer;
+
+  void _startHttpFallback() {
+    if (_disposed || _status == WsStatus.connected) return;
+    _setStatus(WsStatus.fallback);
+    debugPrint('[WS] activating HTTP fallback poll');
+    _httpPoll();
+    _httpPollTimer?.cancel();
+    _httpPollTimer = Timer.periodic(_fallbackPoll, (_) => _httpPoll());
+  }
+
+  Future<void> _httpPoll() async {
     if (_disposed) return;
     try {
       final resp = await http
@@ -179,58 +177,43 @@ class WsGaugeService {
           .timeout(const Duration(seconds: 15));
       if (resp.statusCode == 200) {
         final decoded = jsonDecode(resp.body);
-        final List<dynamic> list = decoded is List
-            ? decoded
-            : (decoded['data'] as List<dynamic>? ?? []);
+        List<dynamic> list;
+        if (decoded is List) {
+          list = decoded;
+        } else if (decoded is Map && decoded.containsKey('data')) {
+          list = decoded['data'] as List<dynamic>;
+        } else {
+          return;
+        }
         final gauges = list
-            .map((j) => FloodData.fromJson(j as Map<String, dynamic>))
+            .map((e) => FloodData.fromJson(e as Map<String, dynamic>))
             .toList();
-        if (gauges.isNotEmpty) {
-          _dataCtrl.add(gauges);
-          _syncCtrl.add(DateTime.now());
-        }
-        if (_currentStatus != WsStatus.connected) {
-          _emit(WsStatus.polling);
-        }
+        _lastDataAt = DateTime.now();
+        _dataController.add(gauges);
+        if (_status == WsStatus.offline) _setStatus(WsStatus.fallback);
       }
-    } catch (_) {
-      _emit(WsStatus.offline);
+    } catch (e) {
+      debugPrint('[WS] HTTP poll error: $e');
+      _setStatus(WsStatus.offline);
     }
   }
 
-  // ── Exponential backoff reconnect ─────────────────────────────────────────
-  void _scheduleReconnect() {
-    if (_disposed) return;
-    _cancelTimers();
-    final delay = math.min(
-      3 * math.pow(2, _retryCount).toInt(),
-      60,
-    );
-    _retryCount = math.min(_retryCount + 1, _maxRetry);
-    _reconnectTimer = Timer(Duration(seconds: delay), _connect);
-  }
-
-  void _cancelTimers() {
-    _reconnectTimer?.cancel();
+  // ── Ping ──────────────────────────────────────────────────────────────────
+  void _startPing() {
     _pingTimer?.cancel();
-    _fallbackTimer?.cancel();
-    // NOTE: poll timer intentionally NOT cancelled here —
-    // it survives reconnect attempts so data keeps flowing during WS outage.
+    _pingTimer = Timer.periodic(_pingInterval, (_) {
+      try {
+        _channel?.sink.add(jsonEncode({'type': 'ping'}));
+      } catch (_) {}
+    });
   }
 
-  void _emit(WsStatus s) {
-    _currentStatus = s;
-    if (!_statusCtrl.isClosed) _statusCtrl.add(s);
+  // ── Status ────────────────────────────────────────────────────────────────
+  void _setStatus(WsStatus s) {
+    if (_status == s) return;
+    _status = s;
+    _statusController.add(s);
   }
 
-  /// Force a manual HTTP refresh (called by user tapping Offline banner).
-  Future<void> forceRefresh() => _fetchHttp();
+  DateTime? get lastDataAt => _lastDataAt;
 }
-
-// ── Riverpod provider exposed for convenience ──────────────────────────────
-final wsGaugeServiceProvider = Provider<WsGaugeService>((ref) {
-  final svc = WsGaugeService.instance;
-  svc.start();
-  ref.onDispose(svc.dispose);
-  return svc;
-});
