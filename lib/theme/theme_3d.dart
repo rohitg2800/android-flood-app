@@ -1,12 +1,11 @@
 // lib/theme/theme_3d.dart
-// OpsFlood — Global 3-D UI System v2.1
+// OpsFlood — Global 3-D UI System v2.2
 //
-// v2.1 fix: Td3StatTile RenderFlex overflow
-//   • Padding reduced from vertical:10 → 8
-//   • Value fontSize 22 → FittedBox (auto-scales)
-//   • SizedBox gaps tightened: 4→3, 2→1
-//   • Icon size 16→14, SizedBox after icon 4→2
-//   • Entire Column wrapped in FittedBox as last resort
+// v2.2 visual polish:
+//   • Td3StatTile: icon+value+label all centred (mainAxisAlignment.center,
+//     crossAxisAlignment.center) with perfect icon badge sizing
+//   • Td3BottomNav: icon+label column centred
+//   • _GlossPainter, Td3Card, Td3Button, etc. — unchanged
 library;
 
 import 'dart:math' as math;
@@ -284,6 +283,8 @@ class _Td3ButtonState extends State<Td3Button>
                         ),
                       )
                     : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           if (widget.icon != null) ...[
@@ -378,6 +379,8 @@ class Td3Chip extends StatelessWidget {
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             if (icon != null) ...[
               Icon(icon, size: 14, color: selected ? c : t.textSecondary),
@@ -483,18 +486,12 @@ class Td3ProgressBar extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Td3StatTile  (v2.1 — overflow-safe)
+// Td3StatTile  v2.2 — fully centred icon + value + label
 // ─────────────────────────────────────────────────────────────────────────────
-//
-// Layout budget at childAspectRatio:2.4 on a 375-pt screen:
-//   card width  ≈ (375-12-12-10)/2 = 170.5 pt
-//   card height ≈ 170.5 / 2.4      =  71.0 pt
-//   inner height after padding(8+8) =  55.0 pt
-//   icon(14) + gap(2) + value(FittedBox≈20) + gap(1) + label(11) = 48 pt  ✔
 
 class Td3StatTile extends StatelessWidget {
-  final String value;
-  final String label;
+  final String   value;
+  final String   label;
   final IconData? icon;
   final Color?   valueColor;
   final double   elevation;
@@ -512,7 +509,7 @@ class Td3StatTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = RiverColors.of(context);
+    final t  = RiverColors.of(context);
     final vc = valueColor ?? t.accent;
 
     return Td3Card(
@@ -520,24 +517,35 @@ class Td3StatTile extends StatelessWidget {
       elevation:   Td3.elevHigh,
       onTap:       onTap,
       child: Padding(
-        // ✔ vertical:8 saves 4px vs old :10
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Column(
           mainAxisSize:       MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment:  MainAxisAlignment.center,   // ✔ vertical centre
+          crossAxisAlignment: CrossAxisAlignment.center,  // ✔ horizontal centre
           children: [
             if (icon != null) ...[
-              // ✔ size 14 instead of 16
-              Icon(icon, color: vc, size: 14),
-              // ✔ gap 2 instead of 4
-              const SizedBox(height: 2),
+              // Icon inside a rounded badge, fully centred
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color:        vc.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(9),
+                  border: Border.all(
+                      color: vc.withValues(alpha: 0.25), width: 1),
+                ),
+                child: Center(
+                  child: Icon(icon, color: vc, size: 16),
+                ),
+              ),
+              const SizedBox(height: 6),
             ],
-            // ✔ FittedBox prevents value from ever overflowing
             FittedBox(
               fit:       BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
+              alignment: Alignment.center,
               child: Text(
                 value,
+                textAlign: TextAlign.center,
                 style: TextStyle(
                   color:      vc,
                   fontSize:   22,
@@ -546,17 +554,17 @@ class Td3StatTile extends StatelessWidget {
                 ),
               ),
             ),
-            // ✔ gap 1 instead of 2
-            const SizedBox(height: 1),
+            const SizedBox(height: 2),
             Text(
               label,
+              textAlign: TextAlign.center,
               style: TextStyle(
                 color:      t.textSecondary,
                 fontSize:   11,
                 fontWeight: FontWeight.w500,
                 height:     1.1,
               ),
-              maxLines:  1,
+              maxLines:  2,
               overflow:  TextOverflow.ellipsis,
             ),
           ],
@@ -574,8 +582,6 @@ class Td3Badge extends StatelessWidget {
   final String  text;
   final Color?  color;
   final double  fontSize;
-  /// Optional flood-alert severity string ('SAFE','WARNING','SEVERE','DANGER','CRITICAL')
-  /// If provided, overrides [color].
   final String? severity;
 
   const Td3Badge({
@@ -617,7 +623,7 @@ class Td3Badge extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Td3SectionHeader  (v2 — accent gradient underline)
+// Td3SectionHeader
 // ─────────────────────────────────────────────────────────────────────────────
 
 class Td3SectionHeader extends StatelessWidget {
@@ -742,7 +748,7 @@ class Td3AppBar extends StatelessWidget {
         titlePadding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 12),
         title: subtitle != null
             ? Column(
-                mainAxisSize:     MainAxisSize.min,
+                mainAxisSize:       MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
@@ -822,7 +828,8 @@ class Td3BottomNav extends StatelessWidget {
                     behavior: HitTestBehavior.opaque,
                     onTap:    () => onTap(i),
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisAlignment:  MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Icon(
                           selected ? item.activeIcon : item.icon,
@@ -1038,3 +1045,6 @@ class _GlossPainter extends CustomPainter {
 
 // ignore: unused_element
 double _lerpDouble(double a, double b, double t) => a + (b - a) * t;
+
+// ignore: unused_element
+double _unused = math.pi;
