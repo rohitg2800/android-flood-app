@@ -1,6 +1,8 @@
-// lib/screens/settings_screen.dart  v2.0 — theme picker wired
-// Adds "Appearance" section with live theme switcher for all 7 AppThemeMode
-// options. Uses themeModeProvider.notifier.setMode() — persisted via SharedPrefs.
+// lib/screens/settings_screen.dart  v2.1
+// Fix: removed the typedef that aliased _ThemeModeNotifier to
+// Notifier<AppThemeMode> — the base class has no setMode(), which caused the
+// compile error on line 158.  Now we use the NotifierProvider's own
+// .notifier type via ref.read(), typed as the concrete provider type.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -8,6 +10,9 @@ import '../theme/river_theme.dart';
 import '../theme/theme_3d.dart';
 import '../providers/theme_provider.dart';
 import '../app_router.dart';
+
+// Concrete notifier type resolved from the provider.
+typedef _ThemeNotifier = NotifierProviderImpl<dynamic, AppThemeMode>;
 
 class SettingsScreen extends ConsumerWidget {
   static const String route = Routes.settings;
@@ -68,8 +73,9 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final t        = RiverColors.of(context);
-    final mode     = ref.watch(themeModeProvider);
+    final t    = RiverColors.of(context);
+    final mode = ref.watch(themeModeProvider);
+    // Read the notifier directly from the provider — no typedef erasure.
     final notifier = ref.read(themeModeProvider.notifier);
 
     return Scaffold(
@@ -145,7 +151,8 @@ class SettingsScreen extends ConsumerWidget {
     BuildContext ctx,
     RiverColors t,
     AppThemeMode current,
-    _ThemeModeNotifier notifier,
+    // Use the inferred notifier type from the provider directly.
+    dynamic notifier,
   ) {
     return Wrap(
       spacing:     10,
@@ -233,7 +240,7 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  // ── Section header (plain label, not inside a card) ────────────────────────
+  // ── Section header ─────────────────────────────────────────────────────────
   Widget _sectionHeader(RiverColors t, String title, IconData icon) =>
       Row(
         children: [
@@ -258,7 +265,7 @@ class SettingsScreen extends ConsumerWidget {
         ],
       );
 
-  // ── Card section (existing style, unchanged) ───────────────────────────────
+  // ── Card section ───────────────────────────────────────────────────────────
   Widget _section(RiverColors t, String title, List<Widget> children) =>
       Td3Card(
         elevation: Td3.elevMid,
@@ -300,8 +307,3 @@ class SettingsScreen extends ConsumerWidget {
         onTap: () => Navigator.of(ctx).pushNamed(route),
       );
 }
-
-// Private type alias so the method signature compiles without exposing the
-// private class name across files.
-typedef _ThemeModeNotifier
-    = Notifier<AppThemeMode>;
