@@ -1,129 +1,130 @@
-# .github/workflows/release.yml
-# Phase 4 — Full CI/CD Pipeline for OpsFlood Production Release
-# Triggers: push to main OR manual workflow_dispatch
-# Steps: analyze → test → build release AAB → (optional) upload to Play Store
+# .github/workflows/release.yml  Step 7.2
+# Triggers on version tags (v*) pushed to the repo.
+# Builds a signed release APK + AAB and attaches them to a GitHub Release.
+#
+# Required GitHub Secrets:
+#   KEYSTORE_BASE64      — base64-encoded .jks keystore file
+#   KEYSTORE_PASSWORD    — store password
+#   KEY_ALIAS            — key alias inside the keystore
+#   KEY_PASSWORD         — key password
 
-name: OpsFlood Production Release
+name: Release
 
 on:
   push:
-    branches: [ main ]
     tags:
       - 'v*'
-  workflow_dispatch:
-    inputs:
-      deploy_to_play_store:
-        description: 'Deploy to Play Store internal track'
-        required: false
-        default: 'false'
-        type: choice
-        options: ['true', 'false']
+
+env:
+  FLUTTER_VERSION: '3.22.2'
+  JAVA_VERSION:    '17'
 
 jobs:
-  analyze_and_test:
-    name: Analyze & Test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Set up Flutter
+  build-and-release:
+    name: Build Signed Release
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # needed for tag name
+
+      # ── 2. Java (needed by Gradle)
+      - name: Setup Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      # ── 3. Flutter
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
-          channel: 'stable'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
 
-      - name: Install dependencies
+      # ── 4. Dependencies + codegen
+      - name: Get dependencies
         run: flutter pub get
 
-      - name: Create stub .env for CI
+      - name: Generate l10n + mocks
         run: |
-          echo "# CI stub .env" > .env
-          echo "BACKEND_BASE_URL=https://opsflood-backend.up.railway.app" >> .env
+          flutter gen-l10n
+          dart run build_runner build --delete-conflicting-outputs
 
-      - name: Flutter analyze
-        run: flutter analyze --no-fatal-infos
-
-      - name: Flutter test
-        run: flutter test --coverage
-
-      - name: Upload coverage report
-        uses: codecov/codecov-action@v3
-        with:
-          file: coverage/lcov.info
-        continue-on-error: true
-
-  build_release:
-    name: Build Release AAB
-    runs-on: ubuntu-latest
-    needs: analyze_and_test
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.24.0'
-          channel: 'stable'
-          cache: true
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Create stub .env for CI
+      # ── 5. Decode keystore
+      - name: Decode keystore
         run: |
-          echo "# CI stub .env" > .env
-          echo "BACKEND_BASE_URL=https://opsflood-backend.up.railway.app" >> .env
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode \
+            > android/app/release.keystore
 
-      - name: Decode keystore from base64 secret
+      # ── 6. Write key.properties
+      - name: Write key.properties
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/keystore.jks
-
-      - name: Write keystore.properties from CI secrets
-        run: |
-          cat > android/keystore.properties << EOF
-          storeFile=../keystore.jks
-          storePassword=${{ secrets.KEYSTORE_STORE_PASSWORD }}
-          keyAlias=equinox_bh
-          keyPassword=${{ secrets.KEYSTORE_KEY_PASSWORD }}
+          cat > android/key.properties <<EOF
+          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          storeFile=release.keystore
           EOF
 
-      - name: Build release App Bundle
+      # ── 7. Extract version from tag
+      - name: Set version env
+        run: |
+          TAG="${GITHUB_REF_NAME}"          # e.g. v1.4.2
+          VERSION="${TAG#v}"                 # 1.4.2
+          BUILD=$(git rev-list --count HEAD) # monotonic build number
+          echo "APP_VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "BUILD_NUMBER=${BUILD}"   >> $GITHUB_ENV
+
+      # ── 8. Build APK
+      - name: Build release APK
+        run: |
+          flutter build apk --release \
+            --build-name=${{ env.APP_VERSION }} \
+            --build-number=${{ env.BUILD_NUMBER }}
+
+      # ── 9. Build AAB (for Play Store)
+      - name: Build release AAB
         run: |
           flutter build appbundle --release \
-            --dart-define=BACKEND_BASE_URL=https://opsflood-backend.up.railway.app \
-            --dart-define=ADMOB_BANNER_ANDROID=${{ secrets.ADMOB_BANNER_ANDROID_PROD }} \
-            --dart-define=ADMOB_INTERSTITIAL_ANDROID=${{ secrets.ADMOB_INTERSTITIAL_ANDROID_PROD }}
+            --build-name=${{ env.APP_VERSION }} \
+            --build-number=${{ env.BUILD_NUMBER }}
 
-      - name: Upload AAB artifact
-        uses: actions/upload-artifact@v4
+      # ── 10. Rename artifacts
+      - name: Rename artifacts
+        run: |
+          mv build/app/outputs/flutter-apk/app-release.apk \
+             build/app/outputs/flutter-apk/opsflood-${{ env.APP_VERSION }}.apk
+          mv build/app/outputs/bundle/release/app-release.aab \
+             build/app/outputs/bundle/release/opsflood-${{ env.APP_VERSION }}.aab
+
+      # ── 11. Create GitHub Release + upload assets
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: opsflood-release-aab
-          path: build/app/outputs/bundle/release/app-release.aab
-          retention-days: 30
+          tag_name: ${{ github.ref_name }}
+          name: OpsFlood ${{ env.APP_VERSION }}
+          body: |
+            ## OpsFlood ${{ env.APP_VERSION }}
 
-      - name: Clean up keystore
+            Automated release built from tag `${{ github.ref_name }}`.
+            Build number: `${{ env.BUILD_NUMBER }}`
+
+            ### Assets
+            - **APK** — direct install on Android
+            - **AAB** — for Play Store submission via Fastlane (Step 7.3)
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}  # v1.0.0-beta → prerelease
+          files: |
+            build/app/outputs/flutter-apk/opsflood-${{ env.APP_VERSION }}.apk
+            build/app/outputs/bundle/release/opsflood-${{ env.APP_VERSION }}.aab
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── 12. Clean up keystore
+      - name: Remove keystore
         if: always()
-        run: rm -f android/keystore.jks android/keystore.properties
-
-  deploy_play_store:
-    name: Deploy to Play Store (Internal Track)
-    runs-on: ubuntu-latest
-    needs: build_release
-    if: >
-      github.event_name == 'workflow_dispatch' &&
-      github.event.inputs.deploy_to_play_store == 'true'
-    steps:
-      - name: Download AAB
-        uses: actions/download-artifact@v4
-        with:
-          name: opsflood-release-aab
-
-      - name: Upload to Play Store (Internal)
-        uses: r0adkll/upload-google-play@v1
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_JSON_KEY }}
-          packageName: com.equinox.flood
-          releaseFiles: app-release.aab
-          track: internal
-          status: completed
+        run: rm -f android/app/release.keystore android/key.properties
