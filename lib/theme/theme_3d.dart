@@ -181,7 +181,6 @@ class Td3Card extends StatelessWidget {
       child: Stack(
         children: [
           content,
-          // Top-edge highlight: uniform colour → borderRadius is safe.
           Positioned.fill(
             child: IgnorePointer(
               child: DecoratedBox(
@@ -195,11 +194,6 @@ class Td3Card extends StatelessWidget {
               ),
             ),
           ),
-          // Depth-edge shadow overlay.
-          // Flutter REQUIRES all Border sides to share the same colour when
-          // borderRadius is set.  We therefore use a uniform semi-transparent
-          // black border + a subtle bottom BoxShadow to replicate the old
-          // asymmetric effect without triggering the assertion.
           if (showDepthEdge)
             Positioned.fill(
               child: IgnorePointer(
@@ -207,11 +201,9 @@ class Td3Card extends StatelessWidget {
                   decoration: BoxDecoration(
                     borderRadius: br,
                     border: Border.all(
-                      // Single uniform colour — darkest edge value, low alpha.
                       color: const Color(0x22000000),
                       width: 0.75,
                     ),
-                    // Bottom shadow replaces the old heavier BorderSide.bottom.
                     boxShadow: const [
                       BoxShadow(
                         color: Color(0x1A000000),
@@ -398,7 +390,6 @@ class Td3Chip extends StatelessWidget {
   final Color?   color;
   final bool     selected;
   final VoidCallback? onTap;
-  /// Optional override for the text font size (default 12).
   final double?  fontSize;
 
   const Td3Chip({
@@ -470,9 +461,8 @@ class Td3Chip extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class Td3ProgressBar extends StatelessWidget {
-  final double value;  // 0.0–1.0
+  final double value;
   final Color? color;
-  /// Alias for [color] — callers may use either name.
   final Color? fillColor;
   final double height;
   final String? label;
@@ -489,7 +479,6 @@ class Td3ProgressBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t  = RiverColors.of(context);
-    // fillColor takes precedence when both are supplied.
     final c  = fillColor ?? color ?? t.accent;
     final v  = value.clamp(0.0, 1.0);
 
@@ -559,7 +548,7 @@ class Td3ProgressBar extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Td3StatTile
+// Td3StatTile  — fix: mainAxisSize.min + tighter padding + smaller value font
 // ─────────────────────────────────────────────────────────────────────────────
 
 class Td3StatTile extends StatelessWidget {
@@ -588,24 +577,27 @@ class Td3StatTile extends StatelessWidget {
       elevation: Td3.elevHigh,
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        // Reduced from vertical:14 → vertical:10 to prevent overflow in
+        // tight tiles (e.g. _StatTile row constrained to ~64 px height).
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Column(
+          mainAxisSize: MainAxisSize.min,   // ← key fix: shrink-wrap
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (icon != null) ...[
-              Icon(icon, color: valueColor, size: 18),
-              const SizedBox(height: 8),
+              Icon(icon, color: valueColor, size: 16),   // 18 → 16
+              const SizedBox(height: 4),                 // 8  → 4
             ],
             Text(
               value,
               style: TextStyle(
                 color: valueColor ?? t.accent,
-                fontSize: 26,
+                fontSize: 22,               // 26 → 22
                 fontWeight: FontWeight.w800,
                 height: 1.0,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),      // 4  → 2
             Text(
               label,
               style: TextStyle(
@@ -632,7 +624,6 @@ class Td3Badge extends StatelessWidget {
 
   const Td3Badge({
     super.key,
-    // Accept either `text:` or `label:` — they are identical in meaning.
     String? text,
     String? label,
     this.color,
@@ -676,7 +667,6 @@ class Td3Badge extends StatelessWidget {
 
 class Td3SectionHeader extends StatelessWidget {
   final String text;
-  /// When provided, the header text uses this color instead of textSecondary.
   final Color? accentColor;
 
   const Td3SectionHeader(this.text, {super.key, this.accentColor});
@@ -722,7 +712,6 @@ class Td3Divider extends StatelessWidget {
 
 class Td3AppBar extends StatelessWidget {
   final String  title;
-  /// Optional subtitle shown below the title in smaller muted text.
   final String? subtitle;
   final List<Widget>? actions;
   final Widget? leading;
@@ -934,13 +923,8 @@ class Td3InputField extends StatefulWidget {
   final ValueChanged<String>?  onChanged;
   final TextInputType? keyboardType;
   final bool           obscureText;
-  /// When true, an asterisk is appended to the label to indicate a required field.
-  /// This is purely visual — no validation is performed by the widget itself.
   final bool           required;
-  /// When true, the field is not editable (mirrors TextField.readOnly).
   final bool           readOnly;
-  /// Optional widget shown at the trailing edge of the input (e.g. a clear button).
-  /// When provided it replaces the default suffix area entirely.
   final Widget?        suffixWidget;
 
   const Td3InputField({
@@ -1094,7 +1078,7 @@ class _GlossPainter extends CustomPainter {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Utility: lerp double (kept for potential future use)
+// Utility
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ignore: unused_element
