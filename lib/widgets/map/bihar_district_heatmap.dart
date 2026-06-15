@@ -11,9 +11,17 @@ import 'district_bottom_sheet.dart';
 
 class BiharDistrictHeatmap extends ConsumerStatefulWidget {
   final List<RiverStation>? stations;
-  // mapController accepted but ignored — keeps callers that pass it compiling.
-  final dynamic mapController;
-  const BiharDistrictHeatmap({super.key, this.stations, this.mapController});
+  final dynamic             mapController; // accepted, ignored
+  /// When false the widget renders as SizedBox.shrink() — mirrors Visibility.
+  final bool                visible;
+
+  const BiharDistrictHeatmap({
+    super.key,
+    this.stations,
+    this.mapController,
+    this.visible = true,
+  });
+
   @override
   ConsumerState<BiharDistrictHeatmap> createState() =>
       _BiharDistrictHeatmapState();
@@ -23,6 +31,8 @@ class _BiharDistrictHeatmapState
     extends ConsumerState<BiharDistrictHeatmap> {
   @override
   Widget build(BuildContext context) {
+    if (!widget.visible) return const SizedBox.shrink();
+
     final List<RiverStation> stations =
         widget.stations ?? ref.watch(mergedStationsProvider);
 
