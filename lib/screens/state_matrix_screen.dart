@@ -1,6 +1,9 @@
 // lib/screens/state_matrix_screen.dart  (v5.1 — 15 Jun 2026)
 //
-// FIX: Added static const route = '/state-matrix'  (referenced by analytics_dashboard_screen)
+// v5.1 — Add static `route` constant used by analytics_dashboard_screen
+//   for named-route navigation.
+//
+// v5.0 — AutoRefreshMixin + ref.watch(biharLiveProvider).
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,9 +12,10 @@ import '../mixins/auto_refresh_mixin.dart';
 import '../providers/bihar_live_provider.dart';
 
 class StateMatrixScreen extends ConsumerStatefulWidget {
-  static const String route = '/state-matrix';
-
   const StateMatrixScreen({super.key});
+
+  /// Named route used by Navigator.pushNamed.
+  static const String route = '/state-matrix';
 
   @override
   ConsumerState<StateMatrixScreen> createState() => _StateMatrixScreenState();

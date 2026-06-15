@@ -1,15 +1,15 @@
 // lib/widgets/city_card.dart
-// CityCard — displays a city's live flood data as a compact grid card.
-// Used by DashboardScreen.
-library;
+//
+// CityCard — compact dashboard card showing live river-level data
+// for a monitored city in Bihar.
 
 import 'package:flutter/material.dart';
+
 import '../providers/bihar_live_provider.dart';
-import '../theme/river_theme.dart';
 
 class CityCard extends StatelessWidget {
   final Map<String, dynamic> cityMeta;
-  final List<BiharStationData>? stationData;
+  final BiharStationData?    stationData;
 
   const CityCard({
     super.key,
@@ -19,74 +19,113 @@ class CityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t    = RiverColors.of(context);
-    final name = cityMeta['city'] as String? ?? 'Unknown';
-    final data = stationData ?? [];
+    final name   = cityMeta['city'] as String? ?? 'Unknown';
+    final river  = cityMeta['river'] as String? ?? '';
+    final data   = stationData;
 
-    Color cardColor = t.cardBg;
-    String label    = 'SAFE';
-
-    if (data.any((s) => s.isCritical)) {
-      cardColor = AppPalette.critical.withOpacity(0.12);
-      label     = 'CRITICAL';
-    } else if (data.any((s) => s.isSevere)) {
-      cardColor = AppPalette.danger.withOpacity(0.12);
-      label     = 'SEVERE';
-    } else if (data.any((s) => s.isWarning)) {
-      cardColor = AppPalette.warning.withOpacity(0.12);
-      label     = 'WARNING';
+    final Color color;
+    final String risk;
+    if (data == null) {
+      color = Colors.grey;
+      risk  = 'NO DATA';
+    } else if (data.isCritical) {
+      color = Colors.red;
+      risk  = data.riskLabel;
+    } else if (data.isSevere) {
+      color = Colors.deepOrange;
+      risk  = data.riskLabel;
+    } else if (data.isWarning) {
+      color = Colors.orange;
+      risk  = data.riskLabel;
+    } else {
+      color = Colors.green;
+      risk  = data.riskLabel;
     }
 
-    final labelColor = AppPalette.statusColor(label);
+    final level = data?.currentLevel;
+    final dan   = data?.dangerLevel;
 
     return Card(
-      color:  cardColor,
-      margin: EdgeInsets.zero,
-      shape:  RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: t.stroke, width: 1),
-      ),
+      clipBehavior: Clip.antiAlias,
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment:  MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              name,
-              style: TextStyle(
-                color:      t.textPrimary,
-                fontWeight: FontWeight.w700,
-                fontSize:   14,
-              ),
-              maxLines:  1,
-              overflow:  TextOverflow.ellipsis,
+            // City name + risk badge
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    name,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: color.withOpacity(0.5)),
+                  ),
+                  child: Text(
+                    risk,
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
             ),
+            const SizedBox(height: 4),
+            // River name
+            if (river.isNotEmpty)
+              Text(
+                river,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.grey,
+                    ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             const Spacer(),
+            // Level bar
+            if (level != null && dan != null && dan > 0) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(2),
+                child: LinearProgressIndicator(
+                  value: (level / dan).clamp(0.0, 1.0),
+                  backgroundColor: color.withOpacity(0.1),
+                  valueColor: AlwaysStoppedAnimation<Color>(color),
+                  minHeight: 6,
+                ),
+              ),
+              const SizedBox(height: 6),
+            ],
+            // Numeric levels
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '${data.length} station${data.length == 1 ? '' : 's'}',
-                  style: TextStyle(color: t.textSecondary, fontSize: 11),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color:        labelColor.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(8),
-                    border:       Border.all(color: labelColor.withOpacity(0.5)),
-                  ),
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      color:      labelColor,
-                      fontSize:   10,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
-                    ),
+                  level != null ? '${level.toStringAsFixed(2)} m' : '—',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: color,
                   ),
                 ),
+                if (dan != null)
+                  Text(
+                    'DL ${dan.toStringAsFixed(2)} m',
+                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                  ),
               ],
             ),
           ],

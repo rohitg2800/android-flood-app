@@ -5,6 +5,7 @@
 // v2.2: dangerClass now delegates to gaugeRiskFromLevels() (bihar_rivers.dart)
 //       so the map and all other screens share one severity computation.
 // v2.3: add `district` alias + `riskLevel` alias used by bihar_district_heatmap.
+// v2.4: add `lng` getter alias for `lon` (used by bihar_river_map_screen).
 
 export 'live_river_result_ext.dart';
 
@@ -53,7 +54,6 @@ class RiverStation {
 
   // ── Computed getters ─────────────────────────────────────────────────
   /// Delegates to gaugeRiskFromLevels() — the single canonical severity fn.
-  /// Map markers, polygons, and all UI consumers share this computation.
   DangerClass get dangerClass {
     final label = gaugeRiskFromLevels(
       current: current,
@@ -69,7 +69,7 @@ class RiverStation {
     };
   }
 
-  /// Human-readable risk label — kept in sync with AlertSeverity labels.
+  /// Human-readable risk label.
   String get riskLabel => gaugeRiskFromLevels(
     current: current,
     warning: warning,
@@ -77,14 +77,15 @@ class RiverStation {
     hfl:     hfl,
   );
 
-  /// Alias for riskLabel — canonical name used by bihar_district_heatmap
-  /// and any callsite that uses `.riskLevel` instead of `.riskLabel`.
+  /// Alias for riskLabel.
   String get riskLevel => riskLabel;
 
   /// Alias for city — used by bihar_district_heatmap district grouping.
-  /// RiverStation only has `city` (the district/city name); `district` is
-  /// the same value under the canonical field name used by heatmap queries.
   String get district => city;
+
+  /// Longitude alias — same as [lon], provided for callers that use `lng`.
+  /// Used by bihar_river_map_screen Marker construction.
+  double? get lng => lon;
 
   double get progressPct => hfl > 0 ? (current / hfl).clamp(0.0, 1.0) : 0.0;
   int    get riskScore   => dangerClass.index;

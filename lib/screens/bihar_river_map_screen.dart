@@ -1,8 +1,9 @@
 // lib/screens/bihar_river_map_screen.dart  (v7.1 — 15 Jun 2026)
 //
-// FIXES:
-//   • s.lng → s.lon  (RiverStation has .lon not .lng)
-//   • Added static const route = '/bihar-river-map'  (used by analytics_dashboard_screen)
+// v7.1 — Add static `route` constant used by india_river_explorer_screen
+//   and analytics_dashboard_screen for named-route navigation.
+//
+// v7.0 — AutoRefreshMixin + ref.watch(mergedStationsProvider).
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,9 +15,10 @@ import '../providers/real_time_river_provider.dart';
 import '../models/river_station.dart';
 
 class BiharRiverMapScreen extends ConsumerStatefulWidget {
-  static const String route = '/bihar-river-map';
-
   const BiharRiverMapScreen({super.key});
+
+  /// Named route used by Navigator.pushNamed.
+  static const String route = '/bihar-river-map';
 
   @override
   ConsumerState<BiharRiverMapScreen> createState() =>
@@ -99,7 +101,8 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
             : Colors.green;
 
     return Marker(
-      point:  LatLng(s.lat ?? 25.78, s.lon ?? 85.17),  // FIX: was s.lng
+      // Use `lng` alias (backed by `lon`) — added in river_station.dart v2.4.
+      point:  LatLng(s.lat ?? 25.78, s.lng ?? 85.17),
       width:  36,
       height: 36,
       child: GestureDetector(

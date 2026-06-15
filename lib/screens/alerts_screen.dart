@@ -1,9 +1,10 @@
 // lib/screens/alerts_screen.dart  (v5.1 — 15 Jun 2026)
 //
-// FIX: Removed AlertsParentBridgeState type annotation from _buildAlertList.
-//   alertsParentBridgeProvider returns void — it is a side-effect provider.
-//   The screen no longer passes it as a typed parameter; it is only watched
-//   to keep the bridge alive while the screen is mounted.
+// v5.1 — Add optional `stationFilter` param consumed by main.dart deep-link
+//   routing (AlertsScreen(stationFilter: stationFilter)).
+//   When provided, the list is pre-filtered to that station name.
+//
+// v5.0 — AutoRefreshMixin + ref.watch(biharLiveProvider).
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,7 +15,10 @@ import '../providers/alerts_badge_provider.dart';
 import '../providers/alerts_parent_bridge_provider.dart';
 
 class AlertsScreen extends ConsumerStatefulWidget {
-  const AlertsScreen({super.key});
+  /// Optional station name to pre-filter the alert list.
+  final String? stationFilter;
+
+  const AlertsScreen({super.key, this.stationFilter});
 
   @override
   ConsumerState<AlertsScreen> createState() => _AlertsScreenState();
@@ -26,8 +30,7 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen>
   Widget build(BuildContext context) {
     final liveAsync  = ref.watch(biharLiveProvider);
     final badgeCount = ref.watch(alertsBadgeProvider);
-    // Side-effect only — keep bridge alive while screen is mounted.
-    ref.watch(alertsParentBridgeProvider);
+    final bridge     = ref.watch(alertsParentBridgeProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -57,7 +60,7 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen>
         child: liveAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error:   (e, _) => Center(child: Text('Error: $e')),
-          data:    (live) => _buildAlertList(context, live),
+          data:    (live) => _buildAlertList(context, live, bridge),
         ),
       ),
     );
@@ -66,10 +69,19 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen>
   Widget _buildAlertList(
     BuildContext context,
     BiharLiveState live,
+    AlertsParentBridgeState bridge,
   ) {
-    final alerts = live.stations
+    var alerts = live.stations
         .where((s) => s.isCritical || s.isSevere || s.isWarning)
         .toList();
+
+    // Apply optional station filter from deep-link routing.
+    final filter = widget.stationFilter;
+    if (filter != null && filter.isNotEmpty) {
+      alerts = alerts
+          .where((s) => s.city.toLowerCase() == filter.toLowerCase())
+          .toList();
+    }
 
     if (alerts.isEmpty) {
       return const Center(

@@ -13,6 +13,11 @@ final alertsProvider = Provider<List<FloodAlert>>((ref) {
   return AlertEngine.instance.evaluateMerged(merged);
 });
 
+/// Total count of active alerts — watched by alertsBadgeProvider.
+final alertCountProvider = Provider<int>((ref) {
+  return ref.watch(alertsProvider).length;
+});
+
 final criticalAlertsProvider = Provider<List<FloodAlert>>((ref) =>
     ref.watch(alertsProvider)
         .where((a) =>
@@ -37,9 +42,3 @@ final stationAlertsProvider =
             .where((a) =>
                 a.stationName.toLowerCase() == stationName.toLowerCase())
             .toList());
-
-/// Total count of all active alerts.
-/// Used by alerts_badge_provider.dart → criticalAlertCountProvider.
-final alertCountProvider = Provider<int>((ref) {
-  return ref.watch(alertsProvider).length;
-});

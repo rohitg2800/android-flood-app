@@ -1,52 +1,74 @@
 // lib/widgets/river_level_chip.dart
-// RiverLevelChip — small compact chip showing a station's risk level badge.
-// Used by DashboardScreen station rows and city detail cards.
-library;
+//
+// RiverLevelChip — small inline chip showing a river level reading
+// with a colour-coded background matching the station's risk level.
 
 import 'package:flutter/material.dart';
-import '../theme/river_theme.dart';
 
 class RiverLevelChip extends StatelessWidget {
-  final String level;   // 'SAFE' | 'WARNING' | 'DANGER' | 'CRITICAL'
-  final double? currentLevel;
+  /// The current river level in metres.
+  final double? level;
+
+  /// The danger threshold in metres (used to compute percentage fill).
   final double? dangerLevel;
+
+  /// Override the auto-computed colour.
+  final Color? color;
+
+  /// Compact mode: show only the numeric value without label text.
   final bool compact;
 
   const RiverLevelChip({
     super.key,
-    required this.level,
-    this.currentLevel,
+    this.level,
     this.dangerLevel,
+    this.color,
     this.compact = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final color = AppPalette.statusColor(level);
+    final lvl = level;
+    final dan = dangerLevel;
 
-    final levelText = currentLevel != null
-        ? '${currentLevel!.toStringAsFixed(1)} m'
-        : level;
+    final Color chipColor = color ?? _computeColor(lvl, dan);
+    final String text     = lvl != null ? '${lvl.toStringAsFixed(2)} m' : '—';
+
+    if (compact) {
+      return Text(
+        text,
+        style: TextStyle(
+          color: chipColor,
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+        ),
+      );
+    }
 
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? 6 : 10,
-        vertical:   compact ? 3 : 5,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color:        color.withOpacity(0.14),
-        borderRadius: BorderRadius.circular(compact ? 6 : 10),
-        border:       Border.all(color: color.withOpacity(0.5)),
+        color: chipColor.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: chipColor.withOpacity(0.4)),
       ),
       child: Text(
-        levelText,
+        text,
         style: TextStyle(
-          color:      color,
-          fontSize:   compact ? 10 : 12,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.3,
+          color: chipColor,
+          fontWeight: FontWeight.w600,
+          fontSize: 12,
         ),
       ),
     );
+  }
+
+  static Color _computeColor(double? level, double? danger) {
+    if (level == null || danger == null || danger <= 0) return Colors.grey;
+    final pct = level / danger;
+    if (pct >= 1.0)  return Colors.red;
+    if (pct >= 0.90) return Colors.deepOrange;
+    if (pct >= 0.75) return Colors.orange;
+    return Colors.green;
   }
 }
