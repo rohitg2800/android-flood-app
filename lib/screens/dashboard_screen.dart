@@ -1,14 +1,6 @@
-// lib/screens/dashboard_screen.dart  (v10.0 — icon-grid launcher)
-//
-// Design:
-//  • No more embedded SizedBox(height:xxx, child: SomeScreen()) — every tile
-//    is a tappable icon card that Navigator.push()-es to the real screen.
-//  • Top section: live-status summary strip + 4 KPI stat tiles (auto-refresh).
-//  • Below: 3-column icon grid of ALL 12 feature screens grouped into logical
-//    categories with Td3SectionHeader dividers.
-//  • FAB: quick-action SOS shortcut (always visible).
-//  • AppBar: gradient title, notification badge, refresh, expand-all toggle
-//    replaced by a search icon that opens a modal launcher search.
+// lib/screens/dashboard_screen.dart  (v10.1)
+// Fix: CriticalAlertScreen is an overlay helper (no Widget class to push).
+//      Both usages replaced with AlertsScreen. Import removed.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -42,7 +34,8 @@ import 'settings_screen.dart';
 import 'map_screen.dart';
 import 'india_river_explorer_screen.dart';
 import 'crowd_report_feed_screen.dart';
-import 'critical_alert_screen.dart';
+// NOTE: critical_alert_screen.dart is overlay-only (no routable Widget class)
+//       — use showCriticalAlertOverlay() / showCriticalAlertBanner() directly.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // _Tile — data model for each launcher card
@@ -52,7 +45,7 @@ class _Tile {
   final String    label;
   final IconData  icon;
   final Color     color;
-  final String?   badge;      // optional live badge text
+  final String?   badge;
   final WidgetBuilder builder;
 
   const _Tile({
@@ -78,11 +71,10 @@ class DashboardScreen extends ConsumerStatefulWidget {
 class _DashboardScreenState extends ConsumerState<DashboardScreen>
     with AutoRefreshMixin {
 
-  // ── search / filter ────────────────────────────────────────────────────────
   String _query = '';
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Build tile catalogue (categories + tiles)
+  // Tile catalogue
   // ─────────────────────────────────────────────────────────────────────────
 
   List<_Tile> get _monitoringTiles => [
@@ -152,11 +144,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       color:   AppPalette.critical,
       builder: (_) => const AlertsScreen(),
     ),
+    // CriticalAlertScreen is an overlay helper — no separate screen to push.
+    // "Active Alerts" below is the canonical alerts list screen.
     _Tile(
-      label:   'Critical Alert',
+      label:   'Active Alerts',
       icon:    Icons.crisis_alert_rounded,
       color:   AppPalette.danger,
-      builder: (_) => const CriticalAlertScreen(),
+      builder: (_) => const AlertsScreen(),
     ),
     _Tile(
       label:   'SOS',
@@ -226,7 +220,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     ),
   ];
 
-  // ── all tiles flat list for search ─────────────────────────────────────────
   late final List<_Tile> _allTiles = [
     ..._monitoringTiles,
     ..._forecastTiles,
@@ -241,7 +234,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           .where((t) => t.label.toLowerCase().contains(_query.toLowerCase()))
           .toList();
 
-  // ── navigation helper ──────────────────────────────────────────────────────
   void _open(BuildContext ctx, _Tile tile) {
     Navigator.push(
       ctx,
@@ -274,7 +266,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     );
   }
 
-  // ── AppBar ─────────────────────────────────────────────────────────────────
   AppBar _buildAppBar(RiverColors t, int badgeCount) {
     return AppBar(
       backgroundColor: t.navBg,
@@ -346,19 +337,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     );
   }
 
-  // ── FAB (SOS) ──────────────────────────────────────────────────────────────
   Widget _buildFab(BuildContext ctx, RiverColors t) {
     return FloatingActionButton.extended(
       heroTag:         'sos_fab',
       backgroundColor: AppPalette.critical,
       foregroundColor: Colors.white,
       icon: const Icon(Icons.sos_rounded),
-      label: const Text('SOS', style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1)),
-      onPressed: () => Navigator.push(ctx, MaterialPageRoute(builder: (_) => const SosScreen())),
+      label: const Text('SOS',
+          style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1)),
+      onPressed: () => Navigator.push(
+          ctx, MaterialPageRoute(builder: (_) => const SosScreen())),
     );
   }
 
-  // ── Error view ─────────────────────────────────────────────────────────────
   Widget _errorView(BuildContext ctx, Object e, RiverColors t) {
     return Center(
       child: Padding(
@@ -373,7 +364,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 Icon(Icons.cloud_off_rounded, size: 56, color: t.textSecondary),
                 const SizedBox(height: 16),
                 Text('Could not load live data',
-                    style: TextStyle(color: t.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
+                    style: TextStyle(
+                        color: t.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700)),
                 const SizedBox(height: 8),
                 Text('Check your connection and try again.',
                     style: TextStyle(color: t.textSecondary, fontSize: 13),
@@ -392,14 +386,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     );
   }
 
-  // ── Body ───────────────────────────────────────────────────────────────────
   Widget _buildBody(BuildContext ctx, BiharLiveState live, RiverColors t) {
     return refreshIndicator(
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
 
-          // ── Live Status summary strip ─────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
@@ -414,15 +406,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             ),
           ),
 
-          // ── 4 KPI stat tiles ──────────────────────────────────────────────
+          // 4 KPI stat tiles
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
             sliver: SliverGrid.builder(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount:    2,
-                crossAxisSpacing:  10,
-                mainAxisSpacing:   10,
-                childAspectRatio:  2.4,
+                crossAxisCount:   2,
+                crossAxisSpacing: 10,
+                mainAxisSpacing:  10,
+                childAspectRatio: 2.4,
               ),
               itemCount: 4,
               itemBuilder: (_, i) => [
@@ -431,8 +423,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   value:      '${live.criticalCount}',
                   label:      'Critical',
                   valueColor: AppPalette.critical,
+                  // ✔ AlertsScreen is the correct routable screen for critical tap
                   onTap: () => Navigator.push(ctx,
-                      MaterialPageRoute(builder: (_) => const CriticalAlertScreen())),
+                      MaterialPageRoute(builder: (_) => const AlertsScreen())),
                 ),
                 Td3StatTile(
                   icon:       Icons.warning_amber_rounded,
@@ -458,39 +451,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             ),
           ),
 
-          // ── MONITORING ────────────────────────────────────────────────────
           _sectionHeader(ctx, t, 'Monitoring & Maps',
               Icons.radar_rounded, const Color(0xFF00B0FF)),
           _tileGrid(ctx, t, _monitoringTiles),
 
-          // ── FORECAST & AI ─────────────────────────────────────────────────
           _sectionHeader(ctx, t, 'Forecast & AI',
               Icons.auto_graph_rounded, const Color(0xFF7B2FF7)),
           _tileGrid(ctx, t, _forecastTiles),
 
-          // ── ALERTS & SAFETY ───────────────────────────────────────────────
           _sectionHeader(ctx, t, 'Alerts & Safety',
               Icons.crisis_alert_rounded, AppPalette.critical),
           _tileGrid(ctx, t, _alertsTiles),
 
-          // ── COMMUNITY ─────────────────────────────────────────────────────
           _sectionHeader(ctx, t, 'Community',
               Icons.people_rounded, const Color(0xFF66BB6A)),
           _tileGrid(ctx, t, _communityTiles),
 
-          // ── ANALYTICS & TOOLS ─────────────────────────────────────────────
           _sectionHeader(ctx, t, 'Analytics & Tools',
               Icons.bar_chart_rounded, const Color(0xFF26C6DA)),
           _tileGrid(ctx, t, _analyticsTiles),
 
-          // bottom padding above FAB
           const SliverToBoxAdapter(child: SizedBox(height: 96)),
         ],
       ),
     );
   }
 
-  // ── Section header sliver ──────────────────────────────────────────────────
   Widget _sectionHeader(
     BuildContext ctx, RiverColors t,
     String label, IconData icon, Color color,
@@ -516,7 +502,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     );
   }
 
-  // ── Tile grid sliver ───────────────────────────────────────────────────────
   Widget _tileGrid(BuildContext ctx, RiverColors t, List<_Tile> tiles) {
     return SliverPadding(
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
@@ -536,7 +521,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     );
   }
 
-  // ── Search bottom sheet ────────────────────────────────────────────────────
   void _showSearchSheet(BuildContext ctx, RiverColors t) {
     showModalBottomSheet(
       context: ctx,
@@ -546,8 +530,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (sheetCtx) => _SearchSheet(
-        tiles:   _allTiles,
-        onOpen:  (tile) {
+        tiles:  _allTiles,
+        onOpen: (tile) {
           Navigator.pop(sheetCtx);
           _open(ctx, tile);
         },
@@ -557,13 +541,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// _LauncherTile  — single icon card
+// _LauncherTile
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _LauncherTile extends StatefulWidget {
-  final _Tile      tile;
+  final _Tile        tile;
   final VoidCallback onTap;
-
   const _LauncherTile({required this.tile, required this.onTap});
 
   @override
@@ -582,10 +565,7 @@ class _LauncherTileState extends State<_LauncherTile>
           CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
 
   @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
+  void dispose() { _ctrl.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
@@ -599,7 +579,8 @@ class _LauncherTileState extends State<_LauncherTile>
       onTapCancel: ()  => _ctrl.reverse(),
       child: AnimatedBuilder(
         animation: _scale,
-        builder: (_, child) => Transform.scale(scale: _scale.value, child: child),
+        builder: (_, child) =>
+            Transform.scale(scale: _scale.value, child: child),
         child: Td3Card(
           accentColor: c,
           elevation:   Td3.elevMid,
@@ -608,20 +589,16 @@ class _LauncherTileState extends State<_LauncherTile>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Icon bubble
                 Container(
                   width: 46, height: 46,
                   decoration: BoxDecoration(
-                    gradient: RadialGradient(
-                      colors: [
-                        c.withValues(alpha: 0.30),
-                        c.withValues(alpha: 0.08),
-                      ],
-                    ),
+                    gradient: RadialGradient(colors: [
+                      c.withValues(alpha: 0.30),
+                      c.withValues(alpha: 0.08),
+                    ]),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: c.withValues(alpha: 0.35), width: 1,
-                    ),
+                        color: c.withValues(alpha: 0.35), width: 1),
                     boxShadow: [
                       BoxShadow(
                         color:      c.withValues(alpha: 0.20),
@@ -636,14 +613,12 @@ class _LauncherTileState extends State<_LauncherTile>
                 Text(
                   tile.label,
                   style: TextStyle(
-                    color:      t.textPrimary,
-                    fontSize:   11,
-                    fontWeight: FontWeight.w600,
-                    height:     1.2,
+                    color: t.textPrimary, fontSize: 11,
+                    fontWeight: FontWeight.w600, height: 1.2,
                   ),
                   textAlign: TextAlign.center,
-                  maxLines:  2,
-                  overflow:  TextOverflow.ellipsis,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 if (tile.badge != null) ...[
                   const SizedBox(height: 4),
@@ -659,13 +634,12 @@ class _LauncherTileState extends State<_LauncherTile>
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// _SearchSheet — modal search over all tiles
+// _SearchSheet
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _SearchSheet extends StatefulWidget {
-  final List<_Tile>         tiles;
+  final List<_Tile>          tiles;
   final void Function(_Tile) onOpen;
-
   const _SearchSheet({required this.tiles, required this.onOpen});
 
   @override
@@ -691,16 +665,13 @@ class _SearchSheetState extends State<_SearchSheet> {
       maxChildSize:     0.92,
       builder: (_, sc) => Column(
         children: [
-          // handle
           Container(
             margin: const EdgeInsets.symmetric(vertical: 8),
             width: 36, height: 4,
             decoration: BoxDecoration(
-              color:        t.stroke,
-              borderRadius: BorderRadius.circular(2),
-            ),
+                color: t.stroke,
+                borderRadius: BorderRadius.circular(2)),
           ),
-          // search field
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
             child: Td3InputField(
@@ -709,7 +680,6 @@ class _SearchSheetState extends State<_SearchSheet> {
               onChanged: (v) => setState(() => _q = v),
             ),
           ),
-          // results
           Expanded(
             child: ListView.separated(
               controller:  sc,
@@ -723,16 +693,18 @@ class _SearchSheetState extends State<_SearchSheet> {
                   elevation:   Td3.elevLow,
                   onTap:       () => widget.onOpen(tile),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                     child: Row(
                       children: [
                         Container(
                           width: 38, height: 38,
                           decoration: BoxDecoration(
-                            color:        tile.color.withValues(alpha: 0.15),
+                            color: tile.color.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: Icon(tile.icon, color: tile.color, size: 20),
+                          child:
+                              Icon(tile.icon, color: tile.color, size: 20),
                         ),
                         const SizedBox(width: 12),
                         Text(
