@@ -1,8 +1,11 @@
-// lib/screens/settings_screen.dart  v3.2  (15 Jun 2026)
+// lib/screens/settings_screen.dart  v3.3  (15 Jun 2026)
 //
-// v3.2:
-//   • Removed 'Auto' (AppThemeMode.system) from the theme grid — gone
-//   • All 6 remaining theme cards laid out in a clean 2-column Wrap
+// v3.3:
+//   • All collapsible section cards now fill the full available width
+//     (removed fixed half-width Wrap card width, SliverPadding uses
+//      symmetric horizontal 16 so every card edge-to-edge on screen)
+//   • Theme grid cards: width = full column width / 2 (responsive)
+//   • Auto (AppThemeMode.system) chip remains removed
 library;
 
 import 'package:flutter/material.dart';
@@ -43,14 +46,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   bool _isOpen(String key) => _expanded[key] ?? true;
 
-  // Auto (system) removed — 6 explicit themes only
   static const _themes = [
-    (AppThemeMode.light,        Icons.wb_sunny_rounded,        'Day River',      'Warm gold — bright daytime UI',    Color(0xFFFFB800)),
-    (AppThemeMode.dark,         Icons.nights_stay_rounded,     'Night River',    'Deep abyss with gold accents',     Color(0xFFFFD966)),
-    (AppThemeMode.sunset,       Icons.wb_twilight_rounded,     'Sunset Warm',    'Red-orange fiery glow',            Color(0xFFFF6B35)),
-    (AppThemeMode.ocean,        Icons.water_rounded,           'Deep Ocean',     'Cyan + midnight navy',             Color(0xFF00C6FF)),
-    (AppThemeMode.roboticDark,  Icons.memory_rounded,          'Tactical Dark',  'Amber HUD on near-black',          Color(0xFFf59e0b)),
-    (AppThemeMode.roboticLight, Icons.developer_board_rounded, 'Tactical Light', 'Amber HUD on light surface',       Color(0xFFB45309)),
+    (AppThemeMode.light,        Icons.wb_sunny_rounded,        'Day River',      'Warm gold · bright daytime UI',     Color(0xFFFFB800)),
+    (AppThemeMode.dark,         Icons.nights_stay_rounded,     'Night River',    'Deep abyss with gold accents',      Color(0xFFFFD966)),
+    (AppThemeMode.sunset,       Icons.wb_twilight_rounded,     'Sunset Warm',    'Red-orange fiery glow',             Color(0xFFFF6B35)),
+    (AppThemeMode.ocean,        Icons.water_rounded,           'Deep Ocean',     'Cyan + midnight navy',              Color(0xFF00C6FF)),
+    (AppThemeMode.roboticDark,  Icons.memory_rounded,          'Tactical Dark',  'Amber HUD on near-black',           Color(0xFFf59e0b)),
+    (AppThemeMode.roboticLight, Icons.developer_board_rounded, 'Tactical Light', 'Amber HUD on light surface',        Color(0xFFB45309)),
   ];
 
   @override
@@ -66,14 +68,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         slivers: [
           const Td3AppBar(title: 'Settings', subtitle: 'Preferences & navigation'),
           SliverPadding(
+            // 16 pt each side — cards stretch edge-to-edge within this
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
 
+                // ── Appearance ──────────────────────────────────────────────
                 _CollapsibleSection(
                   t: t, sectionKey: 'appearance',
                   icon: Icons.palette_rounded, title: 'Appearance',
                   open: _isOpen('appearance'), onToggle: () => _toggle('appearance'),
+                  // child is width-unconstrained — fills whatever the section gives it
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(12, 4, 12, 14),
                     child: _buildThemeGrid(context, t, mode, notifier),
@@ -81,42 +86,46 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 _gap,
 
+                // ── Account ─────────────────────────────────────────────────
                 _CollapsibleSection(
                   t: t, sectionKey: 'account',
                   icon: Icons.manage_accounts_rounded, title: 'Account',
                   open: _isOpen('account'), onToggle: () => _toggle('account'),
                   child: _tiles(t, [
-                    (Icons.person_outline,         'Profile',                Routes.profile),
-                    (Icons.notifications_outlined, 'Notification Settings',  Routes.notificationSettings),
+                    (Icons.person_outline,         'Profile',               Routes.profile),
+                    (Icons.notifications_outlined, 'Notification Settings', Routes.notificationSettings),
                   ]),
                 ),
                 _gap,
 
+                // ── Data & Analytics ────────────────────────────────────────
                 _CollapsibleSection(
                   t: t, sectionKey: 'data',
                   icon: Icons.analytics_rounded, title: 'Data & Analytics',
                   open: _isOpen('data'), onToggle: () => _toggle('data'),
                   child: _tiles(t, [
-                    (Icons.bar_chart_rounded,  'Analytics Dashboard',  Routes.analytics),
-                    (Icons.history_rounded,    'Historical Analytics', Routes.historicalAnalytics),
-                    (Icons.download_rounded,   'Export Data',          Routes.export_),
+                    (Icons.bar_chart_rounded, 'Analytics Dashboard',  Routes.analytics),
+                    (Icons.history_rounded,   'Historical Analytics', Routes.historicalAnalytics),
+                    (Icons.download_rounded,  'Export Data',          Routes.export_),
                   ]),
                 ),
                 _gap,
 
+                // ── Tools ───────────────────────────────────────────────────
                 _CollapsibleSection(
                   t: t, sectionKey: 'tools',
                   icon: Icons.build_circle_outlined, title: 'Tools',
                   open: _isOpen('tools'), onToggle: () => _toggle('tools'),
                   child: _tiles(t, [
-                    (Icons.sensors,                'Live Stations',  Routes.liveStations),
-                    (Icons.grid_view_rounded,      'State Matrix',   Routes.stateMatrix),
-                    (Icons.monitor_heart_outlined, 'River Monitor',  Routes.riverMonitor),
-                    (Icons.info_outline,           'Model Info',     Routes.modelInfo),
+                    (Icons.sensors,                'Live Stations', Routes.liveStations),
+                    (Icons.grid_view_rounded,      'State Matrix',  Routes.stateMatrix),
+                    (Icons.monitor_heart_outlined, 'River Monitor', Routes.riverMonitor),
+                    (Icons.info_outline,           'Model Info',    Routes.modelInfo),
                   ]),
                 ),
                 _gap,
 
+                // ── Maps ────────────────────────────────────────────────────
                 _CollapsibleSection(
                   t: t, sectionKey: 'maps',
                   icon: Icons.map_outlined, title: 'Maps',
@@ -130,17 +139,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 _gap,
 
+                // ── Weather ─────────────────────────────────────────────────
                 _CollapsibleSection(
                   t: t, sectionKey: 'weather',
                   icon: Icons.cloud_outlined, title: 'Weather',
                   open: _isOpen('weather'), onToggle: () => _toggle('weather'),
                   child: _tiles(t, [
-                    (Icons.wb_sunny_outlined,    'Weather',           Routes.weather),
-                    (Icons.thunderstorm_outlined,'Rainfall Forecast', Routes.rainfallForecast),
+                    (Icons.wb_sunny_outlined,     'Weather',           Routes.weather),
+                    (Icons.thunderstorm_outlined, 'Rainfall Forecast', Routes.rainfallForecast),
                   ]),
                 ),
                 _gap,
 
+                // ── Prediction & AI ─────────────────────────────────────────
                 _CollapsibleSection(
                   t: t, sectionKey: 'prediction',
                   icon: Icons.auto_awesome_rounded, title: 'Prediction & AI',
@@ -152,6 +163,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 _gap,
 
+                // ── Community ───────────────────────────────────────────────
                 _CollapsibleSection(
                   t: t, sectionKey: 'community',
                   icon: Icons.people_outline, title: 'Community',
@@ -164,6 +176,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 _gap,
 
+                // ── News ────────────────────────────────────────────────────
                 _CollapsibleSection(
                   t: t, sectionKey: 'news',
                   icon: Icons.newspaper_rounded, title: 'News',
@@ -174,6 +187,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 _gap,
 
+                // ── Administration ──────────────────────────────────────────
                 _CollapsibleSection(
                   t: t, sectionKey: 'admin',
                   icon: Icons.admin_panel_settings_outlined, title: 'Administration',
@@ -186,10 +200,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 const SizedBox(height: 28),
                 Center(
                   child: Text(
-                    'OpsFlood v1.0.0  •  Bihar Flood Command',
+                    'OpsFlood v1.0.0  ·  Bihar Flood Command',
                     style: TextStyle(
-                      color: t.textSecondary.withOpacity(0.45),
-                      fontSize: 11, letterSpacing: 0.3,
+                      color:      t.textSecondary.withOpacity(0.45),
+                      fontSize:   11,
+                      letterSpacing: 0.3,
                     ),
                   ),
                 ),
@@ -204,8 +219,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   static const _gap = SizedBox(height: 10);
 
+  // ── Tile list ────────────────────────────────────────────────────────────
   Widget _tiles(RiverColors t, List<(IconData, String, String)> items) {
     return Column(
+      // stretch children to full card width
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (int i = 0; i < items.length; i++) ...[
           _tile(t, items[i].$1, items[i].$2, items[i].$3),
@@ -219,14 +237,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _buildThemeGrid(BuildContext ctx, RiverColors t,
-      AppThemeMode current, dynamic notifier) {
+  // ── Theme picker grid ────────────────────────────────────────────────────
+  Widget _buildThemeGrid(
+    BuildContext ctx,
+    RiverColors t,
+    AppThemeMode current,
+    dynamic notifier,
+  ) {
+    // Available width = screen - SliverPadding(32) - section padding(24)
+    final availableW = MediaQuery.of(ctx).size.width - 32 - 24;
+    final cardW      = (availableW - 10) / 2; // 10 = spacing between columns
+
     return Wrap(
-      spacing: 10,
+      spacing:    10,
       runSpacing: 10,
       children: _themes.map((item) {
         final (themeMode, icon, label, desc, accentColor) = item;
         final selected = current == themeMode;
+
         return GestureDetector(
           onTap: () {
             HapticFeedback.mediumImpact();
@@ -234,9 +262,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           },
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOut,
-            width: (MediaQuery.of(ctx).size.width - 54) / 2,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+            curve:    Curves.easeOut,
+            width:    cardW,
+            padding:  const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
             decoration: BoxDecoration(
               color: selected ? accentColor.withValues(alpha: 0.10) : t.cardBg,
               borderRadius: BorderRadius.circular(16),
@@ -250,47 +278,51 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment:  MainAxisAlignment.center,
               children: [
-                Center(
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Container(
-                        width: 44, height: 44,
-                        decoration: BoxDecoration(
-                          color: accentColor.withValues(alpha: 0.13),
-                          borderRadius: BorderRadius.circular(13),
-                          border: Border.all(color: accentColor.withValues(alpha: 0.30), width: 1),
-                        ),
-                        child: Center(child: Icon(icon, color: accentColor, size: 22)),
+                Stack(
+                  clipBehavior: Clip.none,
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      width: 44, height: 44,
+                      decoration: BoxDecoration(
+                        color:        accentColor.withValues(alpha: 0.13),
+                        borderRadius: BorderRadius.circular(13),
+                        border: Border.all(color: accentColor.withValues(alpha: 0.30), width: 1),
                       ),
-                      if (selected)
-                        Positioned(
-                          right: -2, top: -2,
-                          child: Container(
-                            width: 16, height: 16,
-                            decoration: BoxDecoration(
-                              color: accentColor, shape: BoxShape.circle,
-                              border: Border.all(color: t.cardBg, width: 1.5),
-                              boxShadow: [BoxShadow(color: accentColor.withOpacity(0.4), blurRadius: 4)],
-                            ),
-                            child: const Icon(Icons.check_rounded, color: Colors.white, size: 10),
+                      child: Center(child: Icon(icon, color: accentColor, size: 22)),
+                    ),
+                    if (selected)
+                      Positioned(
+                        right: -4, top: -4,
+                        child: Container(
+                          width: 16, height: 16,
+                          decoration: BoxDecoration(
+                            color:  accentColor,
+                            shape:  BoxShape.circle,
+                            border: Border.all(color: t.cardBg, width: 1.5),
+                            boxShadow: [BoxShadow(color: accentColor.withOpacity(0.4), blurRadius: 4)],
                           ),
+                          child: const Icon(Icons.check_rounded, color: Colors.white, size: 10),
                         ),
-                    ],
-                  ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 12),
-                Text(label,
+                Text(
+                  label,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: selected ? accentColor : t.textPrimary,
-                    fontSize: 13, fontWeight: FontWeight.w700, height: 1.1,
+                    color:      selected ? accentColor : t.textPrimary,
+                    fontSize:   13,
+                    fontWeight: FontWeight.w700,
+                    height:     1.1,
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(desc,
+                Text(
+                  desc,
                   textAlign: TextAlign.center,
                   style: TextStyle(color: t.textSecondary, fontSize: 10, height: 1.3),
                   maxLines: 2, overflow: TextOverflow.ellipsis,
@@ -303,6 +335,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  // ── Single nav tile ──────────────────────────────────────────────────────
   Widget _tile(RiverColors t, IconData icon, String label, String route) {
     return Material(
       color: Colors.transparent,
@@ -320,22 +353,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               Container(
                 width: 36, height: 36,
                 decoration: BoxDecoration(
-                  color: t.accent.withOpacity(0.10),
+                  color:        t.accent.withOpacity(0.10),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: t.accent.withOpacity(0.18), width: 1),
                 ),
                 child: Center(child: Icon(icon, color: t.accent, size: 18)),
               ),
               const SizedBox(width: 13),
-              Expanded(child: Text(label, style: TextStyle(
-                color: t.textPrimary, fontSize: 14,
-                fontWeight: FontWeight.w500, height: 1.2,
-              ))),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color:      t.textPrimary,
+                    fontSize:   14,
+                    fontWeight: FontWeight.w500,
+                    height:     1.2,
+                  ),
+                ),
+              ),
               const SizedBox(width: 4),
               Container(
                 width: 24, height: 24,
                 decoration: BoxDecoration(
-                  color: t.accent.withOpacity(0.07),
+                  color:        t.accent.withOpacity(0.07),
                   borderRadius: BorderRadius.circular(7),
                 ),
                 child: Center(child: Icon(
@@ -351,6 +391,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// _CollapsibleSection
+//
+// Key change v3.3: the card itself uses double.infinity width — it fills the
+// full SliverPadding column (screen − 32 pt).  Previously it was unconstrained
+// only by the Td3Card's inner Stack; now we wrap with a SizedBox.expand so
+// Td3Card's Container is forced to stretch.
 // ─────────────────────────────────────────────────────────────────────────────
 class _CollapsibleSection extends StatelessWidget {
   final RiverColors  t;
@@ -373,72 +420,88 @@ class _CollapsibleSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Td3Card(
-      elevation: Td3.elevMid,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          InkWell(
-            borderRadius: BorderRadius.vertical(
-              top: const Radius.circular(16),
-              bottom: open ? Radius.zero : const Radius.circular(16),
-            ),
-            onTap: onToggle,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 32, height: 32,
-                    decoration: BoxDecoration(
-                      color: t.accent.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(9),
-                      border: Border.all(color: t.accent.withOpacity(0.20), width: 1),
-                    ),
-                    child: Center(child: Icon(icon, color: t.accent, size: 15)),
-                  ),
-                  const SizedBox(width: 11),
-                  Expanded(child: Text(title.toUpperCase(), style: TextStyle(
-                    color: t.accent, fontSize: 11,
-                    fontWeight: FontWeight.w800, letterSpacing: 1.3,
-                  ))),
-                  AnimatedRotation(
-                    turns: open ? 0.0 : -0.25,
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.easeOut,
-                    child: Container(
-                      width: 26, height: 26,
+    return SizedBox(
+      // ✅ stretch to full available column width
+      width: double.infinity,
+      child: Td3Card(
+        elevation: Td3.elevMid,
+        child: Column(
+          // ✅ stretch inner children (header row + content) to card width
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ── Header ──────────────────────────────────────────────────────
+            InkWell(
+              borderRadius: BorderRadius.vertical(
+                top:    const Radius.circular(16),
+                bottom: open ? Radius.zero : const Radius.circular(16),
+              ),
+              onTap: onToggle,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 32, height: 32,
                       decoration: BoxDecoration(
-                        color: t.accent.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(8),
+                        color:        t.accent.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(9),
+                        border: Border.all(color: t.accent.withOpacity(0.20), width: 1),
                       ),
-                      child: Center(child: Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        color: t.textSecondary, size: 18,
-                      )),
+                      child: Center(child: Icon(icon, color: t.accent, size: 15)),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 11),
+                    Expanded(
+                      child: Text(
+                        title.toUpperCase(),
+                        style: TextStyle(
+                          color:         t.accent,
+                          fontSize:      11,
+                          fontWeight:    FontWeight.w800,
+                          letterSpacing: 1.3,
+                        ),
+                      ),
+                    ),
+                    AnimatedRotation(
+                      turns:    open ? 0.0 : -0.25,
+                      duration: const Duration(milliseconds: 220),
+                      curve:    Curves.easeOut,
+                      child: Container(
+                        width: 26, height: 26,
+                        decoration: BoxDecoration(
+                          color:        t.accent.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Center(child: Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: t.textSecondary, size: 18,
+                        )),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          AnimatedCrossFade(
-            duration: const Duration(milliseconds: 220),
-            sizeCurve: Curves.easeOut,
-            firstCurve: Curves.easeOut,
-            secondCurve: Curves.easeIn,
-            crossFadeState: open ? CrossFadeState.showFirst : CrossFadeState.showSecond,
-            firstChild: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Divider(height: 1, color: t.stroke.withOpacity(0.25)),
-                child,
-              ],
+
+            // ── Collapsible body ─────────────────────────────────────────────
+            AnimatedCrossFade(
+              duration:       const Duration(milliseconds: 220),
+              sizeCurve:      Curves.easeOut,
+              firstCurve:     Curves.easeOut,
+              secondCurve:    Curves.easeIn,
+              crossFadeState: open ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+              firstChild: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Divider(height: 1, color: t.stroke.withOpacity(0.25)),
+                  child,
+                ],
+              ),
+              secondChild: const SizedBox.shrink(),
             ),
-            secondChild: const SizedBox.shrink(),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
