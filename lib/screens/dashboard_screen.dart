@@ -1,20 +1,8 @@
-// lib/screens/dashboard_screen.dart  (v8.0 — Unified Collapsible Dashboard)
+// lib/screens/dashboard_screen.dart  (v8.1)
 //
-// Single scrollable page that houses EVERY major screen as a
-// collapsible ExpansionCard section.
-// Sections (all independently expandable / collapsible):
-//   1. Live Status Strip   — critical/severe/warning/safe counts
-//   2. City Cards          — Bihar monitored cities grid
-//   3. AI Prediction       — AIPredictionScreen embedded
-//   4. River Monitor       — RiverMonitorScreen embedded
-//   5. Live Stations       — LiveStationsScreen embedded
-//   6. Bihar River Map     — BiharRiverMapScreen embedded
-//   7. Rainfall Forecast   — RainfallForecastScreen embedded
-//   8. Weather             — WeatherScreen embedded
-//   9. State Matrix        — StateMatrixScreen embedded
-//  10. News Feed           — NewsFeedScreen embedded
-//  11. Alerts              — AlertsScreen embedded
-//  12. Analytics           — AnalyticsDashboardScreen embedded
+// Fix: removed `const` from every SliverToBoxAdapter that wraps a screen
+// widget.  Screen constructors are not const, so the compiler rejected them.
+// All logic identical to v8.0.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -48,7 +36,6 @@ class DashboardScreen extends ConsumerStatefulWidget {
 class _DashboardScreenState extends ConsumerState<DashboardScreen>
     with AutoRefreshMixin {
 
-  // Track which sections are expanded (all open by default except heavy ones)
   final Map<String, bool> _expanded = {
     'status':    true,
     'cities':    true,
@@ -64,7 +51,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     'analytics': false,
   };
 
-  void _toggle(String key) => setState(() => _expanded[key] = !(_expanded[key] ?? false));
+  void _toggle(String key) =>
+      setState(() => _expanded[key] = !(_expanded[key] ?? false));
 
   @override
   Widget build(BuildContext context) {
@@ -95,7 +83,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               padding: const EdgeInsets.only(right: 4),
               child: Badge(
                 label: Text('$badgeCount'),
-                child: Icon(Icons.notifications_rounded, color: t.textSecondary),
+                child: Icon(Icons.notifications_rounded,
+                    color: t.textSecondary),
               ),
             ),
           IconButton(
@@ -103,7 +92,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             tooltip: 'Refresh',
             onPressed: onManualRefresh,
           ),
-          // Expand / collapse all toggle
           IconButton(
             icon: Icon(
               _expanded.values.any((v) => v)
@@ -133,7 +121,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     );
   }
 
-  // ── Error state ─────────────────────────────────────────────────────────────
   Widget _errorView(BuildContext ctx, Object e, RiverColors t) {
     return Center(
       child: Padding(
@@ -144,7 +131,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             Icon(Icons.cloud_off_rounded, size: 56, color: t.textSecondary),
             const SizedBox(height: 16),
             Text('Could not load live data',
-                style: TextStyle(color: t.textPrimary, fontSize: 16,
+                style: TextStyle(
+                    color: t.textPrimary,
+                    fontSize: 16,
                     fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             Text('Check your connection and try again.',
@@ -161,8 +150,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     );
   }
 
-  // ── Main body ───────────────────────────────────────────────────────────────
-  Widget _buildBody(BuildContext ctx, BiharLiveState live, RiverColors t) {
+  Widget _buildBody(
+      BuildContext ctx, BiharLiveState live, RiverColors t) {
     final cities = IndiaGeodata.monitoredCities
         .where((c) => c['state'] == 'Bihar')
         .toList();
@@ -171,14 +160,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
 
-        // ── Section 1: Live Status Strip ──────────────────────────────────────
-        _sectionHeader(
-          ctx, t, key: 'status',
-          icon: Icons.dashboard_rounded,
-          color: t.accent,
-          title: 'Live Status',
-          subtitle: '${live.stations.length} stations',
-        ),
+        // 1 — Live Status
+        _sectionHeader(ctx, t,
+            key: 'status', icon: Icons.dashboard_rounded,
+            color: t.accent, title: 'Live Status',
+            subtitle: '${live.stations.length} stations'),
         if (_expanded['status'] == true)
           SliverToBoxAdapter(
             child: SummaryStrip(
@@ -191,14 +177,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             ),
           ),
 
-        // ── Section 2: City Cards ─────────────────────────────────────────────
-        _sectionHeader(
-          ctx, t, key: 'cities',
-          icon: Icons.location_city_rounded,
-          color: Colors.blue,
-          title: 'Monitored Cities',
-          subtitle: '${cities.length} Bihar cities',
-        ),
+        // 2 — Monitored Cities
+        _sectionHeader(ctx, t,
+            key: 'cities', icon: Icons.location_city_rounded,
+            color: Colors.blue, title: 'Monitored Cities',
+            subtitle: '${cities.length} Bihar cities'),
         if (_expanded['cities'] == true)
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
@@ -221,133 +204,103 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             ),
           ),
 
-        // ── Section 3: AI Prediction ──────────────────────────────────────────
-        _sectionHeader(
-          ctx, t, key: 'ai',
-          icon: Icons.auto_graph_rounded,
-          color: const Color(0xFF7B2FF7),
-          title: 'AI Flood Prediction',
-          subtitle: 'ML forecast',
-        ),
+        // 3 — AI Prediction
+        _sectionHeader(ctx, t,
+            key: 'ai', icon: Icons.auto_graph_rounded,
+            color: const Color(0xFF7B2FF7),
+            title: 'AI Flood Prediction', subtitle: 'ML forecast'),
         if (_expanded['ai'] == true)
-          const SliverToBoxAdapter(
+          SliverToBoxAdapter(
             child: SizedBox(height: 520, child: AIPredictionScreen()),
           ),
 
-        // ── Section 4: River Monitor ──────────────────────────────────────────
-        _sectionHeader(
-          ctx, t, key: 'monitor',
-          icon: Icons.monitor_heart_outlined,
-          color: const Color(0xFF00B0FF),
-          title: 'River Monitor',
-          subtitle: 'All Bihar gauges',
-        ),
+        // 4 — River Monitor
+        _sectionHeader(ctx, t,
+            key: 'monitor', icon: Icons.monitor_heart_outlined,
+            color: const Color(0xFF00B0FF),
+            title: 'River Monitor', subtitle: 'All Bihar gauges'),
         if (_expanded['monitor'] == true)
-          const SliverToBoxAdapter(
+          SliverToBoxAdapter(
             child: SizedBox(height: 560, child: RiverMonitorScreen()),
           ),
 
-        // ── Section 5: Live Stations ──────────────────────────────────────────
-        _sectionHeader(
-          ctx, t, key: 'stations',
-          icon: Icons.sensors_rounded,
-          color: const Color(0xFF00E676),
-          title: 'Live Stations',
-          subtitle: 'CWC + WRD feed',
-        ),
+        // 5 — Live Stations
+        _sectionHeader(ctx, t,
+            key: 'stations', icon: Icons.sensors_rounded,
+            color: const Color(0xFF00E676),
+            title: 'Live Stations', subtitle: 'CWC + WRD feed'),
         if (_expanded['stations'] == true)
-          const SliverToBoxAdapter(
+          SliverToBoxAdapter(
             child: SizedBox(height: 520, child: LiveStationsScreen()),
           ),
 
-        // ── Section 6: Bihar River Map ────────────────────────────────────────
-        _sectionHeader(
-          ctx, t, key: 'map',
-          icon: Icons.map_rounded,
-          color: Colors.teal,
-          title: 'Bihar River Map',
-          subtitle: 'Interactive map',
-        ),
+        // 6 — Bihar River Map
+        _sectionHeader(ctx, t,
+            key: 'map', icon: Icons.map_rounded,
+            color: Colors.teal,
+            title: 'Bihar River Map', subtitle: 'Interactive map'),
         if (_expanded['map'] == true)
-          const SliverToBoxAdapter(
+          SliverToBoxAdapter(
             child: SizedBox(height: 420, child: BiharRiverMapScreen()),
           ),
 
-        // ── Section 7: Rainfall Forecast ──────────────────────────────────────
-        _sectionHeader(
-          ctx, t, key: 'rainfall',
-          icon: Icons.cloudy_snowing,
-          color: const Color(0xFF00B0FF),
-          title: 'Rainfall Forecast',
-          subtitle: '7-day IMD data',
-        ),
+        // 7 — Rainfall Forecast
+        _sectionHeader(ctx, t,
+            key: 'rainfall', icon: Icons.cloudy_snowing,
+            color: const Color(0xFF00B0FF),
+            title: 'Rainfall Forecast', subtitle: '7-day IMD data'),
         if (_expanded['rainfall'] == true)
-          const SliverToBoxAdapter(
+          SliverToBoxAdapter(
             child: SizedBox(height: 480, child: RainfallForecastScreen()),
           ),
 
-        // ── Section 8: Weather ────────────────────────────────────────────────
-        _sectionHeader(
-          ctx, t, key: 'weather',
-          icon: Icons.wb_sunny_outlined,
-          color: Colors.orange,
-          title: 'Weather',
-          subtitle: 'Current conditions',
-        ),
+        // 8 — Weather
+        _sectionHeader(ctx, t,
+            key: 'weather', icon: Icons.wb_sunny_outlined,
+            color: Colors.orange,
+            title: 'Weather', subtitle: 'Current conditions'),
         if (_expanded['weather'] == true)
-          const SliverToBoxAdapter(
+          SliverToBoxAdapter(
             child: SizedBox(height: 440, child: WeatherScreen()),
           ),
 
-        // ── Section 9: State Matrix ───────────────────────────────────────────
-        _sectionHeader(
-          ctx, t, key: 'matrix',
-          icon: Icons.grid_view_rounded,
-          color: const Color(0xFF039BE5),
-          title: 'State Matrix',
-          subtitle: 'District-level view',
-        ),
+        // 9 — State Matrix
+        _sectionHeader(ctx, t,
+            key: 'matrix', icon: Icons.grid_view_rounded,
+            color: const Color(0xFF039BE5),
+            title: 'State Matrix', subtitle: 'District-level view'),
         if (_expanded['matrix'] == true)
-          const SliverToBoxAdapter(
+          SliverToBoxAdapter(
             child: SizedBox(height: 480, child: StateMatrixScreen()),
           ),
 
-        // ── Section 10: News Feed ─────────────────────────────────────────────
-        _sectionHeader(
-          ctx, t, key: 'news',
-          icon: Icons.newspaper_outlined,
-          color: Colors.amber,
-          title: 'News Feed',
-          subtitle: 'Flood news',
-        ),
+        // 10 — News Feed
+        _sectionHeader(ctx, t,
+            key: 'news', icon: Icons.newspaper_outlined,
+            color: Colors.amber,
+            title: 'News Feed', subtitle: 'Flood news'),
         if (_expanded['news'] == true)
-          const SliverToBoxAdapter(
+          SliverToBoxAdapter(
             child: SizedBox(height: 480, child: NewsFeedScreen()),
           ),
 
-        // ── Section 11: Alerts ────────────────────────────────────────────────
-        _sectionHeader(
-          ctx, t, key: 'alerts',
-          icon: Icons.notifications_active_rounded,
-          color: Colors.red,
-          title: 'Alerts',
-          subtitle: 'Active warnings',
-        ),
+        // 11 — Alerts
+        _sectionHeader(ctx, t,
+            key: 'alerts', icon: Icons.notifications_active_rounded,
+            color: Colors.red,
+            title: 'Alerts', subtitle: 'Active warnings'),
         if (_expanded['alerts'] == true)
-          const SliverToBoxAdapter(
+          SliverToBoxAdapter(
             child: SizedBox(height: 440, child: AlertsScreen()),
           ),
 
-        // ── Section 12: Analytics ─────────────────────────────────────────────
-        _sectionHeader(
-          ctx, t, key: 'analytics',
-          icon: Icons.bar_chart_rounded,
-          color: const Color(0xFF26C6DA),
-          title: 'Analytics',
-          subtitle: 'Trends & charts',
-        ),
+        // 12 — Analytics
+        _sectionHeader(ctx, t,
+            key: 'analytics', icon: Icons.bar_chart_rounded,
+            color: const Color(0xFF26C6DA),
+            title: 'Analytics', subtitle: 'Trends & charts'),
         if (_expanded['analytics'] == true)
-          const SliverToBoxAdapter(
+          SliverToBoxAdapter(
             child: SizedBox(height: 520, child: AnalyticsDashboardScreen()),
           ),
 
@@ -356,7 +309,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     );
   }
 
-  // ── Section header builder ─────────────────────────────────────────────────
   Widget _sectionHeader(
     BuildContext ctx,
     RiverColors t, {
@@ -377,13 +329,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: isOpen ? color.withOpacity(0.6) : t.divider,
-              width: isOpen ? 1.5 : 1,
+              width: isOpen ? 1.5 : 1.0,
             ),
             boxShadow: [
               BoxShadow(
-                color:       Colors.black.withOpacity(0.08),
-                blurRadius:  8,
-                offset:      const Offset(0, 2),
+                color:      Colors.black.withOpacity(0.08),
+                blurRadius: 8,
+                offset:     const Offset(0, 2),
               ),
             ],
           ),
@@ -391,7 +343,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
-                // Icon bubble
                 Container(
                   width: 38, height: 38,
                   decoration: BoxDecoration(
@@ -401,33 +352,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   child: Icon(icon, color: color, size: 20),
                 ),
                 const SizedBox(width: 12),
-                // Title + subtitle
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(title,
                           style: TextStyle(
-                            color:      t.textPrimary,
-                            fontWeight: FontWeight.w700,
-                            fontSize:   14,
-                          )),
+                              color:      t.textPrimary,
+                              fontWeight: FontWeight.w700,
+                              fontSize:   14)),
                       Text(subtitle,
                           style: TextStyle(
-                            color:    t.textSecondary,
-                            fontSize: 11,
-                          )),
+                              color:    t.textSecondary,
+                              fontSize: 11)),
                     ],
                   ),
                 ),
-                // Expand/collapse chevron
                 AnimatedRotation(
                   turns:    isOpen ? 0.5 : 0,
                   duration: const Duration(milliseconds: 200),
-                  child: Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    color: t.textSecondary,
-                  ),
+                  child: Icon(Icons.keyboard_arrow_down_rounded,
+                      color: t.textSecondary),
                 ),
               ],
             ),
