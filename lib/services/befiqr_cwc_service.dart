@@ -1,36 +1,25 @@
-// lib/services/befiqr_cwc_service.dart  v3.1
+// lib/services/befiqr_cwc_service.dart  v3.2
 //
 // Live CWC + WRD Bihar station data — 5-source parallel scraper
 //
-// FIXES vs v3.0:
-//   • All individual source timeouts bumped 6s→12s (BEAMS/FFS/befiqr are
-//     slow government servers; 6s was too aggressive).
-//   • Race timeout bumped 8s→15s to match the extended per-source window.
+// v3.2 (15 Jun 2026) — expose static seedStations getter:
+//   source_policy_provider.dart needs the 32-station embedded snapshot for
+//   its tertiary (offline) fallback WITHOUT making a network call.  The
+//   private _seedStations getter is now accessible via the public static
+//   BefiqrCwcService.seedStations.
+//
+// v3.1 fixes:
+//   • All individual source timeouts bumped 6s→12s.
+//   • Race timeout bumped 8s→15s.
 //
 // SOURCE PRIORITY — all fired in parallel, first non-empty list wins:
+//  A. CWC Open Data REST API     (data.gov.in / cwc.gov.in)  — stable JSON
+//  B. BEAMS Bihar HTML           (beams.fmiscwrdbihar.gov.in) — most stations
+//  C. CWC Flood Bulletin JSON    (cwc.gov.in/fld_mng)         — daily snapshot
+//  D. GloFAS CEMS Bihar stations (emergency.copernicus.eu)    — EU-hosted
+//  E. irrigation.befiqr.in HTML  (legacy)                     — mirror
 //
-//  A. CWC Open Data REST API (data.gov.in / cwc.gov.in public API)
-//     JSON feed updated every 3h. No auth, no scraping, highly reliable.
-//
-//  B. BEAMS Bihar HTML (beams.fmiscwrdbihar.gov.in)
-//     Official Bihar WRD table. Unreliable — goes down frequently.
-//     Kept as parallel source since it has the most stations when up.
-//
-//  C. CWC Flood Bulletin JSON (cwc.gov.in/fld_mng)
-//     Official CWC Bihar bulletin published daily. Stable CDN-hosted URL.
-//
-//  D. GloFAS CEMS Bihar stations (emergency.copernicus.eu)
-//     EU-hosted, never geoblocked, updated every 6h.
-//
-//  E. irrigation.befiqr.in HTML mirror
-//     Legacy fallback, kept for redundancy.
-//
-// Total worst-case wait: 15s (race timeout) not 24s (old sequential).
-// Seed returned only when all 5 sources return empty within 15s.
-//
-// DATUM: All levels stored in CWC AMSL metres.
-//   BEAMS reports WRD local datum; offset table below converts to AMSL.
-//
+// Seed returned when all 5 sources return empty within 15s.
 library;
 
 import 'dart:async';
@@ -215,6 +204,14 @@ class BefiqrCwcService {
   // v3.1: bumped from 8s → 15s
   static const _raceTimeout = Duration(seconds: 15);
 
+  // ── v3.2: public static accessor for the embedded seed snapshot ──────────
+  //
+  // Used by source_policy_provider.dart's DataSource.localSeed branch so it
+  // can serve offline data without making any network call. The getter
+  // returns a fresh list (fetchedAt == now) on every call — callers that
+  // want to cache it should do so themselves.
+  static List<CwcStation> get seedStations => _seedStations;
+
   /// Fetch all Bihar CWC stations.
   /// Fires 5 sources in parallel — first non-empty list wins.
   /// Never throws — falls back to seed if all fail within 15s.
@@ -264,7 +261,7 @@ class BefiqrCwcService {
     try {
       final resp = await http.get(
         Uri.parse(_cwcApiUrl),
-        headers: {'Accept': 'application/json', 'User-Agent': 'OpsFlood/3.1'},
+        headers: {'Accept': 'application/json', 'User-Agent': 'OpsFlood/3.2'},
       ).timeout(const Duration(seconds: 12));
 
       if (resp.statusCode == 200) {
@@ -308,10 +305,10 @@ class BefiqrCwcService {
         Uri.parse(_beamsUrl),
         headers: {
           'Accept':          'text/html,application/xhtml+xml',
-          'User-Agent':      'Mozilla/5.0 (OpsFlood/3.1)',
+          'User-Agent':      'Mozilla/5.0 (OpsFlood/3.2)',
           'Accept-Language': 'en-IN,en;q=0.9',
         },
-      ).timeout(const Duration(seconds: 12));   // v3.1: bumped 6s→12s
+      ).timeout(const Duration(seconds: 12));
 
       if (resp.statusCode == 200) {
         final stations = _parseBeamsHtml(resp.body);
@@ -331,8 +328,8 @@ class BefiqrCwcService {
     try {
       final resp = await http.get(
         Uri.parse(_cwcBulletinUrl),
-        headers: {'Accept': 'application/json', 'User-Agent': 'OpsFlood/3.1'},
-      ).timeout(const Duration(seconds: 12));   // v3.1: bumped 6s→12s
+        headers: {'Accept': 'application/json', 'User-Agent': 'OpsFlood/3.2'},
+      ).timeout(const Duration(seconds: 12));
 
       if (resp.statusCode == 200) {
         final body     = jsonDecode(resp.body);
@@ -373,8 +370,8 @@ class BefiqrCwcService {
     try {
       final resp = await http.get(
         Uri.parse(_glofasUrl),
-        headers: {'Accept': 'application/json', 'User-Agent': 'OpsFlood/3.1'},
-      ).timeout(const Duration(seconds: 12));   // v3.1: bumped 6s→12s
+        headers: {'Accept': 'application/json', 'User-Agent': 'OpsFlood/3.2'},
+      ).timeout(const Duration(seconds: 12));
 
       if (resp.statusCode == 200) {
         final body = jsonDecode(resp.body);
@@ -420,7 +417,7 @@ class BefiqrCwcService {
       final resp = await http.get(
         Uri.parse(_befiqrUrl),
         headers: {'Accept': 'text/html,application/xhtml+xml'},
-      ).timeout(const Duration(seconds: 12));   // v3.1: bumped 6s→12s
+      ).timeout(const Duration(seconds: 12));
       if (resp.statusCode == 200) {
         final stations = parseHtmlTable(resp.body);
         if (stations.isNotEmpty) {

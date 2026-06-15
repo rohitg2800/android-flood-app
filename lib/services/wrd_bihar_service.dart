@@ -1,23 +1,32 @@
 // lib/services/wrd_bihar_service.dart
 //
-// OpsFlood — WRD Bihar Service (v7.3 — type-annotation fix)
+// OpsFlood — WRD Bihar Service (v7.4 — explicit 0-station log)
+//
+// v7.4 (15 Jun 2026) — distinguish 'backend returned 0 stations' from
+//   network/HTTP errors in debug logs:
+//
+//   BEFORE (v7.3):
+//     if (stations.isNotEmpty) { await _setCache(stations); return stations; }
+//     // falls through silently — could be empty response OR exception path
+//
+//   AFTER (v7.4):
+//     if (stations.isNotEmpty) { … }
+//     else { _log('backend returned 0 stations — falling back to cache'); }
+//
+//   This makes the two distinct failure modes unambiguous in logs:
+//     [WrdBihar] backend returned 0 stations — falling back to cache
+//     [WrdBihar] backend fetch error: … — falling back to disk cache
 //
 // v7.3 fix:
 //   _loadFromDiskWithAge() returned `(const [], null)` whose inferred type
-//   is `(List<dynamic>, Null)`, which is not assignable to the declared
-//   return type `(List<WrdStation>, Duration?)`.
-//   Fixed both early-return sites to use `(<WrdStation>[], null)`.
+//   is `(List<dynamic>, Null)`. Fixed both early-return sites to use
+//   `(<WrdStation>[], null)`.
 //
 // v7.2 fix (stale-data on Alerts screen):
 //   _loadFromDisk now checks the disk-timestamp against a 30-min TTL.
-//   If the on-disk data is older than 30 min it is returned as a cold-start
-//   placeholder BUT _cacheTime is left null so the subsequent network fetch
-//   is NOT skipped by the in-memory TTL guard.  Previously _cacheTime was
-//   always null on cold-start which meant the in-memory guard let the stale
-//   disk data survive indefinitely without ever triggering a refresh.
 //
 // All BeFIQR HTML scraping has been moved to the Python backend.
-// This service is now a thin wrapper that:
+// This service is a thin wrapper that:
 //   1. Calls GET /api/live-levels?state=Bihar on the backend.
 //   2. Deserialises the JSON into WrdStation objects.
 //   3. Caches results in memory (15 min TTL) and on disk via
@@ -220,12 +229,10 @@ class WrdBiharService {
       return _cache!;
     }
 
-    // Cold-start: load from disk ONLY as a placeholder while network loads.
-    // FIX v7.2: only treat disk data as "fresh enough" to set _cacheTime
-    // when it is within the disk TTL. If the disk data is stale, we still
-    // show it briefly (better than blank screen) but _cacheTime stays null
-    // so the in-memory TTL guard will NOT short-circuit the upcoming network
-    // fetch — preventing stale data from persisting indefinitely.
+    // Cold-start: load from disk as a placeholder while network loads.
+    // FIX v7.2: only treat disk data as "fresh enough" when within TTL.
+    // If stale, _cacheTime stays null so the in-memory TTL guard doesn't
+    // short-circuit the upcoming network fetch.
     if (_cache == null) {
       final (diskStations, diskAge) = await _loadFromDiskWithAge();
       if (diskStations.isNotEmpty) {
@@ -249,10 +256,15 @@ class WrdBiharService {
     try {
       final raw      = await BackendApiService.instance.fetchLiveLevels('Bihar');
       final stations = raw.map(WrdStation.fromJson).toList();
-      _log('backend returned ${stations.length} stations');
+
+      // v7.4: explicit log branch for 0-station response so it is
+      // distinguishable from a thrown exception in log output.
       if (stations.isNotEmpty) {
+        _log('backend returned ${stations.length} stations');
         await _setCache(stations);
         return stations;
+      } else {
+        _log('backend returned 0 stations — falling back to cache');
       }
     } catch (e) {
       _log('backend fetch error: $e — falling back to disk cache');
@@ -330,8 +342,6 @@ class WrdBiharService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final raw   = prefs.getString(_persistKey);
-      // FIX v7.3: use typed empty list literal so the record type resolves
-      // to (List<WrdStation>, Duration?) rather than (List<dynamic>, Null).
       if (raw == null || raw.isEmpty) return (<WrdStation>[], null);
       final tsRaw = prefs.getString('${_persistKey}_ts');
       final ts    = tsRaw != null ? DateTime.tryParse(tsRaw) : null;
