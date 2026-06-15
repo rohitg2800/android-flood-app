@@ -95,8 +95,8 @@ dependencies:
   # Timestamps
   timeago: ^3.7.0
 
-  # Home screen widget
-  home_widget: ^0.7.0
+  # home_widget removed — v0.7.0 declares flood_app:any (non-existent pkg)
+  # Re-add when a fixed version is released: home_widget: ^0.7.x
 
 dev_dependencies:
   flutter_test:
