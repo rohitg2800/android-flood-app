@@ -1,22 +1,9 @@
-// lib/screens/bihar_river_map_screen.dart  v8.0  (15 Jun 2026)
+// lib/screens/bihar_river_map_screen.dart  v8.1  (15 Jun 2026)
 //
-// v8.0 — Full parity upgrade:
-//   • Synced to SAME providers as MapScreen:
-//       - mapStationsProvider   (Bihar-filtered live stations via mergedStations)
-//       - biharDistrictRiskProvider  (polygon heatmap layer)
-//       - biharGeoJsonProvider   (GeoJSON district boundaries)
-//       - liveEngineStationsProvider (CWC FFEM live push)
-//       - mapSyncMetaProvider    (freshness labels)
-//   • Same marker system: PulseMarker / AmberPulseMarker / StaticMarker
-//     (extreme/severe → red pulse, aboveNormal → amber pulse, normal → static)
-//   • Same polygon heatmap layer (district risk colours)
-//   • Themed UI using RiverColors instead of plain AppBar
-//   • MapTopBar (Bihar-only, no toggle button)
-//   • MapSourceLegend / floating legend FAB
-//   • MapTelemetrySheet slide-up drawer
-//   • RiverPulsePopup on station tap
-//   • Loading indicator overlay
-//   • AutoRefreshMixin kept for pull-to-refresh
+// v8.1 — Fix: "Tried to modify a provider while the widget tree was building"
+//   The line `ref.read(mapViewModeProvider.notifier).state = MapViewMode.bihar`
+//   was inside build(), which Riverpod forbids. Moved to initState() via
+//   a post-frame callback so the tree is fully mounted before the write.
 library;
 
 import 'package:flutter/material.dart';
@@ -38,8 +25,6 @@ const _kBiharZoom   = 7.2;
 
 class BiharRiverMapScreen extends ConsumerStatefulWidget {
   const BiharRiverMapScreen({super.key});
-
-  /// Named route used by Navigator.pushNamed.
   static const String route = '/bihar-river-map';
 
   @override
@@ -53,8 +38,18 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
   bool _showLegend = true;
   bool _showDrawer = false;
 
-  // Pulse animation controllers keyed by station name.
   final Map<String, AnimationController> _pulseCtrl = {};
+
+  @override
+  void initState() {
+    super.initState();
+    // Force Bihar mode AFTER the first frame — never inside build().
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(mapViewModeProvider.notifier).state = MapViewMode.bihar;
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -88,8 +83,8 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
         props['name']     ??
         ''
       ).toString().toLowerCase();
-      final dc  = riskMap[name] ?? DangerClass.normal;
-      final geo = f['geometry'] as Map<String, dynamic>? ?? {};
+      final dc   = riskMap[name] ?? DangerClass.normal;
+      final geo  = f['geometry'] as Map<String, dynamic>? ?? {};
       final type = geo['type'] as String? ?? '';
       final rings = <List<LatLng>>[];
       if (type == 'Polygon') {
@@ -124,7 +119,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
           .toList())
       .toList();
 
-  // ── Marker builder ────────────────────────────────────────────────────────
+  // ── Markers ───────────────────────────────────────────────────────────────
   String? _levelLabel(RiverStation s) {
     if (s.current <= 0) return null;
     return '${s.current.toStringAsFixed(2)}m';
@@ -146,37 +141,30 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
     ];
   }
 
-  double _markerSize(RiverStation s) {
-    switch (s.dangerClass) {
-      case DangerClass.extreme:
-      case DangerClass.severe:      return 58;
-      case DangerClass.aboveNormal: return 50;
-      case DangerClass.normal:      return 44;
-    }
-  }
+  double _markerSize(RiverStation s) => switch (s.dangerClass) {
+    DangerClass.extreme || DangerClass.severe => 58.0,
+    DangerClass.aboveNormal                   => 50.0,
+    DangerClass.normal                        => 44.0,
+  };
 
   Widget _buildMarkerWidget(RiverStation s) {
     final level = _levelLabel(s);
-    switch (s.dangerClass) {
-      case DangerClass.extreme:
-      case DangerClass.severe:
-        return PulseMarker(
-          dangerClass: s.dangerClass,
-          ctrl:        _pulseFor(s.station),
-          level:       level,
-        );
-      case DangerClass.aboveNormal:
-        return AmberPulseMarker(
-          ctrl:  _pulseFor(s.station),
-          level: level,
-        );
-      case DangerClass.normal:
-        return StaticMarker(
-          dangerClass: s.dangerClass,
-          level:       level,
-          isLive:      s.isLive,
-        );
-    }
+    return switch (s.dangerClass) {
+      DangerClass.extreme || DangerClass.severe => PulseMarker(
+        dangerClass: s.dangerClass,
+        ctrl:        _pulseFor(s.station),
+        level:       level,
+      ),
+      DangerClass.aboveNormal => AmberPulseMarker(
+        ctrl:  _pulseFor(s.station),
+        level: level,
+      ),
+      DangerClass.normal => StaticMarker(
+        dangerClass: s.dangerClass,
+        level:       level,
+        isLive:      s.isLive,
+      ),
+    };
   }
 
   void _onMarkerTap(RiverStation s) {
@@ -193,16 +181,12 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
   @override
   Widget build(BuildContext context) {
     final rc       = context.rc;
-    // Bihar map always uses Bihar mode — force it in case provider defaults national.
-    ref.read(mapViewModeProvider.notifier).state = MapViewMode.bihar;
-
-    final stations = ref.watch(mapStationsProvider);       // Bihar-filtered live
-    final distRisk = ref.watch(biharDistrictRiskProvider); // polygon colours
-    final syncMeta = ref.watch(mapSyncMetaProvider);       // freshness
-    final geoAsync = ref.watch(biharGeoJsonProvider);      // district GeoJSON
+    final stations = ref.watch(mapStationsProvider);
+    final distRisk = ref.watch(biharDistrictRiskProvider);
+    final syncMeta = ref.watch(mapSyncMetaProvider);
+    final geoAsync = ref.watch(biharGeoJsonProvider);
     final isLoading = ref.watch(wrdIsLoadingProvider);
 
-    // Kick the live engine (same as MapScreen)
     ref.watch(liveEngineStationsProvider);
 
     return Scaffold(
@@ -210,7 +194,6 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
       body: refreshIndicator(
         child: Stack(
           children: [
-            // ── Base map + layers ──────────────────────────────────────────
             FlutterMap(
               mapController: _mapController,
               options: const MapOptions(
@@ -225,19 +208,16 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
                       'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.opsflood.app',
                 ),
-                // District heatmap polygon layer
                 geoAsync.when(
                   data:    (gj) => PolygonLayer(
                       polygons: _buildPolygons(gj, distRisk)),
                   loading: () => const SizedBox.shrink(),
                   error:   (_, __) => const SizedBox.shrink(),
                 ),
-                // Live station markers
                 MarkerLayer(markers: _buildMarkers(stations)),
               ],
             ),
 
-            // ── Themed top bar (Bihar-only, no Bihar/National toggle) ──────
             Positioned(
               top:   MediaQuery.of(context).padding.top + 8,
               left:  12,
@@ -253,7 +233,6 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
               ),
             ),
 
-            // ── Legend ─────────────────────────────────────────────────────
             if (_showLegend)
               Positioned(
                 bottom: _showDrawer ? 340 : 100,
@@ -277,7 +256,6 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
                 ),
               ),
 
-            // ── Telemetry drawer ────────────────────────────────────────────
             if (_showDrawer)
               MapTelemetrySheet(
                 stations: stations,
@@ -291,7 +269,6 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
                 },
               ),
 
-            // ── Loading overlay ─────────────────────────────────────────────
             if (isLoading)
               Positioned(
                 top:   MediaQuery.of(context).padding.top + 72,
@@ -334,7 +311,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
   }
 }
 
-// ── Bihar-specific top bar (no Bihar/National toggle) ─────────────────────────
+// ── Bihar-specific top bar ────────────────────────────────────────────────────────────
 class _BiharMapTopBar extends StatelessWidget {
   final SyncMeta syncMeta;
   final bool     isLoading;
@@ -372,7 +349,6 @@ class _BiharMapTopBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Back button
           GestureDetector(
             onTap: () => Navigator.of(context).maybePop(),
             child: Container(
@@ -401,14 +377,11 @@ class _BiharMapTopBar extends StatelessWidget {
                 Text(
                   '$stationCount stations  \u2022  ${syncMeta.freshnessLabel}',
                   style: TextStyle(
-                    color:    rc.textSecondary,
-                    fontSize: 11,
-                  ),
+                      color: rc.textSecondary, fontSize: 11),
                 ),
               ],
             ),
           ),
-          // Refresh button
           GestureDetector(
             onTap: onRefresh,
             child: Container(
@@ -430,7 +403,6 @@ class _BiharMapTopBar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          // Telemetry drawer toggle
           GestureDetector(
             onTap: onDrawerToggle,
             child: Container(
