@@ -1,8 +1,8 @@
-// lib/screens/settings_screen.dart  v2.1
-// Fix: removed the typedef that aliased _ThemeModeNotifier to
-// Notifier<AppThemeMode> — the base class has no setMode(), which caused the
-// compile error on line 158.  Now we use the NotifierProvider's own
-// .notifier type via ref.read(), typed as the concrete provider type.
+// lib/screens/settings_screen.dart  v2.2
+// Fix: removed the unused _ThemeNotifier typedef that referenced the
+// non-exported NotifierProviderImpl type, causing a compile error.
+// The notifier parameter in _buildThemeGrid is typed as dynamic \u2014
+// setMode() resolves at runtime against the concrete _ThemeModeNotifier.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -11,14 +11,11 @@ import '../theme/theme_3d.dart';
 import '../providers/theme_provider.dart';
 import '../app_router.dart';
 
-// Concrete notifier type resolved from the provider.
-typedef _ThemeNotifier = NotifierProviderImpl<dynamic, AppThemeMode>;
-
 class SettingsScreen extends ConsumerWidget {
   static const String route = Routes.settings;
   const SettingsScreen({super.key});
 
-  // ── Theme mode metadata ────────────────────────────────────────────────────
+  // \u2500\u2500 Theme mode metadata \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   static const _themes = [
     (
       AppThemeMode.system,
@@ -31,7 +28,7 @@ class SettingsScreen extends ConsumerWidget {
       AppThemeMode.light,
       Icons.wb_sunny_rounded,
       'Day River',
-      'Warm gold — bright daytime UI',
+      'Warm gold \u2014 bright daytime UI',
       Color(0xFFFFB800),
     ),
     (
@@ -73,9 +70,8 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final t    = RiverColors.of(context);
-    final mode = ref.watch(themeModeProvider);
-    // Read the notifier directly from the provider — no typedef erasure.
+    final t        = RiverColors.of(context);
+    final mode     = ref.watch(themeModeProvider);
     final notifier = ref.read(themeModeProvider.notifier);
 
     return Scaffold(
@@ -88,14 +84,14 @@ class SettingsScreen extends ConsumerWidget {
             sliver: SliverList(
               delegate: SliverChildListDelegate([
 
-                // ── Appearance (theme picker) ─────────────────────────────
+                // \u2500\u2500 Appearance \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
                 _sectionHeader(t, 'Appearance', Icons.palette_rounded),
                 const SizedBox(height: 8),
                 _buildThemeGrid(context, t, mode, notifier),
 
                 const SizedBox(height: 20),
 
-                // ── Account ───────────────────────────────────────────────
+                // \u2500\u2500 Account \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
                 _section(t, 'Account', [
                   _tile(context, t, Icons.person_outline,
                       'Profile', Routes.profile),
@@ -105,7 +101,7 @@ class SettingsScreen extends ConsumerWidget {
 
                 const SizedBox(height: 16),
 
-                // ── Data & Analytics ──────────────────────────────────────
+                // \u2500\u2500 Data & Analytics \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
                 _section(t, 'Data & Analytics', [
                   _tile(context, t, Icons.bar_chart_rounded,
                       'Analytics Dashboard', Routes.analytics),
@@ -117,7 +113,7 @@ class SettingsScreen extends ConsumerWidget {
 
                 const SizedBox(height: 16),
 
-                // ── Tools ─────────────────────────────────────────────────
+                // \u2500\u2500 Tools \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
                 _section(t, 'Tools', [
                   _tile(context, t, Icons.sensors,
                       'Live Stations', Routes.liveStations),
@@ -131,7 +127,7 @@ class SettingsScreen extends ConsumerWidget {
 
                 const SizedBox(height: 16),
 
-                // ── Administration ────────────────────────────────────────
+                // \u2500\u2500 Administration \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
                 _section(t, 'Administration', [
                   _tile(context, t, Icons.admin_panel_settings_outlined,
                       'Admin Dashboard', Routes.adminDashboard),
@@ -146,13 +142,12 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  // ── Theme grid ─────────────────────────────────────────────────────────────
+  // \u2500\u2500 Theme grid \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   Widget _buildThemeGrid(
     BuildContext ctx,
     RiverColors t,
     AppThemeMode current,
-    // Use the inferred notifier type from the provider directly.
-    dynamic notifier,
+    dynamic notifier,   // concrete _ThemeModeNotifier; dynamic avoids private-type import
   ) {
     return Wrap(
       spacing:     10,
@@ -240,7 +235,7 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  // ── Section header ─────────────────────────────────────────────────────────
+  // \u2500\u2500 Section header \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   Widget _sectionHeader(RiverColors t, String title, IconData icon) =>
       Row(
         children: [
@@ -265,7 +260,7 @@ class SettingsScreen extends ConsumerWidget {
         ],
       );
 
-  // ── Card section ───────────────────────────────────────────────────────────
+  // \u2500\u2500 Card section \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   Widget _section(RiverColors t, String title, List<Widget> children) =>
       Td3Card(
         elevation: Td3.elevMid,
