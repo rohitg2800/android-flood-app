@@ -1,65 +1,68 @@
-// lib/mixins/auto_refresh_mixin.dart
+// lib/mixins/auto_refresh_mixin.dart  v2.0
 //
-// AutoRefreshMixin — attaches to any ConsumerStatefulWidget screen that needs:
-//   • a pull-to-refresh gesture (refreshIndicator() wrapper)
-//   • a manual refresh callback (onManualRefresh)
-//   • a human-readable 'Updated X ago' label (lastFetchedLabel)
+// AutoRefreshMixin — pull-to-refresh helper + 'Updated X ago' label.
 //
-// MIXIN CONSTRAINT:
-//   `on ConsumerState<ConsumerStatefulWidget>` is the correct bound.
-//   Dart requires the `on` type to be the *erased* base supertype;
-//   using `on ConsumerState` alone causes the compiler to reject
-//   `extends ConsumerState<DashboardScreen> with AutoRefreshMixin` because
-//   ConsumerState<DashboardScreen> != ConsumerState<ConsumerStatefulWidget>.
+// DESIGN NOTE — why no `on ConsumerState` constraint:
+//   Dart's mixin `on T` requires the mixin-user's superclass to be *exactly*
+//   `T`.  Because every screen uses `ConsumerState<ItsOwnWidget>` (a
+//   different generic instantiation), writing `on ConsumerState` (without
+//   a type arg) or `on ConsumerState<ConsumerStatefulWidget>` causes the
+//   "can't implement both State<X> and State<ConsumerStatefulWidget>" error.
 //
-// USAGE:
-//   class _MyScreenState extends ConsumerState<MyScreen>
-//       with AutoRefreshMixin {
-//     Widget build(BuildContext context) {
-//       return Scaffold(
-//         body: refreshIndicator(child: ...),
-//         appBar: AppBar(actions: [
-//           IconButton(icon: const Icon(Icons.refresh), onPressed: onManualRefresh),
-//         ]),
-//       );
-//     }
-//   }
+//   The solution is a plain mixin that declares the members it needs from
+//   ConsumerState (ref, mounted, setState) as abstract getters/methods.
+//   Dart resolves them at mix-in time from the concrete ConsumerState<T>.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/bihar_live_provider.dart';
 
-mixin AutoRefreshMixin on ConsumerState<ConsumerStatefulWidget> {
+mixin AutoRefreshMixin {
+  // ── Abstract members resolved by ConsumerState<T> at mix-in time ────────
+
+  /// Provided by ConsumerState.
+  WidgetRef get ref;
+
+  /// Provided by State.
+  bool get mounted;
+
+  /// Provided by State.
+  // ignore: invalid_use_of_protected_member
+  void setState(VoidCallback fn);
+
+  // ── Internal state ───────────────────────────────────────────────────────
+
   DateTime? _lastFetched;
 
-  // ── Pull-to-refresh wrapper ───────────────────────────────────────────────
-  /// Wraps [child] in a RefreshIndicator that calls [onManualRefresh].
+  // ── Public API ───────────────────────────────────────────────────────────
+
+  /// Human-readable label, e.g. 'Updated 2 min ago'.  Empty if never fetched.
+  String get lastFetchedLabel {
+    final t = _lastFetched;
+    if (t == null) return '';
+    final diff = DateTime.now().difference(t);
+    if (diff.inSeconds < 60)  return 'Updated just now';
+    if (diff.inMinutes < 60)  return 'Updated ${diff.inMinutes} min ago';
+    if (diff.inHours   < 24)  return 'Updated ${diff.inHours} h ago';
+    return 'Updated ${diff.inDays} d ago';
+  }
+
+  /// Wraps [child] in a [RefreshIndicator] that fires [onManualRefresh].
   Widget refreshIndicator({required Widget child}) {
     return RefreshIndicator(
-      onRefresh: () async => onManualRefresh(),
+      onRefresh: () => onManualRefresh(),
       child: child,
     );
   }
 
-  // ── Manual refresh ────────────────────────────────────────────────────────
-  /// Invalidates biharLiveProvider, causing an immediate re-fetch.
-  void onManualRefresh() {
-    ref.invalidate(biharLiveProvider);
-    _lastFetched = DateTime.now();
-    if (mounted) setState(() {});
+  /// Force-refresh the live provider and update [lastFetchedLabel].
+  Future<void> onManualRefresh() async {
+    try {
+      await ref.read(biharLiveProvider.notifier).refresh();
+    } catch (_) {}
+    if (mounted) {
+      setState(() => _lastFetched = DateTime.now());
+    }
   }
-
-  // ── 'Updated X ago' label ─────────────────────────────────────────────────
-  String get lastFetchedLabel {
-    if (_lastFetched == null) return '';
-    final diff = DateTime.now().difference(_lastFetched!);
-    if (diff.inSeconds < 60)  return 'Updated ${diff.inSeconds}s ago';
-    if (diff.inMinutes < 60)  return 'Updated ${diff.inMinutes}m ago';
-    return 'Updated ${diff.inHours}h ago';
-  }
-
-  // ── Convenience: monitored cities list ───────────────────────────────────
-  /// Safe default; screens that need the full list import india_geodata.dart.
-  List<Map<String, dynamic>> get monitoredCities => const [];
 }

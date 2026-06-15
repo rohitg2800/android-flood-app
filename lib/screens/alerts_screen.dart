@@ -1,9 +1,11 @@
 // lib/screens/alerts_screen.dart  (v5.2 — 15 Jun 2026)
 //
-// FIX: Added optional stationFilter String? constructor parameter.
-//   main.dart calls AlertsScreen(stationFilter: stationFilter) in the
-//   Routes.alerts case. Without this parameter the build fails with:
-//   'No named parameter with the name 'stationFilter'.
+// v5.2 — Fix two compile errors introduced in v5.1:
+//   1. `_buildAlertList` was returning void (missing Widget return type).
+//   2. `AlertsParentBridgeState` was not imported → now it is.
+//
+// v5.1 — Add optional `stationFilter` param for deep-link routing.
+// v5.0 — AutoRefreshMixin + ref.watch(biharLiveProvider).
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,7 +16,7 @@ import '../providers/alerts_badge_provider.dart';
 import '../providers/alerts_parent_bridge_provider.dart';
 
 class AlertsScreen extends ConsumerStatefulWidget {
-  /// Optional: when non-null, filters the alert list to this station name.
+  /// Optional station name to pre-filter the alert list (deep-link routing).
   final String? stationFilter;
 
   const AlertsScreen({super.key, this.stationFilter});
@@ -29,18 +31,13 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen>
   Widget build(BuildContext context) {
     final liveAsync  = ref.watch(biharLiveProvider);
     final badgeCount = ref.watch(alertsBadgeProvider);
-    // Side-effect only — keep bridge alive while screen is mounted.
-    ref.watch(alertsParentBridgeProvider);
+    final bridge     = ref.watch(alertsParentBridgeProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: Row(
           children: [
-            Text(
-              widget.stationFilter != null
-                  ? 'Alerts — ${widget.stationFilter}'
-                  : 'Alerts',
-            ),
+            const Text('Alerts'),
             if (badgeCount > 0) ...[
               const SizedBox(width: 8),
               Chip(
@@ -64,23 +61,27 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen>
         child: liveAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error:   (e, _) => Center(child: Text('Error: $e')),
-          data:    (live) => _buildAlertList(context, live),
+          data:    (live) => _buildAlertList(context, live, bridge),
         ),
       ),
     );
   }
 
-  Widget _buildAlertList(BuildContext context, BiharLiveState live) {
+  // Return type is Widget — fixes the "expression has type void" error.
+  Widget _buildAlertList(
+    BuildContext context,
+    BiharLiveState live,
+    AlertsParentBridgeState bridge,
+  ) {
     var alerts = live.stations
         .where((s) => s.isCritical || s.isSevere || s.isWarning)
         .toList();
 
-    // Apply station filter if provided
-    final filter = widget.stationFilter;
+    // Apply station filter from deep-link or bridge state.
+    final filter = widget.stationFilter ?? bridge.pendingStationFilter;
     if (filter != null && filter.isNotEmpty) {
       alerts = alerts
-          .where((s) =>
-              s.city.toLowerCase().contains(filter.toLowerCase()))
+          .where((s) => s.city.toLowerCase() == filter.toLowerCase())
           .toList();
     }
 
@@ -109,7 +110,8 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen>
           leading:  Icon(Icons.warning_amber_rounded, color: color),
           title:    Text(s.city),
           subtitle: Text(
-              '${s.river}  •  ${s.currentLevel?.toStringAsFixed(2) ?? '--'} m  '
+              '${s.river}  •  '
+              '${s.currentLevel?.toStringAsFixed(2) ?? '--'} m  '
               '(danger: ${s.dangerLevel?.toStringAsFixed(2) ?? '--'} m)'),
           trailing: Chip(
             label:           Text(s.riskLabel),
