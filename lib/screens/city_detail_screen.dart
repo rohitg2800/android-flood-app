@@ -1,4 +1,5 @@
-// lib/screens/city_detail_screen.dart  ui-v1 fix
+// lib/screens/city_detail_screen.dart  v5.8 — ML section wired
+// Adds predictionProvider ML card between the gauge and quick actions.
 // FIX: removed data.dataSource references — FloodData has no dataSource field.
 // Use stationId instead for the Station ID row in the metadata card.
 
@@ -9,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/flood_data.dart';
 import '../providers/flood_providers.dart';
+import '../providers/prediction_provider.dart';  // v5.8 ML
 import '../theme/river_theme.dart';
 import '../app_router.dart';
 
@@ -88,6 +90,9 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
     final fillPct = data.fillPercent ?? 0.0;
     final pctVal  = (fillPct / 100).clamp(0.0, 1.0);
 
+    // v5.8 — watch predictionProvider keyed on stationId
+    final predAsync = ref.watch(predictionProvider(data.stationId));
+
     return Scaffold(
       backgroundColor: t.scaffoldBg,
       body: CustomScrollView(
@@ -157,6 +162,19 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
             ),
           ),
 
+          // ── v5.8 ML prediction card ──────────────────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+              child: predAsync.when(
+                loading: () => _MlLoadingCard(t: t),
+                error:   (_, __) => const SizedBox.shrink(),
+                data:    (pred)  => _MlCard(pred: pred, t: t),
+              ),
+            ),
+          ),
+          // ─────────────────────────────────────────────────────────────────
+
           // ── Quick actions
           SliverToBoxAdapter(
             child: Padding(
@@ -181,6 +199,322 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
         foregroundColor: Colors.white,
         child: const Icon(Icons.sos_rounded),
         onPressed: () => Navigator.of(context).pushNamed(Routes.sos),
+      ),
+    );
+  }
+}
+
+// ── v5.8 ML loading placeholder ───────────────────────────────────────────────
+
+class _MlLoadingCard extends StatelessWidget {
+  final RiverColors t;
+  const _MlLoadingCard({required this.t});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: t.cardBg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppPalette.gold.withOpacity(0.25)),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(AppPalette.gold),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            'Loading ML prediction…',
+            style: TextStyle(
+                color: t.textSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── v5.8 ML prediction card ───────────────────────────────────────────────────
+
+class _MlCard extends StatelessWidget {
+  final FloodPrediction pred;
+  final RiverColors     t;
+  const _MlCard({required this.pred, required this.t});
+
+  Color _severityColor() {
+    switch (pred.severity.toUpperCase()) {
+      case 'CRITICAL': return AppPalette.critical;
+      case 'SEVERE':   return AppPalette.danger;
+      case 'MODERATE': return AppPalette.gold;
+      default:         return AppPalette.safe;
+    }
+  }
+
+  Color _trendColor() {
+    switch (pred.trend.toLowerCase()) {
+      case 'rising':  return AppPalette.danger;
+      case 'falling': return AppPalette.safe;
+      default:        return AppPalette.gold;
+    }
+  }
+
+  IconData _trendIcon() {
+    switch (pred.trend.toLowerCase()) {
+      case 'rising':  return Icons.trending_up_rounded;
+      case 'falling': return Icons.trending_down_rounded;
+      default:        return Icons.trending_flat_rounded;
+    }
+  }
+
+  Color _riskBarColor() {
+    if (pred.riskScore >= 85) return AppPalette.critical;
+    if (pred.riskScore >= 65) return AppPalette.danger;
+    if (pred.riskScore >= 40) return AppPalette.warning;
+    return AppPalette.safe;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sev   = _severityColor();
+    final trend = _trendColor();
+    final bar   = _riskBarColor();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: t.cardBg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: sev.withOpacity(0.35)),
+        boxShadow: [
+          BoxShadow(
+              color: sev.withOpacity(0.08),
+              blurRadius: 16,
+              offset: const Offset(0, 4)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Header row
+          Row(
+            children: [
+              Icon(Icons.auto_awesome_rounded, color: AppPalette.gold, size: 16),
+              const SizedBox(width: 8),
+              Text(
+                'ML Flood Prediction',
+                style: TextStyle(
+                    color: t.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800),
+              ),
+              const Spacer(),
+              // Severity badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: sev.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: sev.withOpacity(0.5)),
+                ),
+                child: Text(
+                  pred.severity,
+                  style: TextStyle(
+                      color: sev,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.5),
+                ),
+              ),
+            ],
+          ),
+
+          // ── "Linear fallback" chip (shown only when backend is unavailable)
+          if (!pred.fromBackend) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppPalette.gold.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppPalette.gold.withOpacity(0.3)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.offline_bolt_outlined,
+                      color: AppPalette.gold, size: 11),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Linear fallback',
+                    style: TextStyle(
+                        color: AppPalette.gold,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          // ── BREACH RISK banner (shown when predicted24h >= dangerLevel)
+          if (pred.predicted24h >= pred.dangerLevel) ...[
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppPalette.critical.withOpacity(0.14),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppPalette.critical.withOpacity(0.5)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.warning_rounded,
+                      color: AppPalette.critical, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'BREACH RISK — Predicted level may reach or exceed danger level within 24 h',
+                      style: TextStyle(
+                          color: AppPalette.critical,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 12),
+
+          // ── Risk score bar
+          Row(
+            children: [
+              Text('Risk',
+                  style: TextStyle(
+                      color: t.textSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: LinearProgressIndicator(
+                    value: (pred.riskScore / 100).clamp(0.0, 1.0),
+                    backgroundColor: bar.withOpacity(0.15),
+                    valueColor: AlwaysStoppedAnimation<Color>(bar),
+                    minHeight: 7,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '${pred.riskScore.toInt()}',
+                style: TextStyle(
+                    color: bar, fontSize: 13, fontWeight: FontWeight.w900),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // ── Three chips: Confidence | Peak 72h | Trend
+          Row(
+            children: [
+              _MlChip(
+                icon: Icons.verified_outlined,
+                label: 'Conf.',
+                value: '${pred.confidencePct.toStringAsFixed(0)}%',
+                color: t.accent,
+                t: t,
+              ),
+              const SizedBox(width: 8),
+              _MlChip(
+                icon: Icons.show_chart_rounded,
+                label: 'Peak 72h',
+                value: '${pred.predicted72h.toStringAsFixed(2)} m',
+                color: AppPalette.cyan,
+                t: t,
+              ),
+              const SizedBox(width: 8),
+              _MlChip(
+                icon: _trendIcon(),
+                label: 'Trend',
+                value: pred.trend,
+                color: trend,
+                t: t,
+              ),
+            ],
+          ),
+
+          // ── Outlook text
+          const SizedBox(height: 12),
+          Text(
+            pred.outlook,
+            style: TextStyle(
+                color: t.textSecondary,
+                fontSize: 12,
+                fontStyle: FontStyle.italic),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MlChip extends StatelessWidget {
+  final IconData    icon;
+  final String      label, value;
+  final Color       color;
+  final RiverColors t;
+  const _MlChip({
+    required this.icon,  required this.label,
+    required this.value, required this.color,
+    required this.t,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.10),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.3)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 14),
+            const SizedBox(height: 3),
+            Text(
+              label,
+              style: TextStyle(
+                  color: t.textSecondary,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w600),
+            ),
+            Text(
+              value,
+              style: TextStyle(
+                  color: color,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     );
   }
