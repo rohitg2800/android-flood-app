@@ -1,12 +1,8 @@
-// lib/screens/dashboard_screen.dart  (v7.1 — 15 Jun 2026)
+// lib/screens/dashboard_screen.dart  (v7.2 — 15 Jun 2026)
 //
-// FIX (v7.1):
-//   • Removed biharDashboardProvider — BiharDashboardState does not exist
-//     as a concrete type (bihar_dashboard_provider.dart exposes only scalar
-//     providers: biharStationCountProvider, biharCriticalCountProvider, …).
-//   • _buildBody no longer takes a BiharDashboardState argument.
-//   • live.byCity(name) returns BiharStationData? — wrap in [data] list
-//     (or pass empty []) so CityCard stationData: List<BiharStationData>? matches.
+// FIX (v7.2):
+//   • IndiaGeodata.cities → IndiaGeodata.monitoredCities (correct getter name)
+//   • stationData: pass BiharStationData? directly — CityCard takes singular not List
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -51,7 +47,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       body: refreshIndicator(
         child: liveAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error:   (e, _) => Center(child: Text('Error: $e')),
+          error:   (e, _) => Center(child: Text('Error: \$e')),
           data:    (live) => _buildBody(context, live),
         ),
       ),
@@ -59,7 +55,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   }
 
   Widget _buildBody(BuildContext context, BiharLiveState live) {
-    final cities = IndiaGeodata.cities
+    final cities = IndiaGeodata.monitoredCities
         .where((c) => c['state'] == 'Bihar')
         .toList();
 
@@ -89,12 +85,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             itemBuilder: (ctx, i) {
               final mc   = cities[i];
               final name = mc['city'] as String;
-              // byCity returns BiharStationData? — wrap in list or pass null
-              final single = live.byCity(name);
-              final data   = single != null ? [single] : <BiharStationData>[];
               return CityCard(
                 cityMeta:    mc,
-                stationData: data,
+                stationData: live.byCity(name),
               );
             },
           ),
