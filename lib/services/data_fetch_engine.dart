@@ -1,60 +1,103 @@
 // lib/services/data_fetch_engine.dart
-// v2 (15 Jun 2026) — add missing DataFetchSnapshot fields used by
-//   backend_sync_service.dart and active_alert_controller.dart:
-//     isLoading, liveStations, totalStations, sources.
-//
-// All new fields have defaults so existing callsites
-// DataFetchSnapshot(stations: ..., fetchedAt: ...) compile unchanged.
-
+// v3 (15 Jun 2026) — restore StationReading class (was lost in a prior merge).
+//   StationReading is the flat type used by ActiveAlertController.push().
+//   DataFetchSnapshot carries List<FloodData> (separate path).
 import 'dart:async';
 import '../models/flood_data.dart';
 import '../models/river_station.dart';
 
+// ─── StationReading ───────────────────────────────────────────────────────────────
+/// Flat reading fed into ActiveAlertController.push().
+/// Mirrors every field that active_alert_controller.dart reads from `s`.
+class StationReading {
+  final String  stationName;
+  final String  river;
+  final String  district;
+  final double  currentLevel;
+  final double  warningLevel;
+  final double  dangerLevel;
+  final double  hfl;
+  final bool    isLive;
+  final String  source;           // 'CWC' | 'RTDAS' | 'SEED' | 'LIVE'
+  final double? rateOfRiseMph;
+  final double? rainfall24hMm;
+
+  const StationReading({
+    required this.stationName,
+    required this.river,
+    required this.district,
+    required this.currentLevel,
+    required this.warningLevel,
+    required this.dangerLevel,
+    required this.hfl,
+    this.isLive        = false,
+    this.source        = 'LIVE',
+    this.rateOfRiseMph,
+    this.rainfall24hMm,
+  });
+
+  /// Convert from RiverStation — used by alerts_parent_bridge_provider.
+  factory StationReading.fromRiverStation(RiverStation s) => StationReading(
+    stationName:   s.station,
+    river:         s.river,
+    district:      s.city,
+    currentLevel:  s.current,
+    warningLevel:  s.warning,
+    dangerLevel:   s.danger,
+    hfl:           s.hfl,
+    isLive:        s.isLive,
+    source:        s.dataSource ?? 'LIVE',
+    rateOfRiseMph: null,
+    rainfall24hMm: s.rainfallLastHour,
+  );
+
+  /// Convert from FloodData.
+  factory StationReading.fromFloodData(FloodData f) => StationReading(
+    stationName:   f.stationName,
+    river:         f.riverName ?? f.river,
+    district:      f.district,
+    currentLevel:  f.currentLevel,
+    warningLevel:  f.warningLevel,
+    dangerLevel:   f.dangerLevel,
+    hfl:           f.hfl,          // non-nullable double getter (v5)
+    isLive:        f.status == 'LIVE',
+    source:        f.source,
+    rateOfRiseMph: f.rateOfRiseMph,
+    rainfall24hMm: f.rainfall24hMm,
+  );
+}
+
+// ─── DataFetchSnapshot ──────────────────────────────────────────────────────────
 class DataFetchSnapshot {
-  final List<FloodData>   stations;
-  final DateTime          fetchedAt;
-
-  /// True while a network fetch is in progress. Used by sync_status_banner
-  /// and active_alert_controller to show a loading indicator.
-  final bool              isLoading;
-
-  /// Count of stations whose status == 'LIVE' (updated < 2 h ago).
-  /// Used by backend_sync_service `live_count` telemetry key.
-  final int               liveStations;
-
-  /// Total number of stations in this snapshot.
-  /// Used by backend_sync_service `total_count` telemetry key.
-  final int               totalStations;
-
-  /// source-id → station count map.  e.g. {'CWC': 42, 'IMD': 11}.
-  /// Built from FloodData.source; used by backend_sync sourceCountMap
-  /// and active_alert_controller sources breakdown.
-  final Map<String, int>  sources;
+  final List<FloodData>    stations;
+  final DateTime           fetchedAt;
+  final bool               isLoading;
+  final int                liveStations;
+  final int                totalStations;
+  final Map<String, int>   sources;
 
   DataFetchSnapshot({
     required this.stations,
     required this.fetchedAt,
-    this.isLoading    = false,
-    int?  liveStations,
-    int?  totalStations,
+    this.isLoading      = false,
+    int?              liveStations,
+    int?              totalStations,
     Map<String, int>? sources,
   })  : totalStations = totalStations ?? stations.length,
         liveStations  = liveStations  ?? stations.where((s) => s.status == 'LIVE').length,
-        sources       = sources       ?? _buildSourceMap(stations);
+        sources       = sources        ?? _buildSourceMap(stations);
 
-  static Map<String, int> _buildSourceMap(List<FloodData> stations) {
+  static Map<String, int> _buildSourceMap(List<FloodData> ss) {
     final m = <String, int>{};
-    for (final s in stations) {
-      final key = s.source ?? 'UNKNOWN';
-      m[key] = (m[key] ?? 0) + 1;
+    for (final s in ss) {
+      final k = s.source;
+      m[k] = (m[k] ?? 0) + 1;
     }
     return Map.unmodifiable(m);
   }
 
-  List<FloodData> toFloodDataList() => stations;
+  List<FloodData>    toFloodDataList()  => stations;
 
-  /// Converts to List<RiverStation> for AlertEngine.evaluateMerged().
-  /// Uses FloodData.hfl (v5) when available; falls back to dangerLevel * 1.3.
   List<RiverStation> toRiverStations() => stations.map((f) => RiverStation(
     city:    f.city,
     state:   f.state,
@@ -63,12 +106,9 @@ class DataFetchSnapshot {
     current: f.currentLevel,
     warning: f.warningLevel,
     danger:  f.dangerLevel,
-    hfl:     (f.hfl != null && f.hfl! > 0)
-                 ? f.hfl!
-                 : (f.dangerLevel > 0 ? f.dangerLevel * 1.3 : 0),
+    hfl:     f.hfl,   // non-nullable double (v5 getter)
   )).toList();
 
-  /// Convenience: loading sentinel with no stations.
   factory DataFetchSnapshot.loading() => DataFetchSnapshot(
     stations:  const [],
     fetchedAt: DateTime.now(),
@@ -76,6 +116,7 @@ class DataFetchSnapshot {
   );
 }
 
+// ─── DataFetchEngine ──────────────────────────────────────────────────────────
 class DataFetchEngine {
   DataFetchEngine._();
   static final DataFetchEngine instance = DataFetchEngine._();
@@ -91,7 +132,6 @@ class DataFetchEngine {
   void start() {
     if (_running) return;
     _running = true;
-    // Emit loading sentinel immediately so UI shows spinner
     _snapshotController.add(DataFetchSnapshot.loading());
     _scheduleNext();
   }
