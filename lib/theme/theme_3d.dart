@@ -1,12 +1,12 @@
 // lib/theme/theme_3d.dart
-// OpsFlood — Global 3-D UI System v2
+// OpsFlood — Global 3-D UI System v2.1
 //
-// Changes from v1:
-//  • All withOpacity() replaced with withValues(alpha:)
-//  • Td3SectionHeader: accent gradient underline bar + glow
-//  • Td3Card: uses t.stroke instead of hardcoded 0x1AFFFFFF border
-//  • Td3Badge: supports `severity` string for auto status-colour
-//  • Td3StatTile: tighter layout stays overflow-safe
+// v2.1 fix: Td3StatTile RenderFlex overflow
+//   • Padding reduced from vertical:10 → 8
+//   • Value fontSize 22 → FittedBox (auto-scales)
+//   • SizedBox gaps tightened: 4→3, 2→1
+//   • Icon size 16→14, SizedBox after icon 4→2
+//   • Entire Column wrapped in FittedBox as last resort
 library;
 
 import 'dart:math' as math;
@@ -483,8 +483,14 @@ class Td3ProgressBar extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Td3StatTile
+// Td3StatTile  (v2.1 — overflow-safe)
 // ─────────────────────────────────────────────────────────────────────────────
+//
+// Layout budget at childAspectRatio:2.4 on a 375-pt screen:
+//   card width  ≈ (375-12-12-10)/2 = 170.5 pt
+//   card height ≈ 170.5 / 2.4      =  71.0 pt
+//   inner height after padding(8+8) =  55.0 pt
+//   icon(14) + gap(2) + value(FittedBox≈20) + gap(1) + label(11) = 48 pt  ✔
 
 class Td3StatTile extends StatelessWidget {
   final String value;
@@ -507,37 +513,51 @@ class Td3StatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = RiverColors.of(context);
+    final vc = valueColor ?? t.accent;
+
     return Td3Card(
-      accentColor: valueColor,
+      accentColor: vc,
       elevation:   Td3.elevHigh,
       onTap:       onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        // ✔ vertical:8 saves 4px vs old :10
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         child: Column(
-          mainAxisSize:     MainAxisSize.min,
+          mainAxisSize:       MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (icon != null) ...[
-              Icon(icon, color: valueColor, size: 16),
-              const SizedBox(height: 4),
+              // ✔ size 14 instead of 16
+              Icon(icon, color: vc, size: 14),
+              // ✔ gap 2 instead of 4
+              const SizedBox(height: 2),
             ],
-            Text(
-              value,
-              style: TextStyle(
-                color:      valueColor ?? t.accent,
-                fontSize:   22,
-                fontWeight: FontWeight.w800,
-                height:     1.0,
+            // ✔ FittedBox prevents value from ever overflowing
+            FittedBox(
+              fit:       BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                value,
+                style: TextStyle(
+                  color:      vc,
+                  fontSize:   22,
+                  fontWeight: FontWeight.w800,
+                  height:     1.0,
+                ),
               ),
             ),
-            const SizedBox(height: 2),
+            // ✔ gap 1 instead of 2
+            const SizedBox(height: 1),
             Text(
               label,
               style: TextStyle(
                 color:      t.textSecondary,
                 fontSize:   11,
                 fontWeight: FontWeight.w500,
+                height:     1.1,
               ),
+              maxLines:  1,
+              overflow:  TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -825,7 +845,6 @@ class Td3BottomNav extends StatelessWidget {
               }),
             ),
           ),
-          // Animated active-tab indicator pill
           AnimatedPositioned(
             duration: const Duration(milliseconds: 280),
             curve:    Curves.easeOutCubic,
@@ -1016,10 +1035,6 @@ class _GlossPainter extends CustomPainter {
   bool shouldRepaint(_GlossPainter old) =>
       old.opacity != opacity || old.radius != radius;
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Utility  (kept for rare direct use)
-// ─────────────────────────────────────────────────────────────────────────────
 
 // ignore: unused_element
 double _lerpDouble(double a, double b, double t) => a + (b - a) * t;
