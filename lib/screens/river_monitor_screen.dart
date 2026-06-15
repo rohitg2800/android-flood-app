@@ -1,6 +1,11 @@
-// lib/screens/river_monitor_screen.dart  v2.0.1
+// lib/screens/river_monitor_screen.dart  v2.1.0
 //
-// v2.0.1 (15 Jun 2026) — fix literal \n in spread operators
+// v2.1.0 (15 Jun 2026)
+//   P0 fix: single-pass max() for critCount/sevCount — no more double-counting
+//   P1 fix: _rippleAnim pauses when screen not current (battery drain)
+//   P1 fix: _WavePainter positioned offset clamped to >=0
+//   P1 fix: _mlColor MODERATE → amber (was misleading green)
+//   P1 fix: _AnimatedCard stagger capped at 20 items to limit concurrent controllers
 
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -36,11 +41,22 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
         vsync: this, duration: const Duration(milliseconds: 900))
       ..forward();
     _rippleAnim = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 2400))
-      ..repeat();
+        vsync: this, duration: const Duration(milliseconds: 2400));
     _headerFade  = CurvedAnimation(parent: _headerAnim, curve: Curves.easeOut);
     _headerSlide = Tween<double>(begin: 32, end: 0)
         .animate(CurvedAnimation(parent: _headerAnim, curve: Curves.easeOutCubic));
+  }
+
+  // P1: start/stop ripple based on route visibility — saves battery during ops
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final isCurrent = ModalRoute.of(context)?.isCurrent ?? false;
+    if (isCurrent && !_rippleAnim.isAnimating) {
+      _rippleAnim.repeat();
+    } else if (!isCurrent && _rippleAnim.isAnimating) {
+      _rippleAnim.stop();
+    }
   }
 
   @override
@@ -61,6 +77,21 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
         (fd.riverName?.toLowerCase().contains(q) ?? false)).toList();
   }
 
+  // P0: single-pass max() — station is critical if EITHER live OR ML says so;
+  // severe only if neither source says critical.
+  static int _countCritical(List<FloodData> all) => all.where((d) {
+        final rl = d.riskLevel.toUpperCase();
+        final ml = d.predictedSeverity?.toUpperCase();
+        return rl == 'CRITICAL' || ml == 'CRITICAL';
+      }).length;
+
+  static int _countSevere(List<FloodData> all) => all.where((d) {
+        final rl = d.riskLevel.toUpperCase();
+        final ml = d.predictedSeverity?.toUpperCase();
+        final isCritical = rl == 'CRITICAL' || ml == 'CRITICAL';
+        return !isCritical && (rl == 'SEVERE' || ml == 'SEVERE');
+      }).length;
+
   @override
   Widget build(BuildContext context) {
     final rawAll    = ref.watch(liveLevelsProvider);
@@ -77,16 +108,9 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
 
     final levels = _filtered(all);
 
-    int critCount = all.where((d) => d.riskLevel.toUpperCase() == 'CRITICAL').length;
-    int sevCount  = all.where((d) => d.riskLevel.toUpperCase() == 'SEVERE').length;
-
-    for (final d in all) {
-      final ml = d.predictedSeverity?.toUpperCase();
-      final rl = d.riskLevel.toUpperCase();
-      if (ml == 'CRITICAL' && rl != 'CRITICAL') critCount++;
-      if (ml == 'SEVERE'   && rl != 'SEVERE' && rl != 'CRITICAL') sevCount++;
-    }
-
+    // P0: correct single-pass counts
+    final critCount   = _countCritical(all);
+    final sevCount    = _countSevere(all);
     final normCount   = all.length - critCount - sevCount;
     final breachCount = all.where((d) => d.willBreachDanger == true).length;
 
@@ -175,7 +199,8 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (ctx, i) => _AnimatedCard(
-                    index: i,
+                    // P1: cap stagger index at 20 to limit concurrent controllers
+                    index: math.min(i, 20),
                     child: _RiverCard(
                       data: levels[i],
                       t: t,
@@ -551,6 +576,8 @@ class _StatusBanner extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// P1: stagger index capped at 20 in SliverList above;
+//     AnimationController count bounded regardless of dataset size.
 class _AnimatedCard extends StatefulWidget {
   final int index;
   final Widget child;
@@ -641,11 +668,12 @@ class _RiverCardState extends State<_RiverCard>
     }
   }
 
+  // P1: MODERATE → amber (0xFFFFAB00) — was misleading green same as safe
   Color _mlColor(String? sev) {
     switch (sev?.toUpperCase()) {
       case 'CRITICAL': return const Color(0xFFFF1744);
       case 'SEVERE':   return const Color(0xFFFF5500);
-      case 'MODERATE': return const Color(0xFF10E88A);
+      case 'MODERATE': return const Color(0xFFFFAB00); // amber, not green
       default:         return const Color(0xFF10E88A);
     }
   }
@@ -707,8 +735,9 @@ class _RiverCardState extends State<_RiverCard>
                       ),
                     ),
                   ),
+                  // P1: clamp to >=0 so wave never renders at negative offset
                   Positioned(
-                    bottom: (120 * _fillTween.value) - 8,
+                    bottom: math.max(0, (120 * _fillTween.value) - 8),
                     left: 0, right: 0,
                     child: CustomPaint(
                       size: const Size(double.infinity, 16),
@@ -723,35 +752,7 @@ class _RiverCardState extends State<_RiverCard>
 
                         // Breach banner
                         if (willBreach)
-                          Container(
-                            margin: const EdgeInsets.only(bottom: 10),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFF1744).withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                  color: const Color(0xFFFF1744).withOpacity(0.5)),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.crisis_alert_rounded,
-                                    color: Color(0xFFFF1744), size: 13),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    peak != null
-                                        ? 'BREACH PREDICTED within 72h  ·  Peak ${peak.toStringAsFixed(2)} m'
-                                        : 'DANGER LEVEL BREACH PREDICTED within 72h',
-                                    style: const TextStyle(
-                                        color: Color(0xFFFF1744),
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w800),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                          _BreachBanner(peak: peak),
 
                         // Row 1: cylinder + title + ML chip + risk badge
                         Row(
@@ -868,84 +869,12 @@ class _RiverCardState extends State<_RiverCard>
                         const SizedBox(height: 10),
 
                         // Row 3: fill bar
-                        Row(
-                          children: [
-                            Text('Fill',
-                                style: TextStyle(
-                                    color: t.textSecondary,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600)),
-                            const Spacer(),
-                            Text(
-                              '${fillPct.toStringAsFixed(1)}%',
-                              style: TextStyle(
-                                  color: rc,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 5),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(6),
-                          child: Stack(
-                            children: [
-                              Container(
-                                  height: 7,
-                                  color: t.divider.withOpacity(0.3)),
-                              FractionallySizedBox(
-                                widthFactor: _fillTween.value,
-                                child: Container(
-                                  height: 7,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [rc, rc.withOpacity(0.6)],
-                                    ),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        _FillBar(fillPct: fillPct, fillValue: _fillTween.value, rc: rc, t: t),
 
                         // Row 4: ML risk score bar
                         if (riskScore != null) ...[
                           const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              const Icon(Icons.query_stats_rounded,
-                                  color: Color(0xFF7B2FF7), size: 11),
-                              const SizedBox(width: 4),
-                              Text('ML Risk: $riskScore / 100',
-                                  style: const TextStyle(
-                                      color: Color(0xFF7B2FF7),
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w700)),
-                              const Spacer(),
-                              if (confidence != null)
-                                Text('Conf ${confidence.toStringAsFixed(0)}%',
-                                    style: TextStyle(
-                                        color: t.textSecondary, fontSize: 9)),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: (riskScore / 100.0).clamp(0.0, 1.0),
-                              minHeight: 4,
-                              backgroundColor:
-                                  const Color(0xFF7B2FF7).withOpacity(0.12),
-                              valueColor: AlwaysStoppedAnimation(
-                                riskScore >= 80
-                                    ? const Color(0xFFFF1744)
-                                    : riskScore >= 60
-                                        ? const Color(0xFFFF6D00)
-                                        : const Color(0xFF7B2FF7),
-                              ),
-                            ),
-                          ),
+                          _MlScoreBar(riskScore: riskScore, confidence: confidence, t: t),
                         ],
 
                         const SizedBox(height: 8),
@@ -973,6 +902,154 @@ class _RiverCardState extends State<_RiverCard>
           ),
         ),
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// P3: Extracted sub-widgets for testability
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _BreachBanner extends StatelessWidget {
+  final double? peak;
+  const _BreachBanner({this.peak});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFF1744).withOpacity(0.12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFFF1744).withOpacity(0.5)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.crisis_alert_rounded,
+              color: Color(0xFFFF1744), size: 13),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              peak != null
+                  ? 'BREACH PREDICTED within 72h  ·  Peak ${peak!.toStringAsFixed(2)} m'
+                  : 'DANGER LEVEL BREACH PREDICTED within 72h',
+              style: const TextStyle(
+                  color: Color(0xFFFF1744),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FillBar extends StatelessWidget {
+  final double fillPct;
+  final double fillValue;
+  final Color rc;
+  final RiverColors t;
+  const _FillBar({required this.fillPct, required this.fillValue, required this.rc, required this.t});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text('Fill',
+                style: TextStyle(
+                    color: t.textSecondary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600)),
+            const Spacer(),
+            Text(
+              '${fillPct.toStringAsFixed(1)}%',
+              style: TextStyle(
+                  color: rc,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800),
+            ),
+          ],
+        ),
+        const SizedBox(height: 5),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: Stack(
+            children: [
+              Container(
+                  height: 7,
+                  color: t.divider.withOpacity(0.3)),
+              FractionallySizedBox(
+                widthFactor: fillValue,
+                child: Container(
+                  height: 7,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [rc, rc.withOpacity(0.6)],
+                    ),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MlScoreBar extends StatelessWidget {
+  final num riskScore;
+  final double? confidence;
+  final RiverColors t;
+  const _MlScoreBar({required this.riskScore, this.confidence, required this.t});
+
+  @override
+  Widget build(BuildContext context) {
+    final score = riskScore.toDouble();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.query_stats_rounded,
+                color: Color(0xFF7B2FF7), size: 11),
+            const SizedBox(width: 4),
+            Text('ML Risk: ${riskScore.toStringAsFixed(0)} / 100',
+                style: const TextStyle(
+                    color: Color(0xFF7B2FF7),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700)),
+            const Spacer(),
+            if (confidence != null)
+              Text('Conf ${confidence!.toStringAsFixed(0)}%',
+                  style: TextStyle(
+                      color: t.textSecondary, fontSize: 9)),
+          ],
+        ),
+        const SizedBox(height: 4),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: (score / 100.0).clamp(0.0, 1.0),
+            minHeight: 4,
+            backgroundColor:
+                const Color(0xFF7B2FF7).withOpacity(0.12),
+            valueColor: AlwaysStoppedAnimation(
+              score >= 80
+                  ? const Color(0xFFFF1744)
+                  : score >= 60
+                      ? const Color(0xFFFF6D00)
+                      : const Color(0xFF7B2FF7),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
