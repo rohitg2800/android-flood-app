@@ -1,7 +1,13 @@
 // lib/constants/india_geodata.dart
 //
-// EQUINOX-BH — Geodata constants (v6.1)
+// EQUINOX-BH — Geodata constants (v6.2)
 //
+// v6.2 (15 Jun 2026):
+//   P1-FIX: Removed duplicate 'Patna' entry (was at Dighaghat coords 25.5941/85.1376).
+//           Replaced with 'Patna City Gauge' at CWC Gaighat (25.6129, 85.1736), danger 48.60.
+//   P1-FIX: Gopalpur (Burhi Gandak/Samastipur) 25.88/85.82 → 25.93/85.49.
+//   P1-FIX: Darauli (Ghaghra/Siwan) 25.95/84.15 → 26.05/84.37.
+//   P1-FIX: Sonbarsa (Adhwara/Sitamarhi) 26.65/85.55 → 26.61/85.47.
 // v6.1: Added 6 more cities → total 80 (satisfies >= 80 test).
 
 class IndiaGeodata {
@@ -73,8 +79,9 @@ class IndiaGeodata {
     { 'city': 'Manpur',         'district': 'Gopalganj',      'state': 'Bihar', 'river': 'Gandak',
       'lat': 26.4700, 'lon': 84.4300, 'danger_level': 62.00, 'warning_level': 60.80,
       'risk': 'HIGH', 'flood_freq': 0.75, 'river_type': 'perennial', 'zone': 'himalayan' },
+    // P1-FIX v6.2: Gopalpur corrected from 25.88/85.82 → 25.93/85.49 (actual Burhi Gandak position)
     { 'city': 'Gopalpur',       'district': 'Samastipur',     'state': 'Bihar', 'river': 'Burhi Gandak',
-      'lat': 25.8800, 'lon': 85.8200, 'danger_level': 44.00, 'warning_level': 43.00,
+      'lat': 25.9300, 'lon': 85.4900, 'danger_level': 44.00, 'warning_level': 43.00,
       'risk': 'HIGH', 'flood_freq': 0.70, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Bhairoghat',     'district': 'Patna',          'state': 'Bihar', 'river': 'Ganga',
       'lat': 25.6200, 'lon': 85.2000, 'danger_level': 49.00, 'warning_level': 47.80,
@@ -103,7 +110,7 @@ class IndiaGeodata {
       'risk': 'HIGH', 'flood_freq': 0.82, 'river_type': 'perennial', 'zone': 'himalayan' },
     // ── Bihar: Gandak ────────────────────────────────────────────────────────
     { 'city': 'Chatia',         'district': 'East Champaran', 'state': 'Bihar', 'river': 'Gandak',
-      'lat': 26.8500, 'lon': 84.9000, 'danger_level': 69.15, 'warning_level': 68.10,
+      'lat': 26.8400, 'lon': 84.8800, 'danger_level': 69.15, 'warning_level': 68.10,
       'risk': 'HIGH', 'flood_freq': 0.78, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Dumariaghat',    'district': 'Gopalganj',      'state': 'Bihar', 'river': 'Gandak',
       'lat': 26.4833, 'lon': 84.4667, 'danger_level': 62.22, 'warning_level': 61.10,
@@ -138,8 +145,9 @@ class IndiaGeodata {
       'lat': 25.5000, 'lon': 86.4700, 'danger_level': 36.58, 'warning_level': 35.40,
       'risk': 'HIGH', 'flood_freq': 0.72, 'river_type': 'perennial', 'zone': 'himalayan' },
     // ── Bihar: Ghaghra ───────────────────────────────────────────────────────
+    // P1-FIX v6.2: Darauli corrected from 25.95/84.15 → 26.05/84.37 (actual Ghaghra at Darauli)
     { 'city': 'Darauli',        'district': 'Siwan',          'state': 'Bihar', 'river': 'Ghaghra',
-      'lat': 25.9500, 'lon': 84.1500, 'danger_level': 60.82, 'warning_level': 59.80,
+      'lat': 26.0500, 'lon': 84.3700, 'danger_level': 60.82, 'warning_level': 59.80,
       'risk': 'HIGH', 'flood_freq': 0.70, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Gangpur Siswan', 'district': 'Siwan',          'state': 'Bihar', 'river': 'Ghaghra',
       'lat': 26.0500, 'lon': 84.4000, 'danger_level': 57.04, 'warning_level': 56.00,
@@ -158,8 +166,9 @@ class IndiaGeodata {
     { 'city': 'Jhanjharpur',    'district': 'Madhubani',      'state': 'Bihar', 'river': 'Kamalabalan',
       'lat': 26.2700, 'lon': 86.2800, 'danger_level': 50.00, 'warning_level': 48.80,
       'risk': 'HIGH', 'flood_freq': 0.78, 'river_type': 'perennial', 'zone': 'himalayan' },
+    // P1-FIX v6.2: Sonbarsa corrected from 26.65/85.55 → 26.61/85.47 (actual Adhwara gauge)
     { 'city': 'Sonbarsa',       'district': 'Sitamarhi',      'state': 'Bihar', 'river': 'Adhwara',
-      'lat': 26.6500, 'lon': 85.5500, 'danger_level': 81.85, 'warning_level': 80.70,
+      'lat': 26.6100, 'lon': 85.4700, 'danger_level': 81.85, 'warning_level': 80.70,
       'risk': 'HIGH', 'flood_freq': 0.82, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Kamtaul',        'district': 'Darbhanga',      'state': 'Bihar', 'river': 'Adhwara',
       'lat': 26.2200, 'lon': 85.8500, 'danger_level': 50.00, 'warning_level': 49.00,
@@ -312,14 +321,16 @@ class IndiaGeodata {
       'lat': 30.1290, 'lon': 77.2674, 'danger_level': 303.00, 'warning_level': 301.50,
       'risk': 'HIGH', 'flood_freq': 0.65, 'river_type': 'perennial', 'zone': 'himalayan' },
 
-    // ── Delhi (MSL danger_level in 200–210 range as expected by test) ─────────
+    // ── Delhi ─────────────────────────────────────────────────────────────────
     { 'city': 'Delhi',          'district': 'North Delhi',    'state': 'Delhi', 'river': 'Yamuna',
       'lat': 28.7041, 'lon': 77.1025, 'danger_level': 205.00, 'warning_level': 204.00,
       'risk': 'HIGH', 'flood_freq': 0.75, 'river_type': 'perennial', 'zone': 'himalayan' },
 
-    // ── 6 additional cities to reach >= 80 total ──────────────────────────────
-    { 'city': 'Patna',          'district': 'Patna',          'state': 'Bihar', 'river': 'Ganga',
-      'lat': 25.5941, 'lon': 85.1376, 'danger_level': 49.09, 'warning_level': 48.00,
+    // ── +6 additional cities (v6.1) ───────────────────────────────────────────
+    // P1-FIX v6.2: Replaced duplicate 'Patna' entry (was at Dighaghat coords 25.5941/85.1376)
+    //              with 'Patna City Gauge' at actual CWC Gaighat location (25.6129, 85.1736)
+    { 'city': 'Patna City Gauge','district': 'Patna',         'state': 'Bihar', 'river': 'Ganga',
+      'lat': 25.6129, 'lon': 85.1736, 'danger_level': 48.60, 'warning_level': 47.50,
       'risk': 'HIGH', 'flood_freq': 0.85, 'river_type': 'perennial', 'zone': 'himalayan' },
     { 'city': 'Silchar',        'district': 'Cachar',         'state': 'Assam', 'river': 'Barak',
       'lat': 24.8333, 'lon': 92.7789, 'danger_level': 21.34, 'warning_level': 20.34,
