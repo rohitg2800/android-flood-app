@@ -1,4 +1,4 @@
-# Flutter / Dart
+# ══ Flutter / Dart ═══════════════════════════════════════════════════════════════
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
@@ -6,39 +6,63 @@
 build/
 *.g.dart.bak
 
-# Android
+# ══ Android ═══════════════════════════════════════════════════════════════════
 android/local.properties
 android/.gradle/
 android/app/debug/
 android/app/profile/
 android/app/release/
 
-# SECURITY — NEVER COMMIT THESE
+# ══ SECURITY — NEVER COMMIT THESE ═════════════════════════════════════════
+
+# Keystores / signing
 *.jks
 *.keystore
+*.p12
+*.pfx
+*.pem
 keystore.local.properties
+
+# Environment / secrets
 .env
 .env.local
 .env.production
+.env.staging
+.dart_defines
+*.dart_defines
+secrets/
+.secrets/
 
-# iOS
+# Firebase — real service account / API key files
+# (google-services.json with placeholder values is checked in;
+#  if you ever populate real keys, remove from git first.)
+google-services.json.secret
+GoogleService-Info.plist.secret
+service-account.json
+firebase-adminsdk*.json
+
+# Crashlytics / Firebase source mapping
+*.deobfuscation
+app/src/main/assets/crashlytics-build.properties
+
+# ══ iOS ════════════════════════════════════════════════════════════════════════
 ios/Flutter/App.framework
 ios/Flutter/Flutter.framework
 ios/Flutter/Flutter.podspec
 ios/.symlinks/
 ios/Pods/
 
-# IDE
+# ══ IDE ═════════════════════════════════════════════════════════════════════
 .idea/
 .vscode/
 *.iml
 *.ipr
 *.iws
 
-# macOS
+# ══ macOS ═════════════════════════════════════════════════════════════─
 .DS_Store
 
-# Compiled files
+# ══ Compiled / binary files ═════════════════════════════════════════════
 *.class
 *.log
 *.jar
@@ -49,5 +73,13 @@ ios/Pods/
 *.tar.gz
 *.rar
 
-# Generated
+# ══ Test & coverage output ═══════════════════════════════════════════════
+coverage/
+*.lcov
+
+# ══ Merge conflict artifacts ═════════════════════════════════════════════
+*.orig
+*.rej
+
+# ══ Generated ═══════════════════════════════════════════════════════════════
 lib/generated_plugin_registrant.dart
