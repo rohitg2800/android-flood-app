@@ -1,15 +1,9 @@
-// lib/screens/main_shell.dart  nav-v1
-// OpsFlood — MainShell with full navigation wiring.
-//
-// Changes nav-v1:
-//   • _MoreSheet items use Routes.xxx constants (no bare strings).
-//   • Added: Weather, State Matrix, Live Stations, Historical Analytics,
-//     Analytics, Export, Admin, Model Info, River Monitor.
-//   • Critical-alert overlay: "View Map" → tab 3, "Evacuate" → pushes
-//     EvacuationRoutesScreen directly.
-//   • SOS FAB kept; "+More" FAB retained.
-//   • All Navigator.pushNamed calls go through the root navigator so
-//     they are handled by AppRouter.onGenerateRoute.
+// lib/screens/main_shell.dart  nav-v2
+// Fix: _MoreSheet.onTap used Navigator.of(context) which resolved to the
+// ModalBottomSheet's local BuildContext — not the root navigator.
+// That caused every More-sheet tap to fall through to the default:
+// SplashScreen branch (looked like an app restart).
+// Fix: pop the sheet via its own context, then push via navigatorKey.
 library;
 
 import 'package:flutter/material.dart';
@@ -20,6 +14,7 @@ import '../theme/theme_3d.dart';
 import '../providers/alerts_provider.dart';
 import '../app_router.dart';
 import '../utils/haptic_service.dart';
+import '../main.dart' show navigatorKey;   // root navigator key
 import 'critical_alert_screen.dart';
 import 'dashboard_screen.dart';
 import 'monitors_screen.dart';
@@ -58,23 +53,22 @@ class _MainShellState extends ConsumerState<MainShell> {
   int _index = 0;
   final Set<String> _shownAlertIds = {};
 
-  // Bottom-nav tab bodies (kept alive via IndexedStack)
-  static const _screens = [
-    DashboardScreen(),
-    MonitorsScreen(),
-    AlertsScreen(),
-    MapScreen(),
-    CommunityScreen(),
-    SettingsScreen(),
+  static final _screens = [
+    const DashboardScreen(),
+    const MonitorsScreen(),
+    const AlertsScreen(),
+    const MapScreen(),
+    const CommunityScreen(),
+    const SettingsScreen(),
   ];
 
   static const _navItems = [
-    Td3NavItem(icon: Icons.home_outlined,          activeIcon: Icons.home_rounded,              label: 'Home'),
-    Td3NavItem(icon: Icons.water_outlined,          activeIcon: Icons.water_rounded,             label: 'Monitors'),
-    Td3NavItem(icon: Icons.notifications_none_rounded, activeIcon: Icons.notifications_rounded, label: 'Alerts'),
-    Td3NavItem(icon: Icons.map_outlined,            activeIcon: Icons.map_rounded,               label: 'Map'),
-    Td3NavItem(icon: Icons.people_outline,          activeIcon: Icons.people_rounded,            label: 'Community'),
-    Td3NavItem(icon: Icons.settings_outlined,       activeIcon: Icons.settings_rounded,          label: 'Settings'),
+    Td3NavItem(icon: Icons.home_outlined,              activeIcon: Icons.home_rounded,              label: 'Home'),
+    Td3NavItem(icon: Icons.water_outlined,             activeIcon: Icons.water_rounded,             label: 'Monitors'),
+    Td3NavItem(icon: Icons.notifications_none_rounded, activeIcon: Icons.notifications_rounded,     label: 'Alerts'),
+    Td3NavItem(icon: Icons.map_outlined,               activeIcon: Icons.map_rounded,               label: 'Map'),
+    Td3NavItem(icon: Icons.people_outline,             activeIcon: Icons.people_rounded,            label: 'Community'),
+    Td3NavItem(icon: Icons.settings_outlined,          activeIcon: Icons.settings_rounded,          label: 'Settings'),
   ];
 
   @override
@@ -82,7 +76,6 @@ class _MainShellState extends ConsumerState<MainShell> {
     final t      = RiverColors.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Critical alert listener ────────────────────────────────────────────
     ref.listen<List<FloodAlert>>(alertsProvider, (prev, alerts) {
       final criticals = alerts.where(
         (a) =>
@@ -105,10 +98,9 @@ class _MainShellState extends ConsumerState<MainShell> {
             currentLevel: alert.currentLevel,
             dangerLevel:  alert.thresholdLevel,
             district:     alert.district,
-            // ── View Map → Map tab
-            onViewMap:  () => setState(() => _index = 3),
-            // ── Evacuate → push EvacuationRoutesScreen on top of shell
-            onEvacuate: () => Navigator.of(context).pushNamed(Routes.evacuation),
+            onViewMap:    () => setState(() => _index = 3),
+            onEvacuate:   () => navigatorKey.currentState
+                ?.pushNamed(Routes.evacuation),
           );
         });
         break;
@@ -117,12 +109,10 @@ class _MainShellState extends ConsumerState<MainShell> {
 
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness:
-            isDark ? Brightness.light : Brightness.dark,
-        systemNavigationBarColor: t.cardBg,
-        systemNavigationBarIconBrightness:
-            isDark ? Brightness.light : Brightness.dark,
+        statusBarColor:                    Colors.transparent,
+        statusBarIconBrightness:           isDark ? Brightness.light : Brightness.dark,
+        systemNavigationBarColor:          t.cardBg,
+        systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
       ),
     );
 
@@ -135,27 +125,27 @@ class _MainShellState extends ConsumerState<MainShell> {
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 4),
         child: FloatingActionButton.small(
-          heroTag: 'more_fab',
+          heroTag:         'more_fab',
           backgroundColor: t.accent,
           foregroundColor: Colors.white,
-          tooltip: 'More features',
-          onPressed: () => _showMoreSheet(context, t),
-          child: const Icon(Icons.apps_rounded, size: 20),
+          tooltip:         'More features',
+          onPressed:       () => _showMoreSheet(context, t),
+          child:           const Icon(Icons.apps_rounded, size: 20),
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
       bottomNavigationBar: Td3BottomNav(
         currentIndex: _index,
-        onTap: (i) => setState(() => _index = i),
-        items: _navItems,
+        onTap:        (i) => setState(() => _index = i),
+        items:        _navItems,
       ),
     );
   }
 
   void _showMoreSheet(BuildContext ctx, RiverColors t) {
     showModalBottomSheet<void>(
-      context: ctx,
-      backgroundColor: t.navBg,
+      context:          ctx,
+      backgroundColor:  t.navBg,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
@@ -164,41 +154,31 @@ class _MainShellState extends ConsumerState<MainShell> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// More Sheet — all 16 extra screens, 4-column grid
-// ─────────────────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────────
 class _MoreSheet extends StatelessWidget {
   final RiverColors theme;
   const _MoreSheet({required this.theme});
 
-  // All items use Routes.xxx — no bare strings
   static const _items = [
-    // ── Prediction & intelligence
-    _MI('AI Predictor',      Icons.auto_graph,              Color(0xFF7B2FF7), Routes.aiPredictor),
-    _MI('Predict',           Icons.trending_up,             Color(0xFF9C27B0), Routes.predict),
-    _MI('Model Info',        Icons.info_outline,            Color(0xFF7E57C2), Routes.modelInfo),
-    // ── Water & map
-    _MI('Bihar Map',         Icons.map_outlined,            Colors.blue,       Routes.biharRiverMap),
-    _MI('River Explorer',    Icons.water_outlined,          Color(0xFF00E5FF), Routes.indiaRiverExplorer),
-    _MI('Live Stations',     Icons.sensors,                 Color(0xFF00E676), Routes.liveStations),
-    _MI('River Monitor',     Icons.monitor_heart_outlined,  Color(0xFF00B0FF), Routes.riverMonitor),
-    _MI('State Matrix',      Icons.grid_view_rounded,       Color(0xFF039BE5), Routes.stateMatrix),
-    // ── Weather
-    _MI('Weather',           Icons.wb_sunny_outlined,       Colors.orange,     Routes.weather),
-    _MI('Rainfall',          Icons.cloudy_snowing,          Color(0xFF00B0FF), Routes.rainfallForecast),
-    // ── Safety
-    _MI('Evacuation',        Icons.directions_run,          Colors.deepOrange, Routes.evacuation),
-    _MI('Emergency SOS',     Icons.sos_rounded,             Colors.red,        Routes.sos),
-    // ── Community & reports
-    _MI('Report Incident',   Icons.report_problem_outlined, Colors.red,        Routes.incidentReport),
-    _MI('Crowd Feed',        Icons.dynamic_feed_outlined,   Colors.teal,       Routes.crowdReports),
-    // ── Info & analytics
-    _MI('News Feed',         Icons.newspaper_outlined,      Colors.amber,      Routes.news),
-    _MI('Analytics',         Icons.bar_chart_rounded,       Color(0xFF26C6DA), Routes.analytics),
-    _MI('Historical',        Icons.history_rounded,         Color(0xFF78909C), Routes.historicalAnalytics),
-    _MI('Export Data',       Icons.download_rounded,        Color(0xFF66BB6A), Routes.export_),
-    // ── Admin
-    _MI('Admin',             Icons.admin_panel_settings_outlined, Color(0xFFEF5350), Routes.adminDashboard),
+    _MI('AI Predictor',    Icons.auto_graph,                    Color(0xFF7B2FF7), Routes.aiPredictor),
+    _MI('Predict',         Icons.trending_up,                   Color(0xFF9C27B0), Routes.predict),
+    _MI('Model Info',      Icons.info_outline,                  Color(0xFF7E57C2), Routes.modelInfo),
+    _MI('Bihar Map',       Icons.map_outlined,                  Colors.blue,       Routes.biharRiverMap),
+    _MI('River Explorer',  Icons.water_outlined,                Color(0xFF00E5FF), Routes.indiaRiverExplorer),
+    _MI('Live Stations',   Icons.sensors,                       Color(0xFF00E676), Routes.liveStations),
+    _MI('River Monitor',   Icons.monitor_heart_outlined,        Color(0xFF00B0FF), Routes.riverMonitor),
+    _MI('State Matrix',    Icons.grid_view_rounded,             Color(0xFF039BE5), Routes.stateMatrix),
+    _MI('Weather',         Icons.wb_sunny_outlined,             Colors.orange,     Routes.weather),
+    _MI('Rainfall',        Icons.cloudy_snowing,                Color(0xFF00B0FF), Routes.rainfallForecast),
+    _MI('Evacuation',      Icons.directions_run,                Colors.deepOrange, Routes.evacuation),
+    _MI('Emergency SOS',   Icons.sos_rounded,                   Colors.red,        Routes.sos),
+    _MI('Report Incident', Icons.report_problem_outlined,       Colors.red,        Routes.incidentReport),
+    _MI('Crowd Feed',      Icons.dynamic_feed_outlined,         Colors.teal,       Routes.crowdReports),
+    _MI('News Feed',       Icons.newspaper_outlined,            Colors.amber,      Routes.news),
+    _MI('Analytics',       Icons.bar_chart_rounded,             Color(0xFF26C6DA), Routes.analytics),
+    _MI('Historical',      Icons.history_rounded,               Color(0xFF78909C), Routes.historicalAnalytics),
+    _MI('Export Data',     Icons.download_rounded,              Color(0xFF66BB6A), Routes.export_),
+    _MI('Admin',           Icons.admin_panel_settings_outlined, Color(0xFFEF5350), Routes.adminDashboard),
   ];
 
   @override
@@ -214,29 +194,31 @@ class _MoreSheet extends StatelessWidget {
               width: 36, height: 4,
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
-                  color: t.divider,
-                  borderRadius: BorderRadius.circular(2)),
+                  color: t.divider, borderRadius: BorderRadius.circular(2)),
             ),
           ),
           Text('More Features',
               style: TextStyle(
-                  color: t.textPrimary,
-                  fontSize: 16,
+                  color:      t.textPrimary,
+                  fontSize:   16,
                   fontWeight: FontWeight.w700)),
           const SizedBox(height: 16),
           GridView.count(
-            crossAxisCount: 4,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount:  4,
+            shrinkWrap:      true,
+            physics:         const NeverScrollableScrollPhysics(),
             crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
+            mainAxisSpacing:  12,
             childAspectRatio: 0.82,
             children: _items.map((item) => _MoreTile(
-              item: item,
+              item:  item,
               theme: t,
               onTap: () {
-                Navigator.pop(context); // close sheet
-                Navigator.of(context).pushNamed(item.route);
+                // 1. Close the bottom sheet using its own context
+                Navigator.of(context).pop();
+                // 2. Push the target route via the ROOT navigator
+                //    (navigatorKey is registered in MaterialApp)
+                navigatorKey.currentState?.pushNamed(item.route);
               },
             )).toList(),
           ),
@@ -246,7 +228,6 @@ class _MoreSheet extends StatelessWidget {
   }
 }
 
-// ── Model & tile ────────────────────────────────────────────────────────────
 class _MI {
   final String   label;
   final IconData icon;
@@ -256,8 +237,8 @@ class _MI {
 }
 
 class _MoreTile extends StatelessWidget {
-  final _MI        item;
-  final RiverColors theme;
+  final _MI          item;
+  final RiverColors  theme;
   final VoidCallback onTap;
   const _MoreTile({required this.item, required this.theme, required this.onTap});
 
@@ -272,22 +253,22 @@ class _MoreTile extends StatelessWidget {
           Container(
             width: 52, height: 52,
             decoration: BoxDecoration(
-              color: item.color.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: item.color.withOpacity(0.5), width: 1),
+              color:         item.color.withOpacity(0.15),
+              borderRadius:  BorderRadius.circular(14),
+              border:        Border.all(color: item.color.withOpacity(0.5), width: 1),
             ),
             child: Icon(item.icon, color: item.color, size: 24),
           ),
           const SizedBox(height: 6),
           Text(
             item.label,
-            textAlign: TextAlign.center,
-            maxLines: 2,
+            textAlign:  TextAlign.center,
+            maxLines:   2,
             style: TextStyle(
-                color: t.textPrimary,
-                fontSize: 10,
+                color:      t.textPrimary,
+                fontSize:   10,
                 fontWeight: FontWeight.w600,
-                height: 1.2),
+                height:     1.2),
           ),
         ],
       ),
