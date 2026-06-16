@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Request, status
+from fastapi import FastAPI, HTTPException, Request, WebSocket, status
 from fastapi.staticfiles import StaticFiles
 import asyncio
 import copy
@@ -70,7 +70,7 @@ if _is_package_context():
     from backend.routers.weather import router as weather_router
     from backend.routers.telemetry import router as telemetry_router
     from backend.routers.ingestion import router as ingestion_router
-    from backend.routers.live_levels import router as live_levels_router
+    from backend.routers.live_levels import router as live_levels_router, get_live_levels
     from backend.routers.wrd_bihar import router as wrd_bihar_router
     from backend.routers.wrd_bihar import start_scheduler as wrd_start_scheduler
     from backend.routers.wrd_bihar import stop_scheduler as wrd_stop_scheduler
@@ -82,14 +82,14 @@ if _is_package_context():
     from backend.routers.fcm import router as fcm_router
     from backend.routers.data_gov_cwc import router as data_gov_cwc_router
     from backend.routers.model_artifacts import router as model_artifacts_router
-    from backend.routers.metrics import router as metrics_router          # P3
-    # ── Flutter-facing routes ────────────────────────────────────────────────
+    from backend.routers.metrics import router as metrics_router
     from backend.routers.glofas import router as glofas_router
     from backend.routers.rainfall import router as rainfall_router
     from backend.routers.cwc_stations import router as cwc_stations_router
     from backend.routers.news import router as news_router
-    from backend.ml.bootstrap_model import ensure_model_exists            # P2
+    from backend.ml.bootstrap_model import ensure_model_exists
     from backend.routers.fastapi_contracts import router as flutter_contracts_router
+    from backend.ws_server import ws_gauges_endpoint
 
 else:
     from data_pipeline import IngestionTarget, OperationalDataPipeline, ScheduledIngestionService
@@ -108,7 +108,7 @@ else:
     from routers.weather import router as weather_router
     from routers.telemetry import router as telemetry_router
     from routers.ingestion import router as ingestion_router
-    from routers.live_levels import router as live_levels_router
+    from routers.live_levels import router as live_levels_router, get_live_levels
     from routers.wrd_bihar import router as wrd_bihar_router
     from routers.wrd_bihar import start_scheduler as wrd_start_scheduler
     from routers.wrd_bihar import stop_scheduler as wrd_stop_scheduler
@@ -120,13 +120,13 @@ else:
     from routers.fcm import router as fcm_router
     from routers.data_gov_cwc import router as data_gov_cwc_router
     from routers.model_artifacts import router as model_artifacts_router
-    from routers.metrics import router as metrics_router                  # P3
-    # ── Flutter-facing routes ────────────────────────────────────────────────
+    from routers.metrics import router as metrics_router
     from routers.glofas import router as glofas_router
     from routers.rainfall import router as rainfall_router
     from routers.cwc_stations import router as cwc_stations_router
     from routers.news import router as news_router
-    from ml.bootstrap_model import ensure_model_exists                   # P2
+    from ml.bootstrap_model import ensure_model_exists
+    from ws_server import ws_gauges_endpoint
 
 
 warnings.filterwarnings('ignore')
@@ -396,7 +396,7 @@ _GLOFAS_STATIONS = [
 ]
 
 GLOFAS_API_URL = "https://flood-api.open-meteo.com/v1/flood"
-GLOFAS_REFRESH_INTERVAL_SECONDS = 900  # 15 minutes
+GLOFAS_REFRESH_INTERVAL_SECONDS = 900
 GLOFAS_REQUEST_TIMEOUT_SECONDS = 15
 _glofas_thread: threading.Thread | None = None
 _glofas_stop_event = threading.Event()
@@ -519,11 +519,10 @@ def start_wrd_bihar_eager_warm() -> None:
 
 
 # ---------------------------------------------------------------------------
-# P2: Bootstrap model — ensure saved model exists before serving predictions
+# P2: Bootstrap model
 # ---------------------------------------------------------------------------
 
 def _run_model_bootstrap() -> None:
-    """Runs in a daemon thread at startup. Non-blocking, non-fatal."""
     try:
         ensure_model_exists()
     except Exception as exc:
@@ -535,7 +534,7 @@ def start_model_bootstrap() -> None:
     t.start()
 
 
-# ── FastAPI application ─────────────────────────────────────────────────────────────────────
+# ── FastAPI application ─────────────────────────────────────────────────────
 app = FastAPI(
     title="OpsFlood API",
     description="Flood monitoring, prediction and telemetry backend for the Android Flood App.",
@@ -561,39 +560,51 @@ app.include_router(cwc_ffs_router)
 app.include_router(fcm_router)
 app.include_router(data_gov_cwc_router)
 app.include_router(model_artifacts_router)
-app.include_router(metrics_router)             # P3: /metrics endpoints
-# ── Flutter-facing routes ────────────────────────────────────────────────
+app.include_router(metrics_router)
 app.include_router(glofas_router)
 app.include_router(rainfall_router)
-app.include_router(cwc_stations_router)   # GET /api/cwc-stations
-app.include_router(news_router)            # GET /api/news
-app.include_router(flutter_contracts_router)  # GET /api/predict, /api/station-history, /api/critical-alerts
+app.include_router(cwc_stations_router)
+app.include_router(news_router)
+app.include_router(flutter_contracts_router)
 
+
+# ── WebSocket route — REGISTERED HERE ──────────────────────────────────────
+# This was missing before; ws_server.py existed but was never mounted.
+@app.websocket("/ws/gauges")
+async def ws_gauges(websocket: WebSocket):
+    """
+    Live gauge data stream.
+    Clients connect with wss://…/ws/gauges
+    Server pushes updates every 45 s + on-demand via push_update().
+    """
+    await ws_gauges_endpoint(websocket, get_live_levels)
+
+
+# ── HTTP health for Railway's healthcheck probe ─────────────────────────────
+@app.get("/ws/gauges/health", include_in_schema=False)
+async def ws_health():
+    """Lets Railway's HTTP healthcheck confirm the WS path is reachable."""
+    return {"status": "ws_ready", "path": "/ws/gauges"}
 
 
 @app.on_event("startup")
 async def startup_event():
     logger.info("OpsFlood API starting up — version 1.3.0")
-
-    # P2: Bootstrap model artifact if saved_models/ is empty (daemon thread — non-blocking)
     try:
         start_model_bootstrap()
         logger.info("[Bootstrap] Model bootstrap thread launched")
     except Exception as exc:
         logger.warning(f"[Bootstrap] Thread launch failed (non-fatal): {exc}")
-
     try:
         start_wrd_bihar_eager_warm()
         logger.info("WRD Bihar eager warm thread launched")
     except Exception as exc:
         logger.warning(f"WRD Bihar eager warm failed (non-fatal): {exc}")
-
     try:
         wrd_start_scheduler()
         logger.info("WRD Bihar APScheduler started")
     except Exception as exc:
         logger.warning(f"WRD Bihar scheduler start failed (non-fatal): {exc}")
-
     try:
         start_glofas_thread()
         logger.info("GloFAS warm_cache thread started")
