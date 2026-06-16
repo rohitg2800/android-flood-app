@@ -23,6 +23,7 @@ dependencies:
 
   # State management
   flutter_riverpod: ^2.6.1
+  provider: ^6.1.2
 
   # Config
   flutter_dotenv: ^6.0.1
@@ -96,9 +97,6 @@ dependencies:
   timeago: ^3.7.0
   home_widget: ^0.9.3
 
-  # home_widget removed — v0.7.0 declares flood_app:any (non-existent pkg)
-  # Re-add when a fixed version is released: home_widget: ^0.7.x
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -116,9 +114,6 @@ dev_dependencies:
   # Build tooling
   flutter_launcher_icons:  ^0.14.4
   flutter_native_splash:   ^2.4.1
-
-  # hive_generator removed — version conflict with analyzer >=8.x
-  # Pre-generated .g.dart files are committed directly.
 
 flutter_launcher_icons:
   android: true
