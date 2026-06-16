@@ -1,8 +1,7 @@
 // lib/models/flood_data.dart
-// OpsFlood — FloodData model (canonical v5)
+// OpsFlood — FloodData model (canonical v5.1)
 //
-// v5: added missing getter aliases consumed by backend_sync_service,
-//     active_alert_controller, river_detail_screen and bihar_district_heatmap.
+// v5.1: added flowRateCumecs + isLive getters needed by kosi_birpur_provider
 import 'package:flutter/material.dart';
 
 class EmergencyContact {
@@ -56,8 +55,8 @@ class FloodData {
   final double?  _longitude;
 
   // v5 extended live-data fields
-  final String?  _source;           // e.g. 'CWC', 'RTDAS', 'SEED'
-  final double?  _hfl;              // Highest Flood Level (m)
+  final String?  _source;
+  final double?  _hfl;
   final double?  _rainfall24hMm;
   final double?  _forecastLevel24h;
   final double?  _rateOfRiseMph;
@@ -166,13 +165,13 @@ class FloodData {
         rateOfRiseMph:     rateOfRiseMph     ?? _rateOfRiseMph,
       );
 
-  // ── Computed getters ───────────────────────────────────────────────
+  // ── Computed getters ─────────────────────────────────────────────────────────
   double get fillPercent =>
       dangerLevel > 0 ? (currentLevel / dangerLevel * 100).clamp(0, 150) : 0;
   bool get isAboveDanger  => currentLevel >= dangerLevel;
   bool get isAboveWarning => currentLevel >= warningLevel;
 
-  // ── Alias getters (v2) ────────────────────────────────────────────
+  // ── Alias getters (v2) ───────────────────────────────────────────────────────
   String  get city          => _city?.isNotEmpty == true ? _city! : stationName;
   String? get riverName     => _riverName?.isNotEmpty == true ? _riverName : river;
   String  get state         => _state?.isNotEmpty == true ? _state! : district;
@@ -184,22 +183,29 @@ class FloodData {
 
   double? get latitude  => _latitude;
   double? get longitude => _longitude;
-  // short aliases used by alert_engine proximity filter
   double? get lat => _latitude;
   double? get lon => _longitude;
 
-  // ── v5 extended getters ───────────────────────────────────────────
-  /// Data source tag, e.g. 'CWC', 'RTDAS', 'SEED'. Defaults to 'LIVE'.
+  // ── v5 extended getters ─────────────────────────────────────────────────────
   String  get source           => _source ?? 'LIVE';
-  /// Highest Flood Level (m). Falls back to dangerLevel * 1.3.
   double  get hfl              => _hfl ?? (dangerLevel > 0 ? dangerLevel * 1.3 : 0);
   double? get rainfall24hMm    => _rainfall24hMm;
   double? get forecastLevel24h => _forecastLevel24h;
   double? get rateOfRiseMph    => _rateOfRiseMph;
-  /// Timestamp of the fetch. Aliases lastUpdated → observedAt → epoch.
   DateTime get fetchedAt       => _lastUpdated ?? observedAt ?? DateTime(1970);
-  /// Progress from 0 to HFL (used by backend sync / station cards).
   double  get progressPct      => hfl > 0 ? (currentLevel / hfl).clamp(0.0, 1.0) : 0.0;
+
+  // v5.1 — aliases used by kosi_birpur_provider + befiqr_cwc_service
+  /// Flow rate in cumecs (m³/s). Alias for flowRate.
+  double? get flowRateCumecs => _flowRate;
+
+  /// True when source is not SEED and data is fresh (< 2h old).
+  bool get isLive {
+    if (_source == 'SEED') return false;
+    final ts = _lastUpdated ?? observedAt;
+    if (ts == null) return false;
+    return DateTime.now().difference(ts).inHours < 2;
+  }
 
   String get riskLevel {
     if (dangerLevel <= 0) return 'UNKNOWN';
@@ -212,7 +218,6 @@ class FloodData {
     return 'SAFE';
   }
 
-  /// Alias matching RiverStation.riskLabel naming used by backend_sync_service.
   String get riskLabel => riskLevel;
 
   String get status {
