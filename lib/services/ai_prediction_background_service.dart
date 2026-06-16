@@ -19,8 +19,6 @@ const _kChannelName    = 'AI Flood Monitor';
 const _kAlertBaseId    = 9100;
 const _kPrefKey        = 'ai_bg_last_severity';
 
-// Base URL via AppConfig.baseUrl
-
 @pragma('vm:entry-point')
 void aiPredictionCallbackDispatcher() {
   Workmanager().executeTask((taskName, inputData) async {
@@ -68,7 +66,10 @@ class AiPredictionBgService {
     debugPrint('[AiBg] periodic poll cancelled');
   }
 
-  static Future<bool> get isRunning async => false;
+  static Future<bool> get isRunning async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.containsKey(_kPrefKey);
+  }
 }
 
 final _notif = FlutterLocalNotificationsPlugin();
@@ -140,38 +141,43 @@ Future<void> _pollAll() async {
     final site = stations[i];
     try {
       final pred = await _fetchPrediction(site);
-      if (pred == null) continue;
+      if (pred == null) {
+        debugPrint('[AiBg] no prediction for $site — skipping');
+        continue;
+      }
 
       final newSev = _severity(pred['currentLevel']!, pred['dangerLevel']!);
       final oldSev = lastSeverity[site];
 
-      if (oldSev != null && _sevRank(newSev) > _sevRank(oldSev)) {
-        final gap = (pred['dangerLevel']! - pred['currentLevel']!).abs();
-        await _showAlert(
-          id:           _kAlertBaseId + i,
-          title:        '\u26a0 $site \u2014 $newSev',
-          body:         '${_sevEmoji(newSev)} Risk escalated '
-                        '$oldSev \u2192 $newSev.  '
-                        '${gap < 0.5
-                            ? 'Only ${gap.toStringAsFixed(2)} m to danger!'
-                            : 'Gap: ${gap.toStringAsFixed(2)} m'}',
-          highPriority: newSev == 'CRITICAL' || newSev == 'SEVERE',
-        );
-        alertsFired++;
+      if (oldSev == null || _sevRank(newSev) > _sevRank(oldSev)) {
+        if (newSev != 'LOW') {
+          final gap = (pred['dangerLevel']! - pred['currentLevel']!).abs();
+          await _showAlert(
+            id:           _kAlertBaseId + i,
+            title:        '\u26a0 $site \u2014 $newSev',
+            body:         '${_sevEmoji(newSev)} '
+                          '${oldSev == null ? 'First reading' : 'Escalated $oldSev \u2192 $newSev'}. '
+                          '${gap < 0.5
+                              ? 'Only ${gap.toStringAsFixed(2)} m to danger!'
+                              : 'Gap: ${gap.toStringAsFixed(2)} m'}',
+            highPriority: newSev == 'CRITICAL' || newSev == 'SEVERE',
+          );
+          alertsFired++;
+        }
       }
 
       lastSeverity[site] = newSev;
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[AiBg] error for $site: $e');
+    }
 
     await Future<void>.delayed(const Duration(milliseconds: 400));
   }
 
   await prefs.setString(_kPrefKey, jsonEncode(lastSeverity));
-  debugPrint('[AiBg] done — $alertsFired alert(s)');
+  debugPrint('[AiBg] done — $alertsFired alert(s) fired, ${stations.length} stations polled');
 }
 
-
-/// Shared helper — keeps timeout & error handling in one place.
 Future<List<dynamic>?> _cwcGet() async {
   try {
     final res = await http
