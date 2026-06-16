@@ -1,9 +1,7 @@
-// lib/screens/bihar_river_map_screen.dart  v8.1  (15 Jun 2026)
-//
-// v8.1 — Fix: "Tried to modify a provider while the widget tree was building"
-//   The line `ref.read(mapViewModeProvider.notifier).state = MapViewMode.bihar`
-//   was inside build(), which Riverpod forbids. Moved to initState() via
-//   a post-frame callback so the tree is fully mounted before the write.
+// File: lib/screens/bihar_river_map_screen.dart
+// Updated: June 2026
+// Changes: Wired FloodDataProvider + MapMarkers +
+//          MapTopBar.onStationSelected + loading overlay (Task 5)
 library;
 
 import 'package:flutter/material.dart';
@@ -11,13 +9,18 @@ import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:provider/provider.dart';
 
 import '../mixins/auto_refresh_mixin.dart';
+import '../models/flood_station.dart';
 import '../models/river_station.dart';
+import '../providers/flood_data_provider.dart';
 import '../providers/map_command_provider.dart';
 import '../providers/real_time_river_provider.dart';
 import '../providers/live_engine_bridge_provider.dart';
 import '../theme/rx.dart';
+import '../widgets/map/map_markers.dart';
+import '../widgets/map/map_pulse_popup.dart';
 import '../widgets/map/map_widgets.dart';
 
 const _kBiharCenter = LatLng(25.78, 85.17);
@@ -43,7 +46,6 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
   @override
   void initState() {
     super.initState();
-    // Force Bihar mode AFTER the first frame — never inside build().
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         ref.read(mapViewModeProvider.notifier).state = MapViewMode.bihar;
@@ -119,7 +121,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
           .toList())
       .toList();
 
-  // ── Markers ───────────────────────────────────────────────────────────────
+  // ── Legacy WRD markers (kept for existing RiverStation layer) ────────────
   String? _levelLabel(RiverStation s) {
     if (s.current <= 0) return null;
     return '${s.current.toStringAsFixed(2)}m';
@@ -178,140 +180,214 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
     );
   }
 
+  // ── Station popup for MapMarkers / MapTopBar ─────────────────────────────
+  void _showStationPopup(FloodStation station) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => MapPulsePopup(station: station),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final rc       = context.rc;
-    final stations = ref.watch(mapStationsProvider);
-    final distRisk = ref.watch(biharDistrictRiskProvider);
-    final syncMeta = ref.watch(mapSyncMetaProvider);
-    final geoAsync = ref.watch(biharGeoJsonProvider);
+    final rc        = context.rc;
+    final stations  = ref.watch(mapStationsProvider);
+    final distRisk  = ref.watch(biharDistrictRiskProvider);
+    final syncMeta  = ref.watch(mapSyncMetaProvider);
+    final geoAsync  = ref.watch(biharGeoJsonProvider);
     final isLoading = ref.watch(wrdIsLoadingProvider);
 
     ref.watch(liveEngineStationsProvider);
 
-    return Scaffold(
-      backgroundColor: rc.scaffoldBg,
-      body: refreshIndicator(
-        child: Stack(
-          children: [
-            FlutterMap(
-              mapController: _mapController,
-              options: const MapOptions(
-                initialCenter: _kBiharCenter,
-                initialZoom:   _kBiharZoom,
-                minZoom: 5,
-                maxZoom: 18,
-              ),
-              children: [
-                TileLayer(
-                  urlTemplate:
-                      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'com.opsflood.app',
+    return ChangeNotifierProvider(
+      create: (_) => FloodDataProvider(),
+      child: Scaffold(
+        backgroundColor: rc.scaffoldBg,
+        body: refreshIndicator(
+          child: Stack(
+            children: [
+              FlutterMap(
+                mapController: _mapController,
+                options: const MapOptions(
+                  initialCenter: _kBiharCenter,
+                  initialZoom:   _kBiharZoom,
+                  minZoom: 5,
+                  maxZoom: 18,
                 ),
-                geoAsync.when(
-                  data:    (gj) => PolygonLayer(
-                      polygons: _buildPolygons(gj, distRisk)),
-                  loading: () => const SizedBox.shrink(),
-                  error:   (_, __) => const SizedBox.shrink(),
-                ),
-                MarkerLayer(markers: _buildMarkers(stations)),
-              ],
-            ),
-
-            Positioned(
-              top:   MediaQuery.of(context).padding.top + 8,
-              left:  12,
-              right: 12,
-              child: _BiharMapTopBar(
-                syncMeta:       syncMeta,
-                isLoading:      isLoading,
-                stationCount:   stations.length,
-                drawerOpen:     _showDrawer,
-                onDrawerToggle: () =>
-                    setState(() => _showDrawer = !_showDrawer),
-                onRefresh: onManualRefresh,
-              ),
-            ),
-
-            if (_showLegend)
-              Positioned(
-                bottom: _showDrawer ? 340 : 100,
-                right:  12,
-                child: MapSourceLegend(
-                  syncMeta: syncMeta,
-                  onClose:  () => setState(() => _showLegend = false),
-                ),
-              ),
-
-            if (!_showLegend)
-              Positioned(
-                bottom: _showDrawer ? 340 : 100,
-                right:  12,
-                child: FloatingActionButton.small(
-                  heroTag:         'bmap_legend_fab',
-                  backgroundColor: rc.cardBg,
-                  onPressed: () => setState(() => _showLegend = true),
-                  child: Icon(Icons.layers_outlined,
-                      color: rc.accent, size: 20),
-                ),
-              ),
-
-            if (_showDrawer)
-              MapTelemetrySheet(
-                stations: stations,
-                onClose:  () => setState(() => _showDrawer = false),
-                onTap: (s) {
-                  if (coordFor(s) case final coord?) {
-                    _mapController.move(coord, 10);
-                    setState(() => _showDrawer = false);
-                  }
-                  _onMarkerTap(s);
-                },
-              ),
-
-            if (isLoading)
-              Positioned(
-                top:   MediaQuery.of(context).padding.top + 72,
-                left:  0,
-                right: 0,
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 6),
-                    decoration: BoxDecoration(
-                      color:        rc.cardBg.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(20),
+                children: [
+                  TileLayer(
+                    urlTemplate:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.opsflood.app',
+                  ),
+                  geoAsync.when(
+                    data:    (gj) => PolygonLayer(
+                        polygons: _buildPolygons(gj, distRisk)),
+                    loading: () => const SizedBox.shrink(),
+                    error:   (_, __) => const SizedBox.shrink(),
+                  ),
+                  // Legacy WRD markers
+                  MarkerLayer(markers: _buildMarkers(stations)),
+                  // GloFAS live markers from FloodDataProvider
+                  Consumer<FloodDataProvider>(
+                    builder: (_, provider, __) => MapMarkers(
+                      stations:     provider.biharStations,
+                      onStationTap: _showStationPopup,
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          width: 14, height: 14,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: rc.accent),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Fetching live data\u2026',
-                          style: TextStyle(
-                            color:      rc.textPrimary,
-                            fontSize:   12,
-                            fontWeight: FontWeight.w600,
+                  ),
+                ],
+              ),
+
+              Positioned(
+                top:   MediaQuery.of(context).padding.top + 8,
+                left:  12,
+                right: 12,
+                child: _BiharMapTopBar(
+                  syncMeta:       syncMeta,
+                  isLoading:      isLoading,
+                  stationCount:   stations.length,
+                  drawerOpen:     _showDrawer,
+                  onDrawerToggle: () =>
+                      setState(() => _showDrawer = !_showDrawer),
+                  onRefresh:      onManualRefresh,
+                  onStationSelected: (station) {
+                    if (station.lat != null && station.lon != null) {
+                      _mapController.move(
+                        LatLng(station.lat!, station.lon!),
+                        13.0,
+                      );
+                    }
+                    _showStationPopup(station);
+                  },
+                ),
+              ),
+
+              if (_showLegend)
+                Positioned(
+                  bottom: _showDrawer ? 340 : 100,
+                  right:  12,
+                  child: MapSourceLegend(
+                    syncMeta: syncMeta,
+                    onClose:  () => setState(() => _showLegend = false),
+                  ),
+                ),
+
+              if (!_showLegend)
+                Positioned(
+                  bottom: _showDrawer ? 340 : 100,
+                  right:  12,
+                  child: FloatingActionButton.small(
+                    heroTag:         'bmap_legend_fab',
+                    backgroundColor: rc.cardBg,
+                    onPressed: () => setState(() => _showLegend = true),
+                    child: Icon(Icons.layers_outlined,
+                        color: rc.accent, size: 20),
+                  ),
+                ),
+
+              if (_showDrawer)
+                MapTelemetrySheet(
+                  stations: stations,
+                  onClose:  () => setState(() => _showDrawer = false),
+                  onTap: (s) {
+                    if (coordFor(s) case final coord?) {
+                      _mapController.move(coord, 10);
+                      setState(() => _showDrawer = false);
+                    }
+                    _onMarkerTap(s);
+                  },
+                ),
+
+              // Legacy WRD loading indicator
+              if (isLoading)
+                Positioned(
+                  top:   MediaQuery.of(context).padding.top + 72,
+                  left:  0,
+                  right: 0,
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 6),
+                      decoration: BoxDecoration(
+                        color:        rc.cardBg.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 14, height: 14,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: rc.accent),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 8),
+                          Text(
+                            'Fetching live data\u2026',
+                            style: TextStyle(
+                              color:      rc.textPrimary,
+                              fontSize:   12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
+
+              // GloFAS loading overlay
+              Consumer<FloodDataProvider>(
+                builder: (_, p, __) {
+                  if (!p.isLoading || p.allStations.isNotEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  return Positioned(
+                    bottom: 24,
+                    left:   0,
+                    right:  0,
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 6),
+                        decoration: BoxDecoration(
+                          color:        rc.cardBg.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(
+                              width: 14, height: 14,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: rc.accent),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Loading GloFAS stations\u2026',
+                              style: TextStyle(
+                                color:      rc.textPrimary,
+                                fontSize:   12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-// ── Bihar-specific top bar ────────────────────────────────────────────────────────────
+// ── Bihar-specific top bar ─────────────────────────────────────────────────────
 class _BiharMapTopBar extends StatelessWidget {
   final SyncMeta syncMeta;
   final bool     isLoading;
@@ -319,6 +395,7 @@ class _BiharMapTopBar extends StatelessWidget {
   final bool     drawerOpen;
   final VoidCallback onDrawerToggle;
   final VoidCallback onRefresh;
+  final void Function(FloodStation station) onStationSelected;
 
   const _BiharMapTopBar({
     required this.syncMeta,
@@ -327,6 +404,7 @@ class _BiharMapTopBar extends StatelessWidget {
     required this.drawerOpen,
     required this.onDrawerToggle,
     required this.onRefresh,
+    required this.onStationSelected,
   });
 
   @override
