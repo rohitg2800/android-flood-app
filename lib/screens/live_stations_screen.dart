@@ -1,15 +1,10 @@
-// lib/screens/live_stations_screen.dart  (v3.0 — 3D theme)
+// lib/screens/live_stations_screen.dart  v3.1
 //
-// OpsFlood — All-Stations Live Screen
-//
-// v2.x → v3.0:
-//   • Migrated to Td3 3D theme system
-//   • AppBar → Td3AppBar (SliverAppBar)
-//   • Station cards → Td3Card with Td3ProgressBar gauge
-//   • Stat chips → Td3Chip
-//   • Risk badges → Td3Badge
-//   • Retry button → Td3Button
-//   • All colours via RiverColors
+// v3.1:
+//   • FIXED: city card onTap was pushing LiveStationsScreen itself instead
+//     of CityDetailScreen — now navigates correctly to city detail.
+//   • Station cards show enriched detail via CityDetailScreen.
+library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,6 +16,7 @@ import '../models/river_station.dart';
 import '../providers/prediction_provider.dart';
 import '../widgets/dashboard/river_pulse_card.dart';
 import '../theme/theme_3d.dart';
+import 'city_detail_screen.dart';
 
 class LiveStationsScreen extends ConsumerWidget {
   static const String route = '/live-stations';
@@ -36,17 +32,15 @@ class LiveStationsScreen extends ConsumerWidget {
       body: async.when(
         loading: () => CustomScrollView(
           slivers: [
-            Td3AppBar(title: 'Live Stations', subtitle: 'Loading…'),
+            const Td3AppBar(title: 'Live Stations', subtitle: 'Loading\u2026'),
             const SliverFillRemaining(
-              child: Center(
-                child: CircularProgressIndicator(),
-              ),
+              child: Center(child: CircularProgressIndicator()),
             ),
           ],
         ),
         error: (err, _) => CustomScrollView(
           slivers: [
-            Td3AppBar(title: 'Live Stations'),
+            const Td3AppBar(title: 'Live Stations'),
             SliverFillRemaining(
               child: Center(
                 child: Padding(
@@ -54,20 +48,17 @@ class LiveStationsScreen extends ConsumerWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.cloud_off_rounded,
-                          size: 48, color: t.danger),
+                      Icon(Icons.cloud_off_rounded, size: 48, color: t.danger),
                       const SizedBox(height: 12),
                       Text(
                         'Could not load station data',
                         style: TextStyle(
-                            color: t.textPrimary,
-                            fontWeight: FontWeight.bold),
+                            color: t.textPrimary, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 6),
                       Text(
                         err.toString(),
-                        style: TextStyle(
-                            color: t.textSecondary, fontSize: 12),
+                        style: TextStyle(color: t.textSecondary, fontSize: 12),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 20),
@@ -101,15 +92,14 @@ class LiveStationsScreen extends ConsumerWidget {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.water_outlined,
-                            size: 56, color: t.accent),
+                        Icon(Icons.water_outlined, size: 56, color: t.accent),
                         const SizedBox(height: 12),
                         Text('No station data yet',
                             style: TextStyle(color: t.textSecondary)),
                         const SizedBox(height: 4),
                         Text('Pull to refresh',
-                            style: TextStyle(
-                                color: t.textSecondary, fontSize: 12)),
+                            style:
+                                TextStyle(color: t.textSecondary, fontSize: 12)),
                       ],
                     ),
                   ),
@@ -122,8 +112,7 @@ class LiveStationsScreen extends ConsumerWidget {
 
           return RefreshIndicator(
             color: t.accent,
-            onRefresh: () =>
-                ref.read(biharLiveProvider.notifier).refresh(),
+            onRefresh: () => ref.read(biharLiveProvider.notifier).refresh(),
             child: CustomScrollView(
               slivers: [
                 Td3AppBar(
@@ -137,8 +126,7 @@ class LiveStationsScreen extends ConsumerWidget {
                 // ── Summary chips ────────────────────────────────────────────
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding:
-                        const EdgeInsets.fromLTRB(16, 14, 16, 4),
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
                     child: Wrap(
                       spacing: 8,
                       runSpacing: 8,
@@ -185,39 +173,41 @@ class LiveStationsScreen extends ConsumerWidget {
 
                 // ── Station cards ────────────────────────────────────────────
                 SliverPadding(
-                  padding:
-                      const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (ctx, i) {
                         final s = state.stations[i];
                         final rs = RiverStation(
-                          city:       s.city,
-                          state:      s.state,
-                          river:      s.river,
-                          station:    s.city,
-                          current:    s.currentLevel ?? 0.0,
-                          warning:    s.warningLevel ?? 0.0,
-                          danger:     s.dangerLevel  ?? 0.0,
-                          hfl:        (s.dangerLevel ?? 0.0) * 1.2,
-                          isLive:     s.source == 'LIVE',
-                          dataSource: s.source,
+                          city:        s.city,
+                          state:       s.state,
+                          river:       s.river,
+                          station:     s.city,
+                          current:     s.currentLevel ?? 0.0,
+                          warning:     s.warningLevel ?? 0.0,
+                          danger:      s.dangerLevel  ?? 0.0,
+                          hfl:         (s.dangerLevel ?? 0.0) * 1.2,
+                          isLive:      s.source == 'LIVE',
+                          dataSource:  s.source,
                           lastUpdated: s.fetchedAt,
                         );
                         final preds = ref.watch(floodPredictionsProvider);
-                        final pred  = preds.where((p) =>
-                            p.station.toLowerCase()
-                                .contains(s.city.toLowerCase())).toList();
-                        final conf  = pred.isNotEmpty
+                        final pred  = preds
+                            .where((p) => p.station
+                                .toLowerCase()
+                                .contains(s.city.toLowerCase()))
+                            .toList();
+                        final conf = pred.isNotEmpty
                             ? pred.first.confidencePct
                             : null;
                         return RiverPulseCard(
                           station:           rs,
                           index:             i,
                           confidencePercent: conf,
+                          // ✅ Fixed: push CityDetailScreen, not LiveStationsScreen
                           onTap: () => Navigator.of(ctx).push(
                             MaterialPageRoute<void>(
-                              builder: (_) => LiveStationsScreen(),
+                              builder: (_) => CityDetailScreen(station: rs),
                             ),
                           ),
                         );
@@ -243,5 +233,3 @@ class LiveStationsScreen extends ConsumerWidget {
     );
   }
 }
-
-
