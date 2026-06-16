@@ -1,7 +1,9 @@
-// lib/screens/main_shell.dart  nav-v4.1 PREMIUM
+// lib/screens/main_shell.dart  nav-v4.2 PREMIUM
 //
-// v4.1 fix: nav bar Row overflow — each _NavTap wrapped in Flexible so
-//           7 items (6 nav + More) fit within the pill on narrow screens.
+// v4.2 fix: _MoreTileV4 Column overflowed by 7.4px.
+//   - icon container: 48→44px
+//   - SizedBox between icon and label: 5→4px
+//   - childAspectRatio in GridView: 0.95→0.88  (gives ~8px extra height per cell)
 library;
 
 import 'dart:ui';
@@ -232,7 +234,7 @@ class _MapFab extends StatelessWidget {
 }
 
 // ───────────────────────────────────────────────────────────
-//  Premium Floating Pill Nav Bar  — v4.1: Flexible wraps prevent overflow
+//  Premium Floating Pill Nav Bar  — v4.2
 // ───────────────────────────────────────────────────────────
 class _PremiumNavBar extends StatelessWidget {
   final int               currentIndex;
@@ -250,7 +252,6 @@ class _PremiumNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      // right: 72 leaves room for the FAB
       padding: const EdgeInsets.fromLTRB(12, 0, 72, 20),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(36),
@@ -276,8 +277,6 @@ class _PremiumNavBar extends StatelessWidget {
                 ),
               ],
             ),
-            // KEY FIX: each child is Flexible(fit: FlexFit.tight) so they
-            // share available width equally and never overflow.
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -294,7 +293,6 @@ class _PremiumNavBar extends StatelessWidget {
                     ),
                   );
                 }),
-                // More button gets the same Flexible share
                 Flexible(
                   child: _MoreButton(scheme: scheme, onTap: onMoreTap),
                 ),
@@ -322,7 +320,6 @@ class _NavTap extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 280),
         curve:    Curves.easeOutCubic,
-        // tighter horizontal padding so 7 items fit comfortably
         padding: EdgeInsets.symmetric(
           horizontal: active ? 8 : 6,
           vertical: 8,
@@ -525,7 +522,10 @@ class _MoreSheetV4 extends ConsumerWidget {
                     physics:          const NeverScrollableScrollPhysics(),
                     crossAxisSpacing: 8,
                     mainAxisSpacing:  10,
-                    childAspectRatio: 0.95,
+                    // v4.2: reduced from 0.95 → 0.88 to give each cell ~8px
+                    // extra vertical room, eliminating the 7.4px overflow in
+                    // _MoreTileV4 on the reference device (w=64.2, h=67.6).
+                    childAspectRatio: 0.88,
                     children: _items.map((item) => _MoreTileV4(
                       item:  item,
                       theme: t,
@@ -609,13 +609,14 @@ class _MoreTileV4 extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            width: 48, height: 48,
+            // v4.2: 48 → 44px so total Column height fits in the cell
+            width: 44, height: 44,
             decoration: BoxDecoration(
               gradient: RadialGradient(colors: [
                 item.color.withOpacity(0.30),
                 item.color.withOpacity(0.06),
               ]),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: item.color.withOpacity(0.38), width: 1,
               ),
@@ -626,9 +627,10 @@ class _MoreTileV4 extends StatelessWidget {
                 ),
               ],
             ),
-            child: Center(child: Icon(item.icon, color: item.color, size: 22)),
+            child: Center(child: Icon(item.icon, color: item.color, size: 20)),
           ),
-          const SizedBox(height: 5),
+          // v4.2: 5 → 4px
+          const SizedBox(height: 4),
           Text(
             item.label,
             textAlign:  TextAlign.center,
