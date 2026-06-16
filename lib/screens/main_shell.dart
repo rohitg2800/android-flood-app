@@ -1,12 +1,7 @@
-// lib/screens/main_shell.dart  nav-v4 PREMIUM
+// lib/screens/main_shell.dart  nav-v4.1 PREMIUM
 //
-// v4 changes:
-//   • Floating pill nav bar with glassmorphism + animated active indicator
-//   • Map FAB right-aligned with pulse ring animation
-//   • 3D scale+slide animated More sheet (showGeneralDialog)
-//   • 2-skin switcher chip row: DeepSpace / TacticalOps (matches AppSkin enum)
-//   • More sheet uses 5-col grid with better aspect ratio (0.95)
-//   • extendBody: true for edge-to-edge feel
+// v4.1 fix: nav bar Row overflow — each _NavTap wrapped in Flexible so
+//           7 items (6 nav + More) fit within the pill on narrow screens.
 library;
 
 import 'dart:ui';
@@ -43,9 +38,6 @@ import 'admin_dashboard_screen.dart';
 import 'model_info_screen.dart';
 import 'river_monitor_screen.dart';
 
-// ───────────────────────────────────────────────────────────────────────────────
-//  Nav item model
-// ───────────────────────────────────────────────────────────────────────────────
 class _NavItem {
   final IconData active;
   final IconData idle;
@@ -62,9 +54,7 @@ const _navItems = [
   _NavItem(Icons.settings_rounded,       Icons.tune_rounded,               'Settings'),
 ];
 
-// ───────────────────────────────────────────────────────────────────────────────
-//  MainShell
-// ───────────────────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────
 class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key});
   static const String route = Routes.shell;
@@ -79,8 +69,7 @@ class _MainShellState extends ConsumerState<MainShell>
   final Set<String> _shownAlertIds = {};
 
   late final AnimationController _pulseCtrl = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1800),
+    vsync: this, duration: const Duration(milliseconds: 1800),
   )..repeat(reverse: true);
 
   static final _screens = [
@@ -131,14 +120,12 @@ class _MainShellState extends ConsumerState<MainShell>
       }
     });
 
-    SystemChrome.setSystemUIOverlayStyle(
-      SystemUiOverlayStyle(
-        statusBarColor:                    Colors.transparent,
-        statusBarIconBrightness:           isDark ? Brightness.light : Brightness.dark,
-        systemNavigationBarColor:          Colors.transparent,
-        systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
-      ),
-    );
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor:                    Colors.transparent,
+      statusBarIconBrightness:           isDark ? Brightness.light : Brightness.dark,
+      systemNavigationBarColor:          Colors.transparent,
+      systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+    ));
 
     return Scaffold(
       backgroundColor: t.scaffoldBg,
@@ -167,17 +154,16 @@ class _MainShellState extends ConsumerState<MainShell>
 
   void _showMoreSheet(BuildContext ctx, RiverColors t, ColorScheme scheme) {
     showGeneralDialog<void>(
-      context:           ctx,
+      context:            ctx,
       barrierDismissible: true,
-      barrierLabel:      'More',
-      barrierColor:      Colors.black.withOpacity(0.72),
+      barrierLabel:       'More',
+      barrierColor:       Colors.black.withOpacity(0.72),
       transitionDuration: const Duration(milliseconds: 440),
       transitionBuilder: (ctx, anim, _, child) {
         final curve = CurvedAnimation(parent: anim, curve: Curves.easeOutBack);
         return SlideTransition(
           position: Tween<Offset>(
-            begin: const Offset(0, 0.18),
-            end:   Offset.zero,
+            begin: const Offset(0, 0.18), end: Offset.zero,
           ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
           child: ScaleTransition(
             scale: Tween<double>(begin: 0.88, end: 1.0).animate(curve),
@@ -190,9 +176,9 @@ class _MainShellState extends ConsumerState<MainShell>
   }
 }
 
-// ───────────────────────────────────────────────────────────────────────────────
-//  Right-aligned Map FAB with animated pulse ring
-// ───────────────────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────
+//  Map FAB with pulse ring
+// ───────────────────────────────────────────────────────────
 class _MapFab extends StatelessWidget {
   final AnimationController pulseCtrl;
   final Color               accentColor;
@@ -215,8 +201,7 @@ class _MapFab extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: accentColor.withOpacity(0.35 - p * 0.25),
-                    width: 2,
+                    color: accentColor.withOpacity(0.35 - p * 0.25), width: 2,
                   ),
                 ),
               ),
@@ -225,15 +210,14 @@ class _MapFab extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end:   Alignment.bottomRight,
+                    begin:  Alignment.topLeft,
+                    end:    Alignment.bottomRight,
                     colors: [accentColor, accentColor.withOpacity(0.7)],
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color:      accentColor.withOpacity(0.45),
-                      blurRadius: 16,
-                      offset:     const Offset(0, 6),
+                      color: accentColor.withOpacity(0.45),
+                      blurRadius: 16, offset: const Offset(0, 6),
                     ),
                   ],
                 ),
@@ -247,14 +231,14 @@ class _MapFab extends StatelessWidget {
   }
 }
 
-// ───────────────────────────────────────────────────────────────────────────────
-//  Premium Floating Pill Nav Bar
-// ───────────────────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────
+//  Premium Floating Pill Nav Bar  — v4.1: Flexible wraps prevent overflow
+// ───────────────────────────────────────────────────────────
 class _PremiumNavBar extends StatelessWidget {
-  final int              currentIndex;
-  final ColorScheme      scheme;
+  final int               currentIndex;
+  final ColorScheme       scheme;
   final ValueChanged<int> onTap;
-  final VoidCallback     onMoreTap;
+  final VoidCallback      onMoreTap;
 
   const _PremiumNavBar({
     required this.currentIndex,
@@ -266,6 +250,7 @@ class _PremiumNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
+      // right: 72 leaves room for the FAB
       padding: const EdgeInsets.fromLTRB(12, 0, 72, 20),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(36),
@@ -281,18 +266,18 @@ class _PremiumNavBar extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color:       scheme.primary.withOpacity(0.18),
-                  blurRadius:  24,
-                  spreadRadius: -2,
-                  offset:      const Offset(0, 8),
+                  color: scheme.primary.withOpacity(0.18),
+                  blurRadius: 24, spreadRadius: -2,
+                  offset: const Offset(0, 8),
                 ),
                 BoxShadow(
-                  color:      Colors.black.withOpacity(0.12),
-                  blurRadius: 12,
-                  offset:     const Offset(0, 4),
+                  color: Colors.black.withOpacity(0.12),
+                  blurRadius: 12, offset: const Offset(0, 4),
                 ),
               ],
             ),
+            // KEY FIX: each child is Flexible(fit: FlexFit.tight) so they
+            // share available width equally and never overflow.
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -300,14 +285,19 @@ class _PremiumNavBar extends StatelessWidget {
                   final i      = e.key;
                   final item   = e.value;
                   final active = i == currentIndex;
-                  return _NavTap(
-                    item:   item,
-                    active: active,
-                    scheme: scheme,
-                    onTap:  () => onTap(i),
+                  return Flexible(
+                    child: _NavTap(
+                      item:   item,
+                      active: active,
+                      scheme: scheme,
+                      onTap:  () => onTap(i),
+                    ),
                   );
                 }),
-                _MoreButton(scheme: scheme, onTap: onMoreTap),
+                // More button gets the same Flexible share
+                Flexible(
+                  child: _MoreButton(scheme: scheme, onTap: onMoreTap),
+                ),
               ],
             ),
           ),
@@ -327,23 +317,28 @@ class _NavTap extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap:     onTap,
-      behavior:  HitTestBehavior.opaque,
+      onTap:    onTap,
+      behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 280),
         curve:    Curves.easeOutCubic,
-        padding:  EdgeInsets.symmetric(horizontal: active ? 14 : 10, vertical: 8),
+        // tighter horizontal padding so 7 items fit comfortably
+        padding: EdgeInsets.symmetric(
+          horizontal: active ? 8 : 6,
+          vertical: 8,
+        ),
         decoration: active
             ? BoxDecoration(
                 gradient: LinearGradient(colors: [
                   scheme.primary.withOpacity(0.22),
                   scheme.secondary.withOpacity(0.10),
                 ]),
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(20),
               )
             : null,
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize:      MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 220),
@@ -355,19 +350,23 @@ class _NavTap extends StatelessWidget {
                 color: active
                     ? scheme.primary
                     : scheme.onSurface.withOpacity(0.42),
-                size: active ? 25 : 21,
+                size: active ? 24 : 20,
               ),
             ),
             const SizedBox(height: 2),
             AnimatedDefaultTextStyle(
               duration: const Duration(milliseconds: 220),
               style: TextStyle(
-                fontSize:      active ? 9.5 : 0,
+                fontSize:      active ? 9.0 : 0,
                 fontWeight:    FontWeight.w700,
                 color:         scheme.primary,
-                letterSpacing: 0.3,
+                letterSpacing: 0.2,
               ),
-              child: Text(item.label, overflow: TextOverflow.ellipsis),
+              child: Text(
+                item.label,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
             ),
           ],
         ),
@@ -387,12 +386,13 @@ class _MoreButton extends StatelessWidget {
       onTap:    onTap,
       behavior: HitTestBehavior.opaque,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize:      MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 28, height: 28,
+              width: 26, height: 26,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [scheme.primary, scheme.secondary],
@@ -401,15 +401,15 @@ class _MoreButton extends StatelessWidget {
                 ),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.apps_rounded, color: Colors.white, size: 16),
+              child: const Icon(Icons.apps_rounded, color: Colors.white, size: 15),
             ),
             const SizedBox(height: 2),
             Text('More',
               style: TextStyle(
-                fontSize:      9.5,
+                fontSize:      9.0,
                 fontWeight:    FontWeight.w700,
                 color:         scheme.primary,
-                letterSpacing: 0.3,
+                letterSpacing: 0.2,
               ),
             ),
           ],
@@ -419,9 +419,9 @@ class _MoreButton extends StatelessWidget {
   }
 }
 
-// ───────────────────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────
 //  3D More Sheet V4
-// ───────────────────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────
 class _MoreSheetV4 extends ConsumerWidget {
   final RiverColors theme;
   final ColorScheme scheme;
@@ -451,8 +451,8 @@ class _MoreSheetV4 extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final t           = theme;
-    final activeSkin  = ref.watch(appSkinProvider);
+    final t          = theme;
+    final activeSkin = ref.watch(appSkinProvider);
 
     return Align(
       alignment: Alignment.bottomCenter,
@@ -466,15 +466,13 @@ class _MoreSheetV4 extends ConsumerWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color:        scheme.primary.withOpacity(0.20),
-              blurRadius:   40,
-              spreadRadius: -4,
-              offset:       const Offset(0, -8),
+              color: scheme.primary.withOpacity(0.20),
+              blurRadius: 40, spreadRadius: -4,
+              offset: const Offset(0, -8),
             ),
             BoxShadow(
-              color:      Colors.black.withOpacity(0.30),
-              blurRadius: 24,
-              offset:     const Offset(0, 4),
+              color: Colors.black.withOpacity(0.30),
+              blurRadius: 24, offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -487,7 +485,6 @@ class _MoreSheetV4 extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Handle
                   Center(
                     child: Container(
                       width: 40, height: 4,
@@ -500,7 +497,6 @@ class _MoreSheetV4 extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  // Header row
                   Row(
                     children: [
                       ShaderMask(
@@ -519,12 +515,10 @@ class _MoreSheetV4 extends ConsumerWidget {
                         ),
                       ),
                       const Spacer(),
-                      // ── Skin switcher chips (DeepSpace / TacticalOps) ──
                       _SkinChips(activeSkin: activeSkin),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  // Features grid
                   GridView.count(
                     crossAxisCount:   5,
                     shrinkWrap:       true,
@@ -551,7 +545,6 @@ class _MoreSheetV4 extends ConsumerWidget {
   }
 }
 
-// ─── Skin switcher chips (uses correct AppSkin enum: deepSpace / tacticalOps)
 class _SkinChips extends ConsumerWidget {
   final AppSkin activeSkin;
   const _SkinChips({required this.activeSkin});
@@ -578,14 +571,10 @@ class _SkinChips extends ConsumerWidget {
             margin:   const EdgeInsets.only(left: 6),
             padding:  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: active
-                  ? cs.primary.withOpacity(0.18)
-                  : Colors.transparent,
+              color: active ? cs.primary.withOpacity(0.18) : Colors.transparent,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: active
-                    ? cs.primary
-                    : cs.onSurface.withOpacity(0.20),
+                color: active ? cs.primary : cs.onSurface.withOpacity(0.20),
                 width: 1,
               ),
             ),
@@ -594,9 +583,7 @@ class _SkinChips extends ConsumerWidget {
               style: TextStyle(
                 fontSize:   10,
                 fontWeight: active ? FontWeight.w800 : FontWeight.w500,
-                color: active
-                    ? cs.primary
-                    : cs.onSurface.withOpacity(0.55),
+                color: active ? cs.primary : cs.onSurface.withOpacity(0.55),
               ),
             ),
           ),
@@ -606,7 +593,6 @@ class _SkinChips extends ConsumerWidget {
   }
 }
 
-// ─── More Tile V4
 class _MoreTileV4 extends StatelessWidget {
   final _MI          item;
   final RiverColors  theme;
@@ -635,9 +621,8 @@ class _MoreTileV4 extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color:      item.color.withOpacity(0.22),
-                  blurRadius: 10,
-                  offset:     const Offset(0, 4),
+                  color: item.color.withOpacity(0.22),
+                  blurRadius: 10, offset: const Offset(0, 4),
                 ),
               ],
             ),
