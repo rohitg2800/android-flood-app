@@ -1,6 +1,5 @@
-// lib/services/cached_flood_api.dart  v4
-// Fixed: fetchAll() → fetchLiveLevels() (FloodApi has no fetchAll)
-// Added: criticalAlerts() returning List<FloodData> filtered by warningLevel
+// lib/services/cached_flood_api.dart  v5
+// Fixed FloodStation field names: riverName (not river), no hfl, nullable doubles
 import 'dart:async';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -12,13 +11,11 @@ class CachedFloodApi {
   CachedFloodApi._();
   static final CachedFloodApi instance = CachedFloodApi._();
 
-  static const _kCacheKey     = 'flood_data_cache_v4';
+  static const _kCacheKey     = 'flood_data_cache_v5';
   static const _kCacheTtlMins = 10;
 
   List<FloodData> _cache = [];
   DateTime?       _lastFetched;
-
-  // ─ Public API ────────────────────────────────────────────────────────────────
 
   Future<List<FloodData>> getAll({bool forceRefresh = false}) async {
     if (!forceRefresh && _isFresh()) return _cache;
@@ -53,8 +50,6 @@ class CachedFloodApi {
   bool      get isCacheAvailable => _cache.isNotEmpty;
   DateTime? get lastFetched      => _lastFetched;
 
-  // ─ Internals ─────────────────────────────────────────────────────────────────
-
   bool _isFresh() =>
       _lastFetched != null &&
       _cache.isNotEmpty &&
@@ -65,16 +60,16 @@ class CachedFloodApi {
       stations.map((s) => FloodData(
         stationId:    s.city,
         stationName:  s.city,
-        river:        s.river,
+        river:        s.riverName,       // correct field name
         district:     s.city,
         state:        s.state,
-        currentLevel: s.currentLevel,
-        dangerLevel:  s.dangerLevel,
-        warningLevel: s.warningLevel,
+        currentLevel: s.currentLevel ?? 0,
+        dangerLevel:  s.dangerLevel  ?? 0,
+        warningLevel: s.warningLevel ?? 0,
         latitude:     s.lat,
         longitude:    s.lon,
-        hfl:          s.hfl,
-        source:       'GloFAS',
+        hfl:          0,                 // FloodStation has no hfl field
+        source:       s.dataSource,
         lastUpdated:  DateTime.now(),
       )).toList();
 

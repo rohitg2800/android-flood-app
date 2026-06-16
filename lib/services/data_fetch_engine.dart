@@ -1,16 +1,14 @@
-// lib/services/data_fetch_engine.dart  v3
-// Defines:
-//   SourceStatus  — per-source health class (name, healthy, latencyMs, stationCount, errorMessage)
-//   DataFetchSnapshot — snapshot broadcast by DataFetchEngine
-//   FetchResult   — kept for backward compat (alias of DataFetchSnapshot)
-//   DataFetchEngine — periodic fetcher; exposes stream, snapshotStream, last, latestResult
+// lib/services/data_fetch_engine.dart  v4
+// DataFetchSnapshot now includes liveStations, totalStations, toRiverStations()
+// FloodStation field names corrected: riverName (not river), no hfl field,
+// all level fields are double? (use ?? 0)
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/flood_data.dart';
+import '../models/flood_station.dart';
 import 'flood_api.dart';
 
-// ─── SourceStatus ─────────────────────────────────────────────────────────────
-/// Per-data-source health record used by SystemStats and DashboardFooter.
+// ─── SourceStatus ──────────────────────────────────────────────────────────
 class SourceStatus {
   final String  name;
   final bool    healthy;
@@ -30,13 +28,9 @@ class SourceStatus {
   bool   get isFailing => !healthy && errorMessage != null;
   bool   get isStale   => !healthy && latencyMs == null;
   String get label     => healthy ? 'Live' : (errorMessage != null ? 'Error' : 'Stale');
-
-  @override
-  String toString() => 'SourceStatus($name, healthy=$healthy)';
 }
 
 // ─── DataFetchSnapshot ────────────────────────────────────────────────────────
-/// Snapshot emitted by DataFetchEngine every fetch cycle.
 class DataFetchSnapshot {
   final List<FloodData>    stations;
   final DateTime           fetchedAt;
@@ -52,9 +46,28 @@ class DataFetchSnapshot {
     this.error,
   });
 
-  bool get isSuccess    => !isLoading && error == null;
-  int  get alertCount   => stations.where((d) => d.currentLevel >= d.warningLevel).length;
-  int  get healthyCount => sources.where((s) => s.healthy).length;
+  bool get isSuccess => !isLoading && error == null;
+
+  // Getters used by BackendSyncService
+  int get liveStations  => stations.where((s) => s.status == 'LIVE').length;
+  int get totalStations => stations.length;
+  int get alertCount    => stations.where((d) => d.currentLevel >= d.warningLevel).length;
+  int get healthyCount  => sources.where((s) => s.healthy).length;
+
+  // Used by main.dart — converts FloodData back to FloodStation list
+  List<FloodStation> toRiverStations() => stations.map((d) => FloodStation(
+    city:        d.stationName,
+    state:       d.state,
+    riverName:   d.river,
+    riskLevel:   d.riskLevel,
+    status:      d.status,
+    dataSource:  d.source,
+    currentLevel: d.currentLevel,
+    warningLevel: d.warningLevel,
+    dangerLevel:  d.dangerLevel,
+    lat:          d.latitude,
+    lon:          d.longitude,
+  )).toList();
 }
 
 /// Backward-compat alias.
@@ -71,16 +84,10 @@ class DataFetchEngine {
   Timer?             _timer;
   DataFetchSnapshot? _latest;
 
-  // ─ Public API ───────────────────────────────────────────────────────────────
-
-  /// Broadcast stream of [DataFetchSnapshot] events.
   Stream<DataFetchSnapshot> get stream         => _controller.stream;
-  /// Alias used by widgets that import `snapshotStream`.
   Stream<DataFetchSnapshot> get snapshotStream => _controller.stream;
-
-  /// Latest snapshot; null before first fetch.
-  DataFetchSnapshot? get last          => _latest;
-  DataFetchSnapshot? get latestResult  => _latest;
+  DataFetchSnapshot? get last         => _latest;
+  DataFetchSnapshot? get latestResult => _latest;
 
   SourceStatus get overallStatus => _latest == null
       ? const SourceStatus(name: 'overall', healthy: false)
@@ -91,29 +98,23 @@ class DataFetchEngine {
           errorMessage: _latest!.error,
         );
 
-  /// Start periodic fetching every 5 minutes.
   void start() {
     _timer?.cancel();
     _fetch();
     _timer = Timer.periodic(_kInterval, (_) => _fetch());
   }
 
-  /// Stop periodic fetching.
   void stop() {
     _timer?.cancel();
     _timer = null;
   }
 
-  /// Force an immediate refresh.
   Future<void> refresh() => _fetch();
 
-  /// Dispose the engine (call on app teardown).
   void dispose() {
     stop();
     _controller.close();
   }
-
-  // ─ Internals ────────────────────────────────────────────────────────────────
 
   Future<void> _fetch() async {
     final loading = DataFetchSnapshot(
@@ -125,11 +126,10 @@ class DataFetchEngine {
     if (!_controller.isClosed) _controller.add(loading);
 
     try {
-      final sw    = Stopwatch()..start();
-      final data  = await FloodApi.instance.fetchLiveLevels();
+      final sw   = Stopwatch()..start();
+      final data = await FloodApi.instance.fetchLiveLevels();
       sw.stop();
 
-      // Build a synthetic per-source status from the live result.
       final sources = [
         SourceStatus(
           name:         'GloFAS',
@@ -139,22 +139,7 @@ class DataFetchEngine {
         ),
       ];
 
-      // Convert FloodStation → FloodData (best-effort shim)
-      final floodData = data.map((s) => FloodData(
-        stationId:    s.city,
-        stationName:  s.city,
-        river:        s.river,
-        district:     s.city,
-        state:        s.state,
-        currentLevel: s.currentLevel,
-        dangerLevel:  s.dangerLevel,
-        warningLevel: s.warningLevel,
-        latitude:     s.lat,
-        longitude:    s.lon,
-        hfl:          s.hfl,
-        source:       'GloFAS',
-        lastUpdated:  DateTime.now(),
-      )).toList();
+      final floodData = data.map(_stationToFloodData).toList();
 
       final snap = DataFetchSnapshot(
         stations:  floodData,
@@ -164,7 +149,9 @@ class DataFetchEngine {
       );
       _latest = snap;
       if (!_controller.isClosed) _controller.add(snap);
-      if (kDebugMode) debugPrint('[DataFetchEngine] fetched ${data.length} stations in ${sw.elapsedMilliseconds}ms');
+      if (kDebugMode) {
+        debugPrint('[DataFetchEngine] fetched ${data.length} stations in ${sw.elapsedMilliseconds}ms');
+      }
     } catch (e) {
       final stale = _latest?.stations ?? [];
       final snap  = DataFetchSnapshot(
@@ -186,4 +173,20 @@ class DataFetchEngine {
       if (kDebugMode) debugPrint('[DataFetchEngine] fetch error: $e');
     }
   }
+
+  static FloodData _stationToFloodData(FloodStation s) => FloodData(
+    stationId:    s.city,
+    stationName:  s.city,
+    river:        s.riverName,        // FloodStation uses riverName, not river
+    district:     s.city,
+    state:        s.state,
+    currentLevel: s.currentLevel ?? 0,
+    dangerLevel:  s.dangerLevel  ?? 0,
+    warningLevel: s.warningLevel ?? 0,
+    latitude:     s.lat,
+    longitude:    s.lon,
+    hfl:          0,                  // FloodStation has no hfl field
+    source:       s.dataSource,
+    lastUpdated:  DateTime.now(),
+  );
 }

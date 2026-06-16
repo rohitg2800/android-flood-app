@@ -1,13 +1,14 @@
+// lib/widgets/ml_card_test_export.dart  v2
+// Fixed:
+//   pred.stationName    → pred.station
+//   pred.predictedLevel → pred.predicted24h
+//   pred.confidence     → pred.confidencePct (already 0–100, no *100 needed)
+//   pred.isOffline      → !pred.fromBackend
 import 'package:flutter/material.dart';
-
 import '../models/flood_prediction.dart';
 
-/// Minimal test/export widget used by golden tests.
-///
-/// This file intentionally keeps UI stable and deterministic.
 class MlCardTestExport extends StatelessWidget {
   final FloodPrediction pred;
-
   const MlCardTestExport({super.key, required this.pred});
 
   @override
@@ -20,18 +21,21 @@ class MlCardTestExport extends StatelessWidget {
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: theme.colorScheme.outline.withOpacity(0.35)),
+          border: Border.all(
+              color: theme.colorScheme.outline.withValues(alpha: 0.35)),
         ),
         child: DefaultTextStyle(
-          style: theme.textTheme.bodyMedium ?? const TextStyle(fontSize: 14),
+          style:
+              theme.textTheme.bodyMedium ?? const TextStyle(fontSize: 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                pred.stationName,
+                pred.station,
                 key: const ValueKey('ml_card_stationName'),
-                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 8),
               Text(
@@ -43,7 +47,7 @@ class MlCardTestExport extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      'Predicted: ${pred.predictedLevel.toStringAsFixed(1)} m',
+                      'Predicted: ${pred.predicted24h.toStringAsFixed(1)} m',
                       key: const ValueKey('ml_card_predictedLevel'),
                     ),
                   ),
@@ -61,7 +65,8 @@ class MlCardTestExport extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                'Confidence: ${(pred.confidence * 100).toStringAsFixed(0)}%',
+                // confidencePct is already 0–100, no need to multiply
+                'Confidence: ${pred.confidencePct.toStringAsFixed(0)}%',
                 key: const ValueKey('ml_card_confidence'),
               ),
               const SizedBox(height: 6),
@@ -71,7 +76,8 @@ class MlCardTestExport extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                pred.isOffline ? 'Mode: Offline' : 'Mode: Online',
+                // isOffline not a field — derive from fromBackend
+                !pred.fromBackend ? 'Mode: Offline' : 'Mode: Online',
                 key: const ValueKey('ml_card_isOffline'),
               ),
             ],
@@ -81,4 +87,3 @@ class MlCardTestExport extends StatelessWidget {
     );
   }
 }
-

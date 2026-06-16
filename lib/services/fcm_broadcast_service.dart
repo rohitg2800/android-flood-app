@@ -1,9 +1,7 @@
-// lib/services/fcm_broadcast_service.dart  v2
-// Fixed:
-//   • DataFetchSnapshot — now defined in data_fetch_engine.dart
-//   • StreamBuilder typed correctly
+// lib/services/fcm_broadcast_service.dart  v3
+// Fixed: import debugPrint from flutter/foundation
 import 'dart:async';
-import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'alert_engine.dart';
 import 'data_fetch_engine.dart';
 import 'fcm_templates.dart';
@@ -29,14 +27,13 @@ class FcmBroadcastService {
 
   void _onSnapshot(DataFetchSnapshot snap) {
     if (snap.isLoading || snap.stations.isEmpty) return;
-    // Build lightweight FloodAlerts for any station above warning level
     final now = DateTime.now();
     for (final d in snap.stations) {
       if (d.currentLevel < d.warningLevel) continue;
       final alert = FloodAlert(
         id:             '${d.stationId}_fcm_${now.day}',
         stationName:    d.stationName,
-        title:          '${d.city} — ${d.riskLevel.toUpperCase()}',
+        title:          '${d.stationName} — ${d.riskLevel.toUpperCase()}',
         river:          d.river,
         district:       d.district,
         currentLevel:   d.currentLevel,
@@ -58,10 +55,7 @@ class FcmBroadcastService {
   }
 
   void _broadcastToTopic(dynamic payload, FloodAlert alert) {
-    // Topic subscription is done client-side; server push is handled by backend.
-    // This method exists as a hook for future server-side FCM admin SDK calls.
     final topic = FcmTemplates.topicFor(alert);
-    // ignore: avoid_print
     assert(() {
       debugPrint('[FcmBroadcast] would broadcast to $topic: ${payload.title}');
       return true;
