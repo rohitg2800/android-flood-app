@@ -89,6 +89,8 @@ if _is_package_context():
     from backend.routers.cwc_stations import router as cwc_stations_router
     from backend.routers.news import router as news_router
     from backend.ml.bootstrap_model import ensure_model_exists            # P2
+    from backend.routers.fastapi_contracts import router as flutter_contracts_router
+
 else:
     from data_pipeline import IngestionTarget, OperationalDataPipeline, ScheduledIngestionService
     from state_severity_matrix import (
@@ -565,6 +567,8 @@ app.include_router(glofas_router)
 app.include_router(rainfall_router)
 app.include_router(cwc_stations_router)   # GET /api/cwc-stations
 app.include_router(news_router)            # GET /api/news
+app.include_router(flutter_contracts_router)  # GET /api/predict, /api/station-history, /api/critical-alerts
+
 
 
 @app.on_event("startup")
