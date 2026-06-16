@@ -1,9 +1,8 @@
-// lib/screens/live_stations_screen.dart  v3.1
+// lib/screens/live_stations_screen.dart  v3.2
 //
-// v3.1:
-//   • FIXED: city card onTap was pushing LiveStationsScreen itself instead
-//     of CityDetailScreen — now navigates correctly to city detail.
-//   • Station cards show enriched detail via CityDetailScreen.
+// v3.2:
+//   • Fix: CityDetailScreen takes cityName:String, not station:RiverStation.
+//     Pass s.city directly as cityName.
 library;
 
 import 'package:flutter/material.dart';
@@ -98,8 +97,8 @@ class LiveStationsScreen extends ConsumerWidget {
                             style: TextStyle(color: t.textSecondary)),
                         const SizedBox(height: 4),
                         Text('Pull to refresh',
-                            style:
-                                TextStyle(color: t.textSecondary, fontSize: 12)),
+                            style: TextStyle(
+                                color: t.textSecondary, fontSize: 12)),
                       ],
                     ),
                   ),
@@ -204,10 +203,11 @@ class LiveStationsScreen extends ConsumerWidget {
                           station:           rs,
                           index:             i,
                           confidencePercent: conf,
-                          // ✅ Fixed: push CityDetailScreen, not LiveStationsScreen
+                          // ✅ Fixed: use cityName: s.city (correct constructor)
                           onTap: () => Navigator.of(ctx).push(
                             MaterialPageRoute<void>(
-                              builder: (_) => CityDetailScreen(station: rs),
+                              builder: (_) =>
+                                  CityDetailScreen(cityName: s.city),
                             ),
                           ),
                         );
