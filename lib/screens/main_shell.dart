@@ -1,12 +1,12 @@
 // lib/screens/main_shell.dart  nav-v4 PREMIUM
 //
-// Changes from v3:
+// v4 changes:
 //   • Floating pill nav bar with glassmorphism + animated active indicator
 //   • Map FAB right-aligned with pulse ring animation
-//   • 3D scale+fade animated More sheet (showGeneralDialog)
-//   • 3-theme switcher chip row: Day / Night / Robo
+//   • 3D scale+slide animated More sheet (showGeneralDialog)
+//   • 2-skin switcher chip row: DeepSpace / TacticalOps (matches AppSkin enum)
 //   • More sheet uses 5-col grid with better aspect ratio (0.95)
-//   • SOS quick-launch button in nav bar (center position)
+//   • extendBody: true for edge-to-edge feel
 library;
 
 import 'dart:ui';
@@ -14,7 +14,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/river_theme.dart';
-import '../theme/theme_3d.dart';
 import '../theme/theme_registry.dart';
 import '../providers/alerts_provider.dart';
 import '../app_router.dart';
@@ -44,9 +43,9 @@ import 'admin_dashboard_screen.dart';
 import 'model_info_screen.dart';
 import 'river_monitor_screen.dart';
 
-// ─────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────────
 //  Nav item model
-// ─────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────────
 class _NavItem {
   final IconData active;
   final IconData idle;
@@ -63,9 +62,9 @@ const _navItems = [
   _NavItem(Icons.settings_rounded,       Icons.tune_rounded,               'Settings'),
 ];
 
-// ─────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────────
 //  MainShell
-// ─────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────────
 class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key});
   static const String route = Routes.shell;
@@ -79,7 +78,6 @@ class _MainShellState extends ConsumerState<MainShell>
   int _index = 0;
   final Set<String> _shownAlertIds = {};
 
-  // FAB pulse controller
   late final AnimationController _pulseCtrl = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 1800),
@@ -146,20 +144,18 @@ class _MainShellState extends ConsumerState<MainShell>
       backgroundColor: t.scaffoldBg,
       extendBody: true,
       body: IndexedStack(index: _index, children: _screens),
-      // ── Right-aligned Map FAB with pulse ring ──
       floatingActionButton: _MapFab(
-        pulseCtrl: _pulseCtrl,
+        pulseCtrl:   _pulseCtrl,
         accentColor: scheme.primary,
         onTap: () {
           HapticFeedback.mediumImpact();
-          setState(() => _index = 3); // Map tab
+          setState(() => _index = 3);
         },
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      // ── Floating pill bottom nav ──
       bottomNavigationBar: _PremiumNavBar(
         currentIndex: _index,
-        scheme: scheme,
+        scheme:       scheme,
         onTap: (i) {
           HapticFeedback.selectionClick();
           setState(() => _index = i);
@@ -169,13 +165,12 @@ class _MainShellState extends ConsumerState<MainShell>
     );
   }
 
-  // ── 3D animated More sheet ──
   void _showMoreSheet(BuildContext ctx, RiverColors t, ColorScheme scheme) {
     showGeneralDialog<void>(
-      context: ctx,
+      context:           ctx,
       barrierDismissible: true,
-      barrierLabel: 'More',
-      barrierColor: Colors.black.withOpacity(0.72),
+      barrierLabel:      'More',
+      barrierColor:      Colors.black.withOpacity(0.72),
       transitionDuration: const Duration(milliseconds: 440),
       transitionBuilder: (ctx, anim, _, child) {
         final curve = CurvedAnimation(parent: anim, curve: Curves.easeOutBack);
@@ -195,13 +190,13 @@ class _MainShellState extends ConsumerState<MainShell>
   }
 }
 
-// ─────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────────
 //  Right-aligned Map FAB with animated pulse ring
-// ─────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────────
 class _MapFab extends StatelessWidget {
   final AnimationController pulseCtrl;
-  final Color accentColor;
-  final VoidCallback onTap;
+  final Color               accentColor;
+  final VoidCallback        onTap;
   const _MapFab({required this.pulseCtrl, required this.accentColor, required this.onTap});
 
   @override
@@ -211,23 +206,20 @@ class _MapFab extends StatelessWidget {
       child: AnimatedBuilder(
         animation: pulseCtrl,
         builder: (_, __) {
-          final pulse = pulseCtrl.value;
+          final p = pulseCtrl.value;
           return Stack(
             alignment: Alignment.center,
             children: [
-              // outer pulse ring
               Container(
-                width: 56 + pulse * 12,
-                height: 56 + pulse * 12,
+                width: 56 + p * 12, height: 56 + p * 12,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: accentColor.withOpacity(0.35 - pulse * 0.25),
+                    color: accentColor.withOpacity(0.35 - p * 0.25),
                     width: 2,
                   ),
                 ),
               ),
-              // FAB core
               Container(
                 width: 52, height: 52,
                 decoration: BoxDecoration(
@@ -239,8 +231,9 @@ class _MapFab extends StatelessWidget {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: accentColor.withOpacity(0.45),
-                      blurRadius: 16, offset: const Offset(0, 6),
+                      color:      accentColor.withOpacity(0.45),
+                      blurRadius: 16,
+                      offset:     const Offset(0, 6),
                     ),
                   ],
                 ),
@@ -254,14 +247,14 @@ class _MapFab extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────────
 //  Premium Floating Pill Nav Bar
-// ─────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────────
 class _PremiumNavBar extends StatelessWidget {
-  final int         currentIndex;
-  final ColorScheme scheme;
+  final int              currentIndex;
+  final ColorScheme      scheme;
   final ValueChanged<int> onTap;
-  final VoidCallback onMoreTap;
+  final VoidCallback     onMoreTap;
 
   const _PremiumNavBar({
     required this.currentIndex,
@@ -273,7 +266,7 @@ class _PremiumNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 0, 72, 20), // right pad for FAB
+      padding: const EdgeInsets.fromLTRB(12, 0, 72, 20),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(36),
         child: BackdropFilter(
@@ -281,23 +274,22 @@ class _PremiumNavBar extends StatelessWidget {
           child: Container(
             height: 64,
             decoration: BoxDecoration(
-              color: scheme.surface.withOpacity(0.88),
+              color:        scheme.surface.withOpacity(0.88),
               borderRadius: BorderRadius.circular(36),
               border: Border.all(
-                color: scheme.primary.withOpacity(0.28),
-                width: 1.2,
+                color: scheme.primary.withOpacity(0.28), width: 1.2,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: scheme.primary.withOpacity(0.18),
-                  blurRadius: 24,
+                  color:       scheme.primary.withOpacity(0.18),
+                  blurRadius:  24,
                   spreadRadius: -2,
-                  offset: const Offset(0, 8),
+                  offset:      const Offset(0, 8),
                 ),
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.12),
+                  color:      Colors.black.withOpacity(0.12),
                   blurRadius: 12,
-                  offset: const Offset(0, 4),
+                  offset:     const Offset(0, 4),
                 ),
               ],
             ),
@@ -315,7 +307,6 @@ class _PremiumNavBar extends StatelessWidget {
                     onTap:  () => onTap(i),
                   );
                 }),
-                // More button
                 _MoreButton(scheme: scheme, onTap: onMoreTap),
               ],
             ),
@@ -327,32 +318,27 @@ class _PremiumNavBar extends StatelessWidget {
 }
 
 class _NavTap extends StatelessWidget {
-  final _NavItem    item;
-  final bool        active;
-  final ColorScheme scheme;
+  final _NavItem     item;
+  final bool         active;
+  final ColorScheme  scheme;
   final VoidCallback onTap;
   const _NavTap({required this.item, required this.active, required this.scheme, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
+      onTap:     onTap,
+      behavior:  HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 280),
-        curve: Curves.easeOutCubic,
-        padding: EdgeInsets.symmetric(
-          horizontal: active ? 14 : 10,
-          vertical: 8,
-        ),
+        curve:    Curves.easeOutCubic,
+        padding:  EdgeInsets.symmetric(horizontal: active ? 14 : 10, vertical: 8),
         decoration: active
             ? BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    scheme.primary.withOpacity(0.22),
-                    scheme.secondary.withOpacity(0.10),
-                  ],
-                ),
+                gradient: LinearGradient(colors: [
+                  scheme.primary.withOpacity(0.22),
+                  scheme.secondary.withOpacity(0.10),
+                ]),
                 borderRadius: BorderRadius.circular(22),
               )
             : null,
@@ -361,12 +347,11 @@ class _NavTap extends StatelessWidget {
           children: [
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 220),
-              transitionBuilder: (child, anim) => ScaleTransition(
-                scale: anim, child: child,
-              ),
+              transitionBuilder: (child, anim) =>
+                  ScaleTransition(scale: anim, child: child),
               child: Icon(
                 active ? item.active : item.idle,
-                key: ValueKey(active),
+                key:   ValueKey(active),
                 color: active
                     ? scheme.primary
                     : scheme.onSurface.withOpacity(0.42),
@@ -377,9 +362,9 @@ class _NavTap extends StatelessWidget {
             AnimatedDefaultTextStyle(
               duration: const Duration(milliseconds: 220),
               style: TextStyle(
-                fontSize:   active ? 9.5 : 0,
-                fontWeight: FontWeight.w700,
-                color:      scheme.primary,
+                fontSize:      active ? 9.5 : 0,
+                fontWeight:    FontWeight.w700,
+                color:         scheme.primary,
                 letterSpacing: 0.3,
               ),
               child: Text(item.label, overflow: TextOverflow.ellipsis),
@@ -399,7 +384,7 @@ class _MoreButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap:    onTap,
       behavior: HitTestBehavior.opaque,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -411,8 +396,8 @@ class _MoreButton extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [scheme.primary, scheme.secondary],
-                  begin: Alignment.topLeft,
-                  end:   Alignment.bottomRight,
+                  begin:  Alignment.topLeft,
+                  end:    Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -421,9 +406,9 @@ class _MoreButton extends StatelessWidget {
             const SizedBox(height: 2),
             Text('More',
               style: TextStyle(
-                fontSize:   9.5,
-                fontWeight: FontWeight.w700,
-                color:      scheme.primary,
+                fontSize:      9.5,
+                fontWeight:    FontWeight.w700,
+                color:         scheme.primary,
                 letterSpacing: 0.3,
               ),
             ),
@@ -434,12 +419,12 @@ class _MoreButton extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-//  3D More Sheet V4  (showGeneralDialog, premium grid)
-// ─────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────────
+//  3D More Sheet V4
+// ───────────────────────────────────────────────────────────────────────────────
 class _MoreSheetV4 extends ConsumerWidget {
-  final RiverColors  theme;
-  final ColorScheme  scheme;
+  final RiverColors theme;
+  final ColorScheme scheme;
   const _MoreSheetV4({required this.theme, required this.scheme});
 
   static const _items = [
@@ -466,8 +451,8 @@ class _MoreSheetV4 extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final t        = theme;
-    final appTheme = ref.watch(themeRegistryProvider);
+    final t           = theme;
+    final activeSkin  = ref.watch(appSkinProvider);
 
     return Align(
       alignment: Alignment.bottomCenter,
@@ -481,10 +466,10 @@ class _MoreSheetV4 extends ConsumerWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color:       scheme.primary.withOpacity(0.20),
-              blurRadius:  40,
+              color:        scheme.primary.withOpacity(0.20),
+              blurRadius:   40,
               spreadRadius: -4,
-              offset:      const Offset(0, -8),
+              offset:       const Offset(0, -8),
             ),
             BoxShadow(
               color:      Colors.black.withOpacity(0.30),
@@ -515,7 +500,7 @@ class _MoreSheetV4 extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  // Header
+                  // Header row
                   Row(
                     children: [
                       ShaderMask(
@@ -527,18 +512,19 @@ class _MoreSheetV4 extends ConsumerWidget {
                       const SizedBox(width: 10),
                       Text('All Features',
                         style: TextStyle(
-                          color:      t.textPrimary,
-                          fontSize:   17,
-                          fontWeight: FontWeight.w800,
+                          color:         t.textPrimary,
+                          fontSize:      17,
+                          fontWeight:    FontWeight.w800,
                           letterSpacing: 0.2,
-                        )),
+                        ),
+                      ),
                       const Spacer(),
-                      // ── Theme switcher chips ──
-                      _ThemeChips(current: appTheme),
+                      // ── Skin switcher chips (DeepSpace / TacticalOps) ──
+                      _SkinChips(activeSkin: activeSkin),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  // Grid
+                  // Features grid
                   GridView.count(
                     crossAxisCount:   5,
                     shrinkWrap:       true,
@@ -565,40 +551,41 @@ class _MoreSheetV4 extends ConsumerWidget {
   }
 }
 
-// ─── Theme Switcher Chips ────────────────────────────────────
-class _ThemeChips extends ConsumerWidget {
-  final AppSkin current;
-  const _ThemeChips({required this.current});
+// ─── Skin switcher chips (uses correct AppSkin enum: deepSpace / tacticalOps)
+class _SkinChips extends ConsumerWidget {
+  final AppSkin activeSkin;
+  const _SkinChips({required this.activeSkin});
+
+  static const _chips = [
+    (AppSkin.deepSpace,   '🌌', 'Space'),
+    (AppSkin.tacticalOps, '🤖', 'Tactical'),
+  ];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    const chips = [
-      (AppSkin.day,   '☀️', 'Day'),
-      (AppSkin.night, '🌙', 'Night'),
-      (AppSkin.robo,  '🤖', 'Robo'),
-    ];
+    final cs = Theme.of(context).colorScheme;
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: chips.map((c) {
-        final active = c.$1 == current;
+      children: _chips.map((c) {
+        final active = c.$1 == activeSkin;
         return GestureDetector(
           onTap: () {
             HapticFeedback.selectionClick();
-            ref.read(themeRegistryProvider.notifier).setSkin(c.$1);
+            ref.read(appSkinProvider.notifier).set(c.$1);
           },
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 250),
-            margin: const EdgeInsets.only(left: 6),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            margin:   const EdgeInsets.only(left: 6),
+            padding:  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: active
-                  ? Theme.of(context).colorScheme.primary.withOpacity(0.18)
+                  ? cs.primary.withOpacity(0.18)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: active
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.20),
+                    ? cs.primary
+                    : cs.onSurface.withOpacity(0.20),
                 width: 1,
               ),
             ),
@@ -608,8 +595,8 @@ class _ThemeChips extends ConsumerWidget {
                 fontSize:   10,
                 fontWeight: active ? FontWeight.w800 : FontWeight.w500,
                 color: active
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.55),
+                    ? cs.primary
+                    : cs.onSurface.withOpacity(0.55),
               ),
             ),
           ),
@@ -619,7 +606,7 @@ class _ThemeChips extends ConsumerWidget {
   }
 }
 
-// ─── More Tile V4 ────────────────────────────────────────────
+// ─── More Tile V4
 class _MoreTileV4 extends StatelessWidget {
   final _MI          item;
   final RiverColors  theme;
