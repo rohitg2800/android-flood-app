@@ -1,87 +1,91 @@
 // lib/services/backend_health_service.dart
-// Phase 5 — Backend Keep-Alive for Render free tier
-//
-// Render free tier sleeps after 15 minutes of inactivity, causing
-// a 50-second cold start that looks like a crash to users.
-//
-// Fix: ping /health every 14 minutes from the app when foregrounded.
-// This is a soft keep-alive — errors are silently ignored.
-// On Render paid tier, this is a no-op (server never sleeps).
+// Rewritten to use http (already in pubspec) instead of dio.
+// EnvConfig replaced with inline const so no missing import.
 library;
 
-import 'dart:async';
-import 'package:dio/dio.dart';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'env_config.dart';
+import 'package:http/http.dart' as http;
+
+const _kBackendBase = String.fromEnvironment(
+  'BACKEND_URL',
+  defaultValue: 'https://opsflood-api.onrender.com',
+);
+
+const _kHealthPath   = '/health';
+const _kPingPath     = '/ping';
+const _kStatusPath   = '/api/status';
+const _kTimeoutSec   = 10;
+
+class BackendHealthStatus {
+  final bool   isOnline;
+  final int    statusCode;
+  final String message;
+  final int    latencyMs;
+  final Map<String, dynamic> details;
+
+  const BackendHealthStatus({
+    required this.isOnline,
+    required this.statusCode,
+    required this.message,
+    required this.latencyMs,
+    this.details = const {},
+  });
+
+  @override
+  String toString() =>
+      'BackendHealthStatus(online=$isOnline, code=$statusCode, '
+      'latency=${latencyMs}ms, msg=$message)';
+}
 
 class BackendHealthService {
   BackendHealthService._();
   static final BackendHealthService instance = BackendHealthService._();
 
-  final _dio = Dio(BaseOptions(
-    connectTimeout: const Duration(seconds: 8),
-    receiveTimeout: const Duration(seconds: 8),
-    sendTimeout:    const Duration(seconds: 8),
-  ));
+  // ── Single health check ──────────────────────────────────────────────────
 
-  Timer?  _keepAliveTimer;
-  bool    _isRunning = false;
-  DateTime? _lastPingTime;
-  bool    _lastPingSuccess = false;
-
-  // ─────────────────────────────────────────────────────────────
-  /// Start the keep-alive timer. Call once from main() after Firebase init.
-  void start() {
-    if (_isRunning) return;
-    _isRunning = true;
-    // Ping immediately on start to warm up the backend
-    _ping();
-    // Then every 14 minutes (Render timeout is 15 min)
-    _keepAliveTimer = Timer.periodic(
-      const Duration(minutes: 14),
-      (_) => _ping(),
-    );
-    if (kDebugMode) {
-      debugPrint('[BackendHealth] Keep-alive started '
-          '(ping every 14 min → ${EnvConfig.backendBaseUrl}/health)');
-    }
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  void stop() {
-    _keepAliveTimer?.cancel();
-    _keepAliveTimer = null;
-    _isRunning      = false;
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  /// Manual health check — returns true if backend is reachable.
-  Future<bool> checkNow() async => _ping();
-
-  // ─────────────────────────────────────────────────────────────
-  DateTime? get lastPingTime    => _lastPingTime;
-  bool      get lastPingSuccess => _lastPingSuccess;
-
-  // ─────────────────────────────────────────────────────────────
-  Future<bool> _ping() async {
-    try {
-      final res = await _dio.get(
-        '${EnvConfig.backendBaseUrl}/health',
-        options: Options(validateStatus: (s) => s != null && s < 500),
-      );
-      _lastPingSuccess = res.statusCode != null && res.statusCode! < 400;
-      _lastPingTime    = DateTime.now();
-      if (kDebugMode) {
-        debugPrint('[BackendHealth] Ping → ${res.statusCode} '
-            '(${_lastPingSuccess ? "OK" : "DEGRADED"})');
+  Future<BackendHealthStatus> check() async {
+    final sw = Stopwatch()..start();
+    for (final path in [_kHealthPath, _kPingPath, _kStatusPath]) {
+      try {
+        final res = await http
+            .get(Uri.parse('$_kBackendBase$path'))
+            .timeout(const Duration(seconds: _kTimeoutSec));
+        sw.stop();
+        if (res.statusCode < 500) {
+          Map<String, dynamic> details = {};
+          try {
+            details = jsonDecode(res.body) as Map<String, dynamic>;
+          } catch (_) {}
+          return BackendHealthStatus(
+            isOnline:   res.statusCode < 400,
+            statusCode: res.statusCode,
+            message:    res.statusCode < 400 ? 'OK' : 'Degraded',
+            latencyMs:  sw.elapsedMilliseconds,
+            details:    details,
+          );
+        }
+      } catch (e) {
+        debugPrint('[Health] $path error: $e');
       }
-      return _lastPingSuccess;
-    } catch (_) {
-      // Never throw — a failed ping must not surface as a user-facing error.
-      _lastPingSuccess = false;
-      _lastPingTime    = DateTime.now();
-      if (kDebugMode) debugPrint('[BackendHealth] Ping failed (offline?)');
-      return false;
+    }
+    sw.stop();
+    return BackendHealthStatus(
+      isOnline:   false,
+      statusCode: 0,
+      message:    'Unreachable',
+      latencyMs:  sw.elapsedMilliseconds,
+    );
+  }
+
+  // ── Periodic polling helper ──────────────────────────────────────────────
+
+  Stream<BackendHealthStatus> poll({
+    Duration interval = const Duration(minutes: 5),
+  }) async* {
+    while (true) {
+      yield await check();
+      await Future<void>.delayed(interval);
     }
   }
 }

@@ -1,21 +1,5 @@
 // lib/services/ai_prediction_background_service.dart
-//
-// Background AI-prediction polling, rewritten to use WorkManager.
-// Drops flutter_background_service (was never in pubspec).
-//
-// Architecture
-// ────────────
-//  • WorkManager periodic task fires every 30 minutes.
-//  • Each run fetches AI severity for every live CWC Bihar station.
-//  • If severity worsens vs the last run (stored in SharedPreferences)
-//    a local notification is fired.
-//  • Public API is identical to the previous flutter_background_service
-//    version so call-sites need no changes.
-//
-// Setup (call once from main.dart before runApp)
-// ─────
-//   await AiPredictionBgService.initialise();
-//   await AiPredictionBgService.start();
+// Fixed: ExistingWorkPolicy → ExistingPeriodicWorkPolicy
 library;
 
 import 'dart:convert';
@@ -25,10 +9,6 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Constants
-// ─────────────────────────────────────────────────────────────────────────────
 
 const _kTaskName       = 'aiPredictionPoll';
 const _kTaskUniqueName = 'ai_prediction_periodic';
@@ -43,10 +23,6 @@ const String _backendBase = String.fromEnvironment(
   defaultValue: 'https://opsflood-api.onrender.com',
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// WorkManager top-level callback
-// ─────────────────────────────────────────────────────────────────────────────
-
 @pragma('vm:entry-point')
 void aiPredictionCallbackDispatcher() {
   Workmanager().executeTask((taskName, inputData) async {
@@ -56,20 +32,15 @@ void aiPredictionCallbackDispatcher() {
     } catch (e) {
       debugPrint('[AiBg] poll error: $e');
     }
-    return true; // always succeed to avoid WM retry storms
+    return true;
   });
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Public API
-// ─────────────────────────────────────────────────────────────────────────────
 
 class AiPredictionBgService {
   AiPredictionBgService._();
 
   static const int kPollIntervalMinutes = 30;
 
-  /// Call once from main.dart — initialises WorkManager + notification channel.
   static Future<void> initialise() async {
     await _initNotifications();
     await Workmanager().initialize(
@@ -78,13 +49,12 @@ class AiPredictionBgService {
     );
   }
 
-  /// Enqueue the periodic poll task (idempotent — safe to call multiple times).
   static Future<void> start() async {
     await Workmanager().registerPeriodicTask(
       _kTaskUniqueName,
       _kTaskName,
       frequency:          Duration(minutes: kPollIntervalMinutes),
-      existingWorkPolicy: ExistingWorkPolicy.keep,
+      existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
       constraints: Constraints(
         networkType:           NetworkType.connected,
         requiresBatteryNotLow: false,
@@ -95,19 +65,13 @@ class AiPredictionBgService {
     debugPrint('[AiBg] periodic poll registered (${kPollIntervalMinutes} min)');
   }
 
-  /// Cancel the periodic task.
   static Future<void> stop() async {
     await Workmanager().cancelByUniqueName(_kTaskUniqueName);
     debugPrint('[AiBg] periodic poll cancelled');
   }
 
-  /// WorkManager tasks are fire-and-forget; always returns false.
   static Future<bool> get isRunning async => false;
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Notifications
-// ─────────────────────────────────────────────────────────────────────────────
 
 final _notif = FlutterLocalNotificationsPlugin();
 
@@ -138,29 +102,21 @@ Future<void> _showAlert({
   bool highPriority = false,
 }) async {
   await _notif.show(
-    id,
-    title,
-    body,
+    id, title, body,
     NotificationDetails(
       android: AndroidNotificationDetails(
-        _kChannelId,
-        _kChannelName,
+        _kChannelId, _kChannelName,
         importance:       highPriority ? Importance.high : Importance.defaultImportance,
         priority:         highPriority ? Priority.high   : Priority.defaultPriority,
         icon:             '@mipmap/ic_launcher',
         styleInformation: BigTextStyleInformation(body),
       ),
       iOS: const DarwinNotificationDetails(
-        presentAlert: true,
-        presentSound: true,
+        presentAlert: true, presentSound: true,
       ),
     ),
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Poll logic
-// ─────────────────────────────────────────────────────────────────────────────
 
 const List<String> _kSeedStations = [
   'Gandhighat', 'Hathidah', 'Digha Ghat', 'Gandhi Setu',
@@ -181,8 +137,6 @@ Future<void> _pollAll() async {
   List<String> stations = await _fetchLiveStations();
   if (stations.isEmpty) stations = _kSeedStations;
 
-  debugPrint('[AiBg] polling ${stations.length} stations');
-
   int alertsFired = 0;
   for (int i = 0; i < stations.length; i++) {
     final site = stations[i];
@@ -190,19 +144,16 @@ Future<void> _pollAll() async {
       final pred = await _fetchPrediction(site);
       if (pred == null) continue;
 
-      final newSev = _severity(
-        pred['currentLevel']!,
-        pred['dangerLevel']!,
-      );
+      final newSev = _severity(pred['currentLevel']!, pred['dangerLevel']!);
       final oldSev = lastSeverity[site];
 
       if (oldSev != null && _sevRank(newSev) > _sevRank(oldSev)) {
         final gap = (pred['dangerLevel']! - pred['currentLevel']!).abs();
         await _showAlert(
           id:           _kAlertBaseId + i,
-          title:        '⚠ $site — $newSev',
+          title:        '\u26a0 $site \u2014 $newSev',
           body:         '${_sevEmoji(newSev)} Risk escalated '
-                        '$oldSev → $newSev.  '
+                        '$oldSev \u2192 $newSev.  '
                         '${gap < 0.5
                             ? 'Only ${gap.toStringAsFixed(2)} m to danger!'
                             : 'Gap: ${gap.toStringAsFixed(2)} m'}',
@@ -218,16 +169,8 @@ Future<void> _pollAll() async {
   }
 
   await prefs.setString(_kPrefKey, jsonEncode(lastSeverity));
-
-  final now = DateTime.now();
-  final ts  = '${now.hour.toString().padLeft(2, '0')}:'
-              '${now.minute.toString().padLeft(2, '0')}';
-  debugPrint('[AiBg] done — $alertsFired alert(s) · Last sync $ts');
+  debugPrint('[AiBg] done — $alertsFired alert(s)');
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// HTTP helpers
-// ─────────────────────────────────────────────────────────────────────────────
 
 Future<List<String>> _fetchLiveStations() async {
   try {
@@ -246,7 +189,6 @@ Future<List<String>> _fetchLiveStations() async {
 }
 
 Future<Map<String, double>?> _fetchPrediction(String station) async {
-  // 1. Backend LSTM
   try {
     final res = await http
         .get(Uri.parse('$_backendBase/api/predict/$station'))
@@ -260,7 +202,6 @@ Future<Map<String, double>?> _fetchPrediction(String station) async {
     }
   } catch (_) {}
 
-  // 2. Befiqr CWC fallback
   try {
     final res = await http
         .get(Uri.parse('https://befiqr.in/cwc-ffs/bihar'))
@@ -283,13 +224,8 @@ Future<Map<String, double>?> _fetchPrediction(String station) async {
       }
     }
   } catch (_) {}
-
   return null;
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Severity helpers
-// ─────────────────────────────────────────────────────────────────────────────
 
 String _severity(double level, double danger) {
   if (danger <= 0) return 'LOW';
@@ -308,8 +244,8 @@ int _sevRank(String s) => switch (s) {
 };
 
 String _sevEmoji(String s) => switch (s) {
-  'CRITICAL' => '🔴',
-  'SEVERE'   => '🟠',
-  'MODERATE' => '🟡',
-  _          => '🟢',
+  'CRITICAL' => '\ud83d\udd34',
+  'SEVERE'   => '\ud83d\udfe0',
+  'MODERATE' => '\ud83d\udfe1',
+  _          => '\ud83d\udfe2',
 };

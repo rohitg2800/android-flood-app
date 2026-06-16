@@ -1,11 +1,7 @@
-// lib/services/background_service.dart  Step 4.5
-// Completes the WorkManager stub with a real 15-minute periodic sync task.
-// On each run:
-//   1. Fetches /api/live-levels
-//   2. Saves result to LocalCacheService (Hive)
-//   3. Appends level history for each station
-//   4. Evaluates AlertEngine against stored subscriptions
-//   5. Fires local notifications if thresholds crossed
+// lib/services/background_service.dart  Step 4.6
+// Fixed:
+//   • evaluate() called with positional args (not named)
+//   • ExistingWorkPolicy → ExistingPeriodicWorkPolicy
 
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
@@ -23,8 +19,6 @@ const _kTaskName       = 'floodSyncTask';
 const _kTaskUniqueName = 'flood_sync_periodic';
 const _kSubBoxName     = 'alert_subscriptions';
 
-// ── Top-level callback (required by WorkManager) ────────────────────────────
-
 @pragma('vm:entry-point')
 void callbackDispatcher() {
   Workmanager().executeTask((taskName, inputData) async {
@@ -33,13 +27,12 @@ void callbackDispatcher() {
       await LocalCacheService.instance.init();
       await AlertEngine.instance.init();
 
-      // 1. Fetch live levels
       final url  = '${EnvConfig.backendBaseUrl}/api/live-levels';
       final resp = await http
           .get(Uri.parse(url))
           .timeout(const Duration(seconds: 20));
 
-      if (resp.statusCode != 200) return true; // non-fatal
+      if (resp.statusCode != 200) return true;
 
       final decoded = jsonDecode(resp.body);
       List<dynamic> list;
@@ -55,36 +48,29 @@ void callbackDispatcher() {
           .map((e) => FloodData.fromJson(e as Map<String, dynamic>))
           .toList();
 
-      // 2. Persist to Hive
       await LocalCacheService.instance.saveGaugeList(gauges);
 
-      // 3. Append history
       for (final g in gauges) {
         await LocalCacheService.instance
             .appendGaugeHistory(g.stationId, g.currentLevel);
       }
 
-      // 4 & 5. Evaluate alerts
       if (Hive.isBoxOpen(_kSubBoxName)) {
         final box  = Hive.box<AlertSubscription>(_kSubBoxName);
         final subs = box.values.toList();
         if (subs.isNotEmpty) {
-          await AlertEngine.instance.evaluate(
-            gauges:        gauges,
-            subscriptions: subs,
-          );
+          // positional args — (gauges, subscriptions)
+          await AlertEngine.instance.evaluate(gauges, subs);
         }
       }
 
       return true;
     } catch (e) {
       debugPrint('[BG] sync error: $e');
-      return true; // always return true to avoid WorkManager retry storms
+      return true;
     }
   });
 }
-
-// ── Registration helper (call from main.dart) ────────────────────────────────
 
 class BackgroundSyncService {
   static Future<void> init() async {
@@ -103,7 +89,7 @@ class BackgroundSyncService {
         networkType:          NetworkType.connected,
         requiresBatteryNotLow: false,
       ),
-      existingWorkPolicy: ExistingWorkPolicy.keep,
+      existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
       backoffPolicy:      BackoffPolicy.exponential,
       backoffPolicyDelay: const Duration(minutes: 5),
     );

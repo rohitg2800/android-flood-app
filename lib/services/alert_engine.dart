@@ -1,24 +1,12 @@
-// lib/services/alert_engine.dart  v3.0
+// lib/services/alert_engine.dart  v4.0
 //
-// v3.0 (15 Jun 2026) — P0: add FloodAlert model + AlertSeverity + evaluateMerged
-//
-//   PROBLEM: FloodAlert, AlertSeverity, AlertSeverityExt, AlertType, AlertTypeExt,
-//   and AlertEngine.evaluateMerged() were referenced/exported by
-//   alerts_provider.dart and alert_provider.dart but were never defined anywhere.
-//   The app compiled (dynamic analysis missed it) but crashed at runtime the
-//   moment alertsProvider was first read.
-//
-//   FIX:
-//     • FloodAlert — immutable value class; all fields typed (no dynamic).
-//       thresholdLevel = the effective level that triggered this alert
-//       (may be warningLevel, dangerLevel, or customThreshold).
-//     • AlertSeverity + .priority extension for deterministic sort order.
-//     • AlertType enum (BREACH, APPROACHING, FORECAST, CUSTOM).
-//     • AlertEngine.evaluateMerged(List<RiverStation>) — synchronous,
-//       Riverpod-Provider-safe. Produces one FloodAlert per breaching station.
-//       Sort: severity.priority DESC then issuedAt DESC (same as alert_provider).
-//     • Async evaluate() (push-notification path) retained unchanged from v2.0.
-
+// v4.0 (16 Jun 2026)
+//   • AlertType expanded: 10 service-facing constants added.
+//     Old 4 (breach/approaching/forecast/custom) kept as aliases so
+//     evaluateMerged() code compiles unchanged.
+//   • FloodAlert gets optional station/rateOfRise/rainfall24h fields so
+//     alert_share_service, fcm_templates, excel_export_service compile.
+//   • AlertTypeExt.label covers all 14 values.
 library;
 
 import 'dart:convert';
@@ -36,7 +24,6 @@ import '../models/alert_subscription.dart';
 enum AlertSeverity { info, warning, critical, emergency }
 
 extension AlertSeverityExt on AlertSeverity {
-  /// Higher = shown first in sorted lists.
   int get priority {
     switch (this) {
       case AlertSeverity.emergency: return 4;
@@ -57,41 +44,70 @@ extension AlertSeverityExt on AlertSeverity {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AlertType
+// AlertType  — 10 service-facing constants + 4 legacy aliases
 // ─────────────────────────────────────────────────────────────────────────────
-enum AlertType { breach, approaching, forecast, custom }
+enum AlertType {
+  // ── Service-facing (used by alert_share_service, fcm_templates, etc.) ──
+  levelAboveHfl,
+  levelAboveDanger,
+  levelAboveWarning,
+  rapidRise,
+  forecastDanger24h,
+  forecastDanger48h,
+  rainfallExtreme,
+  rainfallHeavy,
+  upstreamCritical,
+  multiRiverAlert,
+  // ── Legacy (used by evaluateMerged internally) ──
+  breach,
+  approaching,
+  forecast,
+  custom,
+}
 
 extension AlertTypeExt on AlertType {
-  String get label {
-    switch (this) {
-      case AlertType.breach:      return 'BREACH';
-      case AlertType.approaching: return 'APPROACHING';
-      case AlertType.forecast:    return 'FORECAST';
-      case AlertType.custom:      return 'CUSTOM';
-    }
-  }
+  String get label => switch (this) {
+    AlertType.levelAboveHfl      => 'ABOVE HFL',
+    AlertType.levelAboveDanger   => 'ABOVE DANGER',
+    AlertType.levelAboveWarning  => 'ABOVE WARNING',
+    AlertType.rapidRise          => 'RAPID RISE',
+    AlertType.forecastDanger24h  => 'FORECAST 24H',
+    AlertType.forecastDanger48h  => 'FORECAST 48H',
+    AlertType.rainfallExtreme    => 'EXTREME RAINFALL',
+    AlertType.rainfallHeavy      => 'HEAVY RAINFALL',
+    AlertType.upstreamCritical   => 'UPSTREAM CRITICAL',
+    AlertType.multiRiverAlert    => 'MULTI-RIVER',
+    AlertType.breach             => 'BREACH',
+    AlertType.approaching        => 'APPROACHING',
+    AlertType.forecast           => 'FORECAST',
+    AlertType.custom             => 'CUSTOM',
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// FloodAlert  — immutable value class (no dynamic fields)
+// FloodAlert  — immutable value class
 // ─────────────────────────────────────────────────────────────────────────────
 class FloodAlert {
-  final String        id;             // stationName_severity_dayOfYear
-  final String        stationName;    // e.g. "Birpur (CWC)"
-  final String        title;          // e.g. "Birpur — CRITICAL"
-  final String        river;          // e.g. "Kosi"
-  final String        district;       // e.g. "Supaul"
-  final double        currentLevel;   // current gauge reading (m)
-  final double        dangerLevel;    // CWC danger level (m)
-  final double        warningLevel;   // CWC warning level (m)
-  final double        hfl;            // highest flood level (m)
-  /// The threshold that was breached to generate this alert.
-  /// Could be warningLevel, dangerLevel, or a custom subscription threshold.
+  final String        id;
+  final String        stationName;
+  final String        title;
+  final String        river;
+  final String        district;
+  final double        currentLevel;
+  final double        dangerLevel;
+  final double        warningLevel;
+  final double        hfl;
   final double        thresholdLevel;
   final AlertSeverity severity;
   final AlertType     type;
   final DateTime      issuedAt;
   final String        message;
+
+  // Optional fields used by alert_share_service / fcm_templates /
+  // excel_export_service
+  final String?   station;      // alias for stationName (some callers use this)
+  final double?   rateOfRise;   // m/h
+  final double?   rainfall24h;  // mm/24h
 
   const FloodAlert({
     required this.id,
@@ -108,14 +124,14 @@ class FloodAlert {
     required this.type,
     required this.issuedAt,
     required this.message,
+    this.station,
+    this.rateOfRise,
+    this.rainfall24h,
   });
 
-  /// Convenience: % of danger level (0.0–2.0+)
-  double get pctOfDanger => dangerLevel > 0 ? currentLevel / dangerLevel : 0.0;
-
-  /// Convenience: % of the effective threshold (used for progress bar)
-  double get pctOfThreshold =>
-      thresholdLevel > 0 ? (currentLevel / thresholdLevel).clamp(0.0, 2.0) : 0.0;
+  double get pctOfDanger    => dangerLevel    > 0 ? currentLevel / dangerLevel    : 0.0;
+  double get pctOfThreshold => thresholdLevel > 0
+      ? (currentLevel / thresholdLevel).clamp(0.0, 2.0) : 0.0;
 
   @override
   bool operator ==(Object other) =>
@@ -140,16 +156,6 @@ class AlertEngine {
   bool _initialised = false;
 
   // ── evaluateMerged ─────────────────────────────────────────────────────────
-  //
-  // Synchronous, Riverpod-Provider-safe.
-  // Produces one FloodAlert per station that is at or above warningLevel.
-  // Severity tiers:
-  //   >= hfl * 0.98            → emergency
-  //   >= dangerLevel           → critical
-  //   >= dangerLevel * 0.85    → warning  (approaching danger)
-  //   >= warningLevel          → info
-  //
-  // Returns list sorted by severity.priority DESC then issuedAt DESC.
   List<FloodAlert> evaluateMerged(List<RiverStation> stations) {
     final now    = DateTime.now();
     final alerts = <FloodAlert>[];
@@ -160,56 +166,56 @@ class AlertEngine {
       final dl  = s.danger;
       final hfl = s.hfl;
 
-      // Only alert if at or above warning level
       if (wl <= 0 || cl < wl) continue;
 
-      // Determine severity + effective threshold
       final AlertSeverity sev;
       final double        threshold;
-      final AlertType     type;
+      final AlertType     aType;
 
       if (hfl > 0 && cl >= hfl * 0.98) {
         sev       = AlertSeverity.emergency;
         threshold = hfl;
-        type      = AlertType.breach;
+        aType     = AlertType.levelAboveHfl;
       } else if (dl > 0 && cl >= dl) {
         sev       = AlertSeverity.critical;
         threshold = dl;
-        type      = AlertType.breach;
+        aType     = AlertType.levelAboveDanger;
       } else if (dl > 0 && cl >= dl * 0.85) {
         sev       = AlertSeverity.warning;
         threshold = dl;
-        type      = AlertType.approaching;
+        aType     = AlertType.levelAboveWarning;
       } else {
         sev       = AlertSeverity.info;
         threshold = wl;
-        type      = AlertType.approaching;
+        aType     = AlertType.levelAboveWarning;
       }
 
       final dayOfYear = now.difference(DateTime(now.year)).inDays;
       final id        = '${s.station}_${sev.name}_$dayOfYear';
 
-      final pct    = threshold > 0 ? cl / threshold * 100 : 0.0;
-      final dlStr  = dl > 0 ? dl.toStringAsFixed(2) : '—';
-      final message = '${s.station} · ${s.river} · '
+      final pct     = threshold > 0 ? cl / threshold * 100 : 0.0;
+      final dlStr   = dl > 0 ? dl.toStringAsFixed(2) : '—';
+      final msg     = '${s.station} · ${s.river} · '
           '${cl.toStringAsFixed(2)} m '
-          '(${pct.toStringAsFixed(0)}% of ${sev == AlertSeverity.info ? "WL" : "DL"} $dlStr m)';
+          '(${pct.toStringAsFixed(0)}% of '
+          '${sev == AlertSeverity.info ? "WL" : "DL"} $dlStr m)';
 
       alerts.add(FloodAlert(
         id:             id,
         stationName:    s.station,
+        station:        s.station,
         title:          '${s.city} — ${sev.label}',
         river:          s.river,
-        district:       s.city,   // RiverStation.city is the district/city name
+        district:       s.city,
         currentLevel:   cl,
         dangerLevel:    dl,
         warningLevel:   wl,
         hfl:            hfl,
         thresholdLevel: threshold,
         severity:       sev,
-        type:           type,
+        type:           aType,
         issuedAt:       now,
-        message:        message,
+        message:        msg,
       ));
     }
 
@@ -221,7 +227,7 @@ class AlertEngine {
     return alerts;
   }
 
-  // ── async evaluate (push-notification path, unchanged from v2.0) ───────────
+  // ── async evaluate ─────────────────────────────────────────────────────────
   Future<void> init() async {
     if (_initialised) return;
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
