@@ -4,13 +4,11 @@
 library;
 
 import 'dart:convert';
+import '../config/app_config.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
-const _kBackendBase = String.fromEnvironment(
-  'BACKEND_URL',
-  defaultValue: 'https://opsflood-api.onrender.com',
-);
+// Base URL via AppConfig.baseUrl
 
 const _kHealthPath   = '/health';
 const _kPingPath     = '/ping';
@@ -49,7 +47,7 @@ class BackendHealthService {
     for (final path in [_kHealthPath, _kPingPath, _kStatusPath]) {
       try {
         final res = await http
-            .get(Uri.parse('$_kBackendBase$path'))
+            .get(Uri.parse('${AppConfig.baseUrl}$path'))
             .timeout(const Duration(seconds: _kTimeoutSec));
         sw.stop();
         if (res.statusCode < 500) {

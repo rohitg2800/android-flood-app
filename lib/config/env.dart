@@ -21,9 +21,9 @@ class Env {
   /// In development it can be overridden at build time:
   /// which is wired via --dart-define=EQUINOX_BH_BASE_URL at build time.
   static String get backendBaseUrl {
-    if (isDebug && AppConfig.baseUrl == 'https://equinox-bh.onrender.com') {
+    if (isDebug && AppConfig.baseUrl == 'https://android-flood-app-production.up.railway.app') {
       return 'http://localhost:8000';
     }
-    return AppConfig.baseUrl; // 'https://equinox-bh.onrender.com'
+    return AppConfig.baseUrl; 
   }
 }

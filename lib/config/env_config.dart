@@ -18,15 +18,15 @@
 library;
 
 import 'package:flutter/foundation.dart';
+import 'app_config.dart';
 
 class EnvConfig {
   EnvConfig._();
 
   // Base URL for the OpsFlood backend (Railway deployment).
   // This is NOT a secret — it's just an endpoint URL.
-  static const String backendBaseUrl =
-      String.fromEnvironment('BACKEND_BASE_URL',
-          defaultValue: 'https://opsflood-backend.up.railway.app');
+  // Delegates to AppConfig — single source of truth.
+  static String get backendBaseUrl => AppConfig.baseUrl;
 
   // News API key is proxied via backend — never stored on device.
   // Use GET /api/news instead of calling NewsAPI directly.

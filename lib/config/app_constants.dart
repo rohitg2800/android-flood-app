@@ -1,3 +1,5 @@
+import 'app_config.dart';
+
 class AppConstants {
   // ── Flood level defaults ──────────────────────────────────────────────────
   static const double defaultWarningLevel = 8.0;
@@ -9,11 +11,8 @@ class AppConstants {
     'Gorakhpur', 'Gaya', 'Bhagalpur', 'Munger',
   ];
 
-  // ── Base URL
-  static const String baseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'https://opsflood-api.onrender.com',
-  );
+  // ── Base URL — single source of truth: delegates to AppConfig ─────────────
+  static String get baseUrl => AppConfig.baseUrl;
 
   // ── HTTP client defaults ──────────────────────────────────────────────────
   static const Duration defaultTimeout = Duration(seconds: 30);

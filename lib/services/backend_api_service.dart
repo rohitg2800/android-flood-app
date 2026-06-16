@@ -15,14 +15,12 @@
 //     bulk ML severity endpoint; used by map/list screens directly
 
 import 'dart:convert';
+import '../config/app_config.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 // ── Backend URL ────────────────────────────────────────────────────────────────
-const String _kBackendBase = String.fromEnvironment(
-  'BACKEND_URL',
-  defaultValue: 'https://android-flood-app-production.up.railway.app',
-);
+// Base URL via AppConfig.baseUrl
 
 // ── Timeouts ──────────────────────────────────────────────────────────────────
 const Duration _kConnectTimeout = Duration(seconds: 30);
@@ -33,7 +31,7 @@ class BackendApiService {
   BackendApiService._();
   static final BackendApiService instance = BackendApiService._();
 
-  String get baseUrl => _kBackendBase;
+  String get baseUrl => AppConfig.baseUrl;
 
   // ─────────────────────────────────────────────────────────────────────────
   // PULL endpoints
@@ -41,7 +39,7 @@ class BackendApiService {
 
   // GET /api/live-levels?state=...
   Future<List<Map<String, dynamic>>> fetchLiveLevels(String state) async {
-    final uri = Uri.parse('$_kBackendBase/api/live-levels'
+    final uri = Uri.parse('${AppConfig.baseUrl}/api/live-levels'
         '?state=${Uri.encodeComponent(state)}');
     _log('GET $uri');
     final res = await http.get(uri).timeout(_kConnectTimeout);
@@ -63,7 +61,7 @@ class BackendApiService {
     int limit = 300,
   }) async {
     final uri = Uri.parse(
-        '$_kBackendBase/api/live-levels?with_severity=true&limit=$limit');
+        '${AppConfig.baseUrl}/api/live-levels?with_severity=true&limit=$limit');
     _log('GET $uri');
     final res = await http.get(uri).timeout(_kConnectTimeout);
     _assertOk(res, 'live-levels-severity');
@@ -107,7 +105,7 @@ class BackendApiService {
     if (river        != null) params['river']          = river;
     if (minRiskScore != null) params['min_risk_score'] = '$minRiskScore';
 
-    final uri = Uri.parse('$_kBackendBase/api/river-severity')
+    final uri = Uri.parse('${AppConfig.baseUrl}/api/river-severity')
         .replace(queryParameters: params);
     _log('GET $uri');
     final res = await http.get(uri).timeout(_kConnectTimeout);
@@ -123,7 +121,7 @@ class BackendApiService {
     required List<double> lons,
     required List<String> cityKeys,
   }) async {
-    final uri = Uri.parse('$_kBackendBase/api/glofas'
+    final uri = Uri.parse('${AppConfig.baseUrl}/api/glofas'
         '?lats=${lats.join(',')}&lons=${lons.join(',')}&cities=${cityKeys.join(',').toLowerCase()}');
     _log('GET $uri');
     final res = await http.get(uri).timeout(_kConnectTimeout);
@@ -139,7 +137,7 @@ class BackendApiService {
     required List<double> lons,
     required List<String> cityKeys,
   }) async {
-    final uri = Uri.parse('$_kBackendBase/api/rainfall'
+    final uri = Uri.parse('${AppConfig.baseUrl}/api/rainfall'
         '?lats=${lats.join(',')}&lons=${lons.join(',')}&cities=${cityKeys.join(',').toLowerCase()}');
     _log('GET $uri');
     final res = await http.get(uri).timeout(_kConnectTimeout);
@@ -151,7 +149,7 @@ class BackendApiService {
 
   // GET /api/news?state=...
   Future<List<Map<String, dynamic>>> fetchNews({required String state}) async {
-    final uri = Uri.parse('$_kBackendBase/api/news'
+    final uri = Uri.parse('${AppConfig.baseUrl}/api/news'
         '?state=${Uri.encodeComponent(state)}');
     _log('GET $uri');
     final res = await http.get(uri).timeout(_kConnectTimeout);
@@ -169,7 +167,7 @@ class BackendApiService {
     required List<String> codes,
   }) async {
     if (codes.isEmpty) return [];
-    final uri = Uri.parse('$_kBackendBase/api/cwc-stations'
+    final uri = Uri.parse('${AppConfig.baseUrl}/api/cwc-stations'
         '?codes=${codes.join(',')}');
     _log('GET $uri');
     final res = await http.get(uri).timeout(_kConnectTimeout);
@@ -181,7 +179,7 @@ class BackendApiService {
 
   // GET /health
   Future<Map<String, dynamic>> checkHealth() async {
-    final uri = Uri.parse('$_kBackendBase/health');
+    final uri = Uri.parse('${AppConfig.baseUrl}/health');
     final res  = await http.get(uri).timeout(_kConnectTimeout);
     _assertOk(res, 'health');
     return jsonDecode(res.body) as Map<String, dynamic>;
@@ -203,7 +201,7 @@ class BackendApiService {
   // ── internal POST helper ───────────────────────────────────────────────────
   Future<Map<String, dynamic>> _post(
       String path, Map<String, dynamic> payload) async {
-    final uri = Uri.parse('$_kBackendBase/api/$path');
+    final uri = Uri.parse('${AppConfig.baseUrl}/api/$path');
     _log('POST $uri (${jsonEncode(payload).length} bytes)');
     final res = await http
         .post(uri,

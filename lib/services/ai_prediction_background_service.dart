@@ -1,6 +1,7 @@
 // lib/services/ai_prediction_background_service.dart
 // Fixed: ExistingWorkPolicy → ExistingPeriodicWorkPolicy
 library;
+import '../config/app_config.dart';
 
 import 'dart:convert';
 
@@ -18,10 +19,7 @@ const _kFgNotifId      = 9000;
 const _kAlertBaseId    = 9100;
 const _kPrefKey        = 'ai_bg_last_severity';
 
-const String _backendBase = String.fromEnvironment(
-  'BACKEND_URL',
-  defaultValue: 'https://opsflood-api.onrender.com',
-);
+// Base URL via AppConfig.baseUrl
 
 @pragma('vm:entry-point')
 void aiPredictionCallbackDispatcher() {
@@ -191,7 +189,7 @@ Future<List<String>> _fetchLiveStations() async {
 Future<Map<String, double>?> _fetchPrediction(String station) async {
   try {
     final res = await http
-        .get(Uri.parse('$_backendBase/api/predict/$station'))
+        .get(Uri.parse('${AppConfig.baseUrl}/api/predict/$station'))
         .timeout(const Duration(seconds: 18));
     if (res.statusCode == 200) {
       final j = jsonDecode(res.body) as Map<String, dynamic>;

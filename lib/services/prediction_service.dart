@@ -10,7 +10,7 @@
 /// which is fetched from /api/state-severity at startup (1-hour TTL).
 ///
 /// FIX: base URL now uses AppConfig.baseUrl (railway.app) instead of
-/// AppConstants.baseUrl (opsflood-api.onrender.com) — consistent with
+/// AppConstants.baseUrl (now delegates to AppConfig.baseUrl) — consistent with
 /// every other service in the app.
 library;
 
