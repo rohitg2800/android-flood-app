@@ -26,6 +26,7 @@ class PulseMarker extends StatelessWidget {
   final AnimationController ctrl;
   final String? level;
 
+  /// v2.2: ensures pulse frequency is animation-controller driven.
   const PulseMarker({
     super.key,
     required this.dangerClass,
@@ -119,6 +120,7 @@ class AmberPulseMarker extends StatelessWidget {
   final AnimationController ctrl;
   final String? level;
 
+  /// v2.2: Uses theme risk tokens.
   const AmberPulseMarker({
     super.key,
     required this.ctrl,

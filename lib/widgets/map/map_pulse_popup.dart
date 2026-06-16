@@ -9,6 +9,7 @@ import 'map_risk_helpers.dart';
 // ── RiverPulsePopup ───────────────────────────────────────────────────────────
 class RiverPulsePopup extends StatelessWidget {
   final RiverStation station;
+  /// v2.2: bottom sheet upgraded with 7-day mini sparkline + Semantics.
   const RiverPulsePopup({super.key, required this.station});
 
   @override
@@ -117,17 +118,44 @@ class RiverPulsePopup extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
 
-                  // Metric row 2: metadata
+                  // Metric row 2: metadata + 7-day trend sparkline
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Last 7 days',
+                              style: TextStyle(
+                                color: rc.textSecondary,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            MiniSparkline7d(
+                              stroke: color,
+                              values: _mock7DaySeries(s),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
                   Row(
                     children: [
                       MetricTile(
-                          label: 'Trend',
-                          value: s.trend ?? '—',
-                          color: s.trend == 'Rising'
-                              ? const Color(0xFFD32F2F)
-                              : s.trend == 'Falling'
-                                  ? const Color(0xFF388E3C)
-                                  : rc.textSecondary),
+                        label: 'Trend',
+                        value: s.trend ?? '—',
+                        color: s.trend == 'Rising'
+                            ? const Color(0xFFD32F2F)
+                            : s.trend == 'Falling'
+                                ? const Color(0xFF388E3C)
+                                : rc.textSecondary,
+                      ),
                       const SizedBox(width: 8),
                       MetricTile(
                           label: 'Source',
@@ -201,6 +229,116 @@ class RiverPulsePopup extends StatelessWidget {
 }
 
 // ── MetricTile ────────────────────────────────────────────────────────────────
+// ── MiniSparkline7d + mock 7-day generator ───────────────────────────────
+class MiniSparkline7d extends StatelessWidget {
+  final List<double> values;
+  final Color stroke;
+  const MiniSparkline7d({super.key, required this.values, required this.stroke});
+
+  @override
+  Widget build(BuildContext context) {
+    final v = values;
+    if (v.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final minV = v.reduce((a, b) => a < b ? a : b);
+    final maxV = v.reduce((a, b) => a > b ? a : b);
+    final range = (maxV - minV).abs() < 1e-9 ? 1.0 : (maxV - minV).abs();
+
+    return SizedBox(
+      height: 42,
+      width: double.infinity,
+      child: RepaintBoundary(
+        child: CustomPaint(
+          painter: _MiniSparklinePainter(
+            values: v,
+            minV: minV,
+            range: range,
+            stroke: stroke,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MiniSparklinePainter extends CustomPainter {
+  final List<double> values;
+  final double minV;
+  final double range;
+  final Color stroke;
+
+  _MiniSparklinePainter({
+    required this.values,
+    required this.minV,
+    required this.range,
+    required this.stroke,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (values.length < 2) return;
+
+    final w = size.width;
+    final h = size.height;
+
+    final path = Path();
+    for (int i = 0; i < values.length; i++) {
+      final t = values.length == 1 ? 0.0 : i / (values.length - 1);
+      final n = (values[i] - minV) / range;
+      final x = t * w;
+      final y = (1 - n) * h;
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+
+    final strokePaint = Paint()
+      ..color = stroke.withValues(alpha: 0.95)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawPath(path, strokePaint);
+
+    final fill = Path.from(path);
+    fill.lineTo(path.getBounds().right, h);
+    fill.lineTo(path.getBounds().left, h);
+    fill.close();
+
+    canvas.drawPath(
+      fill,
+      Paint()..color = stroke.withValues(alpha: 0.10),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _MiniSparklinePainter old) =>
+      old.values != values || old.stroke != stroke || old.minV != minV || old.range != range;
+}
+
+List<double> _mock7DaySeries(RiverStation s) {
+  // Placeholder until real 7-day telemetry series is wired.
+  // Shape: current +/- noise shaped by risk.
+  final base = s.current;
+  final riskBoost = switch (s.dangerClass) {
+    DangerClass.normal => 0.02,
+    DangerClass.aboveNormal => 0.06,
+    DangerClass.severe => 0.10,
+    DangerClass.extreme => 0.14,
+  };
+
+  final vals = <double>[];
+  for (int i = 0; i < 7; i++) {
+    final drift = (i - 3) / 6.0; // [-0.5..0.5]
+    final shaped = base * (1 + drift * riskBoost);
+    vals.add((shaped).clamp(0.0, double.maxFinite));
+  }
+  return vals;
+}
+
 class MetricTile extends StatelessWidget {
   final String label;
   final String value;
