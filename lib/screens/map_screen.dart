@@ -1,7 +1,8 @@
 // lib/screens/map_screen.dart
-// MapScreen — Bihar Flood Command Center Map v9.1
-// v9.1: _isCritical now includes aboveNormal (WARNING) stations → amber pulse.
-//       AboveNormal stations rendered with AmberPulseMarker (softer amber ring).
+// MapScreen — Bihar Flood Command Center Map v9.2
+// v9.2: Removed broken PulseMarker/AmberPulseMarker/StaticMarker calls
+//       (widgets never existed). Markers now rendered via MapMarkers widget
+//       which self-manages animation. Added onStationSelected to MapTopBar.
 library;
 
 import 'package:flutter/material.dart';
@@ -37,25 +38,11 @@ class _MapScreenState extends ConsumerState<MapScreen>
   bool _showLegend = true;
   bool _showDrawer = false;
 
-  // One AnimationController per pulsing station, keyed by station name.
-  // Covers extreme, severe AND aboveNormal now.
-  final Map<String, AnimationController> _pulseCtrl = {};
-
   @override
   void dispose() {
     _mapController.dispose();
-    for (final c in _pulseCtrl.values) c.dispose();
     super.dispose();
   }
-
-  AnimationController _pulseFor(String key) =>
-      _pulseCtrl.putIfAbsent(
-        key,
-        () => AnimationController(
-          vsync: this,
-          duration: const Duration(milliseconds: 1200),
-        )..repeat(reverse: true),
-      );
 
   void _flyTo(LatLng pt, double zoom) => _mapController.move(pt, zoom);
 
@@ -115,63 +102,6 @@ class _MapScreenState extends ConsumerState<MapScreen>
           .toList())
       .toList();
 
-  // ── Marker builder ────────────────────────────────────────────────────────
-  String? _levelLabel(RiverStation s) {
-    if (s.current <= 0) return null;
-    return '${s.current.toStringAsFixed(2)}m';
-  }
-
-  List<Marker> _buildMarkers(List<RiverStation> stations) {
-    return [
-      for (final s in stations)
-        if (coordFor(s) case final coord?)
-          Marker(
-            point:  coord,
-            width:  _markerSize(s),
-            height: _markerSize(s),
-            child:  GestureDetector(
-              onTap: () => _onMarkerTap(s),
-              child: _buildMarkerWidget(s),
-            ),
-          ),
-    ];
-  }
-
-  double _markerSize(RiverStation s) {
-    switch (s.dangerClass) {
-      case DangerClass.extreme:
-      case DangerClass.severe:      return 58;
-      case DangerClass.aboveNormal: return 50;
-      case DangerClass.normal:      return 44;
-    }
-  }
-
-  Widget _buildMarkerWidget(RiverStation s) {
-    final level = _levelLabel(s);
-    switch (s.dangerClass) {
-      case DangerClass.extreme:
-      case DangerClass.severe:
-        // Red / orange full pulse for critical/severe
-        return PulseMarker(
-          dangerClass: s.dangerClass,
-          ctrl:        _pulseFor(s.station),
-          level:       level,
-        );
-      case DangerClass.aboveNormal:
-        // Softer amber pulse for WARNING stations
-        return AmberPulseMarker(
-          ctrl:  _pulseFor(s.station),
-          level: level,
-        );
-      case DangerClass.normal:
-        return StaticMarker(
-          dangerClass: s.dangerClass,
-          level:       level,
-          isLive:      s.isLive,
-        );
-    }
-  }
-
   void _onMarkerTap(RiverStation s) {
     HapticFeedback.selectionClick();
     ref.read(mapSelectedStationProvider.notifier).state = s;
@@ -221,7 +151,17 @@ class _MapScreenState extends ConsumerState<MapScreen>
                   loading: ()      => const SizedBox.shrink(),
                   error:   (_, __) => const SizedBox.shrink(),
                 ),
-              MarkerLayer(markers: _buildMarkers(stations)),
+              // ── Markers: MapMarkers handles animation internally ─────────
+              MapMarkers(
+                stations:      _toFloodStations(stations),
+                onStationTap:  (fs) {
+                  // Find matching RiverStation to reuse existing popup
+                  final match = stations.where(
+                    (s) => s.station.toLowerCase() == fs.city.toLowerCase(),
+                  ).firstOrNull;
+                  if (match != null) _onMarkerTap(match);
+                },
+              ),
             ],
           ),
 
@@ -245,6 +185,11 @@ class _MapScreenState extends ConsumerState<MapScreen>
               },
               onDrawerToggle: () =>
                   setState(() => _showDrawer = !_showDrawer),
+              onStationSelected: (fs) {
+                if (fs.lat != null && fs.lon != null) {
+                  _flyTo(LatLng(fs.lat!, fs.lon!), 10);
+                }
+              },
             ),
           ),
 
@@ -323,4 +268,34 @@ class _MapScreenState extends ConsumerState<MapScreen>
       ),
     );
   }
+}
+
+// ── RiverStation → FloodStation adapter (for MapMarkers widget) ───────────────
+// MapMarkers was rewritten in Task 3 to use FloodStation.
+// This thin adapter converts the Riverpod RiverStation list on the fly
+// so the existing provider chain doesn't need to change.
+List<FloodStation> _toFloodStations(List<RiverStation> rs) {
+  return rs.map((s) {
+    final risk = switch (s.dangerClass) {
+      DangerClass.extreme     => 'CRITICAL',
+      DangerClass.severe      => 'HIGH',
+      DangerClass.aboveNormal => 'MODERATE',
+      DangerClass.normal      => 'LOW',
+    };
+    return FloodStation(
+      id:           s.station,
+      city:         s.station,
+      state:        s.state,
+      riverName:    s.river,
+      riskLevel:    risk,
+      currentLevel: s.current > 0 ? s.current : null,
+      dangerLevel:  s.danger  > 0 ? s.danger  : null,
+      warningLevel: s.warning > 0 ? s.warning : null,
+      lat:          s.lat,
+      lon:          s.lon,
+      trend:        s.trend,
+      dataSource:   s.isLive ? 'live' : 'static',
+      lastUpdated:  null,
+    );
+  }).toList();
 }
