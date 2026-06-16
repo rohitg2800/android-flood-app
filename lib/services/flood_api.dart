@@ -21,15 +21,21 @@ library;
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
+import '../models/flood_station.dart';
 import 'ops_client.dart';
 
 const _kEmpty = <String, dynamic>{'status': 'ok', 'data': <dynamic>[]};
+
+// File: lib/services/flood_api.dart
+// Updated: June 2026
+// Changes: Implemented live levels, station history, and critical alerts fetchers (2-phase ready for provider patching).
 
 class FloodApi {
   FloodApi._();
   static final FloodApi instance = FloodApi._();
 
   final _c = OpsClient.instance;
+
 
   // ── Health (only used by predict path, not polling) ───────────────────────
   // FIX: pass path-only string, NOT AppConfig.epHealth (full URL).
@@ -58,7 +64,6 @@ class FloodApi {
   Future<Map<String, dynamic>> levelsByState(
     String state, {int limit = 200}) async => _kEmpty;
 
-  Future<Map<String, dynamic>> criticalAlerts() async => _kEmpty;
 
   Future<Map<String, dynamic>> cwcForecast({
     required String city, required String state}) async => _kEmpty;
@@ -144,5 +149,131 @@ class FloodApi {
     } catch (_) {
       return _kEmpty;
     }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // LIVE LEVELS — GloFAS 261-city feed (Task 1 — June 2026)
+  // ═══════════════════════════════════════════════════════════════
+
+  // Phase 1: fast fetch, no ML severity — call first, render map immediately
+  Future<List<FloodStation>> fetchLiveLevels() async {
+    try {
+      final uri = Uri.parse(
+        '${AppConfig.baseUrl}/api/live-levels?limit=300&with_severity=false',
+      );
+      final res = await http.get(uri).timeout(const Duration(seconds: 10));
+      if (res.statusCode != 200) return [];
+      final body = jsonDecode(res.body);
+      final list = (body is List) ? body : (body['data'] as List? ?? []);
+      return list.whereType<Map<String, dynamic>>().map(FloodStation.fromJson).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  // Phase 2: background severity patch — silently called after map renders
+  Future<List<FloodStation>> fetchLiveLevelsSeverity() async {
+    try {
+      final uri = Uri.parse(
+        '${AppConfig.baseUrl}/api/live-levels?limit=300&with_severity=true',
+      );
+      final res = await http.get(uri).timeout(const Duration(seconds: 10));
+      if (res.statusCode != 200) return [];
+      final body = jsonDecode(res.body);
+      final list = (body is List) ? body : (body['data'] as List? ?? []);
+      return list.whereType<Map<String, dynamic>>().map(FloodStation.fromJson).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  // Station 7-day history
+  Future<List<Map<String, dynamic>>> fetchStationHistory(
+    String city, {
+    int days = 7,
+  }) async {
+    try {
+      final uri = Uri.parse(
+        '${AppConfig.baseUrl}/api/station-history'
+        '?city=${Uri.encodeComponent(city)}&days=$days',
+      );
+      final res = await http.get(uri).timeout(const Duration(seconds: 10));
+      if (res.statusCode != 200) return [];
+      final body = jsonDecode(res.body);
+      final list = (body is List) ? body : (body['data'] as List? ?? []);
+      return list.whereType<Map<String, dynamic>>().toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  // Critical alerts — typed, replaces stub criticalAlerts()
+  Future<List<FloodStation>> fetchCriticalAlerts() async {
+    try {
+      final uri = Uri.parse('${AppConfig.baseUrl}/api/critical-alerts');
+      final res = await http.get(uri).timeout(const Duration(seconds: 10));
+      if (res.statusCode != 200) return [];
+      final body = jsonDecode(res.body);
+      final list = (body is List) ? body : (body['data'] as List? ?? []);
+      return list.whereType<Map<String, dynamic>>().map(FloodStation.fromJson).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // LIVE LEVELS — GloFAS 261-city feed (Task 1 — June 2026)
+  // ═══════════════════════════════════════════════════════════════
+
+  Future<List<FloodStation>> fetchLiveLevels() async {
+    try {
+      final uri = Uri.parse(
+        '${AppConfig.baseUrl}/api/live-levels?limit=300&with_severity=false',
+      );
+      final res = await http.get(uri).timeout(const Duration(seconds: 10));
+      if (res.statusCode != 200) return [];
+      final body = jsonDecode(res.body);
+      final list = (body is List) ? body : (body['data'] as List? ?? []);
+      return list.whereType<Map<String, dynamic>>().map(FloodStation.fromJson).toList();
+    } catch (_) { return []; }
+  }
+
+  Future<List<FloodStation>> fetchLiveLevelsSeverity() async {
+    try {
+      final uri = Uri.parse(
+        '${AppConfig.baseUrl}/api/live-levels?limit=300&with_severity=true',
+      );
+      final res = await http.get(uri).timeout(const Duration(seconds: 10));
+      if (res.statusCode != 200) return [];
+      final body = jsonDecode(res.body);
+      final list = (body is List) ? body : (body['data'] as List? ?? []);
+      return list.whereType<Map<String, dynamic>>().map(FloodStation.fromJson).toList();
+    } catch (_) { return []; }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchStationHistory(
+    String city, {int days = 7}) async {
+    try {
+      final uri = Uri.parse(
+        '${AppConfig.baseUrl}/api/station-history'
+        '?city=${Uri.encodeComponent(city)}&days=$days',
+      );
+      final res = await http.get(uri).timeout(const Duration(seconds: 10));
+      if (res.statusCode != 200) return [];
+      final body = jsonDecode(res.body);
+      final list = (body is List) ? body : (body['data'] as List? ?? []);
+      return list.whereType<Map<String, dynamic>>().toList();
+    } catch (_) { return []; }
+  }
+
+  Future<List<FloodStation>> fetchCriticalAlerts() async {
+    try {
+      final uri = Uri.parse('${AppConfig.baseUrl}/api/critical-alerts');
+      final res = await http.get(uri).timeout(const Duration(seconds: 10));
+      if (res.statusCode != 200) return [];
+      final body = jsonDecode(res.body);
+      final list = (body is List) ? body : (body['data'] as List? ?? []);
+      return list.whereType<Map<String, dynamic>>().map(FloodStation.fromJson).toList();
+    } catch (_) { return []; }
   }
 }
