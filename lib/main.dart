@@ -12,6 +12,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'firebase_options.dart';
@@ -19,6 +20,7 @@ import 'l10n/app_localizations.dart';
 import 'models/flood_data.dart';
 import 'models/community_incident.dart';
 import 'models/river_station.dart';
+import 'providers/flood_data_provider.dart';
 import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/main_shell.dart';
@@ -188,11 +190,20 @@ Future<void> main() async {
       ),
     );
     runApp(
+      // ── Riverpod scope (for all ref.watch providers) ──────────────────────
       ProviderScope(
         overrides: [
           localeProvider.overrideWith(() => LocaleNotifier(savedLangCode)),
         ],
-        child: const FloodWatchApp(),
+        // ── provider package: registers FloodDataProvider globally ───────────
+        child: MultiProvider(
+          providers: [
+            ChangeNotifierProvider<FloodDataProvider>(
+              create: (_) => FloodDataProvider()..init(),
+            ),
+          ],
+          child: const FloodWatchApp(),
+        ),
       ),
     );
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -258,12 +269,6 @@ Future<void> main() async {
       DataFetchEngine.instance.start();
       ActiveAlertController.instance.start();
 
-      // Alert pipeline:
-      // DataFetchEngine.snapshotStream  →  DataFetchSnapshot
-      // snapshot.toFloodDataList()      →  List<FloodData>  (for push-notif path)
-      // toRiverStations()               →  List<RiverStation> (for evaluateMerged)
-      // AlertEngine.evaluateMerged()    →  List<FloodAlert>  (sync, no subscriptions needed)
-      // AlertNotificationBridge.start() consumes Stream<FloodAlert>
       final Stream<FloodAlert> alertStream = DataFetchEngine
           .instance
           .snapshotStream
