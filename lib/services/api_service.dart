@@ -1,14 +1,13 @@
 // lib/services/api_service.dart
 // Legacy health-check wrapper — kept for backwards compatibility.
-import 'package:http/http.dart' as http;
-import '../config/app_config.dart';  // was: constants/app_constants.dart
+// Delegates to BackendApiService.checkHealth() which routes through OpsClient.
+import 'backend_api_service.dart';
 
 class ApiService {
   Future<bool> checkHealth() async {
     try {
-      final uri = Uri.parse('${AppConfig.baseUrl}/health');  // AppConfig, not AppConstants
-      final res = await http.get(uri).timeout(const Duration(seconds: 5));
-      return res.statusCode == 200;
+      final result = await BackendApiService.instance.checkHealth();
+      return result['status'] == 'ok' || result.containsKey('status');
     } catch (_) {
       return false;
     }
