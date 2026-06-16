@@ -1,6 +1,10 @@
-// lib/services/data_fetch_engine.dart  v4
+// lib/services/data_fetch_engine.dart  v4.1
 // StationReading lives in lib/models/station_reading.dart (canonical).
 // This file only defines DataFetchSnapshot + DataFetchEngine.
+//
+// v4.1 — added _lastSnapshot field + `last` getter so callers
+//         (e.g. kosi_birpur_provider) can access the most recent snapshot
+//         synchronously without subscribing to the stream.
 import 'dart:async';
 import '../models/flood_data.dart';
 import '../models/river_station.dart';
@@ -65,6 +69,12 @@ class DataFetchEngine {
   final _snapshotController =
       StreamController<DataFetchSnapshot>.broadcast();
 
+  // v4.1: cache the most-recent snapshot for synchronous callers
+  DataFetchSnapshot? _lastSnapshot;
+
+  /// The most recently emitted snapshot, or null before the first fetch.
+  DataFetchSnapshot? get last => _lastSnapshot;
+
   Stream<DataFetchSnapshot> get snapshotStream => _snapshotController.stream;
   Stream<DataFetchSnapshot> get alertStream    => snapshotStream;
 
@@ -73,7 +83,9 @@ class DataFetchEngine {
   void start() {
     if (_running) return;
     _running = true;
-    _snapshotController.add(DataFetchSnapshot.loading());
+    final loading = DataFetchSnapshot.loading();
+    _lastSnapshot = loading;
+    _snapshotController.add(loading);
     _scheduleNext();
   }
 
@@ -84,10 +96,12 @@ class DataFetchEngine {
   Future<void> _fetch() async {
     if (!_running) return;
     try {
-      _snapshotController.add(DataFetchSnapshot(
+      final snap = DataFetchSnapshot(
         stations:  const [],
         fetchedAt: DateTime.now(),
-      ));
+      );
+      _lastSnapshot = snap;
+      _snapshotController.add(snap);
     } catch (_) {}
     _scheduleNext();
   }
