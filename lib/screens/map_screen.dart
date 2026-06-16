@@ -152,7 +152,6 @@ class _MapScreenState extends ConsumerState<MapScreen>
                   loading: ()      => const SizedBox.shrink(),
                   error:   (_, __) => const SizedBox.shrink(),
                 ),
-              // ── Markers: MapMarkers handles animation internally ─────────
               MapMarkers(
                 stations:     _toFloodStations(stations),
                 onStationTap: (fs) {
@@ -272,7 +271,7 @@ class _MapScreenState extends ConsumerState<MapScreen>
 
 // ── RiverStation → FloodStation adapter (for MapMarkers widget) ───────────────
 List<FloodStation> _toFloodStations(List<RiverStation> rs) {
-  return rs.map((s) {
+  return rs.map<FloodStation>((s) {
     final risk = switch (s.dangerClass) {
       DangerClass.extreme     => 'CRITICAL',
       DangerClass.severe      => 'HIGH',
@@ -280,19 +279,18 @@ List<FloodStation> _toFloodStations(List<RiverStation> rs) {
       DangerClass.normal      => 'LOW',
     };
     return FloodStation(
-      id:           s.station,
       city:         s.station,
       state:        s.state,
       riverName:    s.river,
       riskLevel:    risk,
+      status:       s.isLive ? 'live' : 'static',
+      dataSource:   s.isLive ? 'live' : 'static',
       currentLevel: s.current > 0 ? s.current : null,
       dangerLevel:  s.danger  > 0 ? s.danger  : null,
       warningLevel: s.warning > 0 ? s.warning : null,
       lat:          s.lat,
       lon:          s.lon,
       trend:        s.trend,
-      dataSource:   s.isLive ? 'live' : 'static',
-      lastUpdated:  null,
     );
   }).toList();
 }
