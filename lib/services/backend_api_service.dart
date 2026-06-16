@@ -67,18 +67,14 @@ class BackendApiService {
   }
 
   // GET /api/glofas?lats=...&lons=...&cities=...
+  // GET /api/news?state=...
   Future<List<Map<String, dynamic>>> fetchGloFAS({
     required List<double> lats,
     required List<double> lons,
     required List<String> cityKeys,
   }) async {
-    _log('GET /api/glofas');
-    final body = await _ops.get('/api/glofas', query: {
-      'lats'  : lats.join(','),
-      'lons'  : lons.join(','),
-      'cities': cityKeys.join(',').toLowerCase(),
-    });
-    return _parseList(body, 'glofas');
+    _log('GET /api/glofas (${cityKeys.length} cities, batched)');
+    return _batchedFetch('/api/glofas', lats, lons, cityKeys, 'glofas');
   }
 
   // GET /api/rainfall?lats=...&lons=...&cities=...
@@ -87,16 +83,39 @@ class BackendApiService {
     required List<double> lons,
     required List<String> cityKeys,
   }) async {
-    _log('GET /api/rainfall');
-    final body = await _ops.get('/api/rainfall', query: {
-      'lats'  : lats.join(','),
-      'lons'  : lons.join(','),
-      'cities': cityKeys.join(',').toLowerCase(),
-    });
-    return _parseList(body, 'rainfall');
+    _log('GET /api/rainfall (${cityKeys.length} cities, batched)');
+    return _batchedFetch('/api/rainfall', lats, lons, cityKeys, 'rainfall');
   }
 
-  // GET /api/news?state=...
+  // Shared chunked fetcher — splits into groups of 15 to stay under timeout
+  Future<List<Map<String, dynamic>>> _batchedFetch(
+    String path,
+    List<double> lats,
+    List<double> lons,
+    List<String> cityKeys,
+    String listKey, {
+    int chunkSize = 15,
+  }) async {
+    final results = <Map<String, dynamic>>[];
+    for (int i = 0; i < cityKeys.length; i += chunkSize) {
+      final end   = (i + chunkSize).clamp(0, cityKeys.length);
+      final cLats = lats.sublist(i, end);
+      final cLons = lons.sublist(i, end);
+      final cKeys = cityKeys.sublist(i, end);
+      try {
+        final body = await _ops.get(path, query: {
+          'lats'  : cLats.join(','),
+          'lons'  : cLons.join(','),
+          'cities': cKeys.join(',').toLowerCase(),
+        });
+        results.addAll(_parseList(body, listKey));
+      } catch (e) {
+        _log('$path batch $i–$end failed: $e');
+      }
+    }
+    return results;
+  }
+
   Future<List<Map<String, dynamic>>> fetchNews({required String state}) async {
     _log('GET /api/news?state=$state');
     final body = await _ops.get('/api/news', query: {'state': state});

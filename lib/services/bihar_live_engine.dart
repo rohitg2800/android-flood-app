@@ -317,8 +317,14 @@ class BiharLiveEngine {
     final t0 = DateTime.now();
     try {
       final data = await _kosiBirpur.fetchLive().timeout(_timeout);
-      _setSlot('kosi', [_kosiReadingToItem(data)]);
-      _setHealth(SourceId.kosiBirpur, true, DateTime.now().difference(t0));
+      if (data != null) {
+        _setSlot('kosi', [_kosiReadingToItem(data)]);
+        _setHealth(SourceId.kosiBirpur, true, DateTime.now().difference(t0));
+      } else {
+        _setSlot('kosi', []);
+        _setHealth(SourceId.kosiBirpur, false, DateTime.now().difference(t0), 'no data');
+        debugPrint('[BiharLiveEngine] Kosi: all sources down — slot cleared');
+      }
     } catch (e) {
       _setHealth(SourceId.kosiBirpur, false, DateTime.now().difference(t0), '$e');
       debugPrint('[BiharLiveEngine] Kosi: $e');
@@ -346,7 +352,7 @@ class BiharLiveEngine {
   Future<void> _fetchRealTime() async {
     final t0 = DateTime.now();
     try {
-      final results = await _rtRiver.fetchAll().timeout(_timeout);
+      final results = await _rtRiver.fetchAll().timeout(const Duration(seconds: 50));
       _setSlot('rt', results.map(_liveResultToItem).toList());
       _setHealth(SourceId.realTimeRiver, true, DateTime.now().difference(t0));
     } catch (e) {

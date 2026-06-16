@@ -19,11 +19,12 @@ import '../providers/map_command_provider.dart';
 import '../providers/real_time_river_provider.dart';
 import '../providers/live_engine_bridge_provider.dart';
 import '../theme/rx.dart';
-import '../widgets/map/map_markers.dart';
 import '../widgets/map/map_widgets.dart';
 
-const _kBiharCenter = LatLng(25.78, 85.17);
+const _kBiharCenter  = LatLng(25.78, 85.17);
 const _kBiharZoom   = 7.2;
+const _kIndiaCenter  = LatLng(22.5, 80.0);
+const _kIndiaZoom    = 4.5;
 
 class BiharRiverMapScreen extends ConsumerStatefulWidget {
   const BiharRiverMapScreen({super.key});
@@ -47,7 +48,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        ref.read(mapViewModeProvider.notifier).state = MapViewMode.bihar;
+        ref.read(mapViewModeProvider.notifier).set(MapViewMode.bihar);
       }
     });
   }
@@ -59,14 +60,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
     super.dispose();
   }
 
-  AnimationController _pulseFor(String key) =>
-      _pulseCtrl.putIfAbsent(
-        key,
-        () => AnimationController(
-          vsync: this,
-          duration: const Duration(milliseconds: 1200),
-        )..repeat(reverse: true),
-      );
+
 
   // ── GeoJSON → Polygon layer ──────────────────────────────────────────────
   List<Polygon> _buildPolygons(
@@ -126,47 +120,12 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
     return '${s.current.toStringAsFixed(2)}m';
   }
 
-  List<Marker> _buildMarkers(List<RiverStation> stations) {
-    return [
-      for (final s in stations)
-        if (coordFor(s) case final coord?)
-          Marker(
-            point:  coord,
-            width:  _markerSize(s),
-            height: _markerSize(s),
-            child:  GestureDetector(
-              onTap: () => _onMarkerTap(s),
-              child: _buildMarkerWidget(s),
-            ),
-          ),
-    ];
-  }
 
-  double _markerSize(RiverStation s) => switch (s.dangerClass) {
-    DangerClass.extreme || DangerClass.severe => 58.0,
-    DangerClass.aboveNormal                   => 50.0,
-    DangerClass.normal                        => 44.0,
-  };
 
-  Widget _buildMarkerWidget(RiverStation s) {
-    final color = switch (s.dangerClass) {
-      DangerClass.extreme     => const Color(0xFFC62828),
-      DangerClass.severe      => const Color(0xFFFF8F00),
-      DangerClass.aboveNormal => const Color(0xFFF57F17),
-      DangerClass.normal      => const Color(0xFF2E7D32),
-    };
-    return Container(
-      decoration: BoxDecoration(
-        color:  color,
-        shape:  BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 1.5),
-      ),
-    );
-  }
 
   void _onMarkerTap(RiverStation s) {
     HapticFeedback.selectionClick();
-    ref.read(mapSelectedStationProvider.notifier).state = s;
+    ref.read(mapSelectedStationProvider.notifier).set(s);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -188,13 +147,13 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
   @override
   Widget build(BuildContext context) {
     final rc        = context.rc;
-    final stations  = ref.watch(mapStationsProvider);
+    final mode      = ref.watch(mapViewModeProvider);
+    final isBihar   = mode == MapViewMode.bihar;
+    final stations  = ref.watch(liveEngineStationsProvider);
     final distRisk  = ref.watch(biharDistrictRiskProvider);
     final syncMeta  = ref.watch(mapSyncMetaProvider);
     final geoAsync  = ref.watch(biharGeoJsonProvider);
     final isLoading = ref.watch(wrdIsLoadingProvider);
-
-    ref.watch(liveEngineStationsProvider);
 
     return pv.ChangeNotifierProvider(
       create: (_) => FloodDataProvider(),
@@ -205,11 +164,13 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
             children: [
               FlutterMap(
                 mapController: _mapController,
-                options: const MapOptions(
-                  initialCenter: _kBiharCenter,
-                  initialZoom:   _kBiharZoom,
-                  minZoom: 5,
+                options: MapOptions(
+                  initialCenter: isBihar ? _kBiharCenter : _kIndiaCenter,
+                  initialZoom:   isBihar ? _kBiharZoom   : _kIndiaZoom,
+                  minZoom: 3,
                   maxZoom: 18,
+                  onTap: (_, __) =>
+                      ref.read(mapSelectedStationProvider.notifier).set(null),
                 ),
                 children: [
                   TileLayer(
@@ -223,14 +184,10 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
                     loading: () => const SizedBox.shrink(),
                     error:   (_, __) => const SizedBox.shrink(),
                   ),
-                  // Legacy WRD markers
-                  MarkerLayer(markers: _buildMarkers(stations)),
-                  // GloFAS live markers from FloodDataProvider
-                  pv.Consumer<FloodDataProvider>(
-                    builder: (_, provider, __) => MapMarkers(
-                      stations:     provider.biharStations,
-                      onStationTap: _showStationPopup,
-                    ),
+                  // Unified live markers — all 157 stations from engine
+                  MapMarkers(
+                    stations:     _toFloodStations(stations),
+                    onStationTap: _showStationPopup,
                   ),
                 ],
               ),
@@ -246,6 +203,16 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
                   drawerOpen:     _showDrawer,
                   onDrawerToggle: () =>
                       setState(() => _showDrawer = !_showDrawer),
+                  onToggle: () {
+                    final next = isBihar
+                        ? MapViewMode.national
+                        : MapViewMode.bihar;
+                    ref.read(mapViewModeProvider.notifier).set(next);
+                    _mapController.move(
+                      next == MapViewMode.bihar ? _kBiharCenter : _kIndiaCenter,
+                      next == MapViewMode.bihar ? _kBiharZoom   : _kIndiaZoom,
+                    );
+                  },
                   onRefresh:      onManualRefresh,
                   onStationSelected: (station) {
                     if (station.lat != null && station.lon != null) {
@@ -500,6 +467,7 @@ class _BiharMapTopBar extends StatelessWidget {
   final int      stationCount;
   final bool     drawerOpen;
   final VoidCallback onDrawerToggle;
+  final VoidCallback onToggle;
   final VoidCallback onRefresh;
   final void Function(FloodStation station) onStationSelected;
 
@@ -509,6 +477,7 @@ class _BiharMapTopBar extends StatelessWidget {
     required this.stationCount,
     required this.drawerOpen,
     required this.onDrawerToggle,
+    required this.onToggle,
     required this.onRefresh,
     required this.onStationSelected,
   });
@@ -588,6 +557,21 @@ class _BiharMapTopBar extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           GestureDetector(
+            onTap: onToggle,
+            child: Container(
+              width: 34, height: 34,
+              decoration: BoxDecoration(
+                color:        rc.cardBg,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                    color: rc.stroke.withOpacity(0.4), width: 1),
+              ),
+              child: Icon(Icons.public_rounded,
+                  color: rc.accent, size: 18),
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
             onTap: onDrawerToggle,
             child: Container(
               width: 34, height: 34,
@@ -615,4 +599,29 @@ class _BiharMapTopBar extends StatelessWidget {
       ),
     );
   }
+}
+
+List<FloodStation> _toFloodStations(List<RiverStation> rs) {
+  return rs.map<FloodStation>((s) {
+    final risk = switch (s.dangerClass) {
+      DangerClass.extreme     => 'CRITICAL',
+      DangerClass.severe      => 'HIGH',
+      DangerClass.aboveNormal => 'MODERATE',
+      DangerClass.normal      => 'LOW',
+    };
+    return FloodStation(
+      city:         s.station,
+      state:        s.state,
+      riverName:    s.river,
+      riskLevel:    risk,
+      status:       s.isLive ? 'live' : 'static',
+      dataSource:   s.isLive ? 'live' : 'static',
+      currentLevel: s.hasData ? s.current : null,
+      dangerLevel:  s.danger  > 0 ? s.danger  : null,
+      warningLevel: s.warning > 0 ? s.warning : null,
+      lat:          s.lat,
+      lon:          s.lon,
+      trend:        s.trend,
+    );
+  }).toList();
 }

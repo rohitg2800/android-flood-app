@@ -270,12 +270,12 @@ class LiveFetchEngine {
   String?    _error;
   int        _queuedOffline = 0;
   int        _retryCount    = 0;
-  int        _wakeAttempts  = 0;
+  final int  _wakeAttempts  = 0;
 
   int _wrdLiveCount = 0;
   int _wrdDiskCount = 0;
 
-  SourceHealth _backendHealth = const SourceHealth.unknown();
+  final SourceHealth _backendHealth = const SourceHealth.unknown();
   SourceHealth _glofasHealth  = const SourceHealth.unknown();
   SourceHealth _imdHealth     = const SourceHealth.unknown();
   SourceHealth _wrdHealth     = const SourceHealth.unknown();
@@ -482,7 +482,7 @@ class LiveFetchEngine {
           lastError:     _wrdLiveCount > 0
               ? null
               : stations.isNotEmpty
-                  ? 'WRD disk-cache (${_wrdDiskCount} stations)'
+                  ? 'WRD disk-cache ($_wrdDiskCount stations)'
                   : 'WRD returned 0 stations',
         );
         _log('WRD: ${stations.length} stations (live=$_wrdLiveCount disk=$_wrdDiskCount)');
@@ -498,87 +498,93 @@ class LiveFetchEngine {
       }
     }
 
-    // 2. GloFAS
+
+    // 2+3. GloFAS + Rainfall — run in parallel to halve latency
     var dischargeMap = <String, double?>{};
     var meanMap      = <String, double?>{};
-    final glofasStart = DateTime.now();
+    var rainMap      = <String, double?>{};
+    final parallelStart = DateTime.now();
 
-    if (!_cbGlofas.isOpen) {
-      try {
-        List<Map<String, dynamic>> rows;
-        if (_glofasCache.isStale) {
-          rows = await SharedFetchCoordinator.instance.dedupe(
-            'glofas_fetch',
-            () => BackendApiService.instance.fetchGloFAS(
-              lats: lats, lons: lons, cityKeys: cityKeys,
-            ),
+    await Future.wait([
+      // ── GloFAS ──────────────────────────────────────────────────────────
+      () async {
+        if (_cbGlofas.isOpen) return;
+        final t0 = DateTime.now();
+        try {
+          List<Map<String, dynamic>> rows;
+          if (_glofasCache.isStale) {
+            rows = await SharedFetchCoordinator.instance.dedupe(
+              'glofas_fetch',
+              () => BackendApiService.instance.fetchGloFAS(
+                lats: lats, lons: lons, cityKeys: cityKeys,
+              ),
+            );
+            _glofasCache.set(rows);
+          } else {
+            rows = _glofasCache.value!;
+          }
+          for (final r in rows) {
+            final key = (r['city'] as String? ?? '').toLowerCase().trim();
+            dischargeMap[key] = (r['discharge']      as num?)?.toDouble();
+            meanMap[key]      = (r['discharge_mean'] as num?)?.toDouble();
+          }
+          _cbGlofas.recordSuccess();
+          _glofasHealth = SourceHealth(
+            healthy:       true,
+            latencyMs:     DateTime.now().difference(t0).inMilliseconds,
+            lastSuccessAt: DateTime.now(),
           );
-          _glofasCache.set(rows);
-        } else {
-          rows = _glofasCache.value!;
-        }
-        for (final r in rows) {
-          final key = (r['city'] as String? ?? '').toLowerCase().trim();
-          dischargeMap[key] = (r['discharge']      as num?)?.toDouble();
-          meanMap[key]      = (r['discharge_mean'] as num?)?.toDouble();
-        }
-        _cbGlofas.recordSuccess();
-        _glofasHealth = SourceHealth(
-          healthy:       true,
-          latencyMs:     DateTime.now().difference(glofasStart).inMilliseconds,
-          lastSuccessAt: DateTime.now(),
-        );
-      } catch (e) {
-        _cbGlofas.recordFailure();
-        _glofasHealth = SourceHealth(
-          healthy:       false,
-          latencyMs:     DateTime.now().difference(glofasStart).inMilliseconds,
-          lastSuccessAt: _glofasHealth.lastSuccessAt,
-          lastError:     e.toString(),
-        );
-        _log('GloFAS fetch failed: $e');
-      }
-    }
-
-    // 3. Rainfall
-    var rainMap = <String, double?>{};
-    final imdStart = DateTime.now();
-
-    if (!_cbRain.isOpen) {
-      try {
-        List<Map<String, dynamic>> rows;
-        if (_rainCache.isStale) {
-          rows = await SharedFetchCoordinator.instance.dedupe(
-            'rain_fetch',
-            () => BackendApiService.instance.fetchRainfall(
-              lats: lats, lons: lons, cityKeys: cityKeys,
-            ),
+        } catch (e) {
+          _cbGlofas.recordFailure();
+          _glofasHealth = SourceHealth(
+            healthy:       false,
+            latencyMs:     DateTime.now().difference(t0).inMilliseconds,
+            lastSuccessAt: _glofasHealth.lastSuccessAt,
+            lastError:     e.toString(),
           );
-          _rainCache.set(rows);
-        } else {
-          rows = _rainCache.value!;
+          _log('GloFAS fetch failed: $e');
         }
-        for (final r in rows) {
-          final key = (r['city'] as String? ?? '').toLowerCase().trim();
-          rainMap[key] = (r['rainfall24h'] as num?)?.toDouble();
+      }(),
+      // ── Rainfall ────────────────────────────────────────────────────────
+      () async {
+        if (_cbRain.isOpen) return;
+        final t0 = DateTime.now();
+        try {
+          List<Map<String, dynamic>> rows;
+          if (_rainCache.isStale) {
+            rows = await SharedFetchCoordinator.instance.dedupe(
+              'rain_fetch',
+              () => BackendApiService.instance.fetchRainfall(
+                lats: lats, lons: lons, cityKeys: cityKeys,
+              ),
+            );
+            _rainCache.set(rows);
+          } else {
+            rows = _rainCache.value!;
+          }
+          for (final r in rows) {
+            final key = (r['city'] as String? ?? '').toLowerCase().trim();
+            rainMap[key] = (r['rainfall24h'] as num?)?.toDouble();
+          }
+          _cbRain.recordSuccess();
+          _imdHealth = SourceHealth(
+            healthy:       true,
+            latencyMs:     DateTime.now().difference(t0).inMilliseconds,
+            lastSuccessAt: DateTime.now(),
+          );
+        } catch (e) {
+          _cbRain.recordFailure();
+          _imdHealth = SourceHealth(
+            healthy:       false,
+            latencyMs:     DateTime.now().difference(t0).inMilliseconds,
+            lastSuccessAt: _imdHealth.lastSuccessAt,
+            lastError:     e.toString(),
+          );
+          _log('Rainfall fetch failed: $e');
         }
-        _cbRain.recordSuccess();
-        _imdHealth = SourceHealth(
-          healthy:       true,
-          latencyMs:     DateTime.now().difference(imdStart).inMilliseconds,
-          lastSuccessAt: DateTime.now(),
-        );
-      } catch (e) {
-        _cbRain.recordFailure();
-        _imdHealth = SourceHealth(
-          healthy:       false,
-          latencyMs:     DateTime.now().difference(imdStart).inMilliseconds,
-          lastSuccessAt: _imdHealth.lastSuccessAt,
-          lastError:     e.toString(),
-        );
-        _log('Rainfall fetch failed: $e');
-      }
-    }
+      }(),
+    ]);
+    _log('GloFAS+Rainfall parallel: ${DateTime.now().difference(parallelStart).inMilliseconds}ms');
 
     // 4. Severity (GET /api/live-levels?with_severity=true)
     //    Returns backend ML predictions per city; merged into cache below.

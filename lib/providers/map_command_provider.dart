@@ -40,6 +40,8 @@ enum MapViewMode { bihar, national }
 class MapViewModeNotifier extends Notifier<MapViewMode> {
   @override
   MapViewMode build() => MapViewMode.bihar;
+
+  void set(MapViewMode mode) => state = mode;
 }
 
 final mapViewModeProvider =
@@ -50,6 +52,8 @@ final mapViewModeProvider =
 class SelectedStationNotifier extends Notifier<RiverStation?> {
   @override
   RiverStation? build() => null;
+
+  void set(RiverStation? station) => state = station;
 }
 
 final mapSelectedStationProvider =

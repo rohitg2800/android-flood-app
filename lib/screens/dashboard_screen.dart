@@ -13,6 +13,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../mixins/auto_refresh_mixin.dart';
 import '../providers/bihar_live_provider.dart';
+import '../providers/real_time_river_provider.dart';
+import '../models/river_station.dart';
 import '../providers/alerts_badge_provider.dart';
 import '../widgets/summary_strip.dart';
 import '../theme/river_theme.dart';
@@ -36,7 +38,7 @@ import 'community_screen.dart';
 import 'historical_analytics_screen.dart';
 import 'export_screen.dart';
 import 'settings_screen.dart';
-import 'map_screen.dart';
+
 import 'india_river_explorer_screen.dart';
 import 'crowd_report_feed_screen.dart';
 
@@ -136,7 +138,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       label:   'Map View',
       icon:    Icons.layers_rounded,
       color:   _P.layerSlate,
-      builder: (_) => const MapScreen(),
+      builder: (_) => const BiharRiverMapScreen(),
     ),
   ];
 
@@ -269,6 +271,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   @override
   Widget build(BuildContext context) {
     final liveAsync  = ref.watch(biharLiveProvider);
+    final merged     = ref.watch(mergedStationsProvider);
     final badgeCount = ref.watch(alertsBadgeProvider);
     final t          = RiverColors.of(context);
     return Scaffold(
@@ -278,7 +281,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       body: liveAsync.when(
         loading: () => Center(child: CircularProgressIndicator(color: t.accent)),
         error:   (e, _) => _errorView(context, e, t),
-        data:    (live) => _buildBody(context, live, t),
+        data:    (live) => _buildBody(context, live, t, merged),
       ),
     );
   }
@@ -396,7 +399,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     );
   }
 
-  Widget _buildBody(BuildContext ctx, BiharLiveState live, RiverColors t) {
+  Widget _buildBody(BuildContext ctx, BiharLiveState live, RiverColors t, List<dynamic> merged) {
     return refreshIndicator(
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -405,11 +408,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
               child: SummaryStrip(
-                critical:   live.criticalCount,
-                severe:     live.severeCount,
-                warning:    live.warningCount,
-                safe:       live.safeCount,
-                noData:     live.noDataCount,
+                critical:   merged.where((s) => s.dangerClass.index >= 3).length,
+                severe:     merged.where((s) => s.dangerClass.index == 2).length,
+                warning:    merged.where((s) => s.dangerClass.index == 1).length,
+                safe:       merged.where((s) => s.dangerClass == DangerClass.normal && s.current > 0).length,
+                noData:     merged.where((s) => s.current == 0).length,
                 lastUpdate: lastFetchedLabel,
               ),
             ),
@@ -429,7 +432,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               itemBuilder: (_, i) => [
                 Td3StatTile(
                   icon:       Icons.crisis_alert_rounded,
-                  value:      '${live.criticalCount}',
+                  value:      '${merged.where((s) => s.dangerClass.index >= 3).length}',
                   label:      'Critical',
                   valueColor: _P.alertRed,
                   onTap: () => Navigator.push(ctx,
@@ -437,7 +440,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 ),
                 Td3StatTile(
                   icon:       Icons.warning_amber_rounded,
-                  value:      '${live.warningCount}',
+                  value:      '${merged.where((s) => s.dangerClass.index >= 1).length}',
                   label:      'Warning',
                   valueColor: _P.evacAmber,
                   onTap: () => Navigator.push(ctx,
@@ -445,13 +448,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 ),
                 Td3StatTile(
                   icon:       Icons.check_circle_outline_rounded,
-                  value:      '${live.safeCount}',
+                  value:      '${merged.where((s) => s.dangerClass == DangerClass.normal && s.current > 0).length}',
                   label:      'Safe',
                   valueColor: _P.communityGreen,
                 ),
                 Td3StatTile(
                   icon:       Icons.sensors_off_rounded,
-                  value:      '${live.noDataCount}',
+                  value:      '${merged.where((s) => s.current == 0).length}',
                   label:      'No Data',
                   valueColor: _P.layerSlate,
                 ),

@@ -20,6 +20,7 @@ class DistrictBottomSheet extends StatelessWidget {
   }
 
   static AlertSeverity _sev(RiverStation s) {
+    if (!s.hasData)                              return AlertSeverity.info;
     if (s.hfl > 0 && s.current >= s.hfl)        return AlertSeverity.emergency;
     if (s.danger > 0 && s.current >= s.danger)   return AlertSeverity.emergency;
     if (s.warning > 0 && s.current >= s.warning) return AlertSeverity.critical;

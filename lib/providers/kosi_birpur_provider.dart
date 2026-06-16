@@ -38,7 +38,7 @@ final _birpurEnrichmentProvider =
   try {
     final r = await KosiBirpurService().fetchLive();
     // Only return live readings — discard SEED to avoid 210m ghost cards
-    return r.source == 'SEED' ? null : r;
+    return (r == null || r.source == 'SEED') ? null : r;
   } catch (e) {
     debugPrint('[KosiBirpur] enrichment failed: $e');
     return null;

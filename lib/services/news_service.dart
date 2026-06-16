@@ -1,14 +1,14 @@
-// lib/services/news_service.dart  v4.1
+// lib/services/news_service.dart  v4.2
 // Multi-source flood news aggregator — BIHAR ONLY — last 7 days.
 //
 // ALL URLS VERIFIED REAL/PUBLIC:
 //   A. IMD Nowcast RSS      — mausam.imd.gov.in
-//   B. IMD District Warn   — mausam.imd.gov.in/api/warnings_district_api.php
-//   C. SACHET/NDMA CAP    — sachet.ndma.gov.in
+//   B. PIB Bihar SDMA RSS  — pib.gov.in (Regid=46)
+//   C. PIB National RSS      — pib.gov.in (Regid=3)
 //   D. CWC Daily Bulletin  — cwc.gov.in/en/daliy-flood-bulletin (HTML scrape)
 //   E. GDACS Flood RSS     — gdacs.org/xml/rss_fl.xml
 //   F. ReliefWeb API       — api.reliefweb.int (Bihar flood reports)
-//   G. PIB RSS             — pib.gov.in RSS
+//   G. CWC Daily Bulletin   — cwc.gov.in (HTML scrape)
 //   H. MOSDAC RSS          — mosdac.gov.in/isrocast.xml
 //
 // Every item is passed through _isBihar() before being added.
@@ -111,8 +111,8 @@ class NewsService {
 
     final results = await Future.wait([
       _tryImdNowcastRss(),
-      _tryImdWarningsApi(),
-      _trySachetRss(),
+
+      _tryAsdmaRss(),
       _tryCwcScrape(),
       _tryGdacs(),
       _tryReliefWeb(),
@@ -176,94 +176,26 @@ class NewsService {
     return [];
   }
 
-  // ── B: IMD District Warnings API (Bihar state filter) ─────────────────────
-  Future<List<NewsItem>> _tryImdWarningsApi() async {
-    const url = 'https://mausam.imd.gov.in/api/warnings_district_api.php';
+  // ── C: PIB Bihar SDMA feed (replaces dead SACHET API) ────────────────────
+  Future<List<NewsItem>> _tryAsdmaRss() async {
+    // PIB Regid=46 = Bihar regional press releases
+    const url = 'https://www.pib.gov.in/RssMain.aspx?ModId=6&Lang=1&Regid=46';
     try {
       final resp = await http.get(Uri.parse(url), headers: {
         'User-Agent': 'OpsFlood/4.0',
-        'Accept': 'application/json,text/plain,*/*',
-        'Referer': 'https://mausam.imd.gov.in/',
+        'Accept': 'text/xml,application/rss+xml,*/*',
       }).timeout(_timeout);
       if (resp.statusCode == 200) {
-        final body = jsonDecode(resp.body);
-        final list = (body is List
-                ? body
-                : (body['data'] as List? ?? body['warnings'] as List? ?? []))
-            .cast<Map<String, dynamic>>();
-        final now = DateTime.now();
-        return list.map((r) {
-          final district = r['district']?.toString() ?? r['District']?.toString() ?? '';
-          final state    = r['state']?.toString()    ?? r['State']?.toString()    ?? '';
-          final warn     = r['warning']?.toString()  ?? r['Warning']?.toString()  ??
-                           r['message']?.toString()  ?? '';
-          final color    = r['color']?.toString()    ?? r['Color']?.toString()    ?? '';
-          if (warn.isEmpty) return null;
-          // Bihar-only: keep only if state == Bihar or district is in Bihar list
-          if (!_isBihar('$district $state')) return null;
-          final title = '${color.isNotEmpty ? '[$color Alert] ' : ''}$district, Bihar: $warn';
-          final pub   = DateTime.tryParse(
-                  r['date']?.toString() ?? r['Date']?.toString() ?? '') ?? now;
-          return NewsItem(
-            title:       title,
-            summary:     warn,
-            url:         'https://mausam.imd.gov.in',
-            source:      'IMD',
-            publishedAt: pub,
-            severity:    _severity(title + warn + color),
-          );
-        }).whereType<NewsItem>().toList();
+        final all = _parseRss(resp.body, 'SDMA');
+        return all.where((item) {
+          final t = (item.title + item.summary).toLowerCase();
+          return _isBihar(t) && _kFloodWords.any(t.contains);
+        }).toList();
       }
-    } catch (e) { debugPrint('[NewsService] IMD-WarningsAPI: $e'); }
+    } catch (e) { debugPrint('[NewsService] SDMA: $e'); }
     return [];
   }
 
-  // ── C: SACHET / NDMA CAP Alerts (Bihar filter) ───────────────────────────
-  Future<List<NewsItem>> _trySachetRss() async {
-    const urls = [
-      'https://sachet.ndma.gov.in/cap_public_website/FetchAllAlerts',
-      'https://sachet.ndma.gov.in/api/alert_rss',
-    ];
-    for (final url in urls) {
-      try {
-        final resp = await http.get(Uri.parse(url), headers: {
-          'User-Agent': 'OpsFlood/4.0',
-          'Accept': 'application/json,application/xml,text/xml,*/*',
-        }).timeout(_timeout);
-        if (resp.statusCode == 200) {
-          try {
-            final body = jsonDecode(resp.body);
-            final list = (body is List
-                    ? body
-                    : (body['alerts'] as List? ?? body['data'] as List? ?? []))
-                .cast<Map<String, dynamic>>();
-            final now  = DateTime.now();
-            final items = list.map((r) {
-              final title   = r['headline']?.toString() ?? r['title']?.toString()     ?? 'SACHET Alert';
-              final summary = r['description']?.toString() ?? r['event']?.toString() ?? '';
-              final area    = r['areaDesc']?.toString()    ?? r['area']?.toString()   ?? '';
-              if (!_isBihar('$title $summary $area')) return null;
-              final urlStr  = r['web']?.toString() ?? r['url']?.toString()            ?? 'https://sachet.ndma.gov.in';
-              final pub     = DateTime.tryParse(r['sent']?.toString() ?? r['onset']?.toString() ?? '') ?? now;
-              return NewsItem(
-                title: title, summary: summary, url: urlStr,
-                source: 'NDMA', publishedAt: pub,
-                severity: _severity(title + summary),
-              );
-            }).whereType<NewsItem>().toList();
-            if (items.isNotEmpty) return items;
-          } catch (_) {
-            final all = _parseRss(resp.body, 'NDMA');
-            final filtered = all.where((i) => _isBihar(i.title + i.summary)).toList();
-            if (filtered.isNotEmpty) return filtered;
-          }
-        }
-      } catch (e) { debugPrint('[NewsService] SACHET ($url): $e'); }
-    }
-    return [];
-  }
-
-  // ── D: CWC Daily Flood Bulletin (HTML scrape) ────────────────────────────
   // CWC bulletins are national but titled to cover Bihar basins
   Future<List<NewsItem>> _tryCwcScrape() async {
     const url = 'https://cwc.gov.in/en/daliy-flood-bulletin';
@@ -383,7 +315,7 @@ class NewsService {
 
   // ── G: PIB RSS (Bihar + flood keyword filter) ─────────────────────────────
   Future<List<NewsItem>> _tryPib() async {
-    const url = 'https://pib.gov.in/RssMain.aspx?ModId=6&Lang=1&Regid=3';
+    const url = 'https://www.pib.gov.in/RssMain.aspx?ModId=6&Lang=1&Regid=3';
     try {
       final resp = await http.get(Uri.parse(url), headers: {
         'User-Agent': 'OpsFlood/4.0',
@@ -499,6 +431,4 @@ class NewsService {
     return NewsSeverity.info;
   }
 
-  static String _fmtDate(DateTime d) =>
-      '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 }

@@ -150,7 +150,7 @@ class KosiBirpurService {
   static const _raceTimeout = Duration(seconds: 13);
   final BefiqrCwcService _cwcSvc = BefiqrCwcService();
 
-  Future<KosiBirpurReading> fetchLive() async {
+  Future<KosiBirpurReading?> fetchLive() async {
     final futures = <Future<KosiBirpurReading?>>[
       _tryBeamsDirect(),
       _tryFromCwcService(),
@@ -178,7 +178,7 @@ class KosiBirpurService {
 
     final result = await completer.future.timeout(
         _raceTimeout, onTimeout: () => null);
-    return result ?? _seed();
+    return result; // v2.2: no seed fallback — let provider handle null
   }
 
   // ── Source A: BEAMS Bihar direct JSON ──────────────────────────────────────
@@ -368,17 +368,6 @@ class KosiBirpurService {
     return null;
   }
 
-  // ── Seed ──────────────────────────────────────────────────────────────────
-  KosiBirpurReading _seed() {
-    debugPrint('[KosiBirpur] ⚠️ all sources failed — SEED (71.48 m local)');
-    return KosiBirpurReading(
-      levelM:       71.48,
-      dangerLevel:  kBirpurDangerLevel,
-      warningLevel: kBirpurWarningLevel,
-      observedAt:   DateTime(2026, 6, 1),
-      source:       'SEED',
-    );
-  }
 
   // ── Utilities ─────────────────────────────────────────────────────────────
   static double _dischargeToLevel(double q) {

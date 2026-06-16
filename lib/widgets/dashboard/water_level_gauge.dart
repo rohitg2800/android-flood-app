@@ -78,8 +78,9 @@ class _WaterLevelGaugeState extends ConsumerState<WaterLevelGauge>
   Widget build(BuildContext context) {
     final rc      = ref.watch(themeRegistryProvider);
     final station = widget.station;
-    final lvlColor = rc.levelColor(
-        station.current, station.warning, station.danger);
+    final lvlColor = station.hasData
+        ? rc.levelColor(station.current, station.warning, station.danger)
+        : rc.textMuted;
     final pct = station.progressPct.clamp(0.0, 1.0);
 
     return Container(

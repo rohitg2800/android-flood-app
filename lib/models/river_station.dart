@@ -87,6 +87,9 @@ class RiverStation {
   /// Used by bihar_river_map_screen Marker construction.
   double? get lng => lon;
 
+  bool   get hasData     => current >= 0;
+  String get levelText   => hasData ? '${current.toStringAsFixed(2)} m' : '-- m';
+  double get safeLevel    => hasData ? current : 0.0;
   double get progressPct => hfl > 0 ? (current / hfl).clamp(0.0, 1.0) : 0.0;
   int    get riskScore   => dangerClass.index;
 

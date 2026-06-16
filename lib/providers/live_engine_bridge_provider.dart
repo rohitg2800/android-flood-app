@@ -225,10 +225,33 @@ class LiveEngineBridgeNotifier extends Notifier<List<RiverStation>> {
       final rawVal = item.value ?? '';
       final numStr = rawVal.replaceAll(RegExp(r'[^0-9.]'), '');
       final level  = double.tryParse(numStr);
-      if (level == null || level <= 0) continue;
+      final hasData = level != null && level > 0;
 
       final normName = _norm(item.title);
       final thresh   = _lookupThreshold(normName);
+
+      // No-data stations: keep in list so UI can show offline chip.
+      // Use threshold danger as sentinel current level (won't trigger alerts).
+      if (!hasData) {
+        final river = thresh?.river
+            ?? (item.raw['river'] as String?)?.trim()
+            ?? item.subtitle;
+        result.add(RiverStation(
+          city:        item.title,
+          state:       (item.raw['state'] as String?)?.trim() ?? 'Bihar',
+          river:       river,
+          station:     item.title,
+          current:     -1,
+          warning:     thresh?.warning ?? 0,
+          danger:      thresh?.danger  ?? 0,
+          hfl:         thresh?.hfl     ?? 0,
+          lastUpdated: '--:--',
+          dataSource:  item.source.name.toUpperCase(),
+          isLive:      false,
+          liveStatus:  'NO_DATA',
+        ));
+        continue;
+      }
 
       // Heuristic fallback if even the store and compiled table miss this station.
       final warning = thresh?.warning ?? level * 0.90;

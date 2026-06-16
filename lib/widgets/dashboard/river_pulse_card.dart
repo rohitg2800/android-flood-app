@@ -78,8 +78,9 @@ class _RiverPulseCardState extends ConsumerState<RiverPulseCard>
   Widget build(BuildContext context) {
     final rc      = ref.watch(themeRegistryProvider);
     final station = widget.station;
-    final lvlColor = rc.levelColor(
-        station.current, station.warning, station.danger);
+    final lvlColor = station.hasData
+        ? rc.levelColor(station.current, station.warning, station.danger)
+        : rc.textMuted;
     final dc = station.dangerClass;
 
     return AnimatedBuilder(
@@ -192,6 +193,24 @@ class _TerminalHeader extends StatelessWidget {
             children: [
               // Live pulse dot
               _LiveDot(color: station.isLive ? rc.safe : rc.textMuted),
+              if (!station.hasData) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: rc.textMuted.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    'NO DATA',
+                    style: rc.labelSm.copyWith(
+                      color:      rc.textMuted,
+                      fontSize:   9,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(width: 8),
               Expanded(
                 child: Text(

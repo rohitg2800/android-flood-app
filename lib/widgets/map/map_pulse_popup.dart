@@ -322,7 +322,7 @@ class _MiniSparklinePainter extends CustomPainter {
 List<double> _mock7DaySeries(RiverStation s) {
   // Placeholder until real 7-day telemetry series is wired.
   // Shape: current +/- noise shaped by risk.
-  final base = s.current;
+  final base = s.safeLevel;
   final riskBoost = switch (s.dangerClass) {
     DangerClass.normal => 0.02,
     DangerClass.aboveNormal => 0.06,

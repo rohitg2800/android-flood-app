@@ -13,7 +13,7 @@ import 'screens/main_shell.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/alerts_screen.dart';
 import 'screens/bihar_river_map_screen.dart';
-import 'screens/map_screen.dart';
+
 import 'screens/news_feed_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/notification_settings_screen.dart';
@@ -34,7 +34,7 @@ import 'screens/india_river_explorer_screen.dart';
 import 'screens/live_stations_screen.dart';
 import 'screens/weather_screen.dart';
 import 'screens/community_screen.dart';
-import 'screens/monitors_screen.dart';
+import 'screens/river_monitor_screen.dart';
 import 'screens/admin_dashboard_screen.dart';
 import 'screens/state_matrix_screen.dart';
 import 'screens/river_monitor_screen.dart';
@@ -132,11 +132,11 @@ class AppRouter {
       case Routes.dashboard:
         page = const DashboardScreen(); break;
       case Routes.monitors:
-        page = const MonitorsScreen(); break;
+        page = const RiverMonitorScreen(); break;
       case Routes.alerts:
         page = const AlertsScreen(); break;
       case Routes.map:
-        page = const MapScreen(); break;
+        page = const BiharRiverMapScreen(); break;
       case Routes.community:
         page = const CommunityScreen(); break;
       case Routes.settings:

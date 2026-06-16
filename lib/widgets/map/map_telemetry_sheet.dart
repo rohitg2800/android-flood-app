@@ -144,7 +144,7 @@ class MapTelemetrySheet extends StatelessWidget {
                                         CrossAxisAlignment.end,
                                     children: [
                                       Text(
-                                        '${s.current.toStringAsFixed(2)} m',
+                                        s.levelText,
                                         style: TextStyle(
                                           color:       riskColorSolid(dc),
                                           fontSize:    13,

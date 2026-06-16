@@ -26,7 +26,7 @@ import 'screens/onboarding_screen.dart';
 import 'screens/main_shell.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/alerts_screen.dart';
-import 'screens/monitors_screen.dart';
+import 'screens/river_monitor_screen.dart';
 import 'screens/predict_screen.dart';
 import 'screens/city_detail_screen.dart';
 import 'screens/settings_screen.dart';
@@ -41,7 +41,7 @@ import 'screens/cwc_station_detail_screen.dart';
 import 'screens/community_screen.dart';
 import 'screens/live_stations_screen.dart';
 import 'screens/news_feed_screen.dart';
-import 'screens/map_screen.dart';
+
 import 'screens/export_screen.dart';
 import 'screens/notification_settings_screen.dart';
 import 'screens/incident_report_screen.dart';
@@ -378,7 +378,7 @@ class FloodWatchApp extends ConsumerWidget {
             return _fade(AlertsScreen(stationFilter: stationFilter));
           }
           case Routes.monitors:
-            return _fade(const MonitorsScreen());
+            return _fade(const RiverMonitorScreen());
           case Routes.predict:
             return _fade(const PredictScreen());
           case Routes.settings:
@@ -402,7 +402,7 @@ class FloodWatchApp extends ConsumerWidget {
           case Routes.news:
             return _fade(const NewsFeedScreen());
           case Routes.map:
-            return _fade(const MapScreen());
+            return _fade(const BiharRiverMapScreen());
           case Routes.community:
             return _fade(const CommunityScreen());
           case Routes.export_:

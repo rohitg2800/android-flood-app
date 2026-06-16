@@ -62,7 +62,7 @@ class RealTimeRiverService extends ChangeNotifier {
       try { await _lfe.refreshData(); } catch (_) {}
     }
 
-    for (final mc in IndiaGeodata.monitoredCities) {
+    final futures = IndiaGeodata.monitoredCities.map((mc) {
       final city  = mc['city']  as String;
       final state = mc['state'] as String;
       final river = mc['river'] as String;
@@ -72,11 +72,12 @@ class RealTimeRiverService extends ChangeNotifier {
       final hfl   = mc.containsKey('hfl')
           ? _fp(mc['hfl'])
           : (dl > 0 ? dl * 1.10 : wl * 1.25);
-      results.add(await _fetchCity(
+      return _fetchCity(
         city: city, state: state, river: river,
         warningLevel: wl, dangerLevel: dl, staticHfl: hfl,
-      ));
-    }
+      );
+    });
+    results.addAll(await Future.wait(futures));
 
     final live = results.where((r) => r.source != 'NO_DATA').length;
     _log('fetchAll done: $live/${results.length} with live data');

@@ -22,9 +22,8 @@ import '../utils/haptic_service.dart';
 import '../main.dart' show navigatorKey;
 import 'critical_alert_screen.dart';
 import 'dashboard_screen.dart';
-import 'monitors_screen.dart';
 import 'alerts_screen.dart';
-import 'map_screen.dart';
+import 'bihar_river_map_screen.dart';
 import 'settings_screen.dart';
 import 'community_screen.dart';
 import 'ai_prediction_screen.dart';
@@ -43,7 +42,6 @@ import 'analytics_dashboard_screen.dart';
 import 'export_screen.dart';
 import 'admin_dashboard_screen.dart';
 import 'model_info_screen.dart';
-import 'bihar_river_map_screen.dart';
 import 'river_monitor_screen.dart';
 
 class MainShell extends ConsumerStatefulWidget {
@@ -60,9 +58,9 @@ class _MainShellState extends ConsumerState<MainShell> {
 
   static final _screens = [
     const DashboardScreen(),
-    const MonitorsScreen(),
+    const RiverMonitorScreen(),
     const AlertsScreen(),
-    const MapScreen(),
+    const BiharRiverMapScreen(),
     const CommunityScreen(),
     const SettingsScreen(),
   ];
