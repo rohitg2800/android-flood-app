@@ -1,7 +1,10 @@
-# backend/ws_server.py  v1.0 — Step 2.5
+# backend/ws_server.py  v1.1
 # FastAPI WebSocket endpoint: /ws/gauges
 # Broadcasts full gauge list every 45s to all connected clients.
-# Integrated with live_levels.py's _build_all_levels() for fresh data.
+#
+# v1.1 fix: json.loads errors inside the receive loop are now caught per-message
+#           so a malformed / non-JSON frame no longer kills the connection
+#           (was crashing with code 1006 on plain-string "ping" from clients).
 
 import asyncio
 import json
@@ -46,7 +49,14 @@ async def ws_gauges_endpoint(websocket: WebSocket, get_live_data_fn):
     try:
         while True:
             raw = await websocket.receive_text()
-            msg = json.loads(raw)
+            # ── Per-message guard: never crash the loop on bad input ──────────
+            try:
+                msg = json.loads(raw)
+            except (json.JSONDecodeError, ValueError):
+                logger.debug(f'[WS] non-JSON frame ignored: {raw[:120]}')
+                continue
+            if not isinstance(msg, dict):
+                continue
             if msg.get('type') == 'ping':
                 await websocket.send_text(json.dumps({'type': 'pong'}))
     except WebSocketDisconnect:
