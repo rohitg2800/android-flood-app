@@ -1,7 +1,5 @@
-// lib/providers/alerts_provider.dart  v3.1
+// lib/providers/alerts_provider.dart  v3.2
 // Re-exports alert symbols from data_fetch_provider + alert_engine.
-// criticalAlertCountProvider removed from show list — it is not exported
-// by data_fetch_provider.dart (fixes undefined_shown_name warning).
 library;
 
 export 'data_fetch_provider.dart'
@@ -11,12 +9,12 @@ export 'data_fetch_provider.dart'
         emergencyAlertsProvider,
         warningAlertsProvider,
         alertCountProvider,
-        stationAlertsProvider,
+        stationAlertsProvider;
+
+export 'stubs.dart'
+    show
         sourceStatusProvider,
-        dataFetchProvider,
-        dataFetchStationsProvider,
-        lastFetchTimeProvider2,
-        fetchSnapshotKpiProvider;
+        dataFetchStationsProvider;
 
 export '../services/alert_engine.dart'
     show
@@ -31,5 +29,7 @@ export '../services/data_fetch_engine.dart'
     show
         DataFetchEngine,
         DataFetchSnapshot,
-        StationReading,
+
         SourceStatus;
+
+export '../models/station_reading.dart' show StationReading;

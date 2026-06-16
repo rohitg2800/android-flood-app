@@ -96,7 +96,7 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
     final fillPct = data.fillPercent ?? 0.0;
     final pctVal  = (fillPct / 100).clamp(0.0, 1.0);
 
-    final predAsync = ref.watch(predictionProvider(data.stationId));
+    final predAsync = ref.watch(predictionProvider((data.stationId, 24)));
 
     return Scaffold(
       backgroundColor: t.scaffoldBg,

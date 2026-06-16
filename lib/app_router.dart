@@ -37,7 +37,6 @@ import 'screens/community_screen.dart';
 import 'screens/river_monitor_screen.dart';
 import 'screens/admin_dashboard_screen.dart';
 import 'screens/state_matrix_screen.dart';
-import 'screens/river_monitor_screen.dart';
 import 'screens/model_info_screen.dart';
 import 'screens/city_detail_screen.dart';
 import 'models/flood_data.dart';

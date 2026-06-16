@@ -1,3 +1,5 @@
+import '../services/kosi_birpur_service.dart';
+import 'kosi_birpur_provider.dart';
 // lib/providers/real_time_river_provider.dart
 // RESTORED: full provider set that merged_stations_provider.dart re-exports.
 //
@@ -13,23 +15,42 @@ export 'stubs.dart' show dataFetchStationsProvider;
 
 // ── wrd / CWC stations provider ──────────────────────────────────────────────────────────────────
 /// Raw WRD stations from the live Bihar provider.
+// Converts AMSL level to Birpur local gauge. Returns null if value is
+// already local (< 100 m) or zero.
+double? _birpurAmslToLocal(double? amsl) {
+  if (amsl == null || amsl <= 0) return null;
+  if (amsl < 100) return amsl; // already local gauge
+  final local = amsl - kBirpurDatumOffset;
+  return local > 0 ? local : null;
+}
+
 final wrdRiverStationsProvider = Provider<List<RiverStation>>((ref) {
-  // biharLiveProvider is AsyncNotifierProvider → AsyncValue<BiharLiveState>
-  // .valueOrNull returns null while loading/error, empty list is safe fallback.
-  final liveState = ref.watch(biharLiveProvider);
+  final liveState   = ref.watch(biharLiveProvider);
+  final birpurAsync = ref.watch(kosiBirpurProvider);
+  final birpur      = birpurAsync.valueOrNull;
+
   return liveState.valueOrNull?.stations
-      .map((s) => RiverStation(
-            city:       s.city,
-            state:      s.state,
-            river:      s.river,
-            station:    s.city, // BiharStationData.city == station name
-            current:    s.currentLevel  ?? 0,
-            warning:    s.warningLevel  ?? 0,
-            danger:     s.dangerLevel   ?? 0,
-            hfl:        0,
-            isLive:     s.source == 'LIVE',
-            dataSource: s.source,
-          ))
+      .map((s) {
+        final isBirpur = s.city.toLowerCase().contains('birpur');
+        return RiverStation(
+          city:       s.city,
+          state:      s.state,
+          river:      s.river,
+          station:    s.city,
+          current:    isBirpur
+                        ? (birpur?.levelM ?? _birpurAmslToLocal(s.currentLevel) ?? kBirpurNormalLevel)
+                        : (s.currentLevel ?? 0),
+          warning:    isBirpur
+                        ? (birpur?.warningLevel ?? kBirpurWarningLevel)
+                        : (s.warningLevel ?? 0),
+          danger:     isBirpur
+                        ? (birpur?.dangerLevel ?? kBirpurDangerLevel)
+                        : (s.dangerLevel ?? 0),
+          hfl:        isBirpur ? kBirpurHFL : 0,
+          isLive:     isBirpur ? (birpur != null) : s.source == 'LIVE',
+          dataSource: isBirpur ? (birpur?.source ?? s.source) : s.source,
+        );
+      })
       .toList() ?? const [];
 });
 

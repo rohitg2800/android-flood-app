@@ -15,7 +15,8 @@ class SyncStatusBanner extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final statusAsync = ref.watch(wsStatusProvider);
     final lastSync    = ref.watch(wsLastSyncProvider);
-    final t           = RiverColors.of(context);
+    // ignore: unused_local_variable
+    final t = RiverColors.of(context);
 
     final status = statusAsync.when(
       data:    (s) => s,

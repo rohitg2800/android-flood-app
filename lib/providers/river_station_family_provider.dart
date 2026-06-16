@@ -7,7 +7,7 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/river_station.dart';
-import 'kosi_birpur_provider.dart' show kosiBirpurProvider, KosiBirpurReading;
+import 'kosi_birpur_provider.dart' show kosiBirpurProvider;
 import 'real_time_river_provider.dart' show mergedStationsProvider;
 
 // Backward-compat re-export — MUST appear before any declarations.

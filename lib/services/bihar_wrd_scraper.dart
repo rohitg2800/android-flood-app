@@ -106,6 +106,14 @@ class BiharWrdScraper {
   }
 
   // ── Public: match a single city ──────────────────────────────────────
+  static double _amslOffset(String stationName) {
+    const offsets = {
+      'Birpur'  : 60.069,
+      'Baltara' : 47.24,
+    };
+    return offsets[stationName] ?? 0.0;
+  }
+
   Future<CwcReading?> fetchForCity(IndiaCity city) async {
     if (!city.state.toLowerCase().contains('bihar')) return null;
     final all = await fetchAll();
@@ -115,7 +123,7 @@ class BiharWrdScraper {
     if (reading == null) return null;
 
     return CwcReading(
-      level:       reading.currentLevel,
+      level:   reading.currentLevel - _amslOffset(reading.stationName),
       warning:     city.warningLevel,
       danger:      reading.dangerLevel > 0 ? reading.dangerLevel : city.dangerLevel,
       hfl:         reading.hfl > 0 ? reading.hfl : null,

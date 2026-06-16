@@ -172,7 +172,7 @@ List<CwcStation> get _seedStations {
     s('Kamla',        'Jainagar',                  66.28, 67.75),
     s('Kosi',         'Baltara',                   31.28, 33.85),
     s('Kosi',         'Basua',                     45.82, 47.75),
-    s('Kosi',         'Birpur',                   212.05, 214.00),
+    s('Kosi',         'Birpur',                    72.75,  74.70, warning: 73.70),
     s('Kosi',         'Kursela',                   24.40, 30.00),
     s('Mahananda',    'Dhengraghat',               33.30, 35.65),
     s('Mahananda',    'Taibpur',                   63.72, 66.00),

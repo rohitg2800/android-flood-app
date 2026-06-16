@@ -43,13 +43,13 @@ final predictionProvider =
       state: match.state.isNotEmpty ? match.state : 'Bihar',
       station: match.station,
       forecastHours: horizonHours,
-      t1d: wxState.rainfall7dMm / 7,
-      t2d: wxState.rainfall7dMm / 7,
-      t3d: wxState.rainfall7dMm / 7,
-      t4d: wxState.rainfall7dMm / 7,
-      t5d: wxState.rainfall7dMm / 7,
-      t6d: wxState.rainfall7dMm / 7,
-      t7d: wxState.rainfall7dMm / 7,
+      t1d: wxState.rainfall7dMm * 0.25,
+      t2d: wxState.rainfall7dMm * 0.20,
+      t3d: wxState.rainfall7dMm * 0.18,
+      t4d: wxState.rainfall7dMm * 0.15,
+      t5d: wxState.rainfall7dMm * 0.10,
+      t6d: wxState.rainfall7dMm * 0.07,
+      t7d: wxState.rainfall7dMm * 0.05,
     );
 
     final ml = await svc.predict(input);

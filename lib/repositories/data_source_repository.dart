@@ -53,7 +53,7 @@ class IMDRepository implements DataSourceRepository {
   Duration get refreshInterval => const Duration(hours: 3);
 
   // IMD RSS/API base — Bihar district warnings
-  static const String _baseUrl = 'https://mausam.imd.gov.in';
+  // static const String _baseUrl = 'https://mausam.imd.gov.in'; // unused
 
   @override
   Future<List<Map<String, dynamic>>> fetchAlerts() async {

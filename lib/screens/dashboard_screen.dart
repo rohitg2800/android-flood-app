@@ -89,6 +89,7 @@ class _Tile {
     required this.icon,
     required this.color,
     required this.builder,
+    // ignore: unused_element_parameter
     this.badge,
   });
 }

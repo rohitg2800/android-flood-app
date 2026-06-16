@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/river_theme.dart';
 import '../theme/theme_3d.dart';
-import 'incident_report_screen.dart' show IncidentDraft, IncidentType, IncidentTypeExt, Severity, SeverityExt;
+import 'incident_report_screen.dart' show IncidentDraft, IncidentType, IncidentTypeExt, SeverityExt;
 
 class CrowdReportFeedScreen extends StatefulWidget {
   static const String route = '/crowd-report-feed';

@@ -267,7 +267,7 @@ class PredictionService {
         peakLevel = features.riverLevelM!;
       }
       final dailyRain = features.bestDailyRainfallMm;
-      if (t1d == 10.0 && dailyRain != null && dailyRain > 0) {
+      if (dailyRain != null && dailyRain > 0) {
         t1d = dailyRain;
       }
       if (peakLevel == input.peakFloodLevelM && t1d == input.t1d) return input;

@@ -17,6 +17,8 @@ http.Client _mockClient(Map<String, dynamic> body, {int status = 200}) {
   return MockClient((_) async => http.Response(jsonEncode(body), status));
 }
 
+// ignore: unused_element
+// ignore: unused_element
 http.Client _mockClientFor(Map<String, String> pathToJson) {
   return MockClient((req) async {
     final path = req.url.path;

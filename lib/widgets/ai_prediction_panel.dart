@@ -1,6 +1,6 @@
 // lib/widgets/ai_prediction_panel.dart
 //
-// Drop-in panel that reads predictionProvider(station) and renders:
+// Drop-in panel that reads predictionProvider((station, 24)) and renders:
 //  • Severity badge + confidence chip
 //  • Animated probability bars (CRITICAL / SEVERE / MODERATE / LOW)
 //    — derived from level-proximity since FloodPrediction has no
@@ -66,7 +66,7 @@ class _AiPredictionPanelState extends ConsumerState<AiPredictionPanel>
 
   @override
   Widget build(BuildContext context) {
-    final async = ref.watch(predictionProvider(widget.stationKey));
+    final async = ref.watch(predictionProvider((widget.stationKey, 24)));
     return async.when(
       loading: () => _skeleton(),
       error:   (e, _) => _errorTile(e.toString()),

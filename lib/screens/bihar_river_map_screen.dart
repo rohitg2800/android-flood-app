@@ -63,6 +63,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
 
 
   // ── GeoJSON → Polygon layer ──────────────────────────────────────────────
+  // ignore: unused_element
   List<Polygon> _buildPolygons(
     Map<String, dynamic> geoJson,
     Map<String, DangerClass> riskMap,
@@ -115,6 +116,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
       .toList();
 
   // ── Legacy WRD markers (kept for existing RiverStation layer) ────────────
+  // ignore: unused_element
   String? _levelLabel(RiverStation s) {
     if (s.current <= 0) return null;
     return '${s.current.toStringAsFixed(2)}m';

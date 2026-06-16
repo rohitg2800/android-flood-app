@@ -34,7 +34,7 @@ import 'data_fetch_provider.dart';
 // 1. Raw enrichment from KosiBirpurService (discharge, trend, WRIS)
 // ─────────────────────────────────────────────────────────────────────────────────
 final _birpurEnrichmentProvider =
-    FutureProvider.autoDispose<KosiBirpurReading?>((ref) async {
+    FutureProvider<KosiBirpurReading?>((ref) async {
   try {
     final r = await KosiBirpurService().fetchLive();
     // Only return live readings — discard SEED to avoid 210m ghost cards
@@ -53,7 +53,7 @@ final _birpurEnrichmentProvider =
 //  sentinel — card shows '——' / NORMAL, NOT a fake 210 m value.
 // ─────────────────────────────────────────────────────────────────────────────────
 final kosiBirpurProvider =
-    FutureProvider.autoDispose<KosiBirpurReading?>((ref) async {
+    FutureProvider<KosiBirpurReading?>((ref) async {
   final enrichFuture = ref.watch(_birpurEnrichmentProvider.future);
   final dfSnap       = DataFetchEngine.instance.last;
 
@@ -103,8 +103,14 @@ final kosiBirpurProvider =
 
   // v2.1: ALL sources down — return null so mergedStationsProvider uses
   // current=0.0 SEED sentinel.  Never return a fake 210/212 m level.
-  debugPrint('[KosiBirpur] all sources down — returning null (SEED suppressed)');
-  return null;
+  debugPrint('[KosiBirpur] all sources down — using static seed');
+  return KosiBirpurReading(
+    levelM:       kBirpurNormalLevel,
+    dangerLevel:  kBirpurDangerLevel,
+    warningLevel: kBirpurWarningLevel,
+    source:       'SEED',
+    observedAt:   DateTime(2000),
+  );
 });
 
 // ─────────────────────────────────────────────────────────────────────────────────

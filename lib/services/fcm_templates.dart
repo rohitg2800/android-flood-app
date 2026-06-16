@@ -20,7 +20,6 @@ class FcmTemplates {
     final riv = alert.river;
     final sta = alert.stationName;
     final dist = alert.district;
-    final sev  = alert.severity.label;
 
     final String title;
     final String body;
@@ -88,9 +87,6 @@ class FcmTemplates {
         title = '\u{1F514} CUSTOM ALERT — $sta';
         body  = '$riv crossed custom threshold ($thr m). Current: $cur m.';
         break;
-      default:
-        title = '$sev ALERT — $sta';
-        body  = alert.message;
     }
 
     return FcmPayload(

@@ -65,14 +65,12 @@ class FrameBudgetGuard with WidgetsBindingObserver {
         FrameBudgetGuard(budgetMs: budgetMs));
   }
 
-  @override
   void didBeginFrame() {
     _start = DateTime.now();
   }
 
   DateTime _start = DateTime.now();
 
-  @override
   void didDrawFrame() {
     final elapsed =
         DateTime.now().difference(_start).inMilliseconds;

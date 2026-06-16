@@ -75,7 +75,7 @@ class OpsIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = RiverColors.of(context);
+    final _ = RiverColors.of(context);
     // Only apply tint if caller provides an explicit colour
     final cf = color != null
         ? ColorFilter.mode(color!, BlendMode.srcIn)
