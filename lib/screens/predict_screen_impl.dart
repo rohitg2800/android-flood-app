@@ -25,6 +25,7 @@ import '../models/river_station.dart';
 import '../providers/prediction_provider.dart';
 import '../models/flood_prediction.dart';
 import '../providers/real_time_river_provider.dart';
+import '../services/predict.dart' as predict_lib;
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -102,11 +103,13 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
     // predictionProvider is FutureProvider.family<FloodPrediction, String>
     final predAsync = station == null
         ? null
-        : ref.watch(predictionProvider(station.station));
+        : ref.watch(predictionProvider((station.station, _horizonHours)));
 
     // FIX: Riverpod 3.x removed valueOrNull — use .value instead.
     // AsyncValue.value returns null when loading or error, and T when data.
     final prediction = predAsync?.value;
+
+    final showOfflineBanner = predAsync?.hasError == true;
 
     return Scaffold(
       backgroundColor: t.scaffoldBg,
@@ -128,6 +131,46 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
+                      // ── Offline stale-cache banner ──────────────────
+                      if (showOfflineBanner && station != null)
+                        FutureBuilder<predict_lib.FloodPrediction?>(
+                          future: predict_lib.PredictionService.loadCached(
+                              station.station),
+                          builder: (ctx, snap) {
+                            if (snap.data == null) return const SizedBox();
+                            final cached = snap.data!;
+                            final age = DateTime.now()
+                                .difference(cached.timestamp);
+                            final ageStr = age.inHours > 0
+                                ? '\${age.inHours}h ago'
+                                : '\${age.inMinutes}m ago';
+                            if (ageStr.isEmpty) return const SizedBox();
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: AppPalette.gold.withOpacity(0.10),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                    color: AppPalette.gold.withOpacity(0.35)),
+                              ),
+                              child: Row(children: [
+                                const Icon(Icons.offline_bolt_rounded,
+                                    size: 16, color: AppPalette.gold),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Offline — showing cached result from \$ageStr',
+                                    style: TextStyle(
+                                        color: AppPalette.gold,
+                                        fontSize: 12),
+                                  ),
+                                ),
+                              ]),
+                            );
+                          },
+                        ),
                       _StationPickerCard(
                         stations: stations,
                         selectedId: _selectedStationId,
@@ -150,7 +193,12 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
                         const SizedBox(height: 16),
                         _HorizonSelector(
                           selected: _horizonHours,
-                          onChanged: (h) => setState(() => _horizonHours = h),
+                          onChanged: (h) {
+                          setState(() => _horizonHours = h);
+                          if (station != null) {
+                            ref.invalidate(predictionProvider((station.station, h)));
+                          }
+                        },
                           theme: t,
                         ),
                         const SizedBox(height: 16),

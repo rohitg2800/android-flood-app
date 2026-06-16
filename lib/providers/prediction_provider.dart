@@ -20,7 +20,9 @@ import 'weather_provider.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 
 final predictionProvider =
-    FutureProvider.family<FloodPrediction, String>((ref, stationKey) async {
+    FutureProvider.family<FloodPrediction, (String, int)>((ref, record) async {
+  final stationKey  = record.$1;
+  final horizonHours = record.$2;
   final stations = ref.watch(mergedStationsProvider);
   final wxState = ref.watch(weatherProvider);
 
@@ -40,6 +42,7 @@ final predictionProvider =
       peakFloodLevelM: match.current > 0 ? match.current : 8.5,
       state: match.state.isNotEmpty ? match.state : 'Bihar',
       station: match.station,
+      forecastHours: horizonHours,
       t1d: wxState.rainfall7dMm / 7,
       t2d: wxState.rainfall7dMm / 7,
       t3d: wxState.rainfall7dMm / 7,
