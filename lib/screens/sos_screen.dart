@@ -1,6 +1,10 @@
-// lib/screens/sos_screen.dart  v3.0 — Redesigned
-// Bold full-screen SOS with glowing danger button, glass-morphism contact cards,
-// animated status banner, and real-time connectivity indicator.
+// lib/screens/sos_screen.dart  v3.1 — stability + polish
+//
+// v3.1 polish:
+// - simplify selected district state to StateProvider
+// - use withValues consistently
+// - make hold/reset animation more reliable after send/fail/reset
+// - slightly tighten header/body spacing for better fit on smaller screens
 library;
 
 import 'dart:async';
@@ -14,25 +18,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/sos_provider.dart';
 import '../services/sos_service.dart';
 import '../theme/river_theme.dart';
-import '../theme/theme_3d.dart';
 
-// ── Connectivity helper ───────────────────────────────────────────────────────
-final _connectivityProvider = StreamProvider<bool>((_) =>
-    Connectivity()
-        .onConnectivityChanged
-        .map((r) => !r.contains(ConnectivityResult.none)));
+final _connectivityProvider = StreamProvider<bool>((_) => Connectivity()
+    .onConnectivityChanged
+    .map((r) => !r.contains(ConnectivityResult.none)));
 
-// ── Selected-district provider ────────────────────────────────────────────────
-class _DistrictNotifier extends Notifier<String?> {
-  @override
-  String? build() => null;
-  void set(String? v) => state = v;
-}
+final _selectedDistrictProvider = StateProvider<String?>((_) => null);
 
-final _selectedDistrictProvider =
-    NotifierProvider<_DistrictNotifier, String?>(_DistrictNotifier.new);
-
-// ─────────────────────────────────────────────────────────────────────────────
 class SosScreen extends ConsumerStatefulWidget {
   const SosScreen({super.key});
   static const String route = '/sos';
@@ -75,12 +67,25 @@ class _SosScreenState extends ConsumerState<SosScreen>
     super.dispose();
   }
 
+  void _resetVisualState() {
+    _holdTimer?.cancel();
+    _holdArc.stop();
+    _holdArc.reset();
+    if (!_pulse.isAnimating) {
+      _pulse.repeat(reverse: true);
+    }
+    if (!_ripple.isAnimating) {
+      _ripple.repeat();
+    }
+  }
+
   void _onHoldStart() {
     final phase = ref.read(sosProvider).phase;
     if (phase != SosPhase.idle) return;
     HapticFeedback.heavyImpact();
     ref.read(sosProvider.notifier).startConfirming();
     _holdArc.forward(from: 0);
+    _holdTimer?.cancel();
     _holdTimer = Timer(_holdDuration, _onHoldComplete);
   }
 
@@ -98,6 +103,7 @@ class _SosScreenState extends ConsumerState<SosScreen>
     HapticFeedback.heavyImpact();
     await ref.read(sosProvider.notifier).confirm();
     _pulse.stop();
+    _ripple.stop();
   }
 
   void _showDistrictPicker(BuildContext context, RiverColors t) {
@@ -107,7 +113,8 @@ class _SosScreenState extends ConsumerState<SosScreen>
       backgroundColor: t.navBg,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (_) => DraggableScrollableSheet(
         expand: false,
         initialChildSize: 0.6,
@@ -116,7 +123,8 @@ class _SosScreenState extends ConsumerState<SosScreen>
           children: [
             const SizedBox(height: 8),
             Container(
-              width: 40, height: 4,
+              width: 40,
+              height: 4,
               decoration: BoxDecoration(
                 color: Colors.white24,
                 borderRadius: BorderRadius.circular(2),
@@ -127,22 +135,27 @@ class _SosScreenState extends ConsumerState<SosScreen>
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
-                  Icon(Icons.location_city_rounded,
-                      color: t.accent, size: 20),
+                  Icon(Icons.location_city_rounded, color: t.accent, size: 20),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text('Select District',
-                        style: TextStyle(
-                            color: t.textPrimary,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w800)),
+                    child: Text(
+                      'Select District',
+                      style: TextStyle(
+                        color: t.textPrimary,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ),
                   TextButton(
                     onPressed: () {
-                      ref.read(_selectedDistrictProvider.notifier).set(null);
+                      ref.read(_selectedDistrictProvider.notifier).state = null;
                       Navigator.pop(context);
                     },
-                    child: Text('Clear', style: TextStyle(color: t.riverDanger)),
+                    child: Text(
+                      'Clear',
+                      style: TextStyle(color: t.riverDanger),
+                    ),
                   ),
                 ],
               ),
@@ -157,9 +170,7 @@ class _SosScreenState extends ConsumerState<SosScreen>
                   final d = districts[i];
                   final label = d
                       .split(' ')
-                      .map((w) => w.isEmpty
-                          ? ''
-                          : '${w[0].toUpperCase()}${w.substring(1)}')
+                      .map((w) => w.isEmpty ? '' : '${w[0].toUpperCase()}${w.substring(1)}')
                       .join(' ');
                   return Container(
                     margin: const EdgeInsets.only(bottom: 6),
@@ -168,15 +179,17 @@ class _SosScreenState extends ConsumerState<SosScreen>
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: ListTile(
-                      title: Text(label,
-                          style: TextStyle(
-                              color: t.textPrimary,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14)),
-                      trailing: Icon(Icons.chevron_right_rounded,
-                          color: t.textSecondary),
+                      title: Text(
+                        label,
+                        style: TextStyle(
+                          color: t.textPrimary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      trailing: Icon(Icons.chevron_right_rounded, color: t.textSecondary),
                       onTap: () {
-                        ref.read(_selectedDistrictProvider.notifier).set(d);
+                        ref.read(_selectedDistrictProvider.notifier).state = d;
                         Navigator.pop(context);
                       },
                     ),
@@ -192,9 +205,9 @@ class _SosScreenState extends ConsumerState<SosScreen>
 
   @override
   Widget build(BuildContext context) {
-    final t       = RiverColors.of(context);
-    final state   = ref.watch(sosProvider);
-    final online  = ref.watch(_connectivityProvider).value ?? true;
+    final t = RiverColors.of(context);
+    final state = ref.watch(sosProvider);
+    final online = ref.watch(_connectivityProvider).value ?? true;
     final selDist = ref.watch(_selectedDistrictProvider);
 
     final detectedDistrict = state.district ?? selDist;
@@ -204,22 +217,24 @@ class _SosScreenState extends ConsumerState<SosScreen>
 
     final districtLabel = detectedDistrict != null
         ? detectedDistrict
-              .split(' ')
-              .map((w) => '${w[0].toUpperCase()}${w.substring(1)}')
-              .join(' ')
+            .split(' ')
+            .map((w) => '${w[0].toUpperCase()}${w.substring(1)}')
+            .join(' ')
         : null;
 
     if (state.phase == SosPhase.idle && !_pulse.isAnimating) {
       _pulse.repeat(reverse: true);
+    }
+    if (state.phase == SosPhase.idle && !_ripple.isAnimating) {
+      _ripple.repeat();
     }
 
     return Scaffold(
       backgroundColor: t.scaffoldBg,
       body: CustomScrollView(
         slivers: [
-          // ── Immersive SliverAppBar ──────────────────────────────────────
           SliverAppBar(
-            expandedHeight: 260,
+            expandedHeight: 244,
             pinned: true,
             stretch: true,
             backgroundColor: const Color(0xFF1A0A0A),
@@ -230,25 +245,25 @@ class _SosScreenState extends ConsumerState<SosScreen>
                 tooltip: 'Select District',
                 onPressed: () => _showDistrictPicker(context, t),
               ),
-              if (state.phase == SosPhase.sent ||
-                  state.phase == SosPhase.failed)
+              if (state.phase == SosPhase.sent || state.phase == SosPhase.failed)
                 TextButton(
                   onPressed: () {
                     ref.read(sosProvider.notifier).reset();
-                    _holdArc.reset();
-                    _pulse.repeat(reverse: true);
+                    _resetVisualState();
                   },
-                  child: const Text('Reset',
-                      style: TextStyle(
-                          color: Colors.white70,
-                          fontWeight: FontWeight.w700)),
+                  child: const Text(
+                    'Reset',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
             ],
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Dark radial background
                   Container(
                     decoration: const BoxDecoration(
                       gradient: RadialGradient(
@@ -262,52 +277,51 @@ class _SosScreenState extends ConsumerState<SosScreen>
                       ),
                     ),
                   ),
-                  // Offline banner
                   if (!online)
                     Positioned(
                       top: MediaQuery.of(context).padding.top,
-                      left: 0, right: 0,
+                      left: 0,
+                      right: 0,
                       child: Container(
                         color: Colors.orange.shade800,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                         child: const Row(
                           children: [
-                            Icon(Icons.wifi_off,
-                                color: Colors.white, size: 14),
+                            Icon(Icons.wifi_off, color: Colors.white, size: 14),
                             SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 'Offline — SMS/call still works over cellular',
                                 style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600),
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
                     ),
-                  // SOS Button centred
                   Center(
                     child: Padding(
                       padding: EdgeInsets.only(
-                          top: MediaQuery.of(context).padding.top + 24),
+                        top: MediaQuery.of(context).padding.top + 20,
+                      ),
                       child: _SosButton(
-                        pulse:       _pulse,
-                        holdArc:     _holdArc,
-                        ripple:      _ripple,
-                        phase:       state.phase,
+                        pulse: _pulse,
+                        holdArc: _holdArc,
+                        ripple: _ripple,
+                        phase: state.phase,
                         onHoldStart: _onHoldStart,
-                        onHoldEnd:   _onHoldEnd,
+                        onHoldEnd: _onHoldEnd,
                       ),
                     ),
                   ),
-                  // Hint text
                   Positioned(
-                    bottom: 20,
-                    left: 0, right: 0,
+                    bottom: 18,
+                    left: 0,
+                    right: 0,
                     child: AnimatedOpacity(
                       opacity: state.phase == SosPhase.idle ? 1 : 0,
                       duration: const Duration(milliseconds: 300),
@@ -315,9 +329,10 @@ class _SosScreenState extends ConsumerState<SosScreen>
                         'Hold 3 seconds to send SOS',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                            color: Colors.white38,
-                            fontSize: 13,
-                            letterSpacing: 0.4),
+                          color: Colors.white38,
+                          fontSize: 13,
+                          letterSpacing: 0.4,
+                        ),
                       ),
                     ),
                   ),
@@ -325,41 +340,34 @@ class _SosScreenState extends ConsumerState<SosScreen>
               ),
             ),
           ),
-
-          // ── Body content ────────────────────────────────────────────────
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 _StatusCard(state: state),
-                if (state.phase == SosPhase.sent ||
-                    state.phase == SosPhase.failed)
-                  const SizedBox(height: 20),
-
-                // ── District contacts ──────────────────────────────────
+                if (state.phase == SosPhase.sent || state.phase == SosPhase.failed)
+                  const SizedBox(height: 18),
                 if (districtContacts.isNotEmpty) ...[
                   _SectionHeader(
-                    icon:  Icons.location_on_rounded,
+                    icon: Icons.location_on_rounded,
                     color: t.riverDanger,
                     label: '${districtLabel ?? 'Your'} District',
                   ),
-                  ...districtContacts.map(
-                      (c) => _ContactCard(contact: c)),
+                  ...districtContacts.map((c) => _ContactCard(contact: c)),
                   const SizedBox(height: 8),
                 ],
-
                 if (districtContacts.isEmpty)
-                  _DistrictPromptCard(t: t,
-                      onTap: () => _showDistrictPicker(context, t)),
-
+                  _DistrictPromptCard(
+                    t: t,
+                    onTap: () => _showDistrictPicker(context, t),
+                  ),
                 _SectionHeader(
-                  icon:  Icons.phone_in_talk_rounded,
+                  icon: Icons.phone_in_talk_rounded,
                   color: t.accent,
                   label: 'National & State Helplines',
                 ),
                 ...kNationalContacts.map((c) => _ContactCard(contact: c)),
-
-                const SizedBox(height: 20),
+                const SizedBox(height: 18),
                 _DisclaimerCard(t: t),
               ]),
             ),
@@ -370,7 +378,6 @@ class _SosScreenState extends ConsumerState<SosScreen>
   }
 }
 
-// ── District prompt card ──────────────────────────────────────────────────────
 class _DistrictPromptCard extends StatelessWidget {
   final RiverColors t;
   final VoidCallback onTap;
@@ -387,33 +394,39 @@ class _DistrictPromptCard extends StatelessWidget {
           color: t.accent.withValues(alpha: 0.07),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-              color: t.accent.withValues(alpha: 0.25), width: 1.5),
+            color: t.accent.withValues(alpha: 0.25),
+            width: 1.5,
+          ),
         ),
         child: Row(
           children: [
             Container(
-              width: 40, height: 40,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
                 color: t.accent.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(Icons.location_city_rounded,
-                  color: t.accent, size: 20),
+              child: Icon(Icons.location_city_rounded, color: t.accent, size: 20),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Set Your District',
-                      style: TextStyle(
-                          color: t.textPrimary,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14)),
+                  Text(
+                    'Set Your District',
+                    style: TextStyle(
+                      color: t.textPrimary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
                   const SizedBox(height: 2),
-                  Text('Tap to get local emergency contacts',
-                      style: TextStyle(
-                          color: t.textSecondary, fontSize: 12)),
+                  Text(
+                    'Tap to get local emergency contacts',
+                    style: TextStyle(color: t.textSecondary, fontSize: 12),
+                  ),
                 ],
               ),
             ),
@@ -425,7 +438,6 @@ class _DistrictPromptCard extends StatelessWidget {
   }
 }
 
-// ── Disclaimer card ───────────────────────────────────────────────────────────
 class _DisclaimerCard extends StatelessWidget {
   final RiverColors t;
   const _DisclaimerCard({required this.t});
@@ -437,25 +449,24 @@ class _DisclaimerCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-            color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Column(
         children: [
           _InfoRow(
-            icon:  Icons.warning_amber_rounded,
+            icon: Icons.warning_amber_rounded,
             color: t.riverDanger,
-            text:  'Hold SOS only in genuine flood emergency.',
+            text: 'Hold SOS only in genuine flood emergency.',
           ),
           _InfoRow(
-            icon:  Icons.location_on_outlined,
+            icon: Icons.location_on_outlined,
             color: t.riverWarning,
-            text:  'GPS coordinates are sent with your alert.',
+            text: 'GPS coordinates are sent with your alert.',
           ),
           _InfoRow(
-            icon:  Icons.info_rounded,
+            icon: Icons.info_rounded,
             color: t.accent,
-            text:  'Tap the city icon in the toolbar to pick your district.',
+            text: 'Tap the city icon in the toolbar to pick your district.',
           ),
         ],
       ),
@@ -463,13 +474,11 @@ class _DisclaimerCard extends StatelessWidget {
   }
 }
 
-// ── Section header ────────────────────────────────────────────────────────────
 class _SectionHeader extends StatelessWidget {
   final IconData icon;
-  final Color    color;
-  final String   label;
-  const _SectionHeader(
-      {required this.icon, required this.color, required this.label});
+  final Color color;
+  final String label;
+  const _SectionHeader({required this.icon, required this.color, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -479,7 +488,8 @@ class _SectionHeader extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 28, height: 28,
+            width: 28,
+            height: 28,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(8),
@@ -487,26 +497,28 @@ class _SectionHeader extends StatelessWidget {
             child: Icon(icon, color: color, size: 16),
           ),
           const SizedBox(width: 10),
-          Text(label,
-              style: TextStyle(
-                  color: t.textPrimary,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.2)),
+          Text(
+            label,
+            style: TextStyle(
+              color: t.textPrimary,
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.2,
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-// ── Redesigned SOS button with ripple + glow ──────────────────────────────────
 class _SosButton extends StatelessWidget {
   final AnimationController pulse;
   final AnimationController holdArc;
   final AnimationController ripple;
-  final SosPhase            phase;
-  final VoidCallback        onHoldStart;
-  final VoidCallback        onHoldEnd;
+  final SosPhase phase;
+  final VoidCallback onHoldStart;
+  final VoidCallback onHoldEnd;
 
   const _SosButton({
     required this.pulse,
@@ -519,34 +531,33 @@ class _SosButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isActive =
-        phase == SosPhase.idle || phase == SosPhase.confirming;
+    final isActive = phase == SosPhase.idle || phase == SosPhase.confirming;
 
     return GestureDetector(
-      onLongPressStart:  isActive ? (_) => onHoldStart() : null,
-      onLongPressEnd:    isActive ? (_) => onHoldEnd()   : null,
-      onLongPressCancel: isActive ? onHoldEnd            : null,
+      onLongPressStart: isActive ? (_) => onHoldStart() : null,
+      onLongPressEnd: isActive ? (_) => onHoldEnd() : null,
+      onLongPressCancel: isActive ? onHoldEnd : null,
       child: SizedBox(
-        width: 190,
-        height: 190,
+        width: 184,
+        height: 184,
         child: AnimatedBuilder(
           animation: Listenable.merge([pulse, holdArc, ripple]),
           builder: (_, __) => CustomPaint(
             painter: _SosButtonPainter(
-              arcProgress:  holdArc.value,
-              pulseValue:   pulse.value,
-              rippleValue:  ripple.value,
-              phase:        phase,
+              arcProgress: holdArc.value,
+              pulseValue: pulse.value,
+              rippleValue: ripple.value,
+              phase: phase,
             ),
             child: Center(
               child: Container(
-                width: 130,
-                height: 130,
+                width: 128,
+                height: 128,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: phase == SosPhase.sent
-                        ? [const Color(0xFF1A3A1A), const Color(0xFF0A1A0A)]
+                        ? const [Color(0xFF1A3A1A), Color(0xFF0A1A0A)]
                         : [
                             Color.lerp(
                               const Color(0xFF5A1010),
@@ -560,9 +571,9 @@ class _SosButton extends StatelessWidget {
                       ? []
                       : [
                           BoxShadow(
-                            color: const Color(0xFFFF3B30).withValues(
-                                alpha: 0.35 + 0.25 * pulse.value),
-                            blurRadius: 30 + 15 * pulse.value,
+                            color: const Color(0xFFFF3B30)
+                                .withValues(alpha: 0.35 + 0.25 * pulse.value),
+                            blurRadius: 28 + 14 * pulse.value,
                             spreadRadius: 4,
                           ),
                         ],
@@ -586,52 +597,56 @@ class _ButtonContent extends StatelessWidget {
     switch (phase) {
       case SosPhase.sending:
         return const Center(
-            child: CircularProgressIndicator(
-                color: Colors.white, strokeWidth: 3));
+          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
+        );
       case SosPhase.sent:
         return const Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.check_circle_rounded,
-                color: Color(0xFF4CAF50), size: 50),
+            Icon(Icons.check_circle_rounded, color: Color(0xFF4CAF50), size: 50),
             SizedBox(height: 4),
-            Text('SENT',
-                style: TextStyle(
-                    color: Color(0xFF4CAF50),
-                    fontWeight: FontWeight.w900,
-                    fontSize: 13,
-                    letterSpacing: 2)),
+            Text(
+              'SENT',
+              style: TextStyle(
+                color: Color(0xFF4CAF50),
+                fontWeight: FontWeight.w900,
+                fontSize: 13,
+                letterSpacing: 2,
+              ),
+            ),
           ],
         );
       case SosPhase.failed:
         return const Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_rounded,
-                color: Color(0xFFFF3B30), size: 46),
+            Icon(Icons.error_rounded, color: Color(0xFFFF3B30), size: 46),
             SizedBox(height: 4),
-            Text('FAILED',
-                style: TextStyle(
-                    color: Color(0xFFFF3B30),
-                    fontWeight: FontWeight.w900,
-                    fontSize: 12,
-                    letterSpacing: 1.5)),
+            Text(
+              'FAILED',
+              style: TextStyle(
+                color: Color(0xFFFF3B30),
+                fontWeight: FontWeight.w900,
+                fontSize: 12,
+                letterSpacing: 1.5,
+              ),
+            ),
           ],
         );
       default:
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.sos_rounded,
-                color: Colors.white, size: 54),
+            const Icon(Icons.sos_rounded, color: Colors.white, size: 54),
             const SizedBox(height: 4),
             Text(
               phase == SosPhase.confirming ? 'HOLD...' : 'SOS',
               style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 15,
-                  letterSpacing: 3),
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontSize: 15,
+                letterSpacing: 3,
+              ),
             ),
           ],
         );
@@ -640,9 +655,9 @@ class _ButtonContent extends StatelessWidget {
 }
 
 class _SosButtonPainter extends CustomPainter {
-  final double   arcProgress;
-  final double   pulseValue;
-  final double   rippleValue;
+  final double arcProgress;
+  final double pulseValue;
+  final double rippleValue;
   final SosPhase phase;
 
   _SosButtonPainter({
@@ -656,7 +671,6 @@ class _SosButtonPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
 
-    // Expanding ripple rings (idle only)
     if (phase == SosPhase.idle) {
       for (int i = 0; i < 2; i++) {
         final prog = (rippleValue - i * 0.5).clamp(0.0, 1.0);
@@ -673,12 +687,12 @@ class _SosButtonPainter extends CustomPainter {
       }
     }
 
-    // Hold progress arc
     if (arcProgress > 0) {
       final rect = Rect.fromCenter(
-          center: center,
-          width: size.width - 10,
-          height: size.height - 10);
+        center: center,
+        width: size.width - 10,
+        height: size.height - 10,
+      );
       canvas.drawArc(
         rect,
         -math.pi / 2,
@@ -701,7 +715,6 @@ class _SosButtonPainter extends CustomPainter {
       old.phase != phase;
 }
 
-// ── Status card ───────────────────────────────────────────────────────────────
 class _StatusCard extends ConsumerWidget {
   final SosState state;
   const _StatusCard({required this.state});
@@ -713,9 +726,9 @@ class _StatusCard extends ConsumerWidget {
     if (state.phase == SosPhase.sent) {
       final distLabel = state.district != null
           ? state.district!
-                .split(' ')
-                .map((w) => '${w[0].toUpperCase()}${w.substring(1)}')
-                .join(' ')
+              .split(' ')
+              .map((w) => '${w[0].toUpperCase()}${w.substring(1)}')
+              .join(' ')
           : null;
       return Container(
         margin: const EdgeInsets.only(bottom: 16),
@@ -726,38 +739,44 @@ class _StatusCard extends ConsumerWidget {
           ),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-              color: const Color(0xFF4CAF50).withValues(alpha: 0.4),
-              width: 1.5),
+            color: const Color(0xFF4CAF50).withValues(alpha: 0.4),
+            width: 1.5,
+          ),
         ),
         child: Row(
           children: [
             Container(
-              width: 44, height: 44,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
                 color: const Color(0xFF4CAF50).withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.check_circle_rounded,
-                  color: Color(0xFF4CAF50), size: 26),
+              child: const Icon(
+                Icons.check_circle_rounded,
+                color: Color(0xFF4CAF50),
+                size: 26,
+              ),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('SOS Alert Sent',
-                      style: TextStyle(
-                          color: Color(0xFF4CAF50),
-                          fontWeight: FontWeight.w800,
-                          fontSize: 15)),
+                  const Text(
+                    'SOS Alert Sent',
+                    style: TextStyle(
+                      color: Color(0xFF4CAF50),
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
+                    ),
+                  ),
                   const SizedBox(height: 3),
                   Text(
                     state.lat != null
-                        ? '${state.lat!.toStringAsFixed(5)}, ${state.lng!.toStringAsFixed(5)}'
-                            '${distLabel != null ? ' · $distLabel, Bihar' : ''}'
+                        ? '${state.lat!.toStringAsFixed(5)}, ${state.lng!.toStringAsFixed(5)}${distLabel != null ? ' · $distLabel, Bihar' : ''}'
                         : 'Emergency services notified',
-                    style: TextStyle(
-                        color: t.textSecondary, fontSize: 12),
+                    style: TextStyle(color: t.textSecondary, fontSize: 12),
                   ),
                 ],
               ),
@@ -777,36 +796,38 @@ class _StatusCard extends ConsumerWidget {
           ),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-              color: const Color(0xFFFF3B30).withValues(alpha: 0.4),
-              width: 1.5),
+            color: const Color(0xFFFF3B30).withValues(alpha: 0.4),
+            width: 1.5,
+          ),
         ),
         child: Row(
           children: [
             Container(
-              width: 44, height: 44,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
                 color: const Color(0xFFFF3B30).withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.error_rounded,
-                  color: Color(0xFFFF3B30), size: 26),
+              child: const Icon(Icons.error_rounded, color: Color(0xFFFF3B30), size: 26),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('SOS Failed',
-                      style: TextStyle(
-                          color: Color(0xFFFF3B30),
-                          fontWeight: FontWeight.w800,
-                          fontSize: 15)),
+                  const Text(
+                    'SOS Failed',
+                    style: TextStyle(
+                      color: Color(0xFFFF3B30),
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
+                    ),
+                  ),
                   const SizedBox(height: 3),
                   Text(
-                    state.errorMessage ??
-                        'Call NDRF directly: 011-24363260',
-                    style: TextStyle(
-                        color: t.textSecondary, fontSize: 12),
+                    state.errorMessage ?? 'Call NDRF directly: 011-24363260',
+                    style: TextStyle(color: t.textSecondary, fontSize: 12),
                   ),
                 ],
               ),
@@ -820,7 +841,6 @@ class _StatusCard extends ConsumerWidget {
   }
 }
 
-// ── Emergency contact card — glassmorphism style ───────────────────────────────
 class _ContactCard extends ConsumerWidget {
   final EmergencyContact contact;
   const _ContactCard({required this.contact});
@@ -834,8 +854,7 @@ class _ContactCard extends ConsumerWidget {
       decoration: BoxDecoration(
         color: t.cardBg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-            color: t.riverDanger.withValues(alpha: 0.15), width: 1),
+        border: Border.all(color: t.riverDanger.withValues(alpha: 0.15), width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.18),
@@ -847,34 +866,40 @@ class _ContactCard extends ConsumerWidget {
       child: Row(
         children: [
           Container(
-            width: 40, height: 40,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               color: t.riverDanger.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(Icons.phone_in_talk_rounded,
-                color: t.riverDanger, size: 18),
+            child: Icon(Icons.phone_in_talk_rounded, color: t.riverDanger, size: 18),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(contact.name,
-                    style: TextStyle(
-                        color: t.textPrimary,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13)),
+                Text(
+                  contact.name,
+                  style: TextStyle(
+                    color: t.textPrimary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                ),
                 const SizedBox(height: 1),
-                Text(contact.role,
-                    style: TextStyle(
-                        color: t.textSecondary,
-                        fontSize: 11)),
-                Text(contact.phone,
-                    style: TextStyle(
-                        color: t.accent,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700)),
+                Text(
+                  contact.role,
+                  style: TextStyle(color: t.textSecondary, fontSize: 11),
+                ),
+                Text(
+                  contact.phone,
+                  style: TextStyle(
+                    color: t.accent,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ],
             ),
           ),
@@ -882,15 +907,14 @@ class _ContactCard extends ConsumerWidget {
           FilledButton(
             onPressed: () async {
               HapticFeedback.selectionClick();
-              final ok = await ref
-                  .read(sosProvider.notifier)
-                  .callContact(contact);
+              final ok = await ref.read(sosProvider.notifier).callContact(contact);
               if (!ok && context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                        'Cannot open dialler. Dial ${contact.phone} manually.',
-                        style: const TextStyle(color: Colors.white)),
+                      'Cannot open dialler. Dial ${contact.phone} manually.',
+                      style: const TextStyle(color: Colors.white),
+                    ),
                     backgroundColor: Colors.red.shade700,
                     duration: const Duration(seconds: 4),
                   ),
@@ -901,12 +925,9 @@ class _ContactCard extends ConsumerWidget {
               backgroundColor: t.riverDanger,
               foregroundColor: Colors.white,
               minimumSize: const Size(60, 36),
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 14, vertical: 0),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
-              textStyle: const TextStyle(
-                  fontSize: 12, fontWeight: FontWeight.w800),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
             ),
             child: const Text('Call'),
           ),
@@ -916,13 +937,11 @@ class _ContactCard extends ConsumerWidget {
   }
 }
 
-// ── Info row ──────────────────────────────────────────────────────────────────
 class _InfoRow extends StatelessWidget {
-  const _InfoRow(
-      {required this.icon, required this.color, required this.text});
+  const _InfoRow({required this.icon, required this.color, required this.text});
   final IconData icon;
-  final Color    color;
-  final String   text;
+  final Color color;
+  final String text;
 
   @override
   Widget build(BuildContext context) {
@@ -934,11 +953,14 @@ class _InfoRow extends StatelessWidget {
           Icon(icon, color: color, size: 16),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(text,
-                style: TextStyle(
-                    color: t.textSecondary,
-                    fontSize: 12,
-                    height: 1.4)),
+            child: Text(
+              text,
+              style: TextStyle(
+                color: t.textSecondary,
+                fontSize: 12,
+                height: 1.4,
+              ),
+            ),
           ),
         ],
       ),
