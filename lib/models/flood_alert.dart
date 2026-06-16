@@ -1,10 +1,9 @@
 // lib/models/flood_alert.dart
 // OpsFlood — FloodAlert model (android-flood-app edition)
 //
-// A display-layer model used by screens that import this path.
-// Mirrors the AlertLevel vocabulary of ThresholdAlert (including 'watch')
-// but lives separately so the import path resolves without touching the
-// existing model layer.
+// v2 — added AlertType enum + missing fields needed by:
+//   alert_share_service, fcm_templates, offline_rule_engine,
+//   excel_export_service, ops_depth_card
 library;
 
 import 'package:flutter/material.dart';
@@ -38,6 +37,34 @@ enum AlertLevel {
   };
 }
 
+// ─── AlertType ───────────────────────────────────────────────────────────────
+
+enum AlertType {
+  levelAboveHfl,
+  levelAboveDanger,
+  levelAboveWarning,
+  rapidRise,
+  forecastDanger24h,
+  forecastDanger48h,
+  rainfallExtreme,
+  rainfallHeavy,
+  upstreamCritical,
+  multiRiverAlert;
+
+  String get displayName => switch (this) {
+    AlertType.levelAboveHfl      => 'Above HFL',
+    AlertType.levelAboveDanger   => 'Above Danger Level',
+    AlertType.levelAboveWarning  => 'Above Warning Level',
+    AlertType.rapidRise          => 'Rapid Rise',
+    AlertType.forecastDanger24h  => 'Forecast Danger (24h)',
+    AlertType.forecastDanger48h  => 'Forecast Danger (48h)',
+    AlertType.rainfallExtreme    => 'Extreme Rainfall',
+    AlertType.rainfallHeavy      => 'Heavy Rainfall',
+    AlertType.upstreamCritical   => 'Upstream Critical',
+    AlertType.multiRiverAlert    => 'Multi-River Alert',
+  };
+}
+
 // ─── FloodAlert ───────────────────────────────────────────────────────────────
 
 class FloodAlert {
@@ -50,10 +77,20 @@ class FloodAlert {
     required this.currentValue,
     required this.dangerLevel,
     required this.warningLevel,
+    required this.hfl,
     required this.fillPercent,
     required this.level,
+    required this.type,
     required this.issuedAt,
+    this.station,
     this.message,
+    this.body,
+    this.action,
+    this.expiresAt,
+    this.rateOfRise,
+    this.rateOfRiseMph,
+    this.rainfall24h,
+    this.rainfall24hMm,
   });
 
   final String     id;
@@ -64,12 +101,26 @@ class FloodAlert {
   final double     currentValue;
   final double     dangerLevel;
   final double     warningLevel;
+  final double     hfl;
   final double     fillPercent;
   final AlertLevel level;
+  final AlertType  type;
   final DateTime   issuedAt;
-  final String?    message;
 
-  /// How far above the relevant threshold (metres / cumecs).
+  // Optional / nullable fields used by services
+  final String?    station;       // station name (e.g. "Birpur (Kosi)")
+  final String?    message;       // short summary
+  final String?    body;          // long description / notification body
+  final String?    action;        // recommended action
+  final DateTime?  expiresAt;     // when this alert expires
+  final double?    rateOfRise;    // m/h
+  final double?    rateOfRiseMph; // m/h alias (some callers use this name)
+  final double?    rainfall24h;   // mm in last 24h
+  final double?    rainfall24hMm; // alias
+
+  // ── Derived ─────────────────────────────────────────────────────────────
+
+  /// How far above the relevant threshold (metres).
   double get breach {
     if (level == AlertLevel.danger || level == AlertLevel.extreme) {
       return currentValue - dangerLevel;
@@ -83,7 +134,7 @@ class FloodAlert {
 
   @override
   String toString() =>
-      'FloodAlert($cityName · ${level.label} · ${currentValue.toStringAsFixed(2)})';
+      'FloodAlert($cityName \u00b7 ${level.label} \u00b7 ${currentValue.toStringAsFixed(2)})';
 
   @override
   bool operator ==(Object other) =>
