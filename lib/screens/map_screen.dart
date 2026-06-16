@@ -11,6 +11,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../models/flood_station.dart';
 import '../models/river_station.dart';
 import '../providers/map_command_provider.dart';
 import '../providers/real_time_river_provider.dart';
@@ -153,9 +154,8 @@ class _MapScreenState extends ConsumerState<MapScreen>
                 ),
               // ── Markers: MapMarkers handles animation internally ─────────
               MapMarkers(
-                stations:      _toFloodStations(stations),
-                onStationTap:  (fs) {
-                  // Find matching RiverStation to reuse existing popup
+                stations:     _toFloodStations(stations),
+                onStationTap: (fs) {
                   final match = stations.where(
                     (s) => s.station.toLowerCase() == fs.city.toLowerCase(),
                   ).firstOrNull;
@@ -271,9 +271,6 @@ class _MapScreenState extends ConsumerState<MapScreen>
 }
 
 // ── RiverStation → FloodStation adapter (for MapMarkers widget) ───────────────
-// MapMarkers was rewritten in Task 3 to use FloodStation.
-// This thin adapter converts the Riverpod RiverStation list on the fly
-// so the existing provider chain doesn't need to change.
 List<FloodStation> _toFloodStations(List<RiverStation> rs) {
   return rs.map((s) {
     final risk = switch (s.dangerClass) {
