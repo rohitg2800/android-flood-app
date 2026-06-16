@@ -9,7 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart' as pv;
 
 import '../mixins/auto_refresh_mixin.dart';
 import '../models/flood_station.dart';
@@ -20,7 +20,6 @@ import '../providers/real_time_river_provider.dart';
 import '../providers/live_engine_bridge_provider.dart';
 import '../theme/rx.dart';
 import '../widgets/map/map_markers.dart';
-import '../widgets/map/map_pulse_popup.dart';
 import '../widgets/map/map_widgets.dart';
 
 const _kBiharCenter = LatLng(25.78, 85.17);
@@ -150,23 +149,19 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
   };
 
   Widget _buildMarkerWidget(RiverStation s) {
-    final level = _levelLabel(s);
-    return switch (s.dangerClass) {
-      DangerClass.extreme || DangerClass.severe => PulseMarker(
-        dangerClass: s.dangerClass,
-        ctrl:        _pulseFor(s.station),
-        level:       level,
-      ),
-      DangerClass.aboveNormal => AmberPulseMarker(
-        ctrl:  _pulseFor(s.station),
-        level: level,
-      ),
-      DangerClass.normal => StaticMarker(
-        dangerClass: s.dangerClass,
-        level:       level,
-        isLive:      s.isLive,
-      ),
+    final color = switch (s.dangerClass) {
+      DangerClass.extreme     => const Color(0xFFC62828),
+      DangerClass.severe      => const Color(0xFFFF8F00),
+      DangerClass.aboveNormal => const Color(0xFFF57F17),
+      DangerClass.normal      => const Color(0xFF2E7D32),
     };
+    return Container(
+      decoration: BoxDecoration(
+        color:  color,
+        shape:  BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 1.5),
+      ),
+    );
   }
 
   void _onMarkerTap(RiverStation s) {
@@ -186,7 +181,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (_) => MapPulsePopup(station: station),
+      builder: (_) => _FloodStationSheet(station: station),
     );
   }
 
@@ -201,7 +196,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
 
     ref.watch(liveEngineStationsProvider);
 
-    return ChangeNotifierProvider(
+    return pv.ChangeNotifierProvider(
       create: (_) => FloodDataProvider(),
       child: Scaffold(
         backgroundColor: rc.scaffoldBg,
@@ -231,7 +226,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
                   // Legacy WRD markers
                   MarkerLayer(markers: _buildMarkers(stations)),
                   // GloFAS live markers from FloodDataProvider
-                  Consumer<FloodDataProvider>(
+                  pv.Consumer<FloodDataProvider>(
                     builder: (_, provider, __) => MapMarkers(
                       stations:     provider.biharStations,
                       onStationTap: _showStationPopup,
@@ -338,7 +333,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
                 ),
 
               // GloFAS loading overlay
-              Consumer<FloodDataProvider>(
+              pv.Consumer<FloodDataProvider>(
                 builder: (_, p, __) {
                   if (!p.isLoading || p.allStations.isNotEmpty) {
                     return const SizedBox.shrink();
@@ -381,6 +376,117 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+
+// ── Inline FloodStation bottom sheet (no RiverStation dependency) ─────────────
+class _FloodStationSheet extends StatelessWidget {
+  final FloodStation station;
+  const _FloodStationSheet({required this.station});
+
+  @override
+  Widget build(BuildContext context) {
+    final s  = station;
+    final rc = context.rc;
+    final riskColor = switch (s.riskLevel) {
+      'CRITICAL' => const Color(0xFFC62828),
+      'HIGH'     => const Color(0xFFFF8F00),
+      'MODERATE' => const Color(0xFFF57F17),
+      'LOW'      => const Color(0xFF2E7D32),
+      _          => const Color(0xFF757575),
+    };
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      child: Container(
+        color: rc.cardBg,
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36, height: 4,
+                decoration: BoxDecoration(
+                  color: rc.stroke,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(s.city,
+                          style: TextStyle(
+                              color: rc.textPrimary,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800)),
+                      Text('${s.riverName}  •  ${s.state}',
+                          style: TextStyle(
+                              color: rc.textSecondary, fontSize: 12)),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: riskColor.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                        color: riskColor.withOpacity(0.5)),
+                  ),
+                  child: Text(s.riskLevel,
+                      style: TextStyle(
+                          color: riskColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (s.currentLevel != null)
+              Text(
+                'Level: ${s.currentLevel!.toStringAsFixed(2)} m'
+                '${s.dangerLevel != null ? "  •  Danger: ${s.dangerLevel!.toStringAsFixed(2)} m" : ""}',
+                style: TextStyle(
+                    color: rc.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600),
+              ),
+            if (s.trend != null) ...[
+              const SizedBox(height: 6),
+              Text('Trend: ${s.trend}  •  Source: ${s.dataSource}',
+                  style: TextStyle(
+                      color: rc.textSecondary, fontSize: 11)),
+            ],
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => Navigator.pop(context),
+                icon: Icon(Icons.close_rounded,
+                    size: 16, color: rc.scaffoldBg),
+                label: Text('Close',
+                    style: TextStyle(color: rc.scaffoldBg)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: rc.accent,
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
