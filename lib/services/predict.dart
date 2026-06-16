@@ -1,19 +1,9 @@
 /// lib/services/predict.dart
-/// Public API shim for predict_screen.dart and any other screen.
-///
-/// ARCHITECTURE
-/// ─────────────────────────────────────────────────────────────────────────
-/// predict_screen.dart imports ONLY this file.
-/// This file re-exports and wraps prediction_facade.dart so there is
-/// exactly one class named PredictionService in the entire app.
-///
-/// HYBRID MERGE STRATEGY (v2 — unified pipeline)
-/// ─────────────────────────────────────────────────────────────────────────
-/// Online:  Pipeline pre-fill → Backend ML (60%) + Local Rule-Engine (40%)
-/// Offline: Local Rule-Engine (100%) with live CWC level when available
-/// ─────────────────────────────────────────────────────────────────────────
 library;
 
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'flood_api.dart';
 import 'pipeline_service.dart';
@@ -21,6 +11,8 @@ import 'prediction_service.dart';
 
 export 'prediction_service.dart' show MonitoringProtocol, PredictionInput;
 export 'pipeline_service.dart'   show PipelineFeatures;
+
+const _kCacheKey = 'flood_prediction_cache';
 
 // ─── Input ────────────────────────────────────────────────────────────────────
 
@@ -32,6 +24,7 @@ class FloodPredictionInput {
   final double t1d, t2d, t3d, t4d, t5d, t6d, t7d;
   final String state;
   final String? station;
+  final int forecastHours;
 
   const FloodPredictionInput({
     required this.peakFloodLevelM,
@@ -42,6 +35,7 @@ class FloodPredictionInput {
     this.t4d = 18, this.t5d = 12, this.t6d = 8, this.t7d = 7,
     required this.state,
     this.station,
+    this.forecastHours = 24,
   });
 
   double get rainfall7d => t1d + t2d + t3d + t4d + t5d + t6d + t7d;
@@ -83,6 +77,7 @@ class FloodPrediction {
   final bool fromBackend;
   final DateTime timestamp;
   final double? liveRiverLevelM;
+  final int forecastHours;
 
   const FloodPrediction({
     required this.severity,
@@ -98,6 +93,7 @@ class FloodPrediction {
     required this.fromBackend,
     required this.timestamp,
     this.liveRiverLevelM,
+    this.forecastHours = 24,
   });
 
   String get alert =>
@@ -108,12 +104,46 @@ class FloodPrediction {
   String get monitoringLevel  => monitoring.level;
   String get monitoringAction => monitoring.action;
 
+  Map<String, dynamic> toJson() => {
+    'severity':           severity,
+    'confidencePercent':  confidencePercent,
+    'probabilities':      probabilities,
+    'algorithm':          algorithm,
+    'dataSource':         dataSource,
+    'riskScore':          riskScore,
+    'dangerLevel':        dangerLevel,
+    'proximityToDangerM': proximityToDangerM,
+    'fromBackend':        fromBackend,
+    'timestamp':          timestamp.toIso8601String(),
+    'liveRiverLevelM':    liveRiverLevelM,
+    'forecastHours':      forecastHours,
+  };
+
+  factory FloodPrediction.fromJson(Map<String, dynamic> j) => FloodPrediction(
+    severity:           j['severity'] as String,
+    confidencePercent:  (j['confidencePercent'] as num).toDouble(),
+    probabilities:      (j['probabilities'] as Map<String, dynamic>)
+        .map((k, v) => MapEntry(k, (v as num).toDouble())),
+    algorithm:          j['algorithm'] as String,
+    dataSource:         j['dataSource'] as String,
+    riskScore:          j['riskScore'] as int,
+    dangerLevel:        (j['dangerLevel'] as num).toDouble(),
+    proximityToDangerM: (j['proximityToDangerM'] as num).toDouble(),
+    monitoring:         const MonitoringProtocol(level: 'NORMAL', action: 'Monitor', priorityZones: []),
+    ensembleDetails:    const {},
+    fromBackend:        j['fromBackend'] as bool,
+    timestamp:          DateTime.parse(j['timestamp'] as String),
+    liveRiverLevelM:    (j['liveRiverLevelM'] as num?)?.toDouble(),
+    forecastHours:      (j['forecastHours'] as int?) ?? 24,
+  );
+
   factory FloodPrediction.fromCore(
     CoreFloodPrediction core, {
     double? liveRiverLevelM,
     String? overrideAlgorithm,
     String? overrideDataSource,
     Map<String, dynamic>? overrideEnsemble,
+    int forecastHours = 24,
   }) =>
       FloodPrediction(
         severity:           core.severity,
@@ -129,62 +159,57 @@ class FloodPrediction {
         fromBackend:        core.fromBackend,
         timestamp:          core.timestamp,
         liveRiverLevelM:    liveRiverLevelM,
+        forecastHours:      forecastHours,
       );
 }
 
 // ─── Service facade ───────────────────────────────────────────────────────────
-//
-// This is the SINGLE PredictionService class visible to the app.
-// prediction_facade.dart's PredictionService is NOT imported here to avoid
-// a duplicate-class conflict. All logic from that file is inlined below.
 
 class PredictionService {
   const PredictionService();
 
-  // ── Primary: pipeline pre-fill → backend (60%) + rule-engine (40%) ───────
   Future<FloodPrediction> predict(FloodPredictionInput input) async {
-    // Step 1 — enrich from pipeline CSV (non-blocking; failures ignored)
-    final enriched = await _enrichFromPipeline(input);
-    final core     = enriched.toPredictionInput();
+    final enriched   = await _enrichFromPipeline(input);
+    final core       = enriched.toPredictionInput();
+    final liveLevel  = await _fetchLiveLevel(enriched.station, enriched.state);
 
-    // Step 2 — CWC live level via backend proxy
-    final double? liveLevel = await _fetchLiveLevel(enriched.station, enriched.state);
+    final localResult = PredictionServiceImpl.instance
+        .localRuleEnginePredict(core, liveLevel: liveLevel);
 
-    // Step 3 — always run local rule engine (instant, offline-safe)
-    final CoreFloodPrediction localResult =
-        PredictionServiceImpl.instance.localRuleEnginePredict(core, liveLevel: liveLevel);
-
-    // Step 4 — try backend ML
     CoreFloodPrediction? backendResult;
     try {
       backendResult = await PredictionServiceImpl.instance
           .backendPredict(core, liveLevel: liveLevel);
-    } catch (_) {
-      backendResult = null;
-    }
+    } catch (_) {}
+
+    final horizon = input.forecastHours;
+    FloodPrediction result;
 
     if (backendResult == null) {
-      return FloodPrediction.fromCore(
+      result = FloodPrediction.fromCore(
         localResult,
         liveRiverLevelM:    liveLevel,
         overrideAlgorithm:  'Offline Rule-Engine',
         overrideDataSource: liveLevel != null
             ? 'CWC Live + Rule Engine (offline)'
             : 'Rule Engine (offline)',
+        forecastHours: horizon,
+      );
+    } else {
+      result = _mergeResults(
+        backend:       backendResult,
+        local:         localResult,
+        liveLevel:     liveLevel,
+        backendWeight: 0.60,
+        localWeight:   0.40,
+        forecastHours: horizon,
       );
     }
 
-    // Step 5 — hybrid merge: backend 60% + local 40%
-    return _mergeResults(
-      backend:       backendResult,
-      local:         localResult,
-      liveLevel:     liveLevel,
-      backendWeight: 0.60,
-      localWeight:   0.40,
-    );
+    await _saveCache(result, input.station ?? input.state);
+    return result;
   }
 
-  // ── Offline-only prediction ───────────────────────────────────────────────
   FloodPrediction predictOffline(
     FloodPredictionInput input, {
     double? liveLevel,
@@ -196,10 +221,34 @@ class PredictionService {
       liveRiverLevelM:    liveLevel,
       overrideAlgorithm:  'Offline Rule-Engine',
       overrideDataSource: 'Rule Engine (offline)',
+      forecastHours:      input.forecastHours,
     );
   }
 
-  // ── Pipeline pre-fill ─────────────────────────────────────────────────────
+  static Future<FloodPrediction?> loadCached(String stationOrState) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw   = prefs.getString('${_kCacheKey}_$stationOrState');
+      if (raw == null) return null;
+      return FloodPrediction.fromJson(
+          jsonDecode(raw) as Map<String, dynamic>);
+    } catch (e) {
+      debugPrint('[Predict] cache load error: $e');
+      return null;
+    }
+  }
+
+  static Future<void> _saveCache(
+      FloodPrediction p, String stationOrState) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+          '${_kCacheKey}_$stationOrState', jsonEncode(p.toJson()));
+    } catch (e) {
+      debugPrint('[Predict] cache save error: $e');
+    }
+  }
+
   Future<FloodPredictionInput> _enrichFromPipeline(
       FloodPredictionInput input) async {
     try {
@@ -212,7 +261,6 @@ class PredictionService {
       double peakLevel = input.peakFloodLevelM;
       double t1d       = input.t1d;
 
-      // Replace sentinel defaults only; respect explicit UI values.
       if (peakLevel == 8.5 &&
           features.riverLevelM != null &&
           features.riverLevelM! > 0) {
@@ -222,10 +270,7 @@ class PredictionService {
       if (t1d == 10.0 && dailyRain != null && dailyRain > 0) {
         t1d = dailyRain;
       }
-
-      if (peakLevel == input.peakFloodLevelM && t1d == input.t1d) {
-        return input;
-      }
+      if (peakLevel == input.peakFloodLevelM && t1d == input.t1d) return input;
 
       return FloodPredictionInput(
         peakFloodLevelM:   peakLevel,
@@ -235,26 +280,27 @@ class PredictionService {
         t1d: t1d,
         t2d: input.t2d, t3d: input.t3d, t4d: input.t4d,
         t5d: input.t5d, t6d: input.t6d, t7d: input.t7d,
-        state:   input.state,
-        station: input.station,
+        state:         input.state,
+        station:       input.station,
+        forecastHours: input.forecastHours,
       );
     } catch (_) {
       return input;
     }
   }
 
-  // ── Hybrid merge ──────────────────────────────────────────────────────────
   FloodPrediction _mergeResults({
     required CoreFloodPrediction backend,
     required CoreFloodPrediction local,
     required double backendWeight,
     required double localWeight,
     double? liveLevel,
+    int forecastHours = 24,
   }) {
     const labels = ['LOW', 'MODERATE', 'SEVERE', 'CRITICAL'];
 
     Map<String, double> norm(Map<String, double> p) {
-      final sum   = p.values.fold(0.0, (s, v) => s + v);
+      final sum = p.values.fold(0.0, (s, v) => s + v);
       if (sum <= 0) return {for (final l in labels) l: 0.25};
       final scale = sum > 2.0 ? 100.0 : 1.0;
       return {for (final l in labels) l: (p[l] ?? 0) / scale};
@@ -273,14 +319,15 @@ class PredictionService {
         ? blended.map((k, v) => MapEntry(k, v / total))
         : {for (final l in labels) l: 0.25};
 
-    final severity   = normed.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
-    final confidence = (normed[severity]! * 100).clamp(0.0, 100.0).roundToDouble();
+    final severity   = normed.entries
+        .reduce((a, b) => a.value >= b.value ? a : b).key;
+    final confidence = (normed[severity]! * 100)
+        .clamp(0.0, 100.0).roundToDouble();
     final riskScore  = (backend.riskScore * backendWeight +
             local.riskScore * localWeight)
-        .round()
-        .clamp(0, 100);
+        .round().clamp(0, 100);
 
-    final String finalSeverity = _saferSeverity(severity, local.severity);
+    final finalSeverity = _saferSeverity(severity, local.severity);
 
     final ensemble = <String, dynamic>{
       'mode':               'hybrid_merge',
@@ -292,6 +339,7 @@ class PredictionService {
       'backend_confidence': backend.confidencePercent,
       'local_confidence':   local.confidencePercent,
       'live_level_used':    liveLevel != null,
+      'forecast_hours':     forecastHours,
       ...backend.ensembleDetails,
     };
 
@@ -299,8 +347,9 @@ class PredictionService {
       severity:           finalSeverity,
       confidencePercent:  confidence,
       probabilities:      normed.map((k, v) => MapEntry(k, v * 100)),
-      algorithm:          'Hybrid (Backend ML 60% + Rule Engine 40%)',
-      dataSource:         liveLevel != null
+      algorithm: 'Hybrid (Backend ML 60% + Rule Engine 40%)'
+          '${forecastHours == 48 ? ' · 48h' : ''}',
+      dataSource: liveLevel != null
           ? 'CWC Live + OpsFlood API + Rule Engine'
           : 'OpsFlood API + Rule Engine',
       riskScore:          riskScore,
@@ -312,7 +361,9 @@ class PredictionService {
       timestamp:          DateTime.now(),
     );
 
-    return FloodPrediction.fromCore(merged, liveRiverLevelM: liveLevel);
+    return FloodPrediction.fromCore(merged,
+        liveRiverLevelM: liveLevel,
+        forecastHours:   forecastHours);
   }
 
   String _saferSeverity(String a, String b) {
@@ -320,7 +371,6 @@ class PredictionService {
     return (rank[a] ?? 0) >= (rank[b] ?? 0) ? a : b;
   }
 
-  // ── CWC live level via backend proxy ──────────────────────────────────────
   Future<double?> _fetchLiveLevel(String? station, String state) async {
     if (station == null || station.isEmpty) return null;
     try {
@@ -330,10 +380,12 @@ class PredictionService {
       final items = raw.whereType<Map<String, dynamic>>().toList();
       final lc = station.toLowerCase();
       for (final item in items) {
-        final name = (item['station'] ?? item['stationName'] ?? item['city'] ?? '')
+        final name = (item['station'] ?? item['stationName'] ??
+                item['city'] ?? '')
             .toString().toLowerCase();
         if (name.contains(lc) || lc.contains(name)) {
-          final level = _sf(item['river_level'] ?? item['riverLevel'] ?? item['current_level']);
+          final level = _sf(item['river_level'] ??
+              item['riverLevel'] ?? item['current_level']);
           final warn  = _sf(item['warning_level'] ?? item['warningLevel']);
           if (level > 0) return level;
           if (warn  > 0) return warn;

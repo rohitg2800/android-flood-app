@@ -25,11 +25,13 @@ class RiverPulseCard extends ConsumerStatefulWidget {
     required this.station,
     this.index = 0,
     this.onTap,
+    this.confidencePercent,
   });
 
   final RiverStation        station;
   final int                 index;
   final VoidCallback?       onTap;
+  final double?             confidencePercent;
 
   @override
   ConsumerState<RiverPulseCard> createState() => _RiverPulseCardState();
@@ -87,7 +89,6 @@ class _RiverPulseCardState extends ConsumerState<RiverPulseCard>
       animation: _ctrl,
       builder: (_, child) {
         final slideOffset = _slide.value * 48.0; // px from bottom
-        final blurSigma   = (1 - _fade.value) * 6.0;
 
         return Transform.translate(
           offset: Offset(0, slideOffset),
@@ -135,7 +136,7 @@ class _RiverPulseCardState extends ConsumerState<RiverPulseCard>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _TerminalHeader(rc: rc, station: station, lvlColor: lvlColor),
+            _TerminalHeader(rc: rc, station: station, lvlColor: lvlColor, confidencePercent: widget.confidencePercent),
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
               child: Column(
@@ -168,10 +169,12 @@ class _TerminalHeader extends StatelessWidget {
     required this.rc,
     required this.station,
     required this.lvlColor,
+    this.confidencePercent,
   });
   final SkinTokens   rc;
   final RiverStation station;
   final Color        lvlColor;
+  final double?      confidencePercent;
 
   @override
   Widget build(BuildContext context) {
@@ -235,6 +238,21 @@ class _TerminalHeader extends StatelessWidget {
                       letterSpacing: 1.0),
                 ),
               ),
+              if (confidencePercent != null) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.07),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: Colors.white24),
+                  ),
+                  child: Text(
+                    '${confidencePercent!.toStringAsFixed(0)}%',
+                    style: rc.labelXs.copyWith(color: rc.textSecondary),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -276,7 +294,7 @@ class _LevelReadout extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Text(
-          '${station.river}',
+          station.river,
           style: rc.labelSm.copyWith(color: rc.textSecondary),
         ),
         const Spacer(),
