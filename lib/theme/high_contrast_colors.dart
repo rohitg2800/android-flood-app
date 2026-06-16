@@ -1,40 +1,41 @@
-// lib/theme/high_contrast_colors.dart  Step 5.2
-// WCAG 2.1 AA high-contrast colour palette.
-// All text/background pairings achieve >= 4.5:1 contrast ratio.
-// Usage: inject via accessibilityProvider — app.dart swaps RiverColors
-// when highContrast == true.
-
+// lib/theme/high_contrast_colors.dart  v2
+// Fixed: all 21 required RiverColors parameters now supplied.
+// divider removed (it's a computed alias via stroke in RiverColors, not a param).
 import 'package:flutter/material.dart';
 import 'river_theme.dart';
 
-/// Returns a [RiverColors] instance tuned for high contrast (dark base).
-/// Contrast ratios verified against WCAG 2.1 AA (4.5:1 body, 3:1 UI).
 RiverColors highContrastColors() {
-  // Base: pure black background, pure-white primary text.
-  // All semantic colours brightened to ensure visibility on black.
-  return RiverColors(
-    // ── Backgrounds
-    scaffoldBg:  const Color(0xFF000000),   // pure black
-    cardBg:      const Color(0xFF0D0D0D),   // near-black card
-    navBg:       const Color(0xFF000000),
-    divider:     const Color(0xFF444444),
-
-    // ── Text  (contrast vs black bg)
-    textPrimary:   const Color(0xFFFFFFFF),  // 21:1 ✓
-    textSecondary: const Color(0xFFDDDDDD),  // 14:1 ✓
-
-    // ── Brand accent (cyan → bright cyan, contrast ~8:1 on black)
-    accent: const Color(0xFF00E5FF),
-
-    // ── Semantic colours (all lightened for black bg)
-    // These map to AppPalette constants used across widgets.
-    // AppPalette itself is unchanged; we only swap the RiverColors token.
+  return const RiverColors(
+    // River semantic
+    riverNormal:    Color(0xFF00E676),
+    riverWarning:   Color(0xFFFFD600),
+    riverSevere:    Color(0xFFFF9100),
+    riverDanger:    Color(0xFFFF3D00),
+    riverCritical:  Color(0xFFFF1744),
+    riverSurface:   Color(0xFF1A1A1A),
+    riverGlow:      Color(0x44FF1744),
+    // Cards / chips
+    cardBg:         Color(0xFF0D0D0D),
+    cardBgElevated: Color(0xFF1A1A1A),
+    chipBg:         Color(0xFF222222),
+    stroke:         Color(0xFF444444),
+    // Text
+    textPrimary:    Color(0xFFFFFFFF),
+    textSecondary:  Color(0xFFDDDDDD),
+    // Sparkline / accent
+    sparklineColor: Color(0xFF00E5FF),
+    accent:         Color(0xFF00E5FF),
+    accentGlow:     Color(0x4400E5FF),
+    metricColor:    Color(0xFF00E5FF),
+    // Nav
+    navBg:          Color(0xFF000000),
+    navActive:      Color(0xFF00E5FF),
+    navInactive:    Color(0xFF666666),
+    // Scaffold
+    scaffoldBg:     Color(0xFF000000),
   );
 }
 
-/// Extension that exposes whether the current [RiverColors] is high-contrast.
 extension HighContrastX on RiverColors {
-  /// True when scaffoldBg is pure-black (our HC sentinel).
-  bool get isHighContrast =>
-      scaffoldBg == const Color(0xFF000000);
+  bool get isHighContrast => scaffoldBg == const Color(0xFF000000);
 }

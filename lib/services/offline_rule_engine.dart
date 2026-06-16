@@ -1,19 +1,6 @@
-// lib/services/offline_rule_engine.dart
-// OpsFlood — Module 5: Community & Offline
-//
-// OfflineRuleEngine  (v3 — fixed FloodAlert constructor to match alert_engine.dart v1.2)
-// ─────────────────────────────────────────────────────────────────────────
-// Evaluates CWC/WRD gauge readings against hard-coded threshold rules and
-// produces List<FloodAlert> WITHOUT any network dependency.
-//
-// Rule hierarchy (highest severity wins per station):
-//   1. level ≥ HFL              → emergency  / levelAboveHfl
-//   2. level ≥ danger           → critical   / levelAboveDanger
-//   3. level ≥ warning          → warning    / levelAboveWarning
-//   4. rate-of-rise ≥ 0.30 m/h  → warning    / rapidRise
-//   5. 24h rainfall ≥ 100 mm    → warning    / rainfallExtreme
-//   6. 24h rainfall ≥ 64.5 mm   → info       / rainfallHeavy
-
+// lib/services/offline_rule_engine.dart  v4
+// Fixed: FloodAlert() constructor updated to match alert_engine.dart v5
+// (uses message instead of body; optional fields passed correctly)
 import '../models/station_reading.dart';
 import 'alert_engine.dart';
 
@@ -40,24 +27,18 @@ class OfflineRuleEngine {
     final ror    = r.rateOfRiseMph;
     final rain   = r.rainfall24hMm;
 
-    if (hfl > 0 && level >= hfl) {
+    if (hfl > 0 && level >= hfl)
       return _makeAlert(r, AlertSeverity.emergency, AlertType.levelAboveHfl, hfl);
-    }
-    if (danger > 0 && level >= danger) {
+    if (danger > 0 && level >= danger)
       return _makeAlert(r, AlertSeverity.critical, AlertType.levelAboveDanger, danger);
-    }
-    if (warn > 0 && level >= warn) {
+    if (warn > 0 && level >= warn)
       return _makeAlert(r, AlertSeverity.warning, AlertType.levelAboveWarning, warn);
-    }
-    if (ror != null && ror >= 0.30) {
+    if (ror != null && ror >= 0.30)
       return _makeAlert(r, AlertSeverity.warning, AlertType.rapidRise, warn);
-    }
-    if (rain != null && rain >= 100.0) {
+    if (rain != null && rain >= 100.0)
       return _makeAlert(r, AlertSeverity.warning, AlertType.rainfallExtreme, 100.0);
-    }
-    if (rain != null && rain >= 64.5) {
+    if (rain != null && rain >= 64.5)
       return _makeAlert(r, AlertSeverity.info, AlertType.rainfallHeavy, 64.5);
-    }
     return null;
   }
 
@@ -67,13 +48,13 @@ class OfflineRuleEngine {
     AlertType      type,
     double         threshold,
   ) {
-    final now   = DateTime.now();
-    final id    = '${r.stationName.toLowerCase().replaceAll(' ', '_')}_offline_${type.name}';
-    final title = '${r.stationName}: ${type.displayName}';
-    final body  = '${r.stationName} on ${r.river} at '
-                  '${r.currentLevel.toStringAsFixed(2)} m '
-                  '(threshold: ${threshold.toStringAsFixed(2)} m). '
-                  '[OFFLINE rule-based alert]';
+    final now    = DateTime.now();
+    final id     = '${r.stationName.toLowerCase().replaceAll(' ', '_')}_offline_${type.name}';
+    final title  = '${r.stationName}: ${type.displayName}';
+    final msg    = '${r.stationName} on ${r.river} at '
+                   '${r.currentLevel.toStringAsFixed(2)} m '
+                   '(threshold: ${threshold.toStringAsFixed(2)} m). '
+                   '[OFFLINE rule-based alert]';
     final action = severity == AlertSeverity.emergency
         ? 'Evacuate immediately.'
         : severity == AlertSeverity.critical
@@ -85,12 +66,17 @@ class OfflineRuleEngine {
       type:           type,
       severity:       severity,
       title:          title,
-      body:           body,
+      message:        msg,
+      body:           msg,
       stationName:    r.stationName,
+      station:        r.stationName,
       river:          r.river,
       district:       r.district,
       state:          r.state,
       currentLevel:   r.currentLevel,
+      dangerLevel:    r.dangerLevel,
+      warningLevel:   r.warningLevel,
+      hfl:            r.hfl,
       thresholdLevel: threshold,
       rateOfRiseMph:  r.rateOfRiseMph,
       rainfall24hMm:  r.rainfall24hMm,
