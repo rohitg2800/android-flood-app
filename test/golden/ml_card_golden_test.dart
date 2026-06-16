@@ -26,23 +26,23 @@ void main() {
         modelVersion:  'v2.1.0',
         outlook:       'River levels expected to continue rising over 72h.',
         fromBackend:   true,
-        next24h: const [
-          PredictionPoint(hour: 6,  level: 47.5),
-          PredictionPoint(hour: 12, level: 47.9),
-          PredictionPoint(hour: 18, level: 48.1),
-          PredictionPoint(hour: 24, level: 48.3),
+        next24h: [
+          PredictionPoint(time: DateTime(2026, 6, 16,  6), level: 47.5),
+          PredictionPoint(time: DateTime(2026, 6, 16, 12), level: 47.9),
+          PredictionPoint(time: DateTime(2026, 6, 16, 18), level: 48.1),
+          PredictionPoint(time: DateTime(2026, 6, 17,  0), level: 48.3),
         ],
-        next48h: const [
-          PredictionPoint(hour: 30, level: 48.7),
-          PredictionPoint(hour: 36, level: 49.2),
-          PredictionPoint(hour: 42, level: 49.8),
-          PredictionPoint(hour: 48, level: 50.1),
+        next48h: [
+          PredictionPoint(time: DateTime(2026, 6, 17,  6), level: 48.7),
+          PredictionPoint(time: DateTime(2026, 6, 17, 12), level: 49.2),
+          PredictionPoint(time: DateTime(2026, 6, 17, 18), level: 49.8),
+          PredictionPoint(time: DateTime(2026, 6, 18,  0), level: 50.1),
         ],
-        next72h: const [
-          PredictionPoint(hour: 54, level: 50.5),
-          PredictionPoint(hour: 60, level: 51.0),
-          PredictionPoint(hour: 66, level: 51.2),
-          PredictionPoint(hour: 72, level: 51.4),
+        next72h: [
+          PredictionPoint(time: DateTime(2026, 6, 18,  6), level: 50.5),
+          PredictionPoint(time: DateTime(2026, 6, 18, 12), level: 51.0),
+          PredictionPoint(time: DateTime(2026, 6, 18, 18), level: 51.2),
+          PredictionPoint(time: DateTime(2026, 6, 19,  0), level: 51.4),
         ],
         updatedAt: DateTime(2026, 6, 16, 8, 30),
       );

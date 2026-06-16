@@ -12,7 +12,18 @@ import '../providers/subscription_provider.dart';
 import '../theme/river_theme.dart';
 
 class AlertSettingsScreen extends ConsumerWidget {
-  const AlertSettingsScreen({super.key});
+  final String? stationId;
+  final String? cityName;
+  final double? dangerLevel;
+  final double? warningLevel;
+
+  const AlertSettingsScreen({
+    super.key,
+    this.stationId,
+    this.cityName,
+    this.dangerLevel,
+    this.warningLevel,
+  });
   static const String route = '/alert-settings';
 
   @override

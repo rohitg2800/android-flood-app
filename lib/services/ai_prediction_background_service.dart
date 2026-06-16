@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
+import 'ops_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 
@@ -15,7 +16,6 @@ const _kTaskName       = 'aiPredictionPoll';
 const _kTaskUniqueName = 'ai_prediction_periodic';
 const _kChannelId      = 'ai_flood_bg';
 const _kChannelName    = 'AI Flood Monitor';
-const _kFgNotifId      = 9000;
 const _kAlertBaseId    = 9100;
 const _kPrefKey        = 'ai_bg_last_severity';
 
@@ -60,7 +60,7 @@ class AiPredictionBgService {
       backoffPolicy:      BackoffPolicy.exponential,
       backoffPolicyDelay: const Duration(minutes: 5),
     );
-    debugPrint('[AiBg] periodic poll registered (${kPollIntervalMinutes} min)');
+    debugPrint('[AiBg] periodic poll registered ($kPollIntervalMinutes min)');
   }
 
   static Future<void> stop() async {
@@ -170,29 +170,33 @@ Future<void> _pollAll() async {
   debugPrint('[AiBg] done — $alertsFired alert(s)');
 }
 
-Future<List<String>> _fetchLiveStations() async {
+
+/// Shared helper — keeps timeout & error handling in one place.
+Future<List<dynamic>?> _cwcGet() async {
   try {
     final res = await http
         .get(Uri.parse('https://befiqr.in/cwc-ffs/bihar'))
         .timeout(const Duration(seconds: 15));
-    if (res.statusCode == 200) {
-      final list = jsonDecode(res.body) as List;
-      return list
-          .map((e) => (e as Map<String, dynamic>)['site'] as String? ?? '')
-          .where((s) => s.isNotEmpty)
-          .toList();
-    }
+    if (res.statusCode == 200) return jsonDecode(res.body) as List;
   } catch (_) {}
+  return null;
+}
+
+Future<List<String>> _fetchLiveStations() async {
+  final list = await _cwcGet();
+  if (list != null) {
+    return list
+        .map((e) => (e as Map<String, dynamic>)['site'] as String? ?? '')
+        .where((s) => s.isNotEmpty)
+        .toList();
+  }
   return [];
 }
 
 Future<Map<String, double>?> _fetchPrediction(String station) async {
   try {
-    final res = await http
-        .get(Uri.parse('${AppConfig.baseUrl}/api/predict/$station'))
-        .timeout(const Duration(seconds: 18));
-    if (res.statusCode == 200) {
-      final j = jsonDecode(res.body) as Map<String, dynamic>;
+    final j = await OpsClient.instance.get('/api/predict/$station');
+    if (j != null) {
       return {
         'currentLevel': (j['current_level'] as num).toDouble(),
         'dangerLevel':  (j['danger_level']  as num).toDouble(),
@@ -201,11 +205,8 @@ Future<Map<String, double>?> _fetchPrediction(String station) async {
   } catch (_) {}
 
   try {
-    final res = await http
-        .get(Uri.parse('https://befiqr.in/cwc-ffs/bihar'))
-        .timeout(const Duration(seconds: 12));
-    if (res.statusCode == 200) {
-      final list = jsonDecode(res.body) as List;
+    final list = await _cwcGet();
+    if (list != null) {
       final match = list
           .cast<Map<String, dynamic>?>()
           .firstWhere(

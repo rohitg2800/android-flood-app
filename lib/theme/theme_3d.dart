@@ -472,7 +472,7 @@ class Td3Badge extends StatelessWidget {
   final double  fontSize;
   final String? severity;
 
-  const Td3Badge({
+  Td3Badge({
     super.key,
     String? text,
     String? label,

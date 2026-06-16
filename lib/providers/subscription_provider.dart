@@ -3,6 +3,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:flutter/foundation.dart';
 import '../models/alert_subscription.dart';
 
 const _kBoxName = 'alert_subscriptions';
@@ -28,6 +29,9 @@ class SubscriptionNotifier
   SubscriptionNotifier() : super([]) {
     _load();
   }
+
+  @visibleForTesting
+  SubscriptionNotifier.forTesting(List<AlertSubscription> seed) : super(seed);
 
   Box<AlertSubscription>? _box;
 

@@ -16,7 +16,7 @@ library;
 
 import 'dart:convert';
 import 'dart:math' as math;
-import 'package:http/http.dart' as http;
+import 'ops_client.dart';
 import '../config/app_config.dart';
 import 'pipeline_service.dart';
 
@@ -119,7 +119,6 @@ class PredictionServiceImpl {
   PredictionServiceImpl._();
   static final PredictionServiceImpl instance = PredictionServiceImpl._();
 
-  final http.Client _client = http.Client();
 
   StateEntry _entry(String state) =>
       PipelineService.instance.entryForState(state);
@@ -129,19 +128,11 @@ class PredictionServiceImpl {
   //      (railway.app) matching BackendApiService and AppConfig endpoints.
   Future<FloodPrediction> backendPredict(
       PredictionInput input, {double? liveLevel}) async {
-    final response = await _client
-        .post(
-          Uri.parse('${AppConfig.baseUrl}/predict/v2'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode(input.toJson()),
-        )
-        .timeout(const Duration(seconds: 25));
-
-    if (response.statusCode != 200) {
-      throw Exception('Backend ${response.statusCode}');
-    }
-    return _fromBackendJson(
-        jsonDecode(response.body) as Map<String, dynamic>);
+    final body = await OpsClient.instance.post(
+      '/predict/v2',
+      input.toJson(),
+    );
+    return _fromBackendJson(body);
   }
 
   FloodPrediction _fromBackendJson(Map<String, dynamic> j) {

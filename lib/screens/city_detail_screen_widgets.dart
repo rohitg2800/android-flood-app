@@ -259,7 +259,13 @@ class SparklineSection extends StatelessWidget {
         SizedBox(
           height: 80,
           child: SparklineChart(
-            values: history,
+            snapshots: List.generate(history.length, (i) => RiverLevelSnapshot(
+              level:     history[i],
+              timestamp: DateTime.now().subtract(
+                  Duration(hours: history.length - 1 - i)),
+            )),
+            warningLevel: data.warningLevel,
+            dangerLevel:  data.dangerLevel,
             color: cityDetailRiskColor(data.riskLevel),
           ),
         ),

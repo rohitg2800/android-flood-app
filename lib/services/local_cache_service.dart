@@ -18,6 +18,12 @@ const _kMaxHistoryDays = 7;
 
 class LocalCacheService {
   LocalCacheService._();
+  @visibleForTesting
+  // ignore: unused_element
+  // Public alias so test/ can subclass across library boundaries
+  @visibleForTesting
+  LocalCacheService.forTesting();
+  @visibleForTesting
   static LocalCacheService _instance = LocalCacheService._();
   static LocalCacheService get instance => _instance;
 

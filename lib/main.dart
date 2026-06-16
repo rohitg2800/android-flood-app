@@ -274,7 +274,19 @@ Future<void> main() async {
           .instance
           .snapshotStream
           .expand((snapshot) {
-            final List<RiverStation> stations = snapshot.toRiverStations();
+            final List<RiverStation> stations = snapshot.stations.map((d) => RiverStation(
+              city:    d.stationName,
+              state:   d.state,
+              river:   d.river,
+              station: d.stationId,
+              current: d.currentLevel,
+              warning: d.warningLevel,
+              danger:  d.dangerLevel,
+              hfl:     d.hfl,
+              lat:     d.latitude,
+              lon:     d.longitude,
+              isLive:  d.isLive,
+            )).toList();
             return AlertEngine.instance.evaluateMerged(stations);
           });
       AlertNotificationBridge.instance.start(alertStream);

@@ -1,28 +1,15 @@
 // lib/providers/accessibility_provider.dart  Steps 5.2 / 5.5
-// Persisted accessibility preferences:
-//   • highContrast   — bool  (swaps to WCAG AA palette)
-//   • textScaleFactor — double (1.0 | 1.2 | 1.4)
-//   • locale         — String locale tag ('en' | 'hi' | 'bn' | 'or')
-//
-// How to wire in MaterialApp:
-//   textScaleFactor: ref.watch(accessibilityProvider).textScaleFactor,
-//   locale:          Locale(ref.watch(accessibilityProvider).locale),
-//   theme:           ref.watch(accessibilityProvider).highContrast
-//                      ? highContrastTheme : appTheme,
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const _kHC       = 'a11y_high_contrast';
-const _kScale    = 'a11y_text_scale';
-const _kLocale   = 'a11y_locale';
-
-// ── State model ───────────────────────────────────────────────────────────────
+const _kHC    = 'a11y_high_contrast';
+const _kScale = 'a11y_text_scale';
+const _kLocale = 'a11y_locale';
 
 class AccessibilityState {
   final bool   highContrast;
   final double textScaleFactor;
-  final String locale;           // BCP-47 tag: 'en', 'hi', 'bn', 'or'
+  final String locale;
 
   const AccessibilityState({
     this.highContrast    = false,
@@ -34,39 +21,34 @@ class AccessibilityState {
     bool?   highContrast,
     double? textScaleFactor,
     String? locale,
-  }) =>
-      AccessibilityState(
-        highContrast:    highContrast    ?? this.highContrast,
-        textScaleFactor: textScaleFactor ?? this.textScaleFactor,
-        locale:          locale          ?? this.locale,
-      );
+  }) => AccessibilityState(
+    highContrast:    highContrast    ?? this.highContrast,
+    textScaleFactor: textScaleFactor ?? this.textScaleFactor,
+    locale:          locale          ?? this.locale,
+  );
 }
-
-// ── Provider ────────────────────────────────────────────────────────────────
 
 final accessibilityProvider =
     StateNotifierProvider<AccessibilityNotifier, AccessibilityState>(
   (ref) => AccessibilityNotifier(),
 );
 
-// ── Notifier ────────────────────────────────────────────────────────────────
-
-class AccessibilityNotifier
-    extends StateNotifier<AccessibilityState> {
-  AccessibilityNotifier() : super(const AccessibilityState()) {
-    _load();
+class AccessibilityNotifier extends StateNotifier<AccessibilityState> {
+  // [prefs] is optional — pass it in tests to avoid singleton races
+  AccessibilityNotifier({SharedPreferences? prefs})
+      : super(const AccessibilityState()) {
+    _load(prefs);
   }
 
-  Future<void> _load() async {
-    final prefs = await SharedPreferences.getInstance();
+  Future<void> _load(SharedPreferences? injected) async {
+    final prefs = injected ?? await SharedPreferences.getInstance();
+    if (!mounted) return;
     state = AccessibilityState(
-      highContrast:    prefs.getBool(_kHC)          ?? false,
-      textScaleFactor: prefs.getDouble(_kScale)     ?? 1.0,
-      locale:          prefs.getString(_kLocale)    ?? 'en',
+      highContrast:    prefs.getBool(_kHC)       ?? false,
+      textScaleFactor: prefs.getDouble(_kScale)  ?? 1.0,
+      locale:          prefs.getString(_kLocale) ?? 'en',
     );
   }
-
-  // ── Public API ──────────────────────────────────────────────────────
 
   Future<void> setHighContrast(bool v) async {
     state = state.copyWith(highContrast: v);

@@ -173,7 +173,7 @@ class OpsDepthCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      alert.body,                         // ✅ was message
+                      alert.body ?? alert.message,                         // ✅ was message
                       style: TextStyle(
                           color:    t.textSecondary,
                           fontSize: 11,

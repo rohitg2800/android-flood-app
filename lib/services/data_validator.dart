@@ -225,12 +225,15 @@ abstract final class DataValidator {
         '${f.city}: ${f.currentLevel}m out of range',
       ));
     }
-    final age = DateTime.now().difference(f.lastUpdated);
-    if (age > ValidatorConstraints.maxAge) {
-      return ValidationErr(ValidationFailure(
-        ValidationFailureKind.staleTimestamp,
-        '${f.city}: data is ${age.inMinutes}m old',
-      ));
+    final _lu = f.lastUpdated;
+    if (_lu != null) {
+      final age = DateTime.now().difference(_lu);
+      if (age > ValidatorConstraints.maxAge) {
+        return ValidationErr(ValidationFailure(
+          ValidationFailureKind.staleTimestamp,
+          '${f.city}: data is ${age.inMinutes}m old',
+        ));
+      }
     }
     return ValidationOk(f);
   }
