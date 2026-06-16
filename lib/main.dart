@@ -12,7 +12,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart' as pv;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'firebase_options.dart';
@@ -190,16 +190,17 @@ Future<void> main() async {
       ),
     );
     runApp(
-      // ── Riverpod scope (for all ref.watch providers) ──────────────────────
+      // ── Riverpod scope (ref.watch providers) ────────────────────────────
       ProviderScope(
         overrides: [
           localeProvider.overrideWith(() => LocaleNotifier(savedLangCode)),
         ],
-        // ── provider package: registers FloodDataProvider globally ───────────
-        child: MultiProvider(
+        // ── provider package: FloodDataProvider for Consumer<FloodDataProvider> ──
+        child: pv.MultiProvider(
           providers: [
-            ChangeNotifierProvider<FloodDataProvider>(
-              create: (_) => FloodDataProvider()..init(),
+            pv.ChangeNotifierProvider<FloodDataProvider>(
+              // FloodDataProvider constructor already calls _load() internally
+              create: (_) => FloodDataProvider(),
             ),
           ],
           child: const FloodWatchApp(),
