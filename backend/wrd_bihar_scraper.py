@@ -73,17 +73,15 @@ _COL_STATUS   = 11   # "Compared to DL"
 
 # ---------------------------------------------------------------------------
 # Static registry — coordinates, danger/warning/safe thresholds
+# 80 stations: original 45 + 35 added from CWC Bihar published list (Jun 2026)
 # ---------------------------------------------------------------------------
 BIHAR_STATION_REGISTRY: List[Dict[str, Any]] = [
     # ── Gandhi Setu (Dighaghat gauge, Patna) ──────────────────────────────
-    # Row 32 in bulletin: "Gandhi Setu", district Patna, DL 50.45
     {"station": "Gandhi Setu",  "river": "Ganga",        "lat": 25.736, "lon": 85.004,
      "danger_level_m": 50.45, "warning_level_m": 49.45, "safe_level_m": 46.00,
      "district": "Patna",
      "pdf_aliases": ["gandhi setu", "gandhi setu (patna)"]},
     # ── Gandhighat (separate downstream gauge, Patna) ─────────────────────
-    # Row 33 in bulletin: "Gandhighat", district Patna, DL 48.60
-    # FIX 3: standalone entry — was wrongly aliased into Gandhi Setu above
     {"station": "Gandhighat",   "river": "Ganga",        "lat": 25.621, "lon": 85.137,
      "danger_level_m": 48.60, "warning_level_m": 47.60, "safe_level_m": 44.00,
      "district": "Patna",
@@ -117,14 +115,11 @@ BIHAR_STATION_REGISTRY: List[Dict[str, Any]] = [
      "district": "Sitamarhi",
      "pdf_aliases": ["sitamarhi"]},
     # ── Dheng Bridge (Bagmati / Sitamarhi) ───────────────────────────────
-    # Row 2 in bulletin: "Dheng bridge", district Sitamarhi
-    # FIX 2: district field used in dedup key — so Dhengraghat (Purnia) stays separate
     {"station": "Dheng Bridge", "river": "Bagmati",      "lat": 26.011, "lon": 85.539,
      "danger_level_m": 57.61, "warning_level_m": 56.61, "safe_level_m": 53.00,
      "district": "Sitamarhi",
      "pdf_aliases": ["dheng bridge", "dheng bridge (sitamarhi)"]},
     # ── Dhengraghat (Mahananda / Purnia) ─────────────────────────────────
-    # Row 29 in bulletin: "Dhengraghat", district Purnia — DIFFERENT station
     {"station": "Dhengraghat",  "river": "Mahananda",    "lat": 25.778, "lon": 87.476,
      "danger_level_m": 35.65, "warning_level_m": 34.65, "safe_level_m": 31.00,
      "district": "Purnia",
@@ -177,10 +172,11 @@ BIHAR_STATION_REGISTRY: List[Dict[str, Any]] = [
      "danger_level_m": 72.00, "warning_level_m": 71.00, "safe_level_m": 68.00,
      "district": "Supaul",
      "pdf_aliases": ["rajabas"]},
+    # ── Birpur (CWC) — corrected thresholds Jun 2026 ─────────────────────
     {"station": "Birpur",       "river": "Kosi",         "lat": 26.510, "lon": 87.030,
-     "danger_level_m": 68.00, "warning_level_m": 67.00, "safe_level_m": 64.00,
+     "danger_level_m": 74.70, "warning_level_m": 73.70, "safe_level_m": 72.75,
      "district": "Supaul",
-     "pdf_aliases": ["birpur", "birpur (d/s)"]},
+     "pdf_aliases": ["birpur", "birpur (d/s)", "birpur (cwc)"]},
     {"station": "Kosi Mahasetu","river": "Kosi",         "lat": 25.960, "lon": 86.960,
      "danger_level_m": 43.28, "warning_level_m": 42.28, "safe_level_m": 39.00,
      "district": "Saharsa",
@@ -269,6 +265,162 @@ BIHAR_STATION_REGISTRY: List[Dict[str, Any]] = [
      "danger_level_m": 56.00, "warning_level_m": 55.00, "safe_level_m": 52.00,
      "district": "Vaishali",
      "pdf_aliases": ["lalganj"]},
+
+    # ── NEW STATIONS — CWC Bihar published threshold list (Jun 2026) ──────
+
+    # Ganga belt — downstream
+    {"station": "Fatuha",       "river": "Ganga",        "lat": 25.519, "lon": 85.318,
+     "danger_level_m": 49.37, "warning_level_m": 48.37, "safe_level_m": 45.00,
+     "district": "Patna",
+     "pdf_aliases": ["fatuha"]},
+    {"station": "Barh",         "river": "Ganga",        "lat": 25.480, "lon": 85.719,
+     "danger_level_m": 44.93, "warning_level_m": 43.93, "safe_level_m": 40.00,
+     "district": "Patna",
+     "pdf_aliases": ["barh"]},
+    {"station": "Mokama",       "river": "Ganga",        "lat": 25.396, "lon": 85.922,
+     "danger_level_m": 41.15, "warning_level_m": 40.15, "safe_level_m": 37.00,
+     "district": "Patna",
+     "pdf_aliases": ["mokama"]},
+    {"station": "Simaria",      "river": "Ganga",        "lat": 25.370, "lon": 86.000,
+     "danger_level_m": 40.26, "warning_level_m": 39.26, "safe_level_m": 36.00,
+     "district": "Lakhisarai",
+     "pdf_aliases": ["simaria"]},
+    {"station": "Sultanganj",   "river": "Ganga",        "lat": 25.245, "lon": 86.739,
+     "danger_level_m": 35.38, "warning_level_m": 34.38, "safe_level_m": 31.00,
+     "district": "Bhagalpur",
+     "pdf_aliases": ["sultanganj"]},
+    {"station": "Sahebganj",    "river": "Ganga",        "lat": 25.244, "lon": 87.674,
+     "danger_level_m": 26.83, "warning_level_m": 25.83, "safe_level_m": 22.00,
+     "district": "Sahibganj",
+     "pdf_aliases": ["sahebganj", "sahibganj"]},
+
+    # Gandak / Saran / Gopalganj belt
+    {"station": "Gopalganj",    "river": "Gandak",       "lat": 26.469, "lon": 84.434,
+     "danger_level_m": 62.00, "warning_level_m": 61.00, "safe_level_m": 58.00,
+     "district": "Gopalganj",
+     "pdf_aliases": ["gopalganj"]},
+    {"station": "Mirganj",      "river": "Gandak",       "lat": 26.520, "lon": 84.390,
+     "danger_level_m": 64.30, "warning_level_m": 63.30, "safe_level_m": 60.00,
+     "district": "Gopalganj",
+     "pdf_aliases": ["mirganj"]},
+    {"station": "Siwan",        "river": "Daha",         "lat": 26.219, "lon": 84.357,
+     "danger_level_m": 58.00, "warning_level_m": 57.00, "safe_level_m": 54.00,
+     "district": "Siwan",
+     "pdf_aliases": ["siwan"]},
+    {"station": "Chhapra",      "river": "Ganga",        "lat": 25.783, "lon": 84.748,
+     "danger_level_m": 56.00, "warning_level_m": 55.00, "safe_level_m": 52.00,
+     "district": "Saran",
+     "pdf_aliases": ["chhapra", "chapra"]},
+    {"station": "Dighi",        "river": "Gandak",       "lat": 25.793, "lon": 84.976,
+     "danger_level_m": 55.50, "warning_level_m": 54.50, "safe_level_m": 51.00,
+     "district": "Saran",
+     "pdf_aliases": ["dighi"]},
+
+    # Kosi downstream belt
+    {"station": "Naugachia",    "river": "Kosi",         "lat": 25.394, "lon": 87.097,
+     "danger_level_m": 28.35, "warning_level_m": 27.35, "safe_level_m": 24.00,
+     "district": "Bhagalpur",
+     "pdf_aliases": ["naugachia"]},
+    {"station": "Khagaria",     "river": "Kosi",         "lat": 25.501, "lon": 86.465,
+     "danger_level_m": 33.51, "warning_level_m": 32.51, "safe_level_m": 29.00,
+     "district": "Khagaria",
+     "pdf_aliases": ["khagaria"]},
+    {"station": "Badlaghat",    "river": "Kosi",         "lat": 25.730, "lon": 87.020,
+     "danger_level_m": 36.50, "warning_level_m": 35.50, "safe_level_m": 32.00,
+     "district": "Saharsa",
+     "pdf_aliases": ["badlaghat", "badla ghat"]},
+    {"station": "Teghra",       "river": "Burhi Gandak", "lat": 25.494, "lon": 85.944,
+     "danger_level_m": 36.20, "warning_level_m": 35.20, "safe_level_m": 32.00,
+     "district": "Begusarai",
+     "pdf_aliases": ["teghra"]},
+    {"station": "Salempur",     "river": "Burhi Gandak", "lat": 26.052, "lon": 85.527,
+     "danger_level_m": 47.50, "warning_level_m": 46.50, "safe_level_m": 43.00,
+     "district": "Muzaffarpur",
+     "pdf_aliases": ["salempur"]},
+    {"station": "Goalpara",     "river": "Bagmati",      "lat": 26.300, "lon": 85.750,
+     "danger_level_m": 51.70, "warning_level_m": 50.70, "safe_level_m": 47.00,
+     "district": "Muzaffarpur",
+     "pdf_aliases": ["goalpara"]},
+    {"station": "Rampur",       "river": "Bagmati",      "lat": 26.200, "lon": 85.820,
+     "danger_level_m": 49.00, "warning_level_m": 48.00, "safe_level_m": 45.00,
+     "district": "Samastipur",
+     "pdf_aliases": ["rampur"]},
+
+    # North Bihar — Kosi headworks / Nepal border
+    {"station": "Bhimnagar Barrage", "river": "Kosi",   "lat": 26.880, "lon": 87.020,
+     "danger_level_m": 79.20, "warning_level_m": 78.20, "safe_level_m": 75.00,
+     "district": "Supaul",
+     "pdf_aliases": ["bhimnagar", "bhimnagar barrage"]},
+    {"station": "Nirmali",      "river": "Kosi",         "lat": 26.311, "lon": 86.589,
+     "danger_level_m": 39.60, "warning_level_m": 38.60, "safe_level_m": 35.00,
+     "district": "Supaul",
+     "pdf_aliases": ["nirmali"]},
+    {"station": "Sonbarsa",     "river": "Bagmati",      "lat": 26.628, "lon": 85.536,
+     "danger_level_m": 72.00, "warning_level_m": 71.00, "safe_level_m": 68.00,
+     "district": "Sitamarhi",
+     "pdf_aliases": ["sonbarsa"]},
+    {"station": "Pandaul",      "river": "Kamla Balan",  "lat": 26.183, "lon": 86.050,
+     "danger_level_m": 48.00, "warning_level_m": 47.00, "safe_level_m": 44.00,
+     "district": "Madhubani",
+     "pdf_aliases": ["pandaul"]},
+    {"station": "Pipra",        "river": "Bagmati",      "lat": 26.460, "lon": 85.380,
+     "danger_level_m": 58.50, "warning_level_m": 57.50, "safe_level_m": 54.00,
+     "district": "Sitamarhi",
+     "pdf_aliases": ["pipra"]},
+    {"station": "Lalbegiaghat", "river": "Bagmati",      "lat": 26.340, "lon": 85.910,
+     "danger_level_m": 53.50, "warning_level_m": 52.50, "safe_level_m": 49.00,
+     "district": "Muzaffarpur",
+     "pdf_aliases": ["lalbegiaghat", "lalbegi ghat"]},
+    {"station": "Turki",        "river": "Burhi Gandak", "lat": 26.201, "lon": 85.248,
+     "danger_level_m": 53.00, "warning_level_m": 52.00, "safe_level_m": 49.00,
+     "district": "Muzaffarpur",
+     "pdf_aliases": ["turki"]},
+    {"station": "Bairgania",    "river": "Lakhandei",    "lat": 26.752, "lon": 85.278,
+     "danger_level_m": 70.00, "warning_level_m": 69.00, "safe_level_m": 66.00,
+     "district": "Sitamarhi",
+     "pdf_aliases": ["bairgania"]},
+    {"station": "Narkatia",     "river": "Sikrahana",    "lat": 27.072, "lon": 84.479,
+     "danger_level_m": 82.00, "warning_level_m": 81.00, "safe_level_m": 78.00,
+     "district": "East Champaran",
+     "pdf_aliases": ["narkatia", "narkatiyaganj"]},
+    {"station": "Raxaul",       "river": "Sikrahana",    "lat": 26.986, "lon": 84.852,
+     "danger_level_m": 76.00, "warning_level_m": 75.00, "safe_level_m": 72.00,
+     "district": "East Champaran",
+     "pdf_aliases": ["raxaul"]},
+
+    # Mahananda / North-East Bihar
+    {"station": "Araria",       "river": "Bakra",        "lat": 26.148, "lon": 87.473,
+     "danger_level_m": 58.00, "warning_level_m": 57.00, "safe_level_m": 54.00,
+     "district": "Araria",
+     "pdf_aliases": ["araria"]},
+    {"station": "Kishanganj",   "river": "Mahananda",    "lat": 26.100, "lon": 87.950,
+     "danger_level_m": 76.00, "warning_level_m": 75.00, "safe_level_m": 72.00,
+     "district": "Kishanganj",
+     "pdf_aliases": ["kishanganj"]},
+    {"station": "Purnea",       "river": "Saurah",       "lat": 25.777, "lon": 87.470,
+     "danger_level_m": 37.00, "warning_level_m": 36.00, "safe_level_m": 33.00,
+     "district": "Purnia",
+     "pdf_aliases": ["purnea", "purnia"]},
+    {"station": "Saharsa",      "river": "Kosi",         "lat": 25.883, "lon": 86.597,
+     "danger_level_m": 38.50, "warning_level_m": 37.50, "safe_level_m": 34.00,
+     "district": "Saharsa",
+     "pdf_aliases": ["saharsa"]},
+    {"station": "Madhepura",    "river": "Kosi",         "lat": 25.921, "lon": 86.792,
+     "danger_level_m": 40.00, "warning_level_m": 39.00, "safe_level_m": 36.00,
+     "district": "Madhepura",
+     "pdf_aliases": ["madhepura"]},
+    {"station": "Supaul",       "river": "Kosi",         "lat": 26.123, "lon": 86.608,
+     "danger_level_m": 44.00, "warning_level_m": 43.00, "safe_level_m": 40.00,
+     "district": "Supaul",
+     "pdf_aliases": ["supaul"]},
+    {"station": "Vaishali",     "river": "Gandak",       "lat": 25.988, "lon": 85.128,
+     "danger_level_m": 55.50, "warning_level_m": 54.50, "safe_level_m": 51.00,
+     "district": "Vaishali",
+     "pdf_aliases": ["vaishali"]},
+    {"station": "Gopalpur",     "river": "Burhi Gandak", "lat": 26.460, "lon": 84.978,
+     "danger_level_m": 60.00, "warning_level_m": 59.00, "safe_level_m": 56.00,
+     "district": "East Champaran",
+     "pdf_aliases": ["gopalpur"]},
 ]
 
 # Alias -> registry entry lookup
@@ -296,12 +448,6 @@ def _safe_float(val: str) -> Optional[float]:
 
 
 def _clean_station_name(raw: str) -> str:
-    """
-    Normalise a station name from the PDF:
-      - Collapse embedded newlines to a single space
-      - Strip parenthetical distance suffixes: '(47 km u/s)', '(64.25 km d/s)'
-      - Strip leading/trailing whitespace
-    """
     name = re.sub(r"\s*\n\s*", " ", raw)
     name = re.sub(r"\s*\(\s*[\d.]+\s*km\s*[ud]/s\s*\)", "", name, flags=re.IGNORECASE)
     return name.strip()
@@ -335,22 +481,15 @@ def _alert(risk: str) -> str:
 
 
 def _match_registry(name: str, district: str = "") -> Optional[Dict[str, Any]]:
-    """
-    Match a station name (+ optional district hint) to the registry.
-    District is used to disambiguate stations with similar names
-    (e.g. 'Dheng Bridge'/Sitamarhi vs 'Dhengraghat'/Purnia).
-    """
     needle = name.strip().lower()
     dist   = district.strip().lower()
 
-    # Exact alias match — if district also matches, prefer that entry
     if needle in _ALIAS_INDEX:
         candidate = _ALIAS_INDEX[needle]
         reg_dist  = candidate.get("district", "").lower()
         if not dist or not reg_dist or dist in reg_dist or reg_dist in dist:
             return candidate
 
-    # Fuzzy alias match with district tiebreak
     candidates = []
     for alias, entry in _ALIAS_INDEX.items():
         if alias in needle or needle in alias:
@@ -361,7 +500,6 @@ def _match_registry(name: str, district: str = "") -> Optional[Dict[str, Any]]:
     if len(candidates) == 1:
         return candidates[0]
 
-    # Tiebreak by district
     if dist:
         for c in candidates:
             reg_dist = c.get("district", "").lower()
@@ -454,7 +592,7 @@ def _station_from_registry(reg: Dict[str, Any], timestamp: str) -> Dict[str, Any
 
 
 # ---------------------------------------------------------------------------
-# Bulletin PDF parser  (column layout confirmed from live diagnostic)
+# Bulletin PDF parser
 # ---------------------------------------------------------------------------
 
 _HEADER_FRAGMENTS = {
@@ -465,30 +603,17 @@ _HEADER_FRAGMENTS = {
 
 
 def _is_header_row(cells: List[str]) -> bool:
-    """
-    Return True if this row is a header / continuation row that must be skipped.
-
-    Three cases:
-      1. sl_cell contains a newline  →  it's a multi-line header cell like 'Sl\\nNo.'
-         (data rows always have a plain integer in col 0)
-      2. sl_cell is non-empty and non-numeric  →  header or section title row
-      3. station cell is purely made of header keywords
-    """
     sl_cell      = cells[_COL_SL]      if len(cells) > _COL_SL      else ""
     station_cell = cells[_COL_STATION] if len(cells) > _COL_STATION else ""
 
-    # FIX 1: header cells from pdfplumber retain the literal \n from the PDF
-    # e.g. col0 = "Sl\nNo."  — data rows always have a bare integer like "1"
     if "\n" in sl_cell:
         return True
 
-    # Non-numeric, non-empty sl cell (section dividers, sub-headers)
     if sl_cell and not re.match(r"^\d+\.?$", sl_cell.strip()):
         words = station_cell.lower().split()
         if any(w in _HEADER_FRAGMENTS for w in words):
             return True
 
-    # Station cell is purely header keywords (e.g. "Site/Station")
     words = station_cell.lower().split()
     if words and all(w in _HEADER_FRAGMENTS for w in words[:2]):
         return True
@@ -497,17 +622,6 @@ def _is_header_row(cells: List[str]) -> bool:
 
 
 def _parse_bulletin_pdf(pdf_bytes: bytes, timestamp: str) -> List[Dict[str, Any]]:
-    """
-    Parse FMISC Daily Water Level Bulletin PDF.
-
-    Column layout (confirmed):
-      0=Sl, 1=River, 2=Station, 3=District, 4=DL, 5=HFL,
-      6=ObservedWL, 7=FcstD0, 8=FcstD1, 9=FcstD2, 10=Remarks, 11=ComparedToDL
-
-    Dedup key: (station_name | district).lower()
-      → keeps Dheng Bridge/Sitamarhi and Dhengraghat/Purnia as separate rows
-      → keeps Gandhi Setu/Patna and Gandhighat/Patna as separate rows
-    """
     try:
         import pdfplumber  # type: ignore
     except ImportError:
@@ -515,7 +629,6 @@ def _parse_bulletin_pdf(pdf_bytes: bytes, timestamp: str) -> List[Dict[str, Any]
         return []
 
     results:   List[Dict[str, Any]] = []
-    # FIX 2: dedup key = (cleaned_name | district) — not just cleaned_name
     seen:      set = set()
     last_river = ""
 
@@ -535,27 +648,22 @@ def _parse_bulletin_pdf(pdf_bytes: bytes, timestamp: str) -> List[Dict[str, Any]
                         if _is_header_row(cells):
                             continue
 
-                        # ── Station name ──
                         raw_name     = cells[_COL_STATION]
                         station_name = _clean_station_name(raw_name)
                         if not station_name or len(station_name) < 2:
                             continue
 
-                        # ── District (col 3) ──
                         district = _clean_station_name(cells[_COL_DISTRICT])
 
-                        # ── River: carry forward from merged cells ──
                         river_name = _clean_station_name(cells[_COL_RIVER])
                         if river_name:
                             last_river = river_name
                         else:
                             river_name = last_river
 
-                        # ── Levels from confirmed columns ──
                         dl_val   = _safe_float(cells[_COL_DL])
                         observed = _safe_float(cells[_COL_OBSERVED])
 
-                        # Sanity: Bihar gauge levels are 10–200 m MSL
                         if observed is not None and not (10.0 <= observed <= 200.0):
                             observed = None
                         if dl_val is not None and not (10.0 <= dl_val <= 200.0):
@@ -563,8 +671,6 @@ def _parse_bulletin_pdf(pdf_bytes: bytes, timestamp: str) -> List[Dict[str, Any]
 
                         portal_status = cells[_COL_STATUS].strip() or "Normal"
 
-                        # FIX 2: dedup by (name | district) so same-name
-                        # stations in different districts are not collapsed
                         dedup_key = f"{station_name.lower()}|{district.lower()}"
                         if dedup_key in seen:
                             continue
@@ -576,10 +682,6 @@ def _parse_bulletin_pdf(pdf_bytes: bytes, timestamp: str) -> List[Dict[str, Any]
                                 dl_val, portal_status, timestamp, "WRD_BIHAR",
                                 district=district,
                             )
-                        )
-                        logger.debug(
-                            "[wrd_bihar] %-22s | dist=%-12s | obs=%-6s | DL=%-6s | %s",
-                            station_name, district, observed, dl_val, portal_status
                         )
 
     except Exception as exc:
@@ -679,7 +781,6 @@ def _merge_pdf_results(
     bulletin: List[Dict[str, Any]],
     ganga: List[Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
-    """Bulletin is authoritative; Ganga PDF fills in missing Ganga-belt entries."""
     merged: Dict[str, Dict[str, Any]] = {s["station"].lower(): s for s in bulletin}
     for s in ganga:
         key = s["station"].lower()
@@ -753,10 +854,10 @@ class WRDBiharScraper:
         if live_data:
             self._cache    = live_data
             self._cache_ts = datetime.datetime.utcnow()
-            logger.info("[wrd_bihar] ✅ Cached %d live stations", len(live_data))
+            logger.info("[wrd_bihar] Cached %d live stations", len(live_data))
             return live_data
 
-        logger.warning("[wrd_bihar] ⚠️  PDFs empty/failed — using registry fallback")
+        logger.warning("[wrd_bihar] PDFs empty/failed — using registry fallback")
         fallback = [_station_from_registry(r, timestamp) for r in BIHAR_STATION_REGISTRY]
         self._cache    = fallback
         self._cache_ts = datetime.datetime.utcnow()
