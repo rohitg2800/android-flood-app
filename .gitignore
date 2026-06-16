@@ -97,3 +97,5 @@ test/golden/failures/
 *.log
 *.lock
 !pubspec.lock
+backend/ml/saved_models/
+backend/ml/scalers/
