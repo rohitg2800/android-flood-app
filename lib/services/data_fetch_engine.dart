@@ -1,110 +1,120 @@
-// lib/services/data_fetch_engine.dart  v4.1
-// StationReading lives in lib/models/station_reading.dart (canonical).
-// This file only defines DataFetchSnapshot + DataFetchEngine.
-//
-// v4.1 — added _lastSnapshot field + `last` getter so callers
-//         (e.g. kosi_birpur_provider) can access the most recent snapshot
-//         synchronously without subscribing to the stream.
+// lib/services/data_fetch_engine.dart  v2
+// Added:
+//   • SourceStatus enum  (used by dashboard_footer, system_stats widgets)
+//   • stream getter that broadcasts FetchResult events
+//   • latestResult getter
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import '../models/flood_data.dart';
-import '../models/river_station.dart';
-import '../models/station_reading.dart';
+import 'flood_api.dart';
 
-export '../models/station_reading.dart'; // re-export so existing imports compile
+// ─ SourceStatus ─────────────────────────────────────────────────────────
+enum SourceStatus { idle, fetching, success, error, stale }
 
-// ─── DataFetchSnapshot ─────────────────────────────────────────────────────────
-class DataFetchSnapshot {
-  final List<FloodData>   stations;
-  final DateTime          fetchedAt;
-  final bool              isLoading;
-  final int               liveStations;
-  final int               totalStations;
-  final Map<String, int>  sources;
-
-  DataFetchSnapshot({
-    required this.stations,
-    required this.fetchedAt,
-    this.isLoading      = false,
-    int?              liveStations,
-    int?              totalStations,
-    Map<String, int>? sources,
-  })  : totalStations = totalStations ?? stations.length,
-        liveStations  = liveStations  ?? stations.where((s) => s.status == 'LIVE').length,
-        sources       = sources        ?? _buildSourceMap(stations);
-
-  static Map<String, int> _buildSourceMap(List<FloodData> ss) {
-    final m = <String, int>{};
-    for (final s in ss) {
-      final k = s.source;
-      m[k] = (m[k] ?? 0) + 1;
-    }
-    return Map.unmodifiable(m);
-  }
-
-  List<FloodData>    toFloodDataList()  => stations;
-
-  List<RiverStation> toRiverStations() => stations.map((f) => RiverStation(
-    city:    f.city,
-    state:   f.state,
-    river:   f.riverName ?? f.river,
-    station: f.stationId,
-    current: f.currentLevel,
-    warning: f.warningLevel,
-    danger:  f.dangerLevel,
-    hfl:     f.hfl,
-  )).toList();
-
-  factory DataFetchSnapshot.loading() => DataFetchSnapshot(
-    stations:  const [],
-    fetchedAt: DateTime.now(),
-    isLoading: true,
-  );
+extension SourceStatusExt on SourceStatus {
+  bool get isLive    => this == SourceStatus.success;
+  bool get isFailing => this == SourceStatus.error;
+  bool get isStale   => this == SourceStatus.stale;
+  String get label   => switch (this) {
+    SourceStatus.idle     => 'Idle',
+    SourceStatus.fetching => 'Fetching',
+    SourceStatus.success  => 'Live',
+    SourceStatus.error    => 'Error',
+    SourceStatus.stale    => 'Stale',
+  };
 }
 
-// ─── DataFetchEngine ──────────────────────────────────────────────────────────
+// ─ FetchResult ──────────────────────────────────────────────────────────
+class FetchResult {
+  final List<FloodData> data;
+  final SourceStatus    status;
+  final DateTime        fetchedAt;
+  final String?         error;
+
+  const FetchResult({
+    required this.data,
+    required this.status,
+    required this.fetchedAt,
+    this.error,
+  });
+
+  bool get isSuccess => status == SourceStatus.success;
+  int  get alertCount => data.where((d) => d.currentLevel >= d.warningLevel).length;
+}
+
+// ─ DataFetchEngine ─────────────────────────────────────────────────────────
 class DataFetchEngine {
   DataFetchEngine._();
   static final DataFetchEngine instance = DataFetchEngine._();
 
-  final _snapshotController =
-      StreamController<DataFetchSnapshot>.broadcast();
+  static const _kInterval = Duration(minutes: 5);
 
-  // v4.1: cache the most-recent snapshot for synchronous callers
-  DataFetchSnapshot? _lastSnapshot;
+  final _controller = StreamController<FetchResult>.broadcast();
+  Timer?       _timer;
+  FetchResult? _latest;
+  SourceStatus _status = SourceStatus.idle;
 
-  /// The most recently emitted snapshot, or null before the first fetch.
-  DataFetchSnapshot? get last => _lastSnapshot;
+  // ─ Public API ─────────────────────────────────────────────────────────
 
-  Stream<DataFetchSnapshot> get snapshotStream => _snapshotController.stream;
-  Stream<DataFetchSnapshot> get alertStream    => snapshotStream;
+  /// Broadcast stream of [FetchResult] events.
+  Stream<FetchResult> get stream => _controller.stream;
 
-  bool _running = false;
+  /// Latest fetch result; null before first fetch.
+  FetchResult? get latestResult => _latest;
 
+  /// Current data-source status.
+  SourceStatus get status => _status;
+
+  /// Start periodic fetching every 5 minutes.
   void start() {
-    if (_running) return;
-    _running = true;
-    final loading = DataFetchSnapshot.loading();
-    _lastSnapshot = loading;
-    _snapshotController.add(loading);
-    _scheduleNext();
+    _timer?.cancel();
+    _fetch();
+    _timer = Timer.periodic(_kInterval, (_) => _fetch());
   }
 
-  void _scheduleNext() {
-    Future.delayed(const Duration(minutes: 15), _fetch);
+  /// Stop periodic fetching.
+  void stop() {
+    _timer?.cancel();
+    _timer = null;
+    _status = SourceStatus.idle;
   }
+
+  /// Force an immediate refresh.
+  Future<void> refresh() => _fetch();
+
+  /// Dispose the engine (call on app teardown).
+  void dispose() {
+    stop();
+    _controller.close();
+  }
+
+  // ─ Internals ─────────────────────────────────────────────────────────
 
   Future<void> _fetch() async {
-    if (!_running) return;
+    _status = SourceStatus.fetching;
     try {
-      final snap = DataFetchSnapshot(
-        stations:  const [],
+      final data = await FloodApi.instance.fetchAll();
+      final result = FetchResult(
+        data:      data,
+        status:    SourceStatus.success,
         fetchedAt: DateTime.now(),
       );
-      _lastSnapshot = snap;
-      _snapshotController.add(snap);
-    } catch (_) {}
-    _scheduleNext();
+      _latest = result;
+      _status = SourceStatus.success;
+      if (!_controller.isClosed) _controller.add(result);
+      if (kDebugMode) debugPrint('[DataFetchEngine] fetched ${data.length} stations');
+    } catch (e) {
+      final stale  = _latest?.data ?? [];
+      final result = FetchResult(
+        data:      stale,
+        status:    stale.isEmpty ? SourceStatus.error : SourceStatus.stale,
+        fetchedAt: DateTime.now(),
+        error:     e.toString(),
+      );
+      _latest = result;
+      _status = result.status;
+      if (!_controller.isClosed) _controller.add(result);
+      if (kDebugMode) debugPrint('[DataFetchEngine] fetch error: $e');
+    }
   }
-
-  void stop() => _running = false;
 }

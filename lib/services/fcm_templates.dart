@@ -1,238 +1,127 @@
-// lib/services/fcm_templates.dart
-// OpsFlood — Module 4: Notifications & Alerts
-//
-// FcmTemplates — typed bilingual FCM notification payload builder.
-//
-// Produces Map<String, dynamic> payloads consumed by fcm_broadcast_service.dart
-// for topic-based push delivery.
-//
-// Payload structure follows FCM HTTP v1 API:
-//   https://firebase.google.com/docs/reference/fcm/rest/v1/projects.messages
-//
-// Usage:
-//   final payload = FcmTemplates.forAlert(alert);
-//   await FcmBroadcastService.instance.broadcast(
-//     topic: FcmTopics.forSeverity(alert.severity),
-//     payload: payload,
-//   );
+// lib/services/fcm_templates.dart  v2
+// Fixed: buildPayload() switch covers all 14 AlertType values + default.
+import 'alert_engine.dart';
 
-import 'alert_engine.dart'; // AlertSeverity, AlertType, FloodAlert
-import 'alert_share_service.dart'; // AlertShareService (shortLine)
-
-// ── FCM topic constants ────────────────────────────────────────────────
-
-abstract class FcmTopics {
-  // Bihar-scoped topics
-  static const biharAll       = 'bihar_all';        // all Bihar subscribers
-  static const biharEmergency = 'bihar_emergency';  // critical/emergency only
-  static const biharWarning   = 'bihar_warning';    // warning+
-
-  // Per-river topics (generated at runtime)
-  static String river(String riverName) =>
-      'river_${riverName.toLowerCase().replaceAll(' ', '_')}';
-
-  // Per-district topics
-  static String district(String districtName) =>
-      'district_${districtName.toLowerCase().replaceAll(' ', '_')}';
-
-  /// Returns the most appropriate topic for a given severity.
-  static String forSeverity(AlertSeverity sev) {
-    switch (sev) {
-      case AlertSeverity.emergency:
-      case AlertSeverity.critical:
-        return biharEmergency;
-      case AlertSeverity.warning:
-        return biharWarning;
-      case AlertSeverity.info:
-        return biharAll;
-    }
-  }
+class FcmPayload {
+  final String title;
+  final String body;
+  final Map<String, String> data;
+  const FcmPayload({required this.title, required this.body, required this.data});
 }
 
-// ── Android notification channels ──────────────────────────────────────
+class FcmTemplates {
+  FcmTemplates._();
+  static final FcmTemplates instance = FcmTemplates._();
 
-abstract class FcmChannels {
-  static const emergency = 'opsflood_emergency'; // heads-up, max priority
-  static const critical  = 'opsflood_critical';  // heads-up, high priority
-  static const warning   = 'opsflood_warning';   // default priority
-  static const info      = 'opsflood_info';       // low priority
+  FcmPayload buildPayload(FloodAlert alert) {
+    final cur = alert.currentLevel.toStringAsFixed(2);
+    final thr = alert.thresholdLevel.toStringAsFixed(2);
+    final dl  = alert.dangerLevel.toStringAsFixed(2);
+    final riv = alert.river;
+    final sta = alert.stationName;
+    final dist = alert.district;
+    final sev  = alert.severity.label;
 
-  static String forSeverity(AlertSeverity sev) {
-    switch (sev) {
-      case AlertSeverity.emergency: return emergency;
-      case AlertSeverity.critical:  return critical;
-      case AlertSeverity.warning:   return warning;
-      case AlertSeverity.info:      return info;
-    }
-  }
-}
+    final String title;
+    final String body;
 
-// ── FcmTemplates ────────────────────────────────────────────────────
-
-abstract class FcmTemplates {
-  /// Build a complete FCM message payload for the given alert.
-  ///
-  /// Returns a Map ready to be passed to the FCM HTTP v1
-  /// `projects.messages.send` endpoint body as `message`.
-  static Map<String, dynamic> forAlert(FloodAlert alert) {
-    final sev    = alert.severity;
-    final msg    = AlertShareService.instance.buildMessage(alert);
-    final titles = _titles(alert);
-    final bodies = _bodies(alert);
-    final chan   = FcmChannels.forSeverity(sev);
-
-    return {
-      'topic': FcmTopics.forSeverity(sev),
-      'notification': {
-        'title': titles['en'],
-        'body':  bodies['en'],
-      },
-      'android': {
-        'priority': sev == AlertSeverity.emergency ||
-                sev == AlertSeverity.critical
-            ? 'high'
-            : 'normal',
-        'notification': {
-          'channel_id':  chan,
-          'title':       titles['en'],
-          'body':        bodies['en'],
-          'title_loc_key': 'fcm_title_${sev.name}',
-          'body_loc_key':  'fcm_body_${alert.type.name}',
-          'color':       _hexColor(sev),
-          'icon':        'ic_opsflood_notification',
-          'click_action': 'FLUTTER_NOTIFICATION_CLICK',
-        },
-      },
-      'apns': {
-        'payload': {
-          'aps': {
-            'alert': {
-              'title': titles['en'],
-              'body':  bodies['en'],
-              'subtitle': '${alert.river} — ${alert.district}',
-            },
-            'sound':             'default',
-            'badge':             1,
-            'interruption-level': sev == AlertSeverity.emergency
-                ? 'critical'
-                : 'active',
-          },
-        },
-      },
-      'data': {
-        // Data payload for Flutter handler (background + foreground)
-        'alert_id':     alert.id,
-        'alert_type':   alert.type.name,
-        'severity':     sev.name,
-        'station':      alert.station,
-        'river':        alert.river,
-        'district':     alert.district,
-        'current_level': alert.currentLevel?.toString() ?? '',
-        'threshold':     alert.thresholdLevel?.toString() ?? '',
-        'short_line_en': msg.shortLine,
-        'body_en':       bodies['en'] ?? '',
-        'body_hi':       bodies['hi'] ?? '',
-        'ts':            DateTime.now().toIso8601String(),
-        'screen':        '/bihar_river_map',  // deep-link target
-      },
-    };
-  }
-
-  // ─ Bilingual title map ─────────────────────────────────────────
-  static Map<String, String> _titles(FloodAlert alert) {
-    final sta = alert.station;
-    final sev = alert.severity;
-    final String en;
-    final String hi;
-    switch (sev) {
-      case AlertSeverity.emergency:
-        en = '🚨 Emergency: $sta';
-        hi = '🚨 आपातकाल: $sta';
-        break;
-      case AlertSeverity.critical:
-        en = '🔴 Critical Flood Alert: $sta';
-        hi = '🔴 गंभीर बाढ़ अलर्ट: $sta';
-        break;
-      case AlertSeverity.warning:
-        en = '⚠️ Flood Warning: $sta';
-        hi = '⚠️ बाढ़ चेतावनी: $sta';
-        break;
-      case AlertSeverity.info:
-        en = 'ℹ️ Flood Advisory: $sta';
-        hi = 'ℹ️ बाढ़ सूचना: $sta';
-        break;
-    }
-    return {'en': en, 'hi': hi};
-  }
-
-  // ─ Bilingual body map ──────────────────────────────────────────
-  static Map<String, String> _bodies(FloodAlert alert) {
-    final sta  = alert.station;
-    final riv  = alert.river;
-    final cur  = alert.currentLevel?.toStringAsFixed(2) ?? '—';
-    final thr  = alert.thresholdLevel?.toStringAsFixed(2) ?? '—';
-    final String en;
-    final String hi;
     switch (alert.type) {
       case AlertType.levelAboveHfl:
-        en = '$sta ($riv): $cur m — HFL exceeded ($thr m). Evacuate now.';
-        hi = '$sta ($riv): $cur मी. — HFL पार ($thr मी.). तत्काल निकासी करें।';
+        title = '\u{1F6A8} HFL EXCEEDED — $sta';
+        body  = '$riv at $sta has exceeded HFL ($thr m). Current: $cur m. EVACUATE NOW.';
         break;
       case AlertType.levelAboveDanger:
-        en = '$sta ($riv): $cur m — above danger ($thr m). Emergency response needed.';
-        hi = '$sta ($riv): $cur मी. — खतरे की सीमा से ऊपर ($thr मी.)।';
+        title = '\u{1F534} ABOVE DANGER — $sta';
+        body  = '$riv ($dist) above danger level $dl m. Current: $cur m.';
         break;
       case AlertType.levelAboveWarning:
-        en = '$sta ($riv): $cur m crossed warning ($thr m). Monitor closely.';
-        hi = '$sta ($riv): $cur मी. चेतावनी स्तर पार ($thr मी.)।';
+        title = '\u26A0\uFE0F ABOVE WARNING — $sta';
+        body  = '$riv ($dist) crossed warning level. Current: $cur m (Threshold: $thr m).';
         break;
       case AlertType.rapidRise:
-        final ror = alert.rateOfRise != null
-            ? '+${alert.rateOfRise!.toStringAsFixed(2)} m/h'
-            : 'rapid';
-        en = '$sta ($riv): rapid rise $ror — flash flood risk. Move to safety.';
-        hi = '$sta ($riv): तेज़ वृद्धि $ror — अचानक बाढ़ का खतरा।';
+        final ror = alert.rateOfRiseMph != null
+            ? '+${alert.rateOfRiseMph!.toStringAsFixed(2)} m/h' : 'rapid';
+        title = '\u{1F4C8} RAPID RISE — $sta';
+        body  = '$riv ($dist) rising at $ror. Current: $cur m. Monitor closely.';
         break;
       case AlertType.forecastDanger24h:
-        en = '$sta ($riv): forecast $cur m in 24h, danger at $thr m.';
-        hi = '$sta ($riv): 24 घंटे में पूर्वानुमान $cur मी., खतरा $thr मी.।';
+        title = '\u{1F52E} FORECAST 24H — $sta';
+        body  = '$riv forecast to hit danger ($dl m) within 24h. Prepare evacuations.';
         break;
       case AlertType.forecastDanger48h:
-        en = '$sta ($riv): forecast may reach $cur m in 48h. Prepare.';
-        hi = '$sta ($riv): 48 घंटे में $cur मी. तक पहुँच सकता है। तैयार रहें।';
+        title = '\u{1F52E} FORECAST 48H — $sta';
+        body  = '$riv forecast to hit danger ($dl m) within 48h. Stay on alert.';
         break;
       case AlertType.rainfallExtreme:
-        final r = alert.rainfall24h != null
-            ? '${alert.rainfall24h!.toStringAsFixed(0)} mm'
-            : '>100 mm';
-        en = 'Extreme rainfall near $sta ($riv): $r in 24h. Flash flood risk.';
-        hi = '$sta ($riv) के पास अत्यधिक वर्षा: $r। अचानक बाढ़ का खतरा।';
+        final rain = alert.rainfall24hMm != null
+            ? '${alert.rainfall24hMm!.toStringAsFixed(1)} mm' : '>100 mm';
+        title = '\u{1F327} EXTREME RAINFALL — $dist';
+        body  = 'Extreme rainfall ($rain / 24h) near $sta. Flood risk VERY HIGH.';
         break;
       case AlertType.rainfallHeavy:
-        final r = alert.rainfall24h != null
-            ? '${alert.rainfall24h!.toStringAsFixed(0)} mm'
-            : '>64 mm';
-        en = 'Heavy rainfall near $sta ($riv): $r in 24h.';
-        hi = '$sta ($riv) के पास भारी वर्षा: $r।';
+        final rain = alert.rainfall24hMm != null
+            ? '${alert.rainfall24hMm!.toStringAsFixed(1)} mm' : '>64.5 mm';
+        title = '\u{1F327} HEAVY RAINFALL — $dist';
+        body  = 'Heavy rainfall ($rain / 24h) near $sta. Flood risk elevated.';
         break;
       case AlertType.upstreamCritical:
-        en = '$riv: multiple stations above danger. Downstream breach risk.';
-        hi = '$riv: कई स्थान खतरे की सीमा से ऊपर। निचले हिस्से में खतरा।';
+        title = '\u{1F6A8} UPSTREAM CRITICAL — $riv';
+        body  = 'Multiple $riv stations above danger. Downstream breach imminent. Act now.';
         break;
       case AlertType.multiRiverAlert:
-        en = 'Bihar multi-river flood crisis. State-wide emergency preparedness.';
-        hi = 'बिहार में अनेक नदियां खतरे की सीमा से ऊपर। राज्यव्यापी आपातताल।';
+        title = '\u{1F6A8} MULTI-RIVER CRISIS';
+        body  = '3+ rivers above warning level. State emergency. Stay safe.';
         break;
+      case AlertType.breach:
+        title = '\u{1F534} BREACH — $sta';
+        body  = '$riv has breached danger level at $sta. Current: $cur m (Danger: $dl m).';
+        break;
+      case AlertType.approaching:
+        title = '\u26A0\uFE0F APPROACHING — $sta';
+        body  = '$riv approaching danger at $sta. Current: $cur m. Stay alert.';
+        break;
+      case AlertType.forecast:
+        title = '\u{1F52E} FORECAST ALERT — $sta';
+        body  = '$riv forecast to rise further. Current: $cur m.';
+        break;
+      case AlertType.custom:
+        title = '\u{1F514} CUSTOM ALERT — $sta';
+        body  = '$riv crossed custom threshold ($thr m). Current: $cur m.';
+        break;
+      default:
+        title = '$sev ALERT — $sta';
+        body  = alert.message;
     }
-    return {'en': en, 'hi': hi};
+
+    return FcmPayload(
+      title: title,
+      body:  body,
+      data: {
+        'alertId':       alert.id,
+        'stationName':   sta,
+        'river':         riv,
+        'district':      dist,
+        'severity':      alert.severity.name,
+        'type':          alert.type.name,
+        'currentLevel':  cur,
+        'dangerLevel':   dl,
+        'thresholdLevel': thr,
+        'issuedAt':      alert.issuedAt.toIso8601String(),
+        if (alert.state    != null) 'state':    alert.state!,
+        if (alert.expiresAt != null) 'expiresAt': alert.expiresAt!.toIso8601String(),
+        if (alert.action   != null) 'action':   alert.action!,
+      },
+    );
   }
 
-  static String _hexColor(AlertSeverity sev) {
-    switch (sev) {
-      case AlertSeverity.emergency: return '#FF1744';
-      case AlertSeverity.critical:  return '#FF6D00';
-      case AlertSeverity.warning:   return '#FFD600';
-      case AlertSeverity.info:      return '#00E5FF';
-    }
+  /// Build a compact single-line push subtitle for wearables / lock screens.
+  String buildShortLine(FloodAlert alert) =>
+      '${alert.type.label}: ${alert.stationName} (${alert.river}) '
+      '— ${alert.severity.label}';
+
+  /// Build a topic string for FCM topic messaging.
+  static String topicFor(FloodAlert alert) {
+    final state = (alert.state ?? 'india').toLowerCase().replaceAll(' ', '_');
+    return 'flood_${state}_${alert.severity.name}';
   }
 }

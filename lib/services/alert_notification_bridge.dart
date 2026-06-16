@@ -1,10 +1,10 @@
-// lib/services/alert_notification_bridge.dart
+// lib/services/alert_notification_bridge.dart  v2
+// Fixed: _body() switch now covers all 14 AlertType values.
 import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'alert_engine.dart';
 
-// Inline topic constants so we don't need a missing fcm_topics.dart file.
 class _Topics {
   static const emergency = 'flood_emergency_topic';
   static const critical  = 'flood_critical_topic';
@@ -82,23 +82,48 @@ class AlertNotificationBridge {
   }
 
   String _body(FloodAlert alert) {
+    final cur = alert.currentLevel.toStringAsFixed(2);
+    final thr = alert.thresholdLevel.toStringAsFixed(2);
+    final dl  = alert.dangerLevel.toStringAsFixed(2);
     final pct = (alert.pctOfDanger * 100).toStringAsFixed(0);
+    final riv = alert.river;
+    final sta = alert.stationName;
+
     switch (alert.type) {
+      case AlertType.levelAboveHfl:
+        return '$riv ($sta) has exceeded HFL. Current: $cur m (HFL: $thr m)';
+      case AlertType.levelAboveDanger:
+        return '$riv ($sta) is ABOVE DANGER LEVEL. Current: $cur m (Danger: $dl m, $pct%)';
+      case AlertType.levelAboveWarning:
+        return '$riv ($sta) crossed WARNING LEVEL. Current: $cur m (Threshold: $thr m)';
+      case AlertType.rapidRise:
+        final ror = alert.rateOfRiseMph != null
+            ? '+${alert.rateOfRiseMph!.toStringAsFixed(2)} m/h' : 'rapid';
+        return '$riv ($sta) is rising rapidly. Rate: $ror. Current: $cur m';
+      case AlertType.forecastDanger24h:
+        return '$riv ($sta) forecast to hit danger within 24h. Forecast: $cur m (Danger: $dl m)';
+      case AlertType.forecastDanger48h:
+        return '$riv ($sta) forecast to hit danger within 48h. Forecast: $cur m (Danger: $dl m)';
+      case AlertType.rainfallExtreme:
+        final rain = alert.rainfall24hMm != null
+            ? '${alert.rainfall24hMm!.toStringAsFixed(1)} mm' : '>100 mm';
+        return 'EXTREME RAINFALL near $sta. 24h accumulation: $rain';
+      case AlertType.rainfallHeavy:
+        final rain = alert.rainfall24hMm != null
+            ? '${alert.rainfall24hMm!.toStringAsFixed(1)} mm' : '>64.5 mm';
+        return 'HEAVY RAINFALL near $sta. 24h accumulation: $rain';
+      case AlertType.upstreamCritical:
+        return 'UPSTREAM CRITICAL on $riv. Multiple stations above danger. Downstream breach risk HIGH.';
+      case AlertType.multiRiverAlert:
+        return 'MULTI-RIVER CRISIS: 3+ rivers above warning. State emergency level.';
       case AlertType.breach:
-        return '${alert.river} has breached danger level. '
-            'Current: ${alert.currentLevel.toStringAsFixed(2)} m '
-            '($pct% of DL ${alert.dangerLevel.toStringAsFixed(2)} m)';
+        return '$riv has breached danger level. Current: $cur m ($pct% of DL $dl m)';
       case AlertType.approaching:
-        return '${alert.river} approaching danger. '
-            'Current: ${alert.currentLevel.toStringAsFixed(2)} m '
-            '($pct% of DL ${alert.dangerLevel.toStringAsFixed(2)} m)';
+        return '$riv approaching danger. Current: $cur m ($pct% of DL $dl m)';
       case AlertType.forecast:
-        return '${alert.river} forecast to rise. '
-            'Current: ${alert.currentLevel.toStringAsFixed(2)} m';
+        return '$riv forecast to rise. Current: $cur m';
       case AlertType.custom:
-        return '${alert.river} crossed custom threshold '
-            '(${alert.thresholdLevel.toStringAsFixed(2)} m). '
-            'Current: ${alert.currentLevel.toStringAsFixed(2)} m';
+        return '$riv crossed custom threshold ($thr m). Current: $cur m';
     }
   }
 
