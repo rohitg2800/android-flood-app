@@ -1,11 +1,20 @@
 // lib/data/bihar_station_metadata.dart
 //
 // Single source of truth for Bihar CWC gauging station metadata.
-// v2.0 (17 Jun 2026): ALL WL/DL/HFL values synced to bihar_rivers.dart
-//   BEAMS RTDAS + BeFIQR verified absolute MSL values.
-//   Birpur: WL 73.70 / DL 74.70 / HFL 76.02  (was wrong relative 5.60/6.80)
-//   Gandhighat: WL 47.50 / DL 48.60 / HFL 50.52
-//   All Ganga stations: updated to absolute MSL from CWC FFEM gazette.
+//
+// v2.1 (17 Jun 2026):
+//   FIX: 'kamtaul' key was ambiguous — three stations share the name:
+//     Kamtaul (Adhwara), Kamtaul (Bagmati), Kamtaul (Kamla).
+//     forSite('Kamtaul (Kamla)') stripped parens → 'kamtaul' → returned
+//     Adhwara data (DL 50.00) for a Kamla station whose real DL is 44.00.
+//     That is a 6.00 m error — station would never show DANGER/CRITICAL.
+//   FIX: Added explicit keys 'kamtaul (kamla)' and 'kamtaul (bagmati)'
+//     so all three variants resolve correctly. 'kamtaul' (bare) still
+//     resolves to Adhwara (the most frequently scraped variant).
+//   FIX: dhengraghat (bagmati) HFL corrected 38.20 → 47.30
+//     (was a copy-paste from Mahananda Dhengraghat; Bagmati 2002 value is 47.30)
+//
+// v2.0 (17 Jun 2026): All WL/DL/HFL synced to bihar_rivers.dart v4.4.
 library;
 
 import 'package:latlong2/latlong.dart';
@@ -68,8 +77,18 @@ class BiharStationRegistry {
       warningLevel: 45.00, dangerLevel: 46.94, hfl: 49.52,
     ),
 
+    // 'kamtaul' bare key → Adhwara (most commonly scraped variant).
+    // For the other two see explicit keys below.
     'kamtaul': BiharStationMeta(
       river: 'Adhwara', site: 'Kamtaul', district: 'Darbhanga',
+      lat: 26.392, lng: 85.862,
+      coversCities: ['Kamtaul','Darbhanga','Baheri','Manigachhi','Biraul','Kusheshwar Asthan'],
+      warningLevel: 48.00, dangerLevel: 50.00, hfl: 53.05,
+    ),
+
+    // Explicit Adhwara variant (same data, extra lookup key)
+    'kamtaul (adhwara)': BiharStationMeta(
+      river: 'Adhwara', site: 'Kamtaul (Adhwara)', district: 'Darbhanga',
       lat: 26.392, lng: 85.862,
       coversCities: ['Kamtaul','Darbhanga','Baheri','Manigachhi','Biraul','Kusheshwar Asthan'],
       warningLevel: 48.00, dangerLevel: 50.00, hfl: 53.05,
@@ -105,6 +124,23 @@ class BiharStationRegistry {
       lat: 26.02, lng: 85.95,
       coversCities: ['Hayaghat','Darbhanga','Jale','Kiratpur','Ghanshyampur','Biraul'],
       warningLevel: 44.50, dangerLevel: 45.72, hfl: 48.96,
+    ),
+
+    // FIX v2.1: explicit Bagmati key so forSite('Kamtaul (Bagmati)') resolves correctly.
+    // HFL corrected: 53.01 (from kBiharGauges; was missing entry, fell through to Adhwara)
+    'kamtaul (bagmati)': BiharStationMeta(
+      river: 'Bagmati', site: 'Kamtaul (Bagmati)', district: 'Darbhanga',
+      lat: 26.392, lng: 85.862,
+      coversCities: ['Kamtaul','Darbhanga','Baheri','Manigachhi','Biraul','Kusheshwar Asthan'],
+      warningLevel: 49.00, dangerLevel: 50.00, hfl: 53.01,
+    ),
+
+    // FIX v2.1: HFL corrected 38.20 → 47.30 (was copy-pasted from Mahananda Dhengraghat)
+    'dhengraghat (bagmati)': BiharStationMeta(
+      river: 'Bagmati', site: 'Dhengraghat (Bagmati)', district: 'Darbhanga',
+      lat: 26.098, lng: 87.951,
+      coversCities: ['Darbhanga','Hayaghat','Biraul','Manigachhi'],
+      warningLevel: 34.65, dangerLevel: 35.65, hfl: 47.30,
     ),
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -260,8 +296,18 @@ class BiharStationRegistry {
       warningLevel: 67.75, dangerLevel: 67.75, hfl: 71.35,
     ),
 
+    // FIX v2.1: explicit Kamla variant — forSite('Kamtaul (Kamla)') now returns
+    // correct thresholds (WL 43.00 / DL 44.00 / HFL 45.45) instead of
+    // Adhwara data (DL 50.00) which was a 6.00 m error.
+    'kamtaul (kamla)': BiharStationMeta(
+      river: 'Kamla', site: 'Kamtaul (Kamla)', district: 'Madhubani',
+      lat: 26.392, lng: 85.862,
+      coversCities: ['Kamtaul','Madhubani','Jainagar','Jhanjharpur','Phulparas','Pandaul'],
+      warningLevel: 43.00, dangerLevel: 44.00, hfl: 45.45,
+    ),
+
     // ═══════════════════════════════════════════════════════════════════════
-    // KOSI  ★ BIRPUR CORRECTED TO ABSOLUTE MSL ★
+    // KOSI
     // ═══════════════════════════════════════════════════════════════════════
 
     'baltara': BiharStationMeta(
@@ -278,7 +324,6 @@ class BiharStationRegistry {
       warningLevel: 46.50, dangerLevel: 47.75, hfl: 49.24,
     ),
 
-    // ★ BIRPUR — corrected from wrong relative (5.60/6.80) → correct absolute MSL ★
     'birpur': BiharStationMeta(
       river: 'Kosi', site: 'Birpur', district: 'Supaul',
       lat: 26.5167, lng: 86.90,
