@@ -30,6 +30,7 @@ import '../services/bihar_live_engine.dart';
 // BiharStationData
 // ─────────────────────────────────────────────────────────────────────────────
 class BiharStationData {
+  final String  id;
   final String  city;
   final String  river;
   final String  district;
@@ -49,6 +50,7 @@ class BiharStationData {
   final double? rainfall24h;
 
   const BiharStationData({
+    required this.id,
     required this.city,
     required this.river,
     required this.district,
@@ -114,6 +116,7 @@ class BiharStationData {
         : 'Bihar';
 
     return BiharStationData(
+      id:            item.id,
       city:          item.title,
       river:         river,
       district:      district,
@@ -292,7 +295,6 @@ class BiharLiveNotifier extends AsyncNotifier<BiharLiveState> {
             i.kind == FeedItemKind.barrage    ||
             i.kind == FeedItemKind.telemetry)
         .map(BiharStationData.fromFeedItem)
-        .where((s) => s.currentLevel != null && s.currentLevel! > 0)
         .toList();
 
     // Step 2 — deduplicate by normalised city key.
@@ -301,7 +303,7 @@ class BiharLiveNotifier extends AsyncNotifier<BiharLiveState> {
     // Keep the entry with the highest risk; on tie, keep the highest level.
     final deduped = <String, BiharStationData>{};
     for (final s in rawStations) {
-      final key = _normCityKey(s.city);
+      final key = s.id.isNotEmpty ? s.id : _normCityKey(s.city);
       if (!deduped.containsKey(key)) {
         deduped[key] = s;
       } else {
