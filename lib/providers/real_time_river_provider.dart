@@ -27,7 +27,9 @@ double? _birpurAmslToLocal(double? amsl) {
 final wrdRiverStationsProvider = Provider<List<RiverStation>>((ref) {
   final liveState   = ref.watch(biharLiveProvider);
   final birpurAsync = ref.watch(kosiBirpurProvider);
-  final birpur      = birpurAsync.valueOrNull;
+  // Discard SEED readings — map should show null/fallback, not 71.48 m seed
+  final birpurRaw   = birpurAsync.valueOrNull;
+  final birpur      = (birpurRaw?.source == 'SEED') ? null : birpurRaw;
 
   return liveState.valueOrNull?.stations
       .map((s) {

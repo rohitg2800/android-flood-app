@@ -103,14 +103,8 @@ final kosiBirpurProvider =
 
   // v2.1: ALL sources down — return null so mergedStationsProvider uses
   // current=0.0 SEED sentinel.  Never return a fake 210/212 m level.
-  debugPrint('[KosiBirpur] all sources down — using static seed');
-  return KosiBirpurReading(
-    levelM:       kBirpurNormalLevel,
-    dangerLevel:  kBirpurDangerLevel,
-    warningLevel: kBirpurWarningLevel,
-    source:       'SEED',
-    observedAt:   DateTime(2000),
-  );
+  debugPrint('[KosiBirpur] all sources down — returning null (v2.1)');
+  return null;
 });
 
 // ─────────────────────────────────────────────────────────────────────────────────
