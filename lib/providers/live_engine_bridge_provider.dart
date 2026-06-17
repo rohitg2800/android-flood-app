@@ -1,32 +1,26 @@
-// lib/providers/live_engine_bridge_provider.dart  v4.1
+// lib/providers/live_engine_bridge_provider.dart  v4.2
 //
-// v4.1 (12 Jun 2026) — threshold corrections + _norm() double-space fix
+// v4.2 (17 Jun 2026) — Dataflow audit: threshold + coordinate fixes
 //
-// FIXES:
-//   FIX-1: _norm() now collapses double-spaces left after stripping parens.
-//     BEFORE: 'Birpur (CWC)' → 'birpur  cwc'  (double space)
-//     AFTER:  'Birpur (CWC)' → 'birpur cwc'
-//     Consequence: substring match on 'birpur' no longer hits 'birpur cwc'
-//     unexpectedly; lookup for 'birpur cwc' now correctly hits
-//     _kThresholds['birpur (cwc)'] (which _norm()s to 'birpur cwc').
+//   FIX-3: samastipur WL corrected: was warning==danger (both 46.00)
+//     warning: 44.80, danger: 46.00  (from kBiharGauges)
+//     With WL==DL every reading at exactly DL showed CRITICAL instead of DANGER.
 //
-//   FIX-2: _kThresholds updated to bihar_rivers.dart v4.2 values:
-//     Buxar:          DL 60.32  → 60.30   HFL 62.09  → 62.10
-//     Samastipur:     WL 44.80  → 46.00   DL 46.02  → 46.00   HFL 49.38→49.40
-//     Darauli:        WL 60.50  → 61.20   DL 61.52  → 60.82   HFL 63.10→61.82
-//     Gangpur Siswan: WL 63.00  → 56.70   DL 64.10  → 57.04   HFL 65.82→58.26
-//     Jhanjharpur:    WL 49.50  → 48.50   DL 50.50  → 50.00
-//     Sonbarsa:       HFL 83.75 → 83.20
-//     Taibpur:        WL 34.65  → 64.40   DL 35.65  → 66.00   HFL 38.16→67.22
-//       (was mis-keyed as Dhengraghat clone; now correct Kishanganj MSL datum)
+//   FIX-4: darauli WL corrected: was warning(61.20) > danger(60.82) — impossible.
+//     warning: 60.50, danger: 60.82  (from kBiharGauges)
+//     This created a dead zone where station never transitioned through DANGER.
 //
-// v4.0 history:
-//   _lookupThreshold now checks ThresholdOverrideStore (RTDAS live values)
-//   BEFORE falling back to the compiled-in _kThresholds table.
-//   Priority:
-//     1. ThresholdOverrideStore (RTDAS scraped — updated every 6h)
-//     2. _kThresholds (bihar_rivers.dart v4.2 hardcoded)
-//     3. Heuristic fallback (level * 0.90 / 0.95 / 1.05)
+//   FIX-5: mahnar HFL corrected: was danger(49.70) > hfl(48.91) — impossible.
+//     hfl: 51.20  (estimated from typical Ganga HFL range at this cross-section;
+//     BEAMS RTDAS value pending confirmation — tagged TODO)
+//
+//   FIX-6: hathidah lon corrected: was 86.165 → 85.750 (40 km off, was in Lakhisarai)
+//   FIX-7: sripalpur coords corrected: was (25.328, 85.038) → (25.52, 85.38)
+//   FIX-8: sonbarsa coords corrected: was (25.993, 86.063) → (26.70, 85.48)
+//           (was plotting in Samastipur, 75 km from actual Sitamarhi location)
+//
+// v4.1 (12 Jun 2026): _norm() double-space fix + threshold corrections.
+// v4.0: ThresholdOverrideStore live RTDAS priority.
 library;
 
 import 'dart:async';
@@ -36,26 +30,36 @@ import '../models/river_station.dart';
 import '../services/bihar_live_engine.dart';
 import '../services/threshold_override_store.dart';
 
-// ── Threshold table ─────────────────────────────────────────────────────────────────
-// SOURCE: bihar_rivers.dart v4.2 kBiharGauges (BEAMS RTDAS + BeFIQR 12 Jun 2026)
+// ── Threshold table ──────────────────────────────────────────────────────────
+// SOURCE: bihar_rivers.dart v4.4 kBiharGauges (BEAMS RTDAS + BeFIQR)
 // All levels in metres MSL.
-// Keys are the _norm() output of the station name as it arrives from
-// BiharLiveEngine (i.e. lower-case, no parens, single spaces).
 const Map<String, ({double warning, double danger, double hfl, String river})>
     _kThresholds = {
 
-  // ── GANGA (7 stations) ─────────────────────────────────────────────────────
+  // ── GANGA (7 + WRD stations) ──────────────────────────────────────────────
   'gandhighat': (warning: 47.50, danger: 48.60, hfl: 50.52, river: 'Ganga'),
   'dighaghat':  (warning: 49.30, danger: 50.45, hfl: 52.52, river: 'Ganga'),
   'hathidah':   (warning: 40.50, danger: 41.76, hfl: 43.52, river: 'Ganga'),
   'munger':     (warning: 38.20, danger: 39.33, hfl: 40.99, river: 'Ganga'),
   'kahalgaon':  (warning: 30.00, danger: 31.09, hfl: 32.87, river: 'Ganga'),
   'bhagalpur':  (warning: 32.50, danger: 33.68, hfl: 34.86, river: 'Ganga'),
-  'buxar':      (warning: 59.20, danger: 60.30, hfl: 62.10, river: 'Ganga'),  // v4.2: DL 60.32→60.30 HFL 62.09→62.10
+  'buxar':      (warning: 59.20, danger: 60.30, hfl: 62.10, river: 'Ganga'),
+  // WRD Ganga
+  'udwantnagar': (warning: 53.67, danger: 58.40, hfl: 59.40, river: 'Ganga'),
+  'azmabad':     (warning: 24.53, danger: 30.54, hfl: 32.41, river: 'Ganga'),
+  // FIX-5: mahnar hfl corrected (was 48.91 < danger 49.70 — impossible)
+  'mahnar':      (warning: 39.99, danger: 49.70, hfl: 51.20, river: 'Ganga'),  // TODO: verify with BEAMS RTDAS
+  'sultanganj':  (warning: 28.07, danger: 34.50, hfl: 36.80, river: 'Ganga'),
+  'ahiro':       (warning: 49.54, danger: 52.30, hfl: 52.85, river: 'Ganga'),
+  'danapur':     (warning: 43.29, danger: 51.20, hfl: 52.61, river: 'Ganga'),
+  'indo nepal border': (warning: 65.34, danger: 68.70, hfl: 70.20, river: 'Ganga'),
+  'manpur':      (warning: 32.50, danger: 40.78, hfl: 41.83, river: 'Ganga'),
+  'sitalpur':    (warning: 47.19, danger: 54.20, hfl: 55.10, river: 'Ganga'),
+  'suryagadha':  (warning: 31.19, danger: 40.41, hfl: 40.90, river: 'Ganga'),
 
-  // ── KOSI (7 stations) ─────────────────────────────────────────────────────
+  // ── KOSI (10 stations) ────────────────────────────────────────────────────
   'birpur':           (warning: 73.70, danger: 74.70, hfl: 76.02, river: 'Kosi'),
-  'birpur cwc':       (warning: 73.70, danger: 74.70, hfl: 76.02, river: 'Kosi'),  // _norm('Birpur (CWC)') = 'birpur cwc'
+  'birpur cwc':       (warning: 73.70, danger: 74.70, hfl: 76.02, river: 'Kosi'),
   'basua':            (warning: 46.50, danger: 47.75, hfl: 49.24, river: 'Kosi'),
   'baltara':          (warning: 32.85, danger: 33.85, hfl: 36.40, river: 'Kosi'),
   'kursela':          (warning: 28.80, danger: 30.00, hfl: 32.10, river: 'Kosi'),
@@ -65,154 +69,137 @@ const Map<String, ({double warning, double danger, double hfl, String river})>
   'vijay ghat bridge':(warning: 29.50, danger: 31.00, hfl: 33.50, river: 'Kosi'),
   'vijayghat':        (warning: 29.50, danger: 31.00, hfl: 33.50, river: 'Kosi'),
   'naugachia':        (warning: 29.50, danger: 31.00, hfl: 33.50, river: 'Ganga'),
+  'dhamaraghat':      (warning: 34.98, danger: 37.50, hfl: 37.75, river: 'Kosi'),
+  'dalsingh sarai':   (warning: 39.94, danger: 42.84, hfl: 44.34, river: 'Kosi'),
+  'nirmali':          (warning: 50.40, danger: 53.78, hfl: 55.28, river: 'Kosi'),
 
-  // ── GANDAK (6 stations) ────────────────────────────────────────────────────
+  // ── GANDAK (6 + WRD stations) ─────────────────────────────────────────────
   'chatia':      (warning: 68.10, danger: 69.15, hfl: 70.04, river: 'Gandak'),
   'dumariaghat': (warning: 61.10, danger: 62.22, hfl: 64.36, river: 'Gandak'),
   'rewaghat':    (warning: 53.40, danger: 54.41, hfl: 55.46, river: 'Gandak'),
   'hajipur':     (warning: 49.40, danger: 50.32, hfl: 50.93, river: 'Gandak'),
   'lalganj':     (warning: 49.30, danger: 50.50, hfl: 51.83, river: 'Gandak'),
   'khadda':      (warning: 94.50, danger: 96.00, hfl: 97.50, river: 'Gandak'),
+  // WRD Gandak
+  'bagaha':      (warning: 87.34, danger: 89.40, hfl: 90.90, river: 'Gandak'),
+  'kukraha':     (warning: 67.85, danger: 70.60, hfl: 72.10, river: 'Gandak'),
+  'thakraha':    (warning: 75.37, danger: 77.18, hfl: 78.68, river: 'Gandak'),
+  'triveni':     (warning: 104.12, danger: 109.67, hfl: 112.79, river: 'Gandak'),
 
-  // ── BAGMATI (13 stations) ──────────────────────────────────────────────────
-  'dheng bridge':          (warning: 70.00, danger: 71.00, hfl: 73.47, river: 'Bagmati'),
-  'dhengbridge':           (warning: 70.00, danger: 71.00, hfl: 73.47, river: 'Bagmati'),
-  'sonakhan':              (warning: 67.80, danger: 68.80, hfl: 72.05, river: 'Bagmati'),
-  'benibad':               (warning: 47.68, danger: 48.68, hfl: 50.12, river: 'Bagmati'),
-  'hayaghat':              (warning: 44.50, danger: 45.72, hfl: 48.96, river: 'Bagmati'),
-  'dhengraghat bagmati':   (warning: 34.65, danger: 35.65, hfl: 47.30, river: 'Bagmati'),
-  'kamtaul bagmati':       (warning: 49.00, danger: 50.00, hfl: 53.01, river: 'Bagmati'),
-  'kamtaul':               (warning: 49.00, danger: 50.00, hfl: 53.01, river: 'Bagmati'),
-  'runnisaidpur':          (warning: 52.50, danger: 55.00, hfl: 58.15, river: 'Bagmati'),
-  'runisaidpur':           (warning: 52.50, danger: 55.00, hfl: 58.15, river: 'Bagmati'),
-  'dubbadhar':             (warning: 59.00, danger: 61.28, hfl: 63.75, river: 'Bagmati'),
-  'kansar':                (warning: 57.50, danger: 59.06, hfl: 60.86, river: 'Bagmati'),
-  'kataunjha':             (warning: 52.80, danger: 55.00, hfl: 58.36, river: 'Bagmati'),
+  // ── BAGMATI (13 stations) ─────────────────────────────────────────────────
+  'dheng bridge':        (warning: 70.00, danger: 71.00, hfl: 73.47, river: 'Bagmati'),
+  'dhengbridge':         (warning: 70.00, danger: 71.00, hfl: 73.47, river: 'Bagmati'),
+  'sonakhan':            (warning: 67.80, danger: 68.80, hfl: 72.05, river: 'Bagmati'),
+  'benibad':             (warning: 47.68, danger: 48.68, hfl: 50.12, river: 'Bagmati'),
+  'hayaghat':            (warning: 44.50, danger: 45.72, hfl: 48.96, river: 'Bagmati'),
+  'dhengraghat bagmati': (warning: 34.65, danger: 35.65, hfl: 47.30, river: 'Bagmati'),
+  'kamtaul bagmati':     (warning: 49.00, danger: 50.00, hfl: 53.01, river: 'Bagmati'),
+  'kamtaul':             (warning: 49.00, danger: 50.00, hfl: 53.01, river: 'Bagmati'),
+  'runnisaidpur':        (warning: 52.50, danger: 55.00, hfl: 58.15, river: 'Bagmati'),
+  'runisaidpur':         (warning: 52.50, danger: 55.00, hfl: 58.15, river: 'Bagmati'),
+  'dubbadhar':           (warning: 59.00, danger: 61.28, hfl: 63.75, river: 'Bagmati'),
+  'kansar':              (warning: 57.50, danger: 59.06, hfl: 60.86, river: 'Bagmati'),
+  'kataunjha':           (warning: 52.80, danger: 55.00, hfl: 58.36, river: 'Bagmati'),
+  // WRD Bagmati
+  'badlaghat':  (warning: 33.06, danger: 36.31, hfl: 37.81, river: 'Bagmati'),
+  'belsand':    (warning: 56.19, danger: 59.25, hfl: 60.75, river: 'Bagmati'),
+  'bishunpur':  (warning: 42.42, danger: 47.40, hfl: 48.97, river: 'Bagmati'),
 
-  // ── BURHI GANDAK (5 stations) ──────────────────────────────────────────────
+  // ── BURHI GANDAK (5 + WRD stations) ──────────────────────────────────────
   'sikandarpur': (warning: 51.40, danger: 52.53, hfl: 54.29, river: 'Burhi Gandak'),
-  'samastipur':  (warning: 46.00, danger: 46.00, hfl: 49.40, river: 'Burhi Gandak'),  // v4.2: WL 44.80→46.00 DL 46.02→46.00 HFL 49.38→49.40
+  // FIX-3: samastipur WL corrected: was warning==danger (both 46.00)
+  'samastipur':  (warning: 44.80, danger: 46.00, hfl: 49.40, river: 'Burhi Gandak'),
   'rosera':      (warning: 41.50, danger: 42.63, hfl: 46.56, river: 'Burhi Gandak'),
   'khagaria':    (warning: 35.40, danger: 36.58, hfl: 39.22, river: 'Burhi Gandak'),
   'gaighat':     (warning: 53.00, danger: 54.00, hfl: 55.50, river: 'Burhi Gandak'),
+  // WRD Burhi Gandak
+  'ahirwalia':     (warning: 52.34, danger: 59.62, hfl: 61.17, river: 'Burhi Gandak'),
+  'chanpatia':     (warning: 69.52, danger: 73.68, hfl: 76.68, river: 'Burhi Gandak'),
+  'lalbegiaghat':  (warning: 56.61, danger: 63.20, hfl: 67.09, river: 'Burhi Gandak'),
+  'chintawanpur':  (warning: 55.08, danger: 61.45, hfl: 62.95, river: 'Burhi Gandak'),
+  'kanti':         (warning: 48.10, danger: 54.09, hfl: 56.45, river: 'Burhi Gandak'),
+  'lakhoura':      (warning: 56.67, danger: 62.75, hfl: 64.25, river: 'Burhi Gandak'),
+  'madhuban':      (warning: 53.48, danger: 60.19, hfl: 61.69, river: 'Burhi Gandak'),
+  'sakra':         (warning: 42.52, danger: 50.58, hfl: 51.47, river: 'Burhi Gandak'),
+  'sugauli':       (warning: 63.58, danger: 66.50, hfl: 69.00, river: 'Burhi Gandak'),
 
-  // ── GHAGHRA (2 stations) ───────────────────────────────────────────────────────
-  'darauli':          (warning: 61.20, danger: 60.82, hfl: 61.82, river: 'Ghaghra'),  // v4.2: DL 61.52→60.82 HFL 63.10→61.82
-  'gangpur siswan':   (warning: 56.70, danger: 57.04, hfl: 58.26, river: 'Ghaghra'),  // v4.2: WL 63.00→56.70 DL 64.10→57.04 HFL 65.82→58.26
-  'gangpur':          (warning: 56.70, danger: 57.04, hfl: 58.26, river: 'Ghaghra'),
+  // ── GHAGHRA (2 stations) ──────────────────────────────────────────────────
+  // FIX-4: darauli WL corrected: was 61.20 > danger 60.82 (impossible)
+  'darauli':        (warning: 60.50, danger: 60.82, hfl: 61.82, river: 'Ghaghra'),
+  'gangpur siswan': (warning: 56.70, danger: 57.04, hfl: 58.26, river: 'Ghaghra'),
+  'gangpur':        (warning: 56.70, danger: 57.04, hfl: 58.26, river: 'Ghaghra'),
 
-  // ── KAMLA (4 stations) ────────────────────────────────────────────────────────
+  // ── KAMLA (4 stations) ────────────────────────────────────────────────────
   'jainagar':      (warning: 67.75, danger: 67.75, hfl: 71.35, river: 'Kamla'),
-  'jhanjharpur':   (warning: 48.50, danger: 50.00, hfl: 53.11, river: 'Kamla'),  // v4.2: WL 49.50→48.50 DL 50.50→50.00
+  'jhanjharpur':   (warning: 48.50, danger: 50.00, hfl: 53.11, river: 'Kamla'),
   'kamtaul kamla': (warning: 43.00, danger: 44.00, hfl: 45.45, river: 'Kamla'),
   'phulparas':     (warning: 49.50, danger: 50.50, hfl: 53.11, river: 'Kamla'),
 
-  // ── MAHANANDA (4 stations) ───────────────────────────────────────────────────
-  // v4.2: Taibpur was a Dhengraghat clone (wrong MSL datum for Kishanganj).
-  //   Old: WL 34.65 / DL 35.65 / HFL 38.16  ← WRONG, caused all-yellow
-  //   New: WL 64.40 / DL 66.00 / HFL 67.22  ← CORRECT Kishanganj MSL
-  'taibpur':                (warning: 64.40, danger: 66.00, hfl: 67.22, river: 'Mahananda'),
-  'dhengraghat mahananda':  (warning: 34.65, danger: 35.65, hfl: 38.20, river: 'Mahananda'),
-  // 'dhengraghat' alone — DO NOT put it here; the bare key was matching
-  // Taibpur (substring) in v4.0 and assigning Bagmati thresholds.
-  // It is now resolved via the explicit 'dhengraghat bagmati' key above
-  // and 'dhengraghat mahananda' key here.
-  'jhawa':                  (warning: 30.00, danger: 31.40, hfl: 34.07, river: 'Mahananda'),
+  // ── MAHANANDA (4 stations) ────────────────────────────────────────────────
+  'taibpur':               (warning: 64.40, danger: 66.00, hfl: 67.22, river: 'Mahananda'),
+  'dhengraghat mahananda': (warning: 34.65, danger: 35.65, hfl: 38.20, river: 'Mahananda'),
+  'jhawa':                 (warning: 30.00, danger: 31.40, hfl: 34.07, river: 'Mahananda'),
+  'sikti':        (warning: 60.06, danger: 61.40, hfl: 62.90, river: 'Mahananda'),
+  'chargharia':   (warning: 44.55, danger: 46.94, hfl: 48.85, river: 'Mahananda'),
+  'moujabadi':    (warning: 50.16, danger: 52.05, hfl: 53.55, river: 'Mahananda'),
 
-  // ── PUNPUN (1 station) ───────────────────────────────────────────────────────────
-  'sripalpur': (warning: 50.60, danger: 51.83, hfl: 53.91, river: 'Punpun'),
+  // ── PUNPUN (3 stations) ───────────────────────────────────────────────────
+  'sripalpur':  (warning: 50.60, danger: 51.83, hfl: 53.91, river: 'Punpun'),
+  'fatehpur':   (warning: 43.14, danger: 51.63, hfl: 52.63, river: 'Punpun'),
+  'kinjer':     (warning: 61.42, danger: 65.00, hfl: 67.95, river: 'Punpun'),
 
-  // ── ADHWARA / DHAUS / KHIROI (4 stations) ──────────────────────────────
+  // ── ADHWARA / DHAUS / KHIROI (4 stations) ────────────────────────────────
   'ekmighat':        (warning: 45.00, danger: 46.94, hfl: 49.52, river: 'Khiroi'),
   'kamtaul adhwara': (warning: 48.00, danger: 50.00, hfl: 53.05, river: 'Adhwara'),
   'saulighat':       (warning: 50.00, danger: 52.37, hfl: 55.10, river: 'Dhaus'),
   'agropatti':       (warning: 51.00, danger: 52.75, hfl: 54.53, river: 'Khiroi'),
+  'saharghat':       (warning: 52.32, danger: 55.50, hfl: 58.25, river: 'Adhwara'),
 
-  // ── JHIM / LAL BAKEYA / BALAN / BHUTAHI BALAN (5 stations) ─────────────
-  'sonbarsa':         (warning: 80.50, danger: 81.85, hfl: 83.20, river: 'Jhim'),  // v4.2: HFL 83.75→83.20
-  'lalbakeya':        (warning: 73.00, danger: 74.00, hfl: 75.50, river: 'Lalbakeya'),
-  'goabari':          (warning: 69.50, danger: 71.15, hfl: 73.86, river: 'Lal Bakeya'),
-  'phulparas balan':  (warning: 59.50, danger: 60.80, hfl: 61.80, river: 'Balan'),
-  'laukaha':          (warning: 78.50, danger: 79.80, hfl: 80.80, river: 'Bhutahi Balan'),
+  // ── JHIM / LAL BAKEYA / BALAN / BHUTAHI BALAN ────────────────────────────
+  'sonbarsa':        (warning: 80.50, danger: 81.85, hfl: 83.20, river: 'Jhim'),
+  'lalbakeya':       (warning: 73.00, danger: 74.00, hfl: 75.50, river: 'Lalbakeya'),
+  'goabari':         (warning: 69.50, danger: 71.15, hfl: 73.86, river: 'Lal Bakeya'),
+  'phulparas balan': (warning: 59.50, danger: 60.80, hfl: 61.80, river: 'Balan'),
+  'laukaha':         (warning: 78.50, danger: 79.80, hfl: 80.80, river: 'Bhutahi Balan'),
 
-  // ── KHANDO / KAREH (2 stations) ─────────────────────────────────────────────
+  // ── KHANDO / KAREH ───────────────────────────────────────────────────────
   'dagmara':  (warning: 60.50, danger: 61.50, hfl: 62.50, river: 'Khando'),
   'karachin': (warning: 38.50, danger: 40.00, hfl: 41.90, river: 'Kareh'),
-  // ── WRD Bihar stations (live thresholds from irrigation.befiqr.in June 2026) ──
-  'saharghat':             (warning: 52.32,  danger: 55.50,  hfl: 58.25,  river: 'Adhwara'),
-  'badlaghat':             (warning: 33.06,  danger: 36.31,  hfl: 37.81,  river: 'Bagmati'),
-  'belsand':               (warning: 56.19,  danger: 59.25,  hfl: 60.75,  river: 'Bagmati'),
-  'bishunpur':             (warning: 42.42,  danger: 47.40,  hfl: 48.97,  river: 'Bagmati'),
-  'bachhwara':             (warning: 35.21,  danger: 42.88,  hfl: 44.38,  river: 'Baya'),
-  'mohauddin nagar':       (warning: 38.53,  danger: 43.47,  hfl: 44.97,  river: 'Baya'),
-  'ahirwalia':             (warning: 52.34,  danger: 59.62,  hfl: 61.17,  river: 'Burhi Gandak'),
-  'chanpatia':             (warning: 69.52,  danger: 73.68,  hfl: 76.68,  river: 'Burhi Gandak'),
-  'lalbegiaghat':          (warning: 56.61,  danger: 63.20,  hfl: 67.09,  river: 'Burhi Gandak'),
-  'chintawanpur':          (warning: 55.08,  danger: 61.45,  hfl: 62.95,  river: 'Burhi Gandak'),
-  'kanti':                 (warning: 48.10,  danger: 54.09,  hfl: 56.45,  river: 'Burhi Gandak'),
-  'lakhoura':              (warning: 56.67,  danger: 62.75,  hfl: 64.25,  river: 'Burhi Gandak'),
-  'madhuban':              (warning: 53.48,  danger: 60.19,  hfl: 61.69,  river: 'Burhi Gandak'),
-  'sakra':                 (warning: 42.52,  danger: 50.58,  hfl: 51.47,  river: 'Burhi Gandak'),
-  'sugauli':               (warning: 63.58,  danger: 66.50,  hfl: 69.00,  river: 'Burhi Gandak'),
-  'banka':                 (warning: 80.47,  danger: 86.75,  hfl: 87.40,  river: 'Chandan'),
-  'saksohra':              (warning: 26.44,  danger: 33.50,  hfl: 35.14,  river: 'Falgu'),
-  'bagaha':                (warning: 87.34,  danger: 89.40,  hfl: 90.90,  river: 'Gandak'),
-  'kukraha':               (warning: 67.85,  danger: 70.60,  hfl: 72.10,  river: 'Gandak'),
-  'thakraha':              (warning: 75.37,  danger: 77.18,  hfl: 78.68,  river: 'Gandak'),
-  'triveni':               (warning: 104.12, danger: 109.67, hfl: 112.79, river: 'Gandak'),
-  'udwantnagar':           (warning: 53.67,  danger: 58.40,  hfl: 59.40,  river: 'Ganga'),
-  'azmabad':               (warning: 24.53,  danger: 30.54,  hfl: 32.41,  river: 'Ganga'),
-  'mahnar':                (warning: 39.99,  danger: 49.70,  hfl: 48.91,  river: 'Ganga'),
-  'sultanganj':            (warning: 28.07,  danger: 34.50,  hfl: 36.80,  river: 'Ganga'),
-  'ahiro':                 (warning: 49.54,  danger: 52.30,  hfl: 52.85,  river: 'Ganga'),
-  'danapur':               (warning: 43.29,  danger: 51.20,  hfl: 52.61,  river: 'Ganga'),
-  'indo nepal border':     (warning: 65.34,  danger: 68.70,  hfl: 70.20,  river: 'Ganga'),
-  'manpur':                (warning: 32.50,  danger: 40.78,  hfl: 41.83,  river: 'Ganga'),
-  'sitalpur':              (warning: 47.19,  danger: 54.20,  hfl: 55.10,  river: 'Ganga'),
-  'suryagadha':            (warning: 31.19,  danger: 40.41,  hfl: 40.90,  river: 'Ganga'),
-  'kadirganj':             (warning: 25.00,  danger: 30.00,  hfl: 32.00,  river: 'Harohar'),
-  'mankatha':              (warning: 32.72,  danger: 40.78,  hfl: 42.88,  river: 'Harohar'),
-  'kapasiya':              (warning: 41.60,  danger: 43.78,  hfl: 45.28,  river: 'Kamala Balan'),
-  'jhagarua':              (warning: 42.84,  danger: 46.22,  hfl: 47.72,  river: 'Kamalabalan'),
-  'kakarghatti':           (warning: 43.95,  danger: 47.50,  hfl: 49.00,  river: 'Kamalabalan'),
-  'rauta':                 (warning: 40.22,  danger: 41.71,  hfl: 43.21,  river: 'Kankai'),
-  'chousa':                (warning: 50.36,  danger: 61.89,  hfl: 62.89,  river: 'Karmnasa'),
-  'durgawati':             (warning: 63.70,  danger: 69.00,  hfl: 71.00,  river: 'Karmnasha'),
-  'jamui':                 (warning: 66.13,  danger: 69.00,  hfl: 69.61,  river: 'Kiul'),
-  'lakhisarai':            (warning: 35.72,  danger: 42.40,  hfl: 45.90,  river: 'Kiul'),
-  'dhamaraghat':           (warning: 34.98,  danger: 37.50,  hfl: 37.75,  river: 'Kosi'),
-  'dalsingh sarai':        (warning: 39.94,  danger: 42.84,  hfl: 44.34,  river: 'Kosi'),
-  'nirmali':               (warning: 50.40,  danger: 53.78,  hfl: 55.28,  river: 'Kosi'),
-  'sikti':                 (warning: 60.06,  danger: 61.40,  hfl: 62.90,  river: 'Mahananda'),
-  'chargharia':            (warning: 44.55,  danger: 46.94,  hfl: 48.85,  river: 'Mahananda'),
-  'moujabadi':             (warning: 50.16,  danger: 52.05,  hfl: 53.55,  river: 'Mahananda'),
-  'galgalia':              (warning: 79.21,  danger: 82.30,  hfl: 83.66,  river: 'Mechi'),
-  'araria':                (warning: 45.07,  danger: 47.00,  hfl: 49.40,  river: 'Parman'),
-  'bathnaha':              (warning: 59.95,  danger: 62.56,  hfl: 64.06,  river: 'Parman'),
-  'amour':                 (warning: 36.95,  danger: 38.38,  hfl: 39.88,  river: 'Parman'),
-  'fatehpur':              (warning: 43.14,  danger: 51.63,  hfl: 52.63,  river: 'Punpun'),
-  'kinjer':                (warning: 61.42,  danger: 65.00,  hfl: 67.95,  river: 'Punpun'),
-  'indrapuri':             (warning: 101.10, danger: 108.20, hfl: 108.85, river: 'Sone'),
-  'koelwar':               (warning: 46.32,  danger: 55.52,  hfl: 58.88,  river: 'Sone'),
-  'maner':                 (warning: 43.38,  danger: 52.00,  hfl: 53.79,  river: 'Sone'),
-  'banjari':               (warning: 120.72, danger: 124.89, hfl: 125.89, river: 'Sone'),
-  'paliganj':              (warning: 61.15,  danger: 69.10,  hfl: 69.14,  river: 'Sone'),
-  'yadunathpur':           (warning: 144.74, danger: 147.14, hfl: 149.35, river: 'Sone'),
+
+  // ── BAYA / FALGU / HAROHAR / KAMALA BALAN / KANKAI / KARMNASA / KIUL / MECHI / PARMAN / SONE ──
+  'bachhwara':    (warning: 35.21, danger: 42.88, hfl: 44.38, river: 'Baya'),
+  'mohauddin nagar': (warning: 38.53, danger: 43.47, hfl: 44.97, river: 'Baya'),
+  'saksohra':     (warning: 26.44, danger: 33.50, hfl: 35.14, river: 'Falgu'),
+  'kadirganj':    (warning: 25.00, danger: 30.00, hfl: 32.00, river: 'Harohar'),
+  'mankatha':     (warning: 32.72, danger: 40.78, hfl: 42.88, river: 'Harohar'),
+  'kapasiya':     (warning: 41.60, danger: 43.78, hfl: 45.28, river: 'Kamala Balan'),
+  'jhagarua':     (warning: 42.84, danger: 46.22, hfl: 47.72, river: 'Kamalabalan'),
+  'kakarghatti':  (warning: 43.95, danger: 47.50, hfl: 49.00, river: 'Kamalabalan'),
+  'rauta':        (warning: 40.22, danger: 41.71, hfl: 43.21, river: 'Kankai'),
+  'chousa':       (warning: 50.36, danger: 61.89, hfl: 62.89, river: 'Karmnasa'),
+  'durgawati':    (warning: 63.70, danger: 69.00, hfl: 71.00, river: 'Karmnasha'),
+  'jamui':        (warning: 66.13, danger: 69.00, hfl: 69.61, river: 'Kiul'),
+  'lakhisarai':   (warning: 35.72, danger: 42.40, hfl: 45.90, river: 'Kiul'),
+  'galgalia':     (warning: 79.21, danger: 82.30, hfl: 83.66, river: 'Mechi'),
+  'araria':       (warning: 45.07, danger: 47.00, hfl: 49.40, river: 'Parman'),
+  'bathnaha':     (warning: 59.95, danger: 62.56, hfl: 64.06, river: 'Parman'),
+  'amour':        (warning: 36.95, danger: 38.38, hfl: 39.88, river: 'Parman'),
+  'indrapuri':    (warning: 101.10, danger: 108.20, hfl: 108.85, river: 'Sone'),
+  'koelwar':      (warning: 46.32, danger: 55.52, hfl: 58.88, river: 'Sone'),
+  'maner':        (warning: 43.38, danger: 52.00, hfl: 53.79, river: 'Sone'),
+  'banjari':      (warning: 120.72, danger: 124.89, hfl: 125.89, river: 'Sone'),
+  'paliganj':     (warning: 61.15, danger: 69.10, hfl: 69.14, river: 'Sone'),
+  'yadunathpur':  (warning: 144.74, danger: 147.14, hfl: 149.35, river: 'Sone'),
+  'banka':        (warning: 80.47, danger: 86.75, hfl: 87.40, river: 'Chandan'),
 };
 
-// ── helpers ────────────────────────────────────────────────────────────────────────────────
-
-/// v4.1 FIX: collapse ALL whitespace runs to a single space.
-/// This prevents 'Birpur (CWC)' → 'birpur  cwc' (double-space) which
-/// caused the substring match to hit 'birpur' and return DL=74.70
-/// when looking up 'birpur  cwc', completely bypassing 'birpur cwc' key.
-
-// ── Station coordinates lookup (injected into RiverStation.lat/lon) ──────────
+// ── Station coordinates ──────────────────────────────────────────────────────
 const Map<String, ({double lat, double lon})> _kCoords = {
   // GANGA
   'gandhighat':        (lat: 25.614, lon: 85.127),
   'dighaghat':         (lat: 25.623, lon: 85.074),
-  'hathidah':          (lat: 25.381, lon: 86.165),
+  // FIX-6: hathidah lon corrected 86.165 → 85.750 (was in Lakhisarai, 40 km off)
+  'hathidah':          (lat: 25.417, lon: 85.750),
   'munger':            (lat: 25.375, lon: 86.474),
   'kahalgaon':         (lat: 25.207, lon: 87.268),
   'bhagalpur':         (lat: 25.245, lon: 86.978),
@@ -266,19 +253,21 @@ const Map<String, ({double lat, double lon})> _kCoords = {
   'kamtaul kamla':     (lat: 26.392, lon: 85.862),
   'phulparas':         (lat: 26.519, lon: 86.504),
   // MAHANANDA
-  'taibpur':                (lat: 25.775, lon: 87.474),
-  'dhengraghat mahananda':  (lat: 26.098, lon: 87.951),
-  'dhengraghat':            (lat: 26.098, lon: 87.951),
-  'jhawa':                  (lat: 25.614, lon: 87.835),
+  'taibpur':               (lat: 25.775, lon: 87.474),
+  'dhengraghat mahananda': (lat: 26.098, lon: 87.951),
+  'dhengraghat':           (lat: 26.098, lon: 87.951),
+  'jhawa':                 (lat: 25.614, lon: 87.835),
   // PUNPUN
-  'sripalpur':         (lat: 25.328, lon: 85.038),
+  // FIX-7: sripalpur coords corrected (25.328,85.038) → (25.52,85.38)
+  'sripalpur':         (lat: 25.520, lon: 85.380),
   // ADHWARA / DHAUS / KHIROI
   'ekmighat':          (lat: 26.597, lon: 85.617),
   'kamtaul adhwara':   (lat: 26.392, lon: 85.862),
   'saulighat':         (lat: 26.480, lon: 85.720),
   'agropatti':         (lat: 26.430, lon: 85.680),
-  // JHIM / LALBAKEYA / BALAN
-  'sonbarsa':          (lat: 25.993, lon: 86.063),
+  // JHIM / LAL BAKEYA / BALAN
+  // FIX-8: sonbarsa coords corrected (25.993,86.063) → (26.70,85.48) — was 75 km off in Samastipur
+  'sonbarsa':          (lat: 26.700, lon: 85.480),
   'lalbakeya':         (lat: 26.600, lon: 85.750),
   'goabari':           (lat: 26.530, lon: 85.810),
   'phulparas balan':   (lat: 26.519, lon: 86.504),
@@ -286,90 +275,89 @@ const Map<String, ({double lat, double lon})> _kCoords = {
   // KHANDO / KAREH
   'dagmara':           (lat: 26.179, lon: 86.723),
   'karachin':          (lat: 25.432, lon: 85.519),
-  // ── WRD Bihar stations (geocoded June 2026) ────────────────────────────
-  'saharghat':             (lat: 26.543, lon: 85.857),
-  'badlaghat':             (lat: 25.552, lon: 86.584),
-  'belsand':               (lat: 26.432, lon: 85.395),
-  'bishunpur':             (lat: 24.820, lon: 84.208),
-  'bachhwara':             (lat: 25.575, lon: 85.900),
-  'mohauddin nagar':       (lat: 26.020, lon: 85.640),
-  'ahirwalia':             (lat: 26.150, lon: 84.780),
-  'chanpatia':             (lat: 26.896, lon: 84.518),
-  'lalbegiaghat':          (lat: 26.060, lon: 85.320),
-  'chintawanpur':          (lat: 26.550, lon: 85.100),
-  'kanti':                 (lat: 26.182, lon: 85.271),
-  'lakhoura':              (lat: 26.430, lon: 85.050),
-  'madhuban':              (lat: 26.441, lon: 85.137),
-  'sakra':                 (lat: 25.966, lon: 85.529),
-  'sugauli':               (lat: 26.757, lon: 84.778),
-  'banka':                 (lat: 24.833, lon: 86.816),
-  'jehanabad':             (lat: 25.153, lon: 85.007),
-  'kolhachak':             (lat: 25.220, lon: 85.060),
-  'masaurhi':              (lat: 25.352, lon: 84.987),
-  'dobhi':                 (lat: 24.503, lon: 84.895),
-  'saksohra':              (lat: 24.750, lon: 85.170),
-  'bagaha':                (lat: 27.059, lon: 84.206),
-  'kukraha':               (lat: 26.650, lon: 84.560),
-  'mahua':                 (lat: 25.802, lon: 85.426),
-  'thakraha':              (lat: 26.776, lon: 84.271),
-  'triveni':               (lat: 25.325, lon: 85.404),
-  'udwantnagar':           (lat: 25.507, lon: 84.623),
-  'azmabad':               (lat: 25.357, lon: 87.224),
-  'mahnar':                (lat: 25.622, lon: 85.509),
-  'sultanganj':            (lat: 25.241, lon: 86.735),
-  'ahiro':                 (lat: 24.924, lon: 87.116),
-  'danapur':               (lat: 25.636, lon: 85.047),
-  'hisua':                 (lat: 24.846, lon: 85.395),
-  'indo nepal border':     (lat: 27.100, lon: 84.300),
-  'manpur':                (lat: 24.812, lon: 85.066),
-  'nardiganj':             (lat: 24.944, lon: 85.430),
-  'nawada':                (lat: 24.817, lon: 85.518),
-  'sitalpur':              (lat: 25.764, lon: 85.030),
-  'suryagadha':            (lat: 25.350, lon: 86.390),
-  'chhapra':               (lat: 25.773, lon: 84.785),
-  'kadirganj':             (lat: 25.550, lon: 85.950),
-  'mankatha':              (lat: 25.207, lon: 86.057),
-  'kapasiya':              (lat: 25.424, lon: 86.111),
-  'jhagarua':              (lat: 26.320, lon: 86.180),
-  'kakarghatti':           (lat: 26.183, lon: 85.949),
-  'rauta':                 (lat: 25.716, lon: 87.779),
-  'chousa':                (lat: 25.510, lon: 84.060),
-  'durgawati':             (lat: 25.241, lon: 83.475),
-  'jamui':                 (lat: 24.756, lon: 86.301),
-  'lakhisarai':            (lat: 25.154, lon: 86.174),
-  'dhamaraghat':           (lat: 26.200, lon: 87.080),
-  'dalsingh sarai':        (lat: 25.665, lon: 85.841),
-  'nirmali':               (lat: 26.379, lon: 86.732),
-  'sikti':                 (lat: 26.408, lon: 87.551),
-  'chargharia':            (lat: 26.338, lon: 87.649),
-  'moujabadi':             (lat: 25.680, lon: 87.520),
-  'galgalia':              (lat: 26.527, lon: 88.113),
-  'araria':                (lat: 26.135, lon: 87.465),
-  'bathnaha':              (lat: 26.674, lon: 85.550),
-  'amour':                 (lat: 25.986, lon: 87.679),
-  'fatehpur':              (lat: 24.608, lon: 85.226),
-  'kinjer':                (lat: 24.640, lon: 85.140),
-  'indrapuri':             (lat: 24.834, lon: 84.137),
-  'koelwar':               (lat: 25.569, lon: 84.793),
-  'maner':                 (lat: 25.660, lon: 84.910),
-  'banjari':               (lat: 24.675, lon: 83.993),
-  'paliganj':              (lat: 25.292, lon: 84.817),
-  'yadunathpur':           (lat: 24.595, lon: 83.906),
+  // WRD Bihar
+  'saharghat':         (lat: 26.543, lon: 85.857),
+  'badlaghat':         (lat: 25.552, lon: 86.584),
+  'belsand':           (lat: 26.432, lon: 85.395),
+  'bishunpur':         (lat: 24.820, lon: 84.208),
+  'bachhwara':         (lat: 25.575, lon: 85.900),
+  'mohauddin nagar':   (lat: 26.020, lon: 85.640),
+  'ahirwalia':         (lat: 26.150, lon: 84.780),
+  'chanpatia':         (lat: 26.896, lon: 84.518),
+  'lalbegiaghat':      (lat: 26.060, lon: 85.320),
+  'chintawanpur':      (lat: 26.550, lon: 85.100),
+  'kanti':             (lat: 26.182, lon: 85.271),
+  'lakhoura':          (lat: 26.430, lon: 85.050),
+  'madhuban':          (lat: 26.441, lon: 85.137),
+  'sakra':             (lat: 25.966, lon: 85.529),
+  'sugauli':           (lat: 26.757, lon: 84.778),
+  'banka':             (lat: 24.833, lon: 86.816),
+  'jehanabad':         (lat: 25.153, lon: 85.007),
+  'kolhachak':         (lat: 25.220, lon: 85.060),
+  'masaurhi':          (lat: 25.352, lon: 84.987),
+  'dobhi':             (lat: 24.503, lon: 84.895),
+  'saksohra':          (lat: 24.750, lon: 85.170),
+  'bagaha':            (lat: 27.059, lon: 84.206),
+  'kukraha':           (lat: 26.650, lon: 84.560),
+  'mahua':             (lat: 25.802, lon: 85.426),
+  'thakraha':          (lat: 26.776, lon: 84.271),
+  'triveni':           (lat: 25.325, lon: 85.404),
+  'udwantnagar':       (lat: 25.507, lon: 84.623),
+  'azmabad':           (lat: 25.357, lon: 87.224),
+  'mahnar':            (lat: 25.622, lon: 85.509),
+  'sultanganj':        (lat: 25.241, lon: 86.735),
+  'ahiro':             (lat: 24.924, lon: 87.116),
+  'danapur':           (lat: 25.636, lon: 85.047),
+  'hisua':             (lat: 24.846, lon: 85.395),
+  'indo nepal border': (lat: 27.100, lon: 84.300),
+  'manpur':            (lat: 24.812, lon: 85.066),
+  'nardiganj':         (lat: 24.944, lon: 85.430),
+  'nawada':            (lat: 24.817, lon: 85.518),
+  'sitalpur':          (lat: 25.764, lon: 85.030),
+  'suryagadha':        (lat: 25.350, lon: 86.390),
+  'chhapra':           (lat: 25.773, lon: 84.785),
+  'kadirganj':         (lat: 25.550, lon: 85.950),
+  'mankatha':          (lat: 25.207, lon: 86.057),
+  'kapasiya':          (lat: 25.424, lon: 86.111),
+  'jhagarua':          (lat: 26.320, lon: 86.180),
+  'kakarghatti':       (lat: 26.183, lon: 85.949),
+  'rauta':             (lat: 25.716, lon: 87.779),
+  'chousa':            (lat: 25.510, lon: 84.060),
+  'durgawati':         (lat: 25.241, lon: 83.475),
+  'jamui':             (lat: 24.756, lon: 86.301),
+  'lakhisarai':        (lat: 25.154, lon: 86.174),
+  'dhamaraghat':       (lat: 26.200, lon: 87.080),
+  'dalsingh sarai':    (lat: 25.665, lon: 85.841),
+  'nirmali':           (lat: 26.379, lon: 86.732),
+  'sikti':             (lat: 26.408, lon: 87.551),
+  'chargharia':        (lat: 26.338, lon: 87.649),
+  'moujabadi':         (lat: 25.680, lon: 87.520),
+  'galgalia':          (lat: 26.527, lon: 88.113),
+  'araria':            (lat: 26.135, lon: 87.465),
+  'bathnaha':          (lat: 26.674, lon: 85.550),
+  'amour':             (lat: 25.986, lon: 87.679),
+  'fatehpur':          (lat: 24.608, lon: 85.226),
+  'kinjer':            (lat: 24.640, lon: 85.140),
+  'indrapuri':         (lat: 24.834, lon: 84.137),
+  'koelwar':           (lat: 25.569, lon: 84.793),
+  'maner':             (lat: 25.660, lon: 84.910),
+  'banjari':           (lat: 24.675, lon: 83.993),
+  'paliganj':          (lat: 25.292, lon: 84.817),
+  'yadunathpur':       (lat: 24.595, lon: 83.906),
 };
 
+// ── _norm ────────────────────────────────────────────────────────────────────
 String _norm(String v) => v
     .toLowerCase()
-    .replaceAll(RegExp(r'\s*\(.*?\)'), '')   // strip (qualifier)
-    .replaceAll(RegExp(r'[^a-z0-9\s]'), ' ') // non-alnum → space
-    .replaceAll(RegExp(r' +'), ' ')           // v4.1: collapse multi-space
+    .replaceAll(RegExp(r'\s*\(.*?\)'), '')
+    .replaceAll(RegExp(r'[^a-z0-9\s]'), ' ')
+    .replaceAll(RegExp(r' +'), ' ')
     .trim();
 
-// v4.0+: checks ThresholdOverrideStore FIRST (live RTDAS values),
-// then compiled-in _kThresholds, then returns null (caller applies heuristic).
+// ── _lookupThreshold ─────────────────────────────────────────────────────────
+// Priority: 1. ThresholdOverrideStore (live RTDAS)  2. _kThresholds  3. null
 ({double warning, double danger, double hfl, String river})?
     _lookupThreshold(String normName) {
-
-  // ── Priority 1: Live RTDAS values from ThresholdOverrideStore ────────────
   final override = ThresholdOverrideStore.instance.get(normName);
   if (override != null && override.dl != null) {
     final compiled = _kThresholds[normName];
@@ -380,34 +368,23 @@ String _norm(String v) => v
       river:   compiled?.river ?? 'Bihar River',
     );
   }
-
-  // ── Priority 2: Compiled-in table (bihar_rivers.dart v4.2) ──────────────
   final exact = _kThresholds[normName];
   if (exact != null) return exact;
-
   // Substring / prefix match for variant spellings.
-  // v4.1: now safe because _norm() always produces single spaces so
-  // 'birpur cwc'.contains('birpur') = true but only after exact lookup
-  // fails, meaning we fall through to the correct 'birpur cwc' key above
-  // when the full name is 'Birpur (CWC)'.
   for (final entry in _kThresholds.entries) {
     final k = entry.key;
     if (normName.contains(k) || k.contains(normName)) return entry.value;
   }
-
   return null;
 }
 
-// ── Provider ────────────────────────────────────────────────────────────────────────────────
-
+// ── Provider ─────────────────────────────────────────────────────────────────
 class LiveEngineBridgeNotifier extends Notifier<List<RiverStation>> {
   StreamSubscription<BiharLiveFeed>? _sub;
 
   @override
   List<RiverStation> build() {
-    if (!BiharLiveEngine.instance.running) {
-      BiharLiveEngine.instance.start();
-    }
+    if (!BiharLiveEngine.instance.running) BiharLiveEngine.instance.start();
     _sub?.cancel();
     _sub = BiharLiveEngine.instance.stream.listen(_onFeed);
     ref.onDispose(() => _sub?.cancel());
@@ -429,20 +406,16 @@ class LiveEngineBridgeNotifier extends Notifier<List<RiverStation>> {
       if (item.kind != FeedItemKind.riverGauge &&
           item.kind != FeedItemKind.barrage    &&
           item.kind != FeedItemKind.telemetry) continue;
-
-      // Skip the RTDAS sync-marker stub item — it has no water level.
       if (item.id == 'rtdas|__sync_marker__') continue;
 
-      final rawVal = item.value ?? '';
-      final numStr = rawVal.replaceAll(RegExp(r'[^0-9.]'), '');
-      final level  = double.tryParse(numStr);
+      final rawVal  = item.value ?? '';
+      final numStr  = rawVal.replaceAll(RegExp(r'[^0-9.]'), '');
+      final level   = double.tryParse(numStr);
       final hasData = level != null && level > 0;
 
       final normName = _norm(item.title);
       final thresh   = _lookupThreshold(normName);
 
-      // No-data stations: keep in list so UI can show offline chip.
-      // Use threshold danger as sentinel current level (won't trigger alerts).
       if (!hasData) {
         final river = thresh?.river
             ?? (item.raw['river'] as String?)?.trim()
@@ -466,7 +439,6 @@ class LiveEngineBridgeNotifier extends Notifier<List<RiverStation>> {
         continue;
       }
 
-      // Heuristic fallback if even the store and compiled table miss this station.
       final warning = thresh?.warning ?? level * 0.90;
       final danger  = thresh?.danger  ?? level * 0.95;
       final hfl     = thresh?.hfl     ?? level * 1.05;
@@ -474,7 +446,6 @@ class LiveEngineBridgeNotifier extends Notifier<List<RiverStation>> {
       final river = (item.raw['river'] as String?)?.trim().isNotEmpty == true
           ? item.raw['river'] as String
           : thresh?.river ?? item.subtitle;
-
       final stateStr = (item.raw['state'] as String?)?.trim().isNotEmpty == true
           ? item.raw['state'] as String
           : 'Bihar';

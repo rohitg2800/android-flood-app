@@ -1,23 +1,27 @@
-// lib/providers/bihar_live_provider.dart  (v3.5)
+// lib/providers/bihar_live_provider.dart  (v3.6)
 //
-// OpsFlood — All-Stations Live Provider
+// v3.6 (17 Jun 2026) — Dataflow audit fixes:
 //
-// v3.5 (15 Jun 2026) — Fix city-card blank data (city lookup mismatch).
-//   _index was keyed by s.city.trim().toLowerCase() which kept parenthetical
-//   qualifiers like "(CWC)", "(D/S)", "(U/S)" intact.
-//   byCity() also did a plain lowercase lookup.
-//   Result: live.byCity("Birpur") never matched "birpur (cwc)" → every card
-//   showed grey NO DATA even though the feed had live readings.
+//   FIX-1: _normaliseRisk() was collapsing 'DANGER' → 'CRITICAL'.
+//     The WRD/CWC API sends 'DANGER' for above-warning-level stations.
+//     That tier is now preserved as 'DANGER' (matches gaugeRiskFromLevels output).
+//     Old behaviour: DANGER → CRITICAL (skipping severity tier entirely).
+//     New behaviour:
+//       CRITICAL / BREACH / EXTREME   → 'CRITICAL'
+//       ABOVE_HFL / ABOVE DANGER      → 'EXTREME'
+//       SEVERE                         → 'SEVERE'
+//       DANGER / WARNING / ABOVE       → 'DANGER'
+//       HIGH / MODERATE / CAUTION     → 'WARNING'
+//       LOW / SAFE / NORMAL / PRE-MONSOON / BELOW WARNING → 'NORMAL'
 //
-//   Fix: both _index key construction and byCity() input now go through
-//   _normCityKey(), which strips (...) qualifiers and normalises whitespace.
-//   This is the same normalisation already used by _buildState dedup (Step 2)
-//   and by BiharLiveEngine._gaugeKeys(), so all three pipelines now agree.
+//   FIX-2: _kRiskOrder was missing 'DANGER', 'WARNING', 'EXTREME' keys.
+//     Both fell to ?? 5 (= NORMAL rank) during dedup sort, so a
+//     DANGER-level station could be replaced by a safe reading.
+//     All 6 severity labels now have explicit ranks:
+//       EXTREME=0, CRITICAL=1, SEVERE=2, DANGER=3, WARNING=4, NORMAL=5, UNKNOWN=6
 //
-// v3.4 (15 Jun 2026) — Deduplicate stations by city key inside _buildState.
-// v3.3 (12 Jun 2026) — Three city-card load-time fixes.
-// v3.2: removed dead StationsUnifiedBridge / LiveFetchEngine attach().
-// v3.1: single-engine BiharLiveEngine wiring.
+// v3.5 (15 Jun 2026): city-key normalisation fix.
+// v3.4 (15 Jun 2026): dedup by city key.
 
 import 'dart:async';
 
@@ -41,7 +45,7 @@ class BiharStationData {
   final double? diff24h;
   final double? forecast24h;
   final String  trend;        // '↑' / '↓' / '→'
-  final String  riskLabel;    // CRITICAL / SEVERE / HIGH / MODERATE / LOW / NORMAL
+  final String  riskLabel;    // EXTREME / CRITICAL / SEVERE / DANGER / WARNING / NORMAL
   final String  source;       // LIVE / STATIC
   final String  fetchedAt;    // ISO-8601 string
 
@@ -104,14 +108,14 @@ class BiharStationData {
       river = item.subtitle.substring('River: '.length).trim();
     }
 
-    final _rawDistrict = (item.raw['district'] as String?)?.trim() ?? '';
-    final district = _rawDistrict.isNotEmpty
-        ? _rawDistrict
+    final rawDistrict = (item.raw['district'] as String?)?.trim() ?? '';
+    final district = rawDistrict.isNotEmpty
+        ? rawDistrict
         : (BiharStationRegistry.forSite(item.title) ??
                BiharStationRegistry.forSite(
                    item.title.replaceAll(RegExp(r'\s*\(.*?\)'), '').trim()))
               ?.district ?? '';
-    final state    = (item.raw['state'] as String?)?.trim().isNotEmpty == true
+    final state = (item.raw['state'] as String?)?.trim().isNotEmpty == true
         ? (item.raw['state'] as String).trim()
         : 'Bihar';
 
@@ -144,11 +148,10 @@ class BiharStationData {
     return ((cur / dan) * 100).clamp(0, 150).toDouble();
   }
 
-  bool get isCritical => riskLabel == 'CRITICAL';
+  bool get isCritical => riskLabel == 'CRITICAL' || riskLabel == 'EXTREME';
   bool get isSevere   => riskLabel == 'SEVERE';
-  bool get isWarning  =>
-      riskLabel == 'HIGH' || riskLabel == 'WARNING' || riskLabel == 'MODERATE';
-  bool get isSafe     => riskLabel == 'LOW' || riskLabel == 'NORMAL';
+  bool get isWarning  => riskLabel == 'DANGER'  || riskLabel == 'WARNING';
+  bool get isSafe     => riskLabel == 'NORMAL';
   bool get hasNoData  => riskLabel == 'UNKNOWN' || source == 'STATIC';
 
   // ── Private safe-parse helpers ────────────────────────────────────────────
@@ -176,21 +179,40 @@ class BiharStationData {
     return d;
   }
 
+  // FIX-1 (v3.6): DANGER tier preserved — was incorrectly collapsed to CRITICAL.
+  // New 6-tier hierarchy matches gaugeRiskFromLevels() in bihar_rivers.dart:
+  //   EXTREME  = above HFL
+  //   CRITICAL = at/above danger level
+  //   SEVERE   = severe (API label)
+  //   DANGER   = above warning level (API sends 'DANGER' for this)
+  //   WARNING  = near warning level
+  //   NORMAL   = below warning level
   static String _normaliseRisk(String raw) {
-    if (raw.contains('DANGER')   || raw.contains('BREACH')   ||
-        raw.contains('EXTREME')  || raw.contains('CRITICAL'))
+    // Tier 0 — EXTREME (above HFL)
+    if (raw.contains('ABOVE_HFL') || raw.contains('ABOVE HFL') ||
+        raw.contains('EXTREME'))
+      return 'EXTREME';
+    // Tier 1 — CRITICAL (breach / at danger level)
+    if (raw.contains('BREACH') || raw.contains('CRITICAL'))
       return 'CRITICAL';
-    if (raw.contains('SEVERE')   || raw.contains('ABOVE_HFL') ||
-        raw.contains('ABOVE DANGER'))
+    // Tier 2 — SEVERE
+    if (raw.contains('SEVERE'))
       return 'SEVERE';
-    if (raw.contains('WARNING')  || raw.contains('HIGH')     ||
-        raw.contains('ABOVE')    || raw.contains('MODERATE'))
-      return 'HIGH';
-    if (raw.contains('WATCH')    || raw.contains('CAUTION'))
-      return 'MODERATE';
-    if (raw == 'LOW' || raw == 'SAFE'   || raw == 'NORMAL' ||
-        raw == 'PRE-MONSOON'            || raw == 'BELOW WARNING')
-      return 'LOW';
+    // Tier 3 — DANGER (above warning level; API literal is 'DANGER')
+    if (raw == 'DANGER' || raw.contains('ABOVE DANGER') ||
+        raw.contains('ABOVE WARNING') || raw == 'ABOVE')
+      return 'DANGER';
+    // Tier 4 — WARNING (near warning / elevated)
+    if (raw.contains('WARNING') || raw.contains('HIGH') ||
+        raw.contains('MODERATE') || raw.contains('WATCH') ||
+        raw.contains('CAUTION'))
+      return 'WARNING';
+    // Tier 5 — NORMAL
+    if (raw == 'LOW'  || raw == 'SAFE'  || raw == 'NORMAL' ||
+        raw == 'PRE-MONSOON'            || raw == 'BELOW WARNING' ||
+        raw.isEmpty)
+      return 'NORMAL';
+    // Unknown API label — default to NORMAL (not UNKNOWN) so station stays visible
     return 'NORMAL';
   }
 }
@@ -201,7 +223,6 @@ class BiharStationData {
 class BiharLiveState {
   final List<BiharStationData>        stations;
   final DateTime?                      lastFetched;
-  // v3.5: keyed by _normCityKey(s.city) so "(CWC)", "(D/S)" etc. are stripped.
   final Map<String, BiharStationData> _index;
 
   BiharLiveState({this.stations = const [], this.lastFetched})
@@ -210,7 +231,6 @@ class BiharLiveState {
             _normCityKey(s.city): s,
         };
 
-  /// O(1) lookup by city name — normalised so "Birpur" matches "Birpur (CWC)".
   BiharStationData? byCity(String city) =>
       _index[_normCityKey(city)];
 
@@ -222,58 +242,48 @@ class BiharLiveState {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Risk order used for dedup and sort.
+// FIX-2 (v3.6): _kRiskOrder now covers all 7 labels incl. EXTREME/DANGER/WARNING.
+// Previously missing EXTREME/DANGER/WARNING fell to ?? 5 (= NORMAL rank)
+// during dedup, so a safe reading could silently replace a danger-level station.
 // ─────────────────────────────────────────────────────────────────────────────
 const _kRiskOrder = {
-  'CRITICAL': 0,
-  'SEVERE':   1,
-  'HIGH':     2,
-  'MODERATE': 3,
-  'LOW':      4,
+  'EXTREME':  0,
+  'CRITICAL': 1,
+  'SEVERE':   2,
+  'DANGER':   3,
+  'WARNING':  4,
   'NORMAL':   5,
   'UNKNOWN':  6,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// City-key normalisation — shared by _buildState dedup, _index construction,
-// and byCity() so all three pipelines agree on the canonical city key.
+// City-key normalisation
 // ─────────────────────────────────────────────────────────────────────────────
 String _normCityKey(String name) => name
     .toLowerCase()
-    .replaceAll(RegExp(r'\s*\(.*?\)'), '')   // strip qualifiers like "(U/S)"
+    .replaceAll(RegExp(r'\s*\(.*?\)'), '')
     .replaceAll(RegExp(r'[^a-z0-9\s]'),  ' ')
     .replaceAll(RegExp(r' +'),            ' ')
     .trim();
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Notifier  (v3.5 — no logic change; only BiharLiveState construction changed)
+// Notifier
 // ─────────────────────────────────────────────────────────────────────────────
-
 class BiharLiveNotifier extends AsyncNotifier<BiharLiveState> {
   StreamSubscription<BiharLiveFeed>? _sub;
 
   @override
   Future<BiharLiveState> build() async {
     final engine = BiharLiveEngine.instance;
-
-    // Start engine if not already running (idempotent).
     if (!engine.running) engine.start();
-
-    // Cancel any previous subscription (hot-reload safety).
     _sub?.cancel();
     _sub = engine.stream.listen(_onFeed);
     ref.onDispose(() => _sub?.cancel());
-
-    // Fix 1 (v3.3): Fast path — engine already has data (e.g. after hot-reload).
     if (engine.latest != null) return _buildState(engine.latest);
-
-    // Fix 1 (v3.3): Slow path — suspend build() so provider stays AsyncLoading.
     final completer = Completer<BiharLiveState>();
     late StreamSubscription<BiharLiveFeed> onceSub;
     onceSub = engine.stream.listen((feed) {
-      if (!completer.isCompleted) {
-        completer.complete(_buildState(feed));
-      }
+      if (!completer.isCompleted) completer.complete(_buildState(feed));
       onceSub.cancel();
     });
     return completer.future;
@@ -288,7 +298,6 @@ class BiharLiveNotifier extends AsyncNotifier<BiharLiveState> {
       return BiharLiveState(lastFetched: feed?.generatedAt);
     }
 
-    // Step 1 — parse raw feed items into BiharStationData objects.
     final rawStations = feed.items
         .where((i) =>
             i.kind == FeedItemKind.riverGauge ||
@@ -297,10 +306,7 @@ class BiharLiveNotifier extends AsyncNotifier<BiharLiveState> {
         .map(BiharStationData.fromFeedItem)
         .toList();
 
-    // Step 2 — deduplicate by normalised city key.
-    // The raw WRD/CWC feed can emit multiple gauge records for the same city
-    // (e.g. Birpur appears 3× on the Kosi at different cross-sections).
-    // Keep the entry with the highest risk; on tie, keep the highest level.
+    // Dedup by normalised city key — keep highest risk; tie → highest level.
     final deduped = <String, BiharStationData>{};
     for (final s in rawStations) {
       final key = s.id.isNotEmpty ? s.id : _normCityKey(s.city);
@@ -311,19 +317,15 @@ class BiharLiveNotifier extends AsyncNotifier<BiharLiveState> {
         final incomingRank = _kRiskOrder[s.riskLabel]        ?? 6;
         final existingRank = _kRiskOrder[existing.riskLabel] ?? 6;
         if (incomingRank < existingRank) {
-          // Incoming is higher risk — replace.
           deduped[key] = s;
         } else if (incomingRank == existingRank) {
-          // Same risk — keep the higher observed level.
           final incomingLevel = s.currentLevel        ?? 0;
           final existingLevel = existing.currentLevel ?? 0;
           if (incomingLevel > existingLevel) deduped[key] = s;
         }
-        // else: existing is higher risk — keep it.
       }
     }
 
-    // Step 3 — sort by risk (most critical first).
     final stations = deduped.values.toList()
       ..sort((a, b) =>
           (_kRiskOrder[a.riskLabel] ?? 5)
@@ -335,12 +337,10 @@ class BiharLiveNotifier extends AsyncNotifier<BiharLiveState> {
     );
   }
 
-  /// Force an immediate full refresh (e.g. user taps Refresh button).
   Future<void> refresh() async {
     state = const AsyncLoading();
     try {
       await BiharLiveEngine.instance.refresh();
-      // _onFeed() fires automatically from the stream.
     } catch (e, st) {
       state = AsyncError(e, st);
     }
