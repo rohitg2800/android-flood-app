@@ -15,6 +15,8 @@ import '../providers/bihar_live_provider.dart';
 import '../services/offline_cache_manager.dart';
 import '../providers/weather_provider.dart';
 import '../services/predict.dart' as predict_lib;
+import '../providers/kosi_birpur_provider.dart';
+import '../services/kosi_birpur_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // biharPredictionProvider
@@ -70,10 +72,11 @@ final biharPredictionProvider =
 
   // ── 3. Weather rainfall modifier ─────────────────────────────────────────
   final wxState     = ref.watch(weatherProvider);
-  final rainfallMod = wxState.current != null
-      ? (wxState.rainfall7dMm / 200).clamp(0.0, 1.0)
-      : 0.3;
   final rain7d      = wxState.rainfall7dMm;
+  final stationRain24h = station?.rainfall24h;
+  final rainfallMod    = stationRain24h != null
+      ? (stationRain24h / 50).clamp(0.0, 1.0)
+      : (wxState.current != null ? (rain7d / 200).clamp(0.0, 1.0) : 0.3);
 
   // ── 4. Try ML backend first ───────────────────────────────────────────────
   try {
@@ -127,9 +130,8 @@ final biharBulkPredictionsProvider =
   final liveAsync   = ref.watch(biharLiveProvider);
   final stations    = liveAsync.valueOrNull?.stations ?? [];
   final wxState     = ref.watch(weatherProvider);
-  final rainfallMod = wxState.current != null
-      ? (wxState.rainfall7dMm / 200).clamp(0.0, 1.0)
-      : 0.3;
+  // Birpur override: use kosiBirpurProvider for correct local gauge levels
+  final birpur      = ref.watch(kosiBirpurProvider).valueOrNull;
   final cache       = OfflineCacheManager.instance;
 
   // ── Offline fallback: only when live feed has errored (not just loading) ──
@@ -142,17 +144,38 @@ final biharBulkPredictionsProvider =
   }
 
   final preds = stations
-      .map((s) => _liveRuleEngine(
+      .map((s) {
+        // Per-station rainfall: use actual 24h reading if available,
+        // else fall back to global weather provider value.
+        final stationRain = s.rainfall24h;
+        final stationRainfallMod = stationRain != null
+            ? (stationRain / 50).clamp(0.0, 1.0)   // 50mm/day → mod=1.0
+            : (wxState.current != null
+                ? (wxState.rainfall7dMm / 200).clamp(0.0, 1.0)
+                : 0.3);
+        final isBirpur = s.city.toLowerCase().contains('birpur');
+        final currentLevel = isBirpur
+            ? (birpur?.levelM   ?? s.currentLevel ?? kBirpurNormalLevel)
+            : (s.currentLevel   ?? 0.0);
+        final dangerLevel  = isBirpur
+            ? (birpur?.dangerLevel  ?? kBirpurDangerLevel)
+            : (s.dangerLevel  ?? ((s.currentLevel ?? 0) * 1.5).clamp(1.0, 999.0));
+        final warningLevel = isBirpur
+            ? (birpur?.warningLevel ?? kBirpurWarningLevel)
+            : (s.warningLevel ?? (dangerLevel * 0.75));
+        return _liveRuleEngine(
             cityName:     s.city,
             riverName:    s.river,
-            currentLevel: s.currentLevel ?? 0.0,
-            dangerLevel:  s.dangerLevel  ?? ((s.currentLevel ?? 0) * 1.5).clamp(1.0, 999.0),
-            warningLevel: s.warningLevel ?? ((s.dangerLevel  ?? 10.0) * 0.75),
+            currentLevel: currentLevel,
+            dangerLevel:  dangerLevel,
+            warningLevel: warningLevel,
             diff24h:      s.diff24h      ?? 0.0,
             riskLabel:    s.riskLabel,
-            rainfallMod:  rainfallMod,
+            rainfallMod:  stationRainfallMod,
             forecast:     wxState.forecast,
-          ))
+            stationId:    s.id,
+        );
+      })
       .toList()
     ..sort((a, b) => b.riskScore.compareTo(a.riskScore));
 
@@ -221,6 +244,7 @@ FloodPrediction _liveRuleEngine({
   required String riskLabel,
   required double rainfallMod,
   required List<WeatherDay> forecast,
+  String stationId = '',
 }) {
   final dng = dangerLevel > 0 ? dangerLevel : currentLevel * 1.5;
   final cur = currentLevel;

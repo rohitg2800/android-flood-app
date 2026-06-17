@@ -16,7 +16,7 @@ class FloodThresholds {
   static const Map<String, int> riskColors = {
     'LOW':      0xFF34C759,
     'MODERATE': 0xFFF59E0B,
-    'SEVERE':   0xFFEF4444,
+    'SEVERE':   0xFFFF5500,
     'CRITICAL': 0xFF8B0000,
     'HIGH':     0xFFEF4444,
   };
@@ -29,4 +29,14 @@ class FloodThresholds {
     'CRITICAL': 'ALERT',
     'HIGH':     'WARN',
   };
+}
+
+// ── Shared severity classifier — single source of truth ──────────────────
+// Use this everywhere instead of inline pct/riskScore comparisons.
+// predict_screen_impl.dart and bihar_prediction_provider.dart both call this.
+String severityFromPercent(double pct) {
+  if (pct >= 100) return 'CRITICAL';
+  if (pct >= 80)  return 'SEVERE';
+  if (pct >= 65)  return 'MODERATE';
+  return 'LOW';
 }

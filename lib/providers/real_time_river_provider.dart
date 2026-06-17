@@ -36,7 +36,7 @@ final wrdRiverStationsProvider = Provider<List<RiverStation>>((ref) {
           city:       s.city,
           state:      s.state,
           river:      s.river,
-          station:    s.city,
+          station:    s.id.isNotEmpty ? s.id : "${s.city}|${s.river ?? ''}", 
           current:    isBirpur
                         ? (birpur?.levelM ?? _birpurAmslToLocal(s.currentLevel) ?? kBirpurNormalLevel)
                         : (s.currentLevel ?? 0),

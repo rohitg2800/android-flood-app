@@ -206,7 +206,7 @@ class _SeverityChip extends StatelessWidget {
 
   Color get _color => switch (severity) {
     'CRITICAL' => AppPalette.critical,
-    'SEVERE'   => AppPalette.danger,
+    'SEVERE'   => AppPalette.severe,
     'MODERATE' => AppPalette.warning,
     _          => AppPalette.safe,
   };

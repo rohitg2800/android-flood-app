@@ -77,7 +77,7 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
   }
 
   // trend is a String: 'rising' | 'stable' | 'falling'
-  String _severityFromPrediction(FloodPrediction p) {
+  String _severityFromPrediction(FloodPrediction p) { return severityFromPercent(p.progressPct.clamp(0.0, 100.0));
     final pct = p.progressPct.clamp(0.0, 100.0);
     if (pct >= 100) return 'CRITICAL';
     if (pct >= 80)  return 'SEVERE';
@@ -1008,7 +1008,7 @@ class _ActionAdviceCard extends StatelessWidget {
           'Levels rising critically. Move valuables to upper floors. '
           'Prepare go-bag: documents, medicines, 3 days of food and water. '
           'Await evacuation advisory. Avoid river banks.',
-      color: Color(0xFFFB8C00),
+      color: AppPalette.severe,
     ),
     'MODERATE': (
       icon: '🟡',
@@ -1343,7 +1343,7 @@ class _CitySparkRow extends StatelessWidget {
   Color _sevColor() {
     switch (pred.severity.toUpperCase()) {
       case 'CRITICAL': return AppPalette.critical;
-      case 'SEVERE':   return AppPalette.danger;
+      case 'SEVERE':   return AppPalette.severe;
       case 'MODERATE': return AppPalette.warning;
       default:         return AppPalette.safe;
     }

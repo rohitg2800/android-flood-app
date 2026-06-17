@@ -202,10 +202,10 @@ final floodDataSourceProvider      = Provider<String>((ref) => ref.watch(floodSu
 
 FloodData _riverStationToFloodData(RiverStation s) {
   return FloodData(
-    stationId:    '',
+    stationId:    s.station,
     stationName:  s.station,
     river:        s.river ?? '',
-    city:         s.station,
+    city:         s.city,
     district:     '',
     state:        s.state,
     riverName:    s.river,
@@ -234,7 +234,7 @@ String _normCityKey(String name) => name
 List<FloodData> _deduplicateByCity(List<FloodData> raw) {
   final map = <String, FloodData>{};
   for (final fd in raw) {
-    final key = _normCityKey(fd.city);
+    final key = fd.stationName.isNotEmpty ? fd.stationName : _normCityKey(fd.city);
     if (!map.containsKey(key)) {
       map[key] = fd;
     } else {

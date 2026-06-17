@@ -16,32 +16,34 @@ class _NotificationWatcherNotifier extends Notifier<void> {
     final preds = ref.watch(biharBulkPredictionsProvider);
     final svc   = FloodNotificationService.instance;
 
-    for (final pred in preds) {
-      final key = pred.station;
+    Future.microtask(() {
+      for (final pred in preds) {
+        final key = pred.station;
 
-      // Reset fired-sets when level returns to normal so alerts re-arm
-      if (pred.severity == 'INFO' || pred.severity == 'NORMAL') {
-        _firedCritical.remove(key);
-        _firedWarning.remove(key);
-        continue;
-      }
+        if (pred.severity == 'INFO' || pred.severity == 'NORMAL') {
+          _firedCritical.remove(key);
+          _firedWarning.remove(key);
+          continue;
+        }
 
-      if (pred.severity == 'CRITICAL' && _firedCritical.add(key)) {
-        svc.showCriticalAlert(
-          id:          key.hashCode.abs() % 100000,
-          city:        pred.station.split(' (').first,
-          level:       pred.currentLevel,
-          dangerLevel: pred.dangerLevel,
-        );
-      } else if (pred.severity == 'SEVERE' && _firedWarning.add(key)) {
-        svc.showWarningAlert(
-          id:    (key.hashCode.abs() % 100000) + 100000,
-          city:  pred.station.split(' (').first,
-          level: pred.currentLevel,
-        );
+        if (pred.severity == 'CRITICAL' && _firedCritical.add(key)) {
+          svc.showCriticalAlert(
+            id:          key.hashCode.abs() % 100000,
+            city:        pred.station.split(' (').first,
+            level:       pred.currentLevel,
+            dangerLevel: pred.dangerLevel,
+          );
+        } else if (pred.severity == 'SEVERE' && _firedWarning.add(key)) {
+          svc.showWarningAlert(
+            id:    (key.hashCode.abs() % 100000) + 100000,
+            city:  pred.station.split(' (').first,
+            level: pred.currentLevel,
+          );
+        }
       }
-    }
+    });
   }
+
 }
 
 /// Watch this from your app root to activate flood notifications.

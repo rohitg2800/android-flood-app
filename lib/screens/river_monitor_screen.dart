@@ -690,7 +690,7 @@ class _RiverCardState extends State<_RiverCard>
   Color _riskColor(String risk) {
     switch (risk.toUpperCase()) {
       case 'CRITICAL': return AppPalette.critical;
-      case 'SEVERE':   return AppPalette.danger;
+      case 'SEVERE':   return AppPalette.severe;
       case 'WARNING':  return AppPalette.warning;
       case 'MODERATE': return const Color(0xFFFFAB00);
       case 'SAFE':     return AppPalette.safe;
@@ -702,7 +702,7 @@ class _RiverCardState extends State<_RiverCard>
   Color _mlColor(String? sev) {
     switch (sev?.toUpperCase()) {
       case 'CRITICAL': return const Color(0xFFFF1744);
-      case 'SEVERE':   return const Color(0xFFFF5500);
+      case 'SEVERE':   return AppPalette.severe;
       case 'MODERATE': return const Color(0xFFFFAB00); // amber, not green
       default:         return const Color(0xFF10E88A);
     }

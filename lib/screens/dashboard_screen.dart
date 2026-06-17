@@ -878,7 +878,7 @@ class _RiskCard extends StatelessWidget {
   Color _sevColor() {
     switch (pred.severity.toUpperCase()) {
       case 'CRITICAL': return const Color(0xFFE53935);
-      case 'SEVERE':   return const Color(0xFFFFB300);
+      case 'SEVERE':   return AppPalette.severe;
       case 'MODERATE': return const Color(0xFFFDD835);
       default:         return const Color(0xFF43A047);
     }
