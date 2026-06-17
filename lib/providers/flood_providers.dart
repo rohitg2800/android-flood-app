@@ -234,7 +234,10 @@ String _normCityKey(String name) => name
 List<FloodData> _deduplicateByCity(List<FloodData> raw) {
   final map = <String, FloodData>{};
   for (final fd in raw) {
-    final key = fd.stationName.isNotEmpty ? fd.stationName : _normCityKey(fd.city);
+    // v10.5: always normalise the key so 'Birpur', 'Birpur (CWC)', 'birpur cwc'
+    // all collapse to the same key instead of producing 3 separate cards.
+    final key = _normCityKey(
+        fd.stationName.isNotEmpty ? fd.stationName : fd.city);
     if (!map.containsKey(key)) {
       map[key] = fd;
     } else {
