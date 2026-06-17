@@ -29,7 +29,7 @@ import 'befiqr_cwc_service.dart';
 
 // ── Official CWC thresholds for Kosi @ Birpur — LOCAL GAUGE DATUM (m) ──────
 const double kBirpurDatumOffset      = 139.32;
-const double kBirpurDangerLevel      =  74.70;
+const double kBirpurDangerLevel      =  76.02;  // updated 17 Jun 2026
 const double kBirpurWarningLevel     =  73.70;
 const double kBirpurNormalLevel      =  71.48;
 const double kBirpurHFL              =  76.02;
