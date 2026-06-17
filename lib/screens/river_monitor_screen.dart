@@ -9,6 +9,7 @@
 
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../widgets/app_icon_box.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../models/flood_data.dart';
@@ -26,7 +27,7 @@ class RiverMonitorScreen extends ConsumerStatefulWidget {
 }
 
 class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   String _query = '';
   final _searchCtrl = TextEditingController();
   late final AnimationController _headerAnim;
@@ -37,6 +38,7 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _headerAnim = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 900))
       ..forward();
@@ -47,11 +49,16 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
         .animate(CurvedAnimation(parent: _headerAnim, curve: Curves.easeOutCubic));
   }
 
-  // P1: start/stop ripple based on route visibility — saves battery during ops
+  // P1: start/stop ripple — WidgetsBindingObserver handles app background;
+  // didChangeDependencies handles modal route changes and tab switches.
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final isCurrent = ModalRoute.of(context)?.isCurrent ?? false;
+    _syncRipple();
+  }
+
+  void _syncRipple() {
+    final isCurrent = ModalRoute.of(context)?.isCurrent ?? true;
     if (isCurrent && !_rippleAnim.isAnimating) {
       _rippleAnim.repeat();
     } else if (!isCurrent && _rippleAnim.isAnimating) {
@@ -63,9 +70,20 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
   void dispose() {
     _searchCtrl.dispose();
     _headerAnim.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     _rippleAnim.dispose();
     super.dispose();
   }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _syncRipple();
+    } else if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      if (_rippleAnim.isAnimating) _rippleAnim.stop();
+    }
+  }
+
 
   List<FloodData> _filtered(List<FloodData> all) {
     if (_query.isEmpty) return all;
@@ -249,7 +267,7 @@ class _HeroHeader extends StatelessWidget {
           height: 220,
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [t.accent.withOpacity(0.22), t.scaffoldBg],
+              colors: [t.accent.withValues(alpha: 0.22), t.scaffoldBg],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -275,15 +293,10 @@ class _HeroHeader extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Container(
-                      width: 40, height: 40,
-                      decoration: BoxDecoration(
-                        color: t.accent.withOpacity(0.18),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: t.accent.withOpacity(0.4)),
-                      ),
-                      child: Icon(Icons.monitor_heart_outlined,
-                          color: t.accent, size: 22),
+                    AppIconBox(
+                      icon:  Icons.monitor_heart_outlined,
+                      color: t.accent,
+                      size:  40,
                     ),
                     const SizedBox(width: 12),
                     Column(
@@ -312,9 +325,9 @@ class _HeroHeader extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF7B2FF7).withOpacity(0.15),
+                        color: const Color(0xFF7B2FF7).withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFF7B2FF7).withOpacity(0.4)),
+                        border: Border.all(color: const Color(0xFF7B2FF7).withValues(alpha: 0.4)),
                       ),
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
@@ -370,12 +383,12 @@ class _StatTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.12),
+          color: color.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withOpacity(0.35)),
+          border: Border.all(color: color.withValues(alpha: 0.35)),
           boxShadow: [
             BoxShadow(
-                color: color.withOpacity(0.10),
+                color: color.withValues(alpha: 0.10),
                 blurRadius: 8,
                 offset: const Offset(0, 3)),
           ],
@@ -420,7 +433,7 @@ class _RipplePainter extends CustomPainter {
         Offset(cx, cy),
         radius,
         Paint()
-          ..color = color.withOpacity(opacity)
+          ..color = color.withValues(alpha: opacity)
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1.5,
       );
@@ -453,10 +466,10 @@ class _SearchBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: t.cardBg,
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: t.accent.withOpacity(0.25)),
+        border: Border.all(color: t.accent.withValues(alpha: 0.25)),
         boxShadow: [
           BoxShadow(
-              color: t.accent.withOpacity(0.07),
+              color: t.accent.withValues(alpha: 0.07),
               blurRadius: 12,
               offset: const Offset(0, 3)),
         ],
@@ -516,9 +529,9 @@ class _SummaryStrip extends StatelessWidget {
   Widget _chip(Color c, IconData icon, String label) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: c.withOpacity(0.12),
+          color: c.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: c.withOpacity(0.4)),
+          border: Border.all(color: c.withValues(alpha: 0.4)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -555,9 +568,9 @@ class _StatusBanner extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.10),
+          color: color.withValues(alpha: 0.10),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [
@@ -598,8 +611,10 @@ class _AnimatedCardState extends State<_AnimatedCard>
     super.initState();
     _ac = AnimationController(
         vsync: this,
-        duration: Duration(milliseconds: 400 + widget.index * 40))
-      ..forward();
+        duration: const Duration(milliseconds: 400));
+    Future.delayed(Duration(milliseconds: widget.index * 40), () {
+      if (mounted) _ac.forward();
+    });
     _fade  = CurvedAnimation(parent: _ac, curve: Curves.easeOut);
     _slide = Tween<double>(begin: 30, end: 0)
         .animate(CurvedAnimation(parent: _ac, curve: Curves.easeOutCubic));
@@ -642,7 +657,7 @@ class _RiverCard extends StatefulWidget {
 class _RiverCardState extends State<_RiverCard>
     with SingleTickerProviderStateMixin {
   late final AnimationController _fillAnim;
-  late final Animation<double>   _fillTween;
+  late Animation<double>   _fillTween;
 
   @override
   void initState() {
@@ -656,6 +671,20 @@ class _RiverCardState extends State<_RiverCard>
   }
 
   @override
+  void didUpdateWidget(_RiverCard old) {
+    super.didUpdateWidget(old);
+    final newTarget = (widget.data.fillPercent ?? 0.0) / 100.0;
+    final oldTarget = (old.data.fillPercent    ?? 0.0) / 100.0;
+    if ((newTarget - oldTarget).abs() > 0.001) {
+      _fillTween = Tween<double>(begin: _fillTween.value, end: newTarget.clamp(0.0, 1.0))
+          .animate(CurvedAnimation(parent: _fillAnim, curve: Curves.easeOutCubic));
+      _fillAnim
+        ..reset()
+        ..forward();
+    }
+  }
+
+  @override
   void dispose() { _fillAnim.dispose(); super.dispose(); }
 
   Color _riskColor(String risk) {
@@ -663,6 +692,7 @@ class _RiverCardState extends State<_RiverCard>
       case 'CRITICAL': return AppPalette.critical;
       case 'SEVERE':   return AppPalette.danger;
       case 'WARNING':  return AppPalette.warning;
+      case 'MODERATE': return const Color(0xFFFFAB00);
       case 'SAFE':     return AppPalette.safe;
       default:         return widget.t.accent;
     }
@@ -701,19 +731,19 @@ class _RiverCardState extends State<_RiverCard>
           builder: (_, __) => Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [t.cardBg, rc.withOpacity(0.04)],
+                colors: [t.cardBg, rc.withValues(alpha: 0.04)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: rc.withOpacity(0.35), width: 1.2),
+              border: Border.all(color: rc.withValues(alpha: 0.35), width: 1.2),
               boxShadow: [
                 BoxShadow(
-                    color: rc.withOpacity(0.12),
+                    color: rc.withValues(alpha: 0.12),
                     blurRadius: 18,
                     offset: const Offset(0, 6)),
                 BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
+                    color: Colors.black.withValues(alpha: 0.08),
                     blurRadius: 6,
                     offset: const Offset(0, 2)),
               ],
@@ -728,7 +758,7 @@ class _RiverCardState extends State<_RiverCard>
                       height: 120 * _fillTween.value,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [rc.withOpacity(0.0), rc.withOpacity(0.08)],
+                          colors: [rc.withValues(alpha: 0.0), rc.withValues(alpha: 0.08)],
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                         ),
@@ -791,10 +821,10 @@ class _RiverCardState extends State<_RiverCard>
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: mlColor.withOpacity(0.15),
+                                  color: mlColor.withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                      color: mlColor.withOpacity(0.5)),
+                                      color: mlColor.withValues(alpha: 0.5)),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -816,10 +846,10 @@ class _RiverCardState extends State<_RiverCard>
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 10, vertical: 5),
                               decoration: BoxDecoration(
-                                color: rc.withOpacity(0.16),
+                                color: rc.withValues(alpha: 0.16),
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
-                                    color: rc.withOpacity(0.5), width: 1),
+                                    color: rc.withValues(alpha: 0.5), width: 1),
                               ),
                               child: Text(
                                 d.riskLevel.toUpperCase(),
@@ -885,12 +915,12 @@ class _RiverCardState extends State<_RiverCard>
                           children: [
                             Text('Tap for details',
                                 style: TextStyle(
-                                    color: rc.withOpacity(0.7),
+                                    color: rc.withValues(alpha: 0.7),
                                     fontSize: 10,
                                     fontWeight: FontWeight.w600)),
                             const SizedBox(width: 3),
                             Icon(Icons.chevron_right_rounded,
-                                color: rc.withOpacity(0.7), size: 14),
+                                color: rc.withValues(alpha: 0.7), size: 14),
                           ],
                         ),
                       ],
@@ -920,9 +950,9 @@ class _BreachBanner extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFFF1744).withOpacity(0.12),
+        color: const Color(0xFFFF1744).withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFFF1744).withOpacity(0.5)),
+        border: Border.all(color: const Color(0xFFFF1744).withValues(alpha: 0.5)),
       ),
       child: Row(
         children: [
@@ -982,14 +1012,14 @@ class _FillBar extends StatelessWidget {
             children: [
               Container(
                   height: 7,
-                  color: t.divider.withOpacity(0.3)),
+                  color: t.divider.withValues(alpha: 0.3)),
               FractionallySizedBox(
                 widthFactor: fillValue,
                 child: Container(
                   height: 7,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [rc, rc.withOpacity(0.6)],
+                      colors: [rc, rc.withValues(alpha: 0.6)],
                     ),
                     borderRadius: BorderRadius.circular(6),
                   ),
@@ -1039,7 +1069,7 @@ class _MlScoreBar extends StatelessWidget {
             value: (score / 100.0).clamp(0.0, 1.0),
             minHeight: 4,
             backgroundColor:
-                const Color(0xFF7B2FF7).withOpacity(0.12),
+                const Color(0xFF7B2FF7).withValues(alpha: 0.12),
             valueColor: AlwaysStoppedAnimation(
               score >= 80
                   ? const Color(0xFFFF1744)
@@ -1096,7 +1126,7 @@ class _CylinderPainter extends CustomPainter {
       ..close();
 
     canvas.drawPath(bodyPath,
-        Paint()..color = color.withOpacity(0.12)..style = PaintingStyle.fill);
+        Paint()..color = color.withValues(alpha: 0.12)..style = PaintingStyle.fill);
 
     if (fill > 0) {
       final fillTop = h - ry - (h - ry * 2) * fill.clamp(0.0, 1.0);
@@ -1112,7 +1142,7 @@ class _CylinderPainter extends CustomPainter {
         fillPath,
         Paint()
           ..shader = LinearGradient(
-            colors: [color, color.withOpacity(0.6)],
+            colors: [color, color.withValues(alpha: 0.6)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ).createShader(Rect.fromLTWH(0, fillTop, w, h - fillTop))
@@ -1121,14 +1151,14 @@ class _CylinderPainter extends CustomPainter {
 
       canvas.drawOval(
         Rect.fromLTWH(0, fillTop, w, ry * 2),
-        Paint()..color = color.withOpacity(0.85)..style = PaintingStyle.fill,
+        Paint()..color = color.withValues(alpha: 0.85)..style = PaintingStyle.fill,
       );
     }
 
     canvas.drawPath(
       bodyPath,
       Paint()
-        ..color = color.withOpacity(0.55)
+        ..color = color.withValues(alpha: 0.55)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.2,
     );
@@ -1136,7 +1166,7 @@ class _CylinderPainter extends CustomPainter {
     canvas.drawOval(
       Rect.fromLTWH(0, 0, w, ry * 2),
       Paint()
-        ..color = color.withOpacity(0.4)
+        ..color = color.withValues(alpha: 0.4)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 0.8,
     );
@@ -1156,7 +1186,7 @@ class _WavePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = color.withOpacity(opacity)
+      ..color = color.withValues(alpha: opacity)
       ..style = PaintingStyle.fill;
     final path = Path();
     path.moveTo(0, size.height);
@@ -1229,7 +1259,7 @@ class _EmptyState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.water_outlined, size: 64,
-                color: t.accent.withOpacity(0.4)),
+                color: t.accent.withValues(alpha: 0.4)),
             const SizedBox(height: 16),
             Text(
               query.isNotEmpty
