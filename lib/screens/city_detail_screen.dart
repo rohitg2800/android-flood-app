@@ -1,8 +1,7 @@
-// lib/screens/city_detail_screen.dart  v6.1
-// Changes from v6.0:
-//   • Added optional liveLevel + liveRisk constructor params
-//   • currentLevel, riskLevel, fillPct derived from live overrides if provided
-//   • Fixes data mismatch between All Stations list and City Detail screen
+// lib/screens/city_detail_screen.dart  v6.2
+// Changes from v6.1:
+//   • Step 5.2 — ML card now uses biharPredictionProvider((stationId, city))
+//     instead of predictionProvider so predictions are calibrated to live data.
 
 library;
 
@@ -11,7 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/flood_data.dart';
 import '../providers/flood_providers.dart';
-import '../providers/prediction_provider.dart';
+import '../providers/bihar_prediction_provider.dart';  // Step 5.2
 import '../models/flood_prediction.dart';
 import '../theme/river_theme.dart';
 
@@ -22,8 +21,8 @@ import '../widgets/sparkline_card.dart';
 
 class CityDetailScreen extends ConsumerStatefulWidget {
   final String  cityName;
-  final double? liveLevel;   // override from biharLiveProvider
-  final String? liveRisk;    // override from biharLiveProvider
+  final double? liveLevel;
+  final String? liveRisk;
   const CityDetailScreen({
     super.key,
     required this.cityName,
@@ -99,8 +98,7 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
       return _NotFoundScaffold(cityName: city, t: t);
     }
 
-    // ── Use live overrides if passed (from biharLiveProvider) so the value
-    //    shown here always matches what the All Stations card displayed.
+    // Use live overrides if passed from biharLiveProvider.
     final double currentLevel = widget.liveLevel ?? data.currentLevel;
     final String riskLevel    = widget.liveRisk  ?? data.riskLevel;
     final double fillPct      = data.dangerLevel > 0
@@ -108,8 +106,11 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
         : data.fillPercent ?? 0.0;
     final double pctVal       = (fillPct / 100).clamp(0.0, 1.0);
 
-    final rc        = _riskColor(riskLevel, t);
-    final predAsync = ref.watch(predictionProvider((data.stationId, 24)));
+    final rc = _riskColor(riskLevel, t);
+
+    // Step 5.2: use biharPredictionProvider (live-calibrated)
+    final predAsync = ref.watch(
+        biharPredictionProvider((data.stationId, city)));
 
     return Scaffold(
       backgroundColor: t.scaffoldBg,
@@ -170,7 +171,7 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
               child: _ThresholdBanner(risk: riskLevel, rc: rc, t: t),
             ),
 
-          // ── Stats grid — passes live currentLevel
+          // ── Stats grid
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
@@ -201,7 +202,7 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
             ),
           ),
 
-          // ── ML prediction card
+          // ── ML prediction card (Step 5.2: live-calibrated)
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
@@ -278,7 +279,7 @@ class _MlLoadingCard extends StatelessWidget {
   }
 }
 
-// ── ML prediction card ────────────────────────────────────────────────────────
+// ── ML prediction card ─────────────────────────────────────────────────────────
 
 class _MlCard extends StatelessWidget {
   final FloodPrediction pred;
@@ -289,7 +290,7 @@ class _MlCard extends StatelessWidget {
     switch (pred.severity.toUpperCase()) {
       case 'CRITICAL': return AppPalette.critical;
       case 'SEVERE':   return AppPalette.danger;
-      case 'MODERATE': return AppPalette.gold;
+      case 'MODERATE': return AppPalette.warning;
       default:         return AppPalette.safe;
     }
   }
@@ -365,29 +366,42 @@ class _MlCard extends StatelessWidget {
               ),
             ],
           ),
-          if (!pred.fromBackend) ...[
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: AppPalette.gold.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppPalette.gold.withOpacity(0.3)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.offline_bolt_outlined, color: AppPalette.gold, size: 11),
-                  const SizedBox(width: 4),
-                  Text('Linear fallback',
-                      style: TextStyle(
-                          color: AppPalette.gold,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700)),
-                ],
+          // Source badge
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: pred.fromBackend
+                  ? AppPalette.safe.withOpacity(0.12)
+                  : AppPalette.gold.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: pred.fromBackend
+                    ? AppPalette.safe.withOpacity(0.3)
+                    : AppPalette.gold.withOpacity(0.3),
               ),
             ),
-          ],
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  pred.fromBackend
+                      ? Icons.cloud_done_outlined
+                      : Icons.offline_bolt_outlined,
+                  color: pred.fromBackend ? AppPalette.safe : AppPalette.gold,
+                  size: 11,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  pred.fromBackend ? pred.modelVersion : 'Live Rule Engine',
+                  style: TextStyle(
+                      color: pred.fromBackend ? AppPalette.safe : AppPalette.gold,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          ),
           if (pred.predicted24h >= pred.dangerLevel) ...[
             const SizedBox(height: 10),
             Container(
@@ -444,15 +458,15 @@ class _MlCard extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              _MlChip(icon: Icons.verified_outlined,   label: 'Conf.',
+              _MlChip(icon: Icons.verified_outlined,  label: 'Conf.',
                   value: '${pred.confidencePct.toStringAsFixed(0)}%',
                   color: t.accent, t: t),
               const SizedBox(width: 8),
-              _MlChip(icon: Icons.show_chart_rounded,  label: 'Peak 72h',
+              _MlChip(icon: Icons.show_chart_rounded, label: 'Peak 72h',
                   value: '${pred.predicted72h.toStringAsFixed(2)} m',
                   color: AppPalette.cyan, t: t),
               const SizedBox(width: 8),
-              _MlChip(icon: _trendIcon(),              label: 'Trend',
+              _MlChip(icon: _trendIcon(),             label: 'Trend',
                   value: pred.trend, color: trend, t: t),
             ],
           ),
@@ -496,7 +510,7 @@ class _MlChip extends StatelessWidget {
   }
 }
 
-// ── Hero background ───────────────────────────────────────────────────────────
+// ── Hero background ──────────────────────────────────────────────────────────
 
 class _HeroBackground extends StatelessWidget {
   final Color    riskColor;
@@ -688,7 +702,6 @@ class _ThresholdBanner extends StatelessWidget {
 }
 
 // ── Stats grid ────────────────────────────────────────────────────────────────
-// currentLevel passed explicitly so it reflects the live override
 
 class _StatsGrid extends StatelessWidget {
   final FloodData data;
@@ -871,16 +884,16 @@ class _QuickActions extends StatelessWidget {
         const SizedBox(height: 12),
         Row(
           children: [
-            _ActionBtn(icon: Icons.directions_run,      label: 'Evacuate', color: Colors.deepOrange,
+            _ActionBtn(icon: Icons.directions_run,          label: 'Evacuate', color: Colors.deepOrange,
                 onTap: () => Navigator.of(context).pushNamed(Routes.evacuation)),
             const SizedBox(width: 10),
-            _ActionBtn(icon: Icons.map_outlined,        label: 'View Map', color: Colors.blue,
+            _ActionBtn(icon: Icons.map_outlined,            label: 'View Map', color: Colors.blue,
                 onTap: () => Navigator.of(context).pushNamed(Routes.biharRiverMap)),
             const SizedBox(width: 10),
-            _ActionBtn(icon: Icons.auto_graph,          label: 'Predict',  color: const Color(0xFF7B2FF7),
+            _ActionBtn(icon: Icons.auto_graph,              label: 'Predict',  color: const Color(0xFF7B2FF7),
                 onTap: () => Navigator.of(context).pushNamed(Routes.predict)),
             const SizedBox(width: 10),
-            _ActionBtn(icon: Icons.report_problem_outlined, label: 'Report', color: Colors.red,
+            _ActionBtn(icon: Icons.report_problem_outlined, label: 'Report',   color: Colors.red,
                 onTap: () => Navigator.of(context).pushNamed(Routes.incidentReport)),
           ],
         ),
