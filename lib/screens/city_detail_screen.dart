@@ -1,8 +1,8 @@
-// lib/screens/city_detail_screen.dart  v6.0
-// Changes from v5.8:
-//   • WatchButton added to SliverAppBar actions (Step 3.6)
-//   • SyncStatusBanner inserted as first body sliver (Step 2.4)
-//   • SparklineCard inserted between GaugeCard and MlCard (Step 4.6)
+// lib/screens/city_detail_screen.dart  v6.1
+// Changes from v6.0:
+//   • Added optional liveLevel + liveRisk constructor params
+//   • currentLevel, riskLevel, fillPct derived from live overrides if provided
+//   • Fixes data mismatch between All Stations list and City Detail screen
 
 library;
 
@@ -16,13 +16,20 @@ import '../models/flood_prediction.dart';
 import '../theme/river_theme.dart';
 
 import '../app_router.dart';
-import '../widgets/watch_button.dart';          // Step 3.6
-import '../widgets/sync_status_banner.dart';    // Step 2.4
-import '../widgets/sparkline_card.dart';        // Step 4.6
+import '../widgets/watch_button.dart';
+import '../widgets/sync_status_banner.dart';
+import '../widgets/sparkline_card.dart';
 
 class CityDetailScreen extends ConsumerStatefulWidget {
-  final String cityName;
-  const CityDetailScreen({super.key, required this.cityName});
+  final String  cityName;
+  final double? liveLevel;   // override from biharLiveProvider
+  final String? liveRisk;    // override from biharLiveProvider
+  const CityDetailScreen({
+    super.key,
+    required this.cityName,
+    this.liveLevel,
+    this.liveRisk,
+  });
   static const String route = Routes.cityDetail;
 
   @override
@@ -92,10 +99,16 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
       return _NotFoundScaffold(cityName: city, t: t);
     }
 
-    final rc      = _riskColor(data.riskLevel, t);
-    final fillPct = data.fillPercent ?? 0.0;
-    final pctVal  = (fillPct / 100).clamp(0.0, 1.0);
+    // ── Use live overrides if passed (from biharLiveProvider) so the value
+    //    shown here always matches what the All Stations card displayed.
+    final double currentLevel = widget.liveLevel ?? data.currentLevel;
+    final String riskLevel    = widget.liveRisk  ?? data.riskLevel;
+    final double fillPct      = data.dangerLevel > 0
+        ? (currentLevel / data.dangerLevel * 100).clamp(0.0, 150.0)
+        : data.fillPercent ?? 0.0;
+    final double pctVal       = (fillPct / 100).clamp(0.0, 1.0);
 
+    final rc        = _riskColor(riskLevel, t);
     final predAsync = ref.watch(predictionProvider((data.stationId, 24)));
 
     return Scaffold(
@@ -120,7 +133,7 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
                     cityName:  city,
                     river:     data!.riverName ?? '',
                     district:  data.district,
-                    riskLabel: data.riskLevel.toUpperCase(),
+                    riskLabel: riskLevel.toUpperCase(),
                     t:         t,
                     scaleAnim: _heroScale,
                     pulse:     _pulse,
@@ -129,7 +142,6 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
               ),
             ),
             actions: [
-              // ── v6.0: Watch button (Step 3.6)
               WatchButton(
                 stationId: data.stationId,
                 cityName:  data.city,
@@ -149,23 +161,22 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
             ],
           ),
 
-          // ── v6.0: Sync status banner (Step 2.4)
-          const SliverToBoxAdapter(
-            child: SyncStatusBanner(),
-          ),
+          const SliverToBoxAdapter(child: SyncStatusBanner()),
 
           // ── Threshold warning banner
-          if (data.riskLevel.toUpperCase() != 'SAFE' &&
-              data.riskLevel.toUpperCase() != 'NORMAL')
+          if (riskLevel.toUpperCase() != 'SAFE' &&
+              riskLevel.toUpperCase() != 'NORMAL')
             SliverToBoxAdapter(
-              child: _ThresholdBanner(risk: data.riskLevel, rc: rc, t: t),
+              child: _ThresholdBanner(risk: riskLevel, rc: rc, t: t),
             ),
 
-          // ── Stats grid
+          // ── Stats grid — passes live currentLevel
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-              child: _StatsGrid(data: data, rc: rc, t: t, fillPct: fillPct),
+              child: _StatsGrid(
+                  data: data, rc: rc, t: t,
+                  fillPct: fillPct, currentLevel: currentLevel),
             ),
           ),
 
@@ -178,7 +189,7 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
             ),
           ),
 
-          // ── v6.0: Sparkline 7-day history (Step 4.6)
+          // ── Sparkline 7-day history
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
@@ -207,7 +218,7 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
               child: _QuickActions(
-                  cityName: city, riskLevel: data.riskLevel, t: t),
+                  cityName: city, riskLevel: riskLevel, t: t),
             ),
           ),
 
@@ -231,7 +242,7 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
   }
 }
 
-// ── ML loading placeholder ────────────────────────────────────────────────────────────
+// ── ML loading placeholder ────────────────────────────────────────────────────
 
 class _MlLoadingCard extends StatelessWidget {
   final RiverColors t;
@@ -267,7 +278,7 @@ class _MlLoadingCard extends StatelessWidget {
   }
 }
 
-// ── ML prediction card ──────────────────────────────────────────────────────────────
+// ── ML prediction card ────────────────────────────────────────────────────────
 
 class _MlCard extends StatelessWidget {
   final FloodPrediction pred;
@@ -485,7 +496,7 @@ class _MlChip extends StatelessWidget {
   }
 }
 
-// ── Hero background (unchanged from v5.8) ───────────────────────────────────────
+// ── Hero background ───────────────────────────────────────────────────────────
 
 class _HeroBackground extends StatelessWidget {
   final Color    riskColor;
@@ -633,7 +644,7 @@ class _ConcentricRingsPainter extends CustomPainter {
       o.color != color || o.pulse != pulse;
 }
 
-// ── Threshold banner (unchanged) ──────────────────────────────────────────────────
+// ── Threshold banner ──────────────────────────────────────────────────────────
 
 class _ThresholdBanner extends StatelessWidget {
   final String risk; final Color rc; final RiverColors t;
@@ -676,19 +687,30 @@ class _ThresholdBanner extends StatelessWidget {
   }
 }
 
-// ── Stats grid (unchanged) ───────────────────────────────────────────────────────────
+// ── Stats grid ────────────────────────────────────────────────────────────────
+// currentLevel passed explicitly so it reflects the live override
 
 class _StatsGrid extends StatelessWidget {
-  final FloodData data; final Color rc; final RiverColors t; final double fillPct;
-  const _StatsGrid({required this.data, required this.rc, required this.t, required this.fillPct});
+  final FloodData data;
+  final Color rc;
+  final RiverColors t;
+  final double fillPct;
+  final double currentLevel;
+  const _StatsGrid({
+    required this.data,
+    required this.rc,
+    required this.t,
+    required this.fillPct,
+    required this.currentLevel,
+  });
 
   @override
   Widget build(BuildContext context) {
     final stats = [
-      _S('Current Level', '${data.currentLevel.toStringAsFixed(2)} m', Icons.water_drop_outlined, rc),
-      _S('Danger Level',  '${data.dangerLevel.toStringAsFixed(2)} m',  Icons.emergency_outlined,   AppPalette.danger),
-      _S('Fill %',        '${fillPct.toStringAsFixed(1)}%',            Icons.show_chart_rounded,   t.accent),
-      _S('State',          data.state,                                  Icons.location_on_outlined, t.textSecondary),
+      _S('Current Level', '${currentLevel.toStringAsFixed(2)} m', Icons.water_drop_outlined, rc),
+      _S('Danger Level',  '${data.dangerLevel.toStringAsFixed(2)} m', Icons.emergency_outlined, AppPalette.danger),
+      _S('Fill %',        '${fillPct.toStringAsFixed(1)}%',           Icons.show_chart_rounded, t.accent),
+      _S('State',          data.state,                                 Icons.location_on_outlined, t.textSecondary),
     ];
     return GridView.count(
       crossAxisCount: 2,
@@ -739,7 +761,7 @@ class _StatCell extends StatelessWidget {
   }
 }
 
-// ── Animated fill gauge card (unchanged) ──────────────────────────────────────────
+// ── Animated fill gauge card ──────────────────────────────────────────────────
 
 class _GaugeCard extends StatefulWidget {
   final double fillPct, pctVal; final Color rc; final RiverColors t;
@@ -833,7 +855,7 @@ class _GaugeCardState extends State<_GaugeCard> with SingleTickerProviderStateMi
   }
 }
 
-// ── Quick actions (unchanged) ─────────────────────────────────────────────────────────
+// ── Quick actions ─────────────────────────────────────────────────────────────
 
 class _QuickActions extends StatelessWidget {
   final String cityName, riskLevel; final RiverColors t;
@@ -896,7 +918,7 @@ class _ActionBtn extends StatelessWidget {
   }
 }
 
-// ── Metadata card (unchanged) ───────────────────────────────────────────────────────────
+// ── Metadata card ─────────────────────────────────────────────────────────────
 
 class _MetaCard extends StatelessWidget {
   final FloodData data; final RiverColors t;
@@ -964,7 +986,7 @@ class _MetaCard extends StatelessWidget {
 
 class _MR { final String label, value; final IconData icon; const _MR(this.label, this.value, this.icon); }
 
-// ── Not-found scaffold (unchanged) ─────────────────────────────────────────────────────
+// ── Not-found scaffold ────────────────────────────────────────────────────────
 
 class _NotFoundScaffold extends StatelessWidget {
   final String cityName; final RiverColors t;
