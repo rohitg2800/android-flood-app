@@ -152,7 +152,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       label:   'AI Prediction',
       icon:    Icons.psychology_rounded,
       color:   _P.aiViolet,
-      builder: (_) => const AiPredictionScreen(),
+      builder: (_) => const RainfallForecastScreen(),
     ),
     _Tile(
       label:   'Rainfall',
@@ -567,7 +567,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               const Spacer(),
               GestureDetector(
                 onTap: () => Navigator.push(ctx,
-                    MaterialPageRoute(builder: (_) => const AiPredictionScreen())),
+                    MaterialPageRoute(builder: (_) => const RainfallForecastScreen())),
                 child: Text('See all', style: TextStyle(
                     color: t.accent, fontSize: 11, fontWeight: FontWeight.w600)),
               ),
