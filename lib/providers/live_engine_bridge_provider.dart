@@ -146,6 +146,88 @@ const Map<String, ({double warning, double danger, double hfl, String river})>
 /// This prevents 'Birpur (CWC)' → 'birpur  cwc' (double-space) which
 /// caused the substring match to hit 'birpur' and return DL=74.70
 /// when looking up 'birpur  cwc', completely bypassing 'birpur cwc' key.
+
+// ── Station coordinates lookup (injected into RiverStation.lat/lon) ──────────
+const Map<String, ({double lat, double lon})> _kCoords = {
+  // GANGA
+  'gandhighat':        (lat: 25.614, lon: 85.127),
+  'dighaghat':         (lat: 25.623, lon: 85.074),
+  'hathidah':          (lat: 25.381, lon: 86.165),
+  'munger':            (lat: 25.375, lon: 86.474),
+  'kahalgaon':         (lat: 25.207, lon: 87.268),
+  'bhagalpur':         (lat: 25.245, lon: 86.978),
+  'buxar':             (lat: 25.563, lon: 83.978),
+  // KOSI
+  'birpur':            (lat: 26.505, lon: 86.914),
+  'birpur cwc':        (lat: 26.505, lon: 86.914),
+  'basua':             (lat: 26.430, lon: 86.702),
+  'baltara':           (lat: 25.867, lon: 86.563),
+  'kursela':           (lat: 25.453, lon: 87.266),
+  'dumri bridge':      (lat: 25.920, lon: 86.580),
+  'bhim nagar':        (lat: 26.862, lon: 87.062),
+  'bhimnagar':         (lat: 26.862, lon: 87.062),
+  'vijay ghat bridge': (lat: 25.700, lon: 86.900),
+  'vijayghat':         (lat: 25.700, lon: 86.900),
+  'naugachia':         (lat: 25.390, lon: 87.097),
+  // GANDAK
+  'chatia':            (lat: 26.680, lon: 84.882),
+  'dumariaghat':       (lat: 27.093, lon: 84.478),
+  'rewaghat':          (lat: 26.205, lon: 84.975),
+  'hajipur':           (lat: 25.683, lon: 85.209),
+  'lalganj':           (lat: 25.873, lon: 85.177),
+  'khadda':            (lat: 27.098, lon: 83.893),
+  // BAGMATI
+  'dheng bridge':          (lat: 26.740, lon: 85.594),
+  'dhengbridge':           (lat: 26.740, lon: 85.594),
+  'sonakhan':              (lat: 26.920, lon: 85.450),
+  'benibad':               (lat: 26.148, lon: 85.852),
+  'hayaghat':              (lat: 26.122, lon: 85.762),
+  'dhengraghat bagmati':   (lat: 26.098, lon: 87.951),
+  'kamtaul bagmati':       (lat: 26.392, lon: 85.862),
+  'kamtaul':               (lat: 26.392, lon: 85.862),
+  'runnisaidpur':          (lat: 26.553, lon: 85.473),
+  'runisaidpur':           (lat: 26.553, lon: 85.473),
+  'dubbadhar':             (lat: 26.820, lon: 85.380),
+  'kansar':                (lat: 26.780, lon: 85.510),
+  'kataunjha':             (lat: 26.640, lon: 85.520),
+  // BURHI GANDAK
+  'sikandarpur':       (lat: 26.118, lon: 85.391),
+  'samastipur':        (lat: 25.871, lon: 85.779),
+  'rosera':            (lat: 25.863, lon: 85.984),
+  'khagaria':          (lat: 25.502, lon: 86.468),
+  'gaighat':           (lat: 25.990, lon: 85.684),
+  // GHAGHRA
+  'darauli':           (lat: 26.102, lon: 84.136),
+  'gangpur siswan':    (lat: 26.218, lon: 84.357),
+  'gangpur':           (lat: 26.218, lon: 84.357),
+  // KAMLA
+  'jainagar':          (lat: 26.597, lon: 86.247),
+  'jhanjharpur':       (lat: 26.268, lon: 86.280),
+  'kamtaul kamla':     (lat: 26.392, lon: 85.862),
+  'phulparas':         (lat: 26.519, lon: 86.504),
+  // MAHANANDA
+  'taibpur':                (lat: 25.775, lon: 87.474),
+  'dhengraghat mahananda':  (lat: 26.098, lon: 87.951),
+  'dhengraghat':            (lat: 26.098, lon: 87.951),
+  'jhawa':                  (lat: 25.614, lon: 87.835),
+  // PUNPUN
+  'sripalpur':         (lat: 25.328, lon: 85.038),
+  // ADHWARA / DHAUS / KHIROI
+  'ekmighat':          (lat: 26.597, lon: 85.617),
+  'kamtaul adhwara':   (lat: 26.392, lon: 85.862),
+  'saulighat':         (lat: 26.480, lon: 85.720),
+  'agropatti':         (lat: 26.430, lon: 85.680),
+  // JHIM / LALBAKEYA / BALAN
+  'sonbarsa':          (lat: 25.993, lon: 86.063),
+  'lalbakeya':         (lat: 26.600, lon: 85.750),
+  'goabari':           (lat: 26.530, lon: 85.810),
+  'phulparas balan':   (lat: 26.519, lon: 86.504),
+  'laukaha':           (lat: 26.408, lon: 86.533),
+  // KHANDO / KAREH
+  'dagmara':           (lat: 26.179, lon: 86.723),
+  'karachin':          (lat: 25.432, lon: 85.519),
+};
+
 String _norm(String v) => v
     .toLowerCase()
     .replaceAll(RegExp(r'\s*\(.*?\)'), '')   // strip (qualifier)
@@ -248,6 +330,8 @@ class LiveEngineBridgeNotifier extends Notifier<List<RiverStation>> {
           lastUpdated: '--:--',
           dataSource:  item.source.name.toUpperCase(),
           isLive:      false,
+          lat:         _kCoords[normName]?.lat,
+          lon:         _kCoords[normName]?.lon,
           liveStatus:  'NO_DATA',
         ));
         continue;
@@ -280,6 +364,8 @@ class LiveEngineBridgeNotifier extends Notifier<List<RiverStation>> {
             '${item.fetchedAt.minute.toString().padLeft(2, '0')}',
         dataSource:  item.source.name.toUpperCase(),
         isLive:      true,
+        lat:         _kCoords[normName]?.lat,
+        lon:         _kCoords[normName]?.lon,
         liveStatus:  item.dangerLevel,
       ));
     }
