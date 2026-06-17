@@ -1,15 +1,16 @@
-// lib/screens/rainfall_forecast_screen.dart
-// OpsFlood — Module 14: Rainfall Forecast Screen
-//
-// FIX 2026-06-14: StateProvider was REMOVED in flutter_riverpod ^3.0.
-// Replaced with a NotifierProvider<_DistrictNotifier, String>, which is
-// the Riverpod-3.x idiomatic drop-in for simple mutable state.
+// lib/screens/rainfall_forecast_screen.dart  v2.0
+// Merged with live risk forecast — real station data from biharBulkPredictionsProvider.
+// UI widgets (_RainBarChart, _DayCard, _Stat) preserved unchanged.
+
+library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../theme/river_theme.dart';
+import '../providers/bihar_prediction_provider.dart';
+import '../models/flood_prediction.dart';
 
 // ---------------------------------------------------------------------------
 // Models
@@ -37,48 +38,69 @@ class DayForecast {
 }
 
 // ---------------------------------------------------------------------------
-// Providers
+// Helpers — map FloodPrediction → 3-day DayForecast list
 // ---------------------------------------------------------------------------
 
-final _forecastProvider =
-    FutureProvider.family<List<DayForecast>, String>((_, district) async {
-  await Future<void>.delayed(const Duration(milliseconds: 400));
+List<DayForecast> _predToForecasts(FloodPrediction p) {
   final now = DateTime.now();
+  final levels = [p.predicted24h, p.predicted48h, p.predicted72h];
+  final risks  = levels.map((l) =>
+      p.dangerLevel > 0 ? (l / p.dangerLevel).clamp(0.0, 1.0) : 0.3).toList();
+
+  String _cond(double risk) {
+    if (risk > 0.8) return 'heavy_rain';
+    if (risk > 0.6) return 'moderate_rain';
+    if (risk > 0.35) return 'light_rain';
+    if (risk > 0.2) return 'cloudy';
+    return 'clear';
+  }
+
+  // Estimate rainfall mm from level rise relative to warning threshold
+  double _rainMm(double level, double prev) {
+    final rise = (level - prev).clamp(0.0, 5.0);
+    return (rise * 18 + risks[0] * 25).clamp(0.0, 100.0);
+  }
+
   return [
-    DayForecast(date: now,
-        rainMm: 42, tempMax: 33, tempMin: 26,
-        humidity: 88, windKmh: 18, floodRisk: 0.72, condition: 'heavy_rain'),
-    DayForecast(date: now.add(const Duration(days: 1)),
-        rainMm: 65, tempMax: 31, tempMin: 25,
-        humidity: 92, windKmh: 22, floodRisk: 0.85, condition: 'heavy_rain'),
-    DayForecast(date: now.add(const Duration(days: 2)),
-        rainMm: 28, tempMax: 32, tempMin: 25,
-        humidity: 83, windKmh: 15, floodRisk: 0.60, condition: 'moderate_rain'),
-    DayForecast(date: now.add(const Duration(days: 3)),
-        rainMm: 12, tempMax: 34, tempMin: 26,
-        humidity: 74, windKmh: 12, floodRisk: 0.40, condition: 'light_rain'),
-    DayForecast(date: now.add(const Duration(days: 4)),
-        rainMm: 5,  tempMax: 35, tempMin: 27,
-        humidity: 68, windKmh: 10, floodRisk: 0.25, condition: 'cloudy'),
-    DayForecast(date: now.add(const Duration(days: 5)),
-        rainMm: 0,  tempMax: 36, tempMin: 27,
-        humidity: 62, windKmh: 8,  floodRisk: 0.15, condition: 'clear'),
-    DayForecast(date: now.add(const Duration(days: 6)),
-        rainMm: 8,  tempMax: 35, tempMin: 26,
-        humidity: 70, windKmh: 11, floodRisk: 0.30, condition: 'light_rain'),
+    DayForecast(
+      date:      now.add(const Duration(days: 1)),
+      rainMm:    _rainMm(levels[0], p.currentLevel),
+      tempMax:   34, tempMin: 26, humidity: (75 + risks[0] * 20).toInt(),
+      windKmh:   14 + risks[0] * 12,
+      floodRisk: risks[0],
+      condition: _cond(risks[0]),
+    ),
+    DayForecast(
+      date:      now.add(const Duration(days: 2)),
+      rainMm:    _rainMm(levels[1], levels[0]),
+      tempMax:   33, tempMin: 25, humidity: (72 + risks[1] * 20).toInt(),
+      windKmh:   12 + risks[1] * 12,
+      floodRisk: risks[1],
+      condition: _cond(risks[1]),
+    ),
+    DayForecast(
+      date:      now.add(const Duration(days: 3)),
+      rainMm:    _rainMm(levels[2], levels[1]),
+      tempMax:   34, tempMin: 26, humidity: (70 + risks[2] * 20).toInt(),
+      windKmh:   11 + risks[2] * 10,
+      floodRisk: risks[2],
+      condition: _cond(risks[2]),
+    ),
   ];
-});
-
-// Riverpod 3.x: StateProvider was removed. Use Notifier + NotifierProvider.
-class _DistrictNotifier extends Notifier<String> {
-  @override
-  String build() => 'Patna';
-
-  void select(String district) => state = district;
 }
 
-final _selectedDistrictProvider =
-    NotifierProvider<_DistrictNotifier, String>(_DistrictNotifier.new);
+// ---------------------------------------------------------------------------
+// Search notifier
+// ---------------------------------------------------------------------------
+
+class _SearchNotifier extends Notifier<String> {
+  @override
+  String build() => '';
+  void set(String q) => state = q;
+}
+
+final _searchProvider =
+    NotifierProvider<_SearchNotifier, String>(_SearchNotifier.new);
 
 // ---------------------------------------------------------------------------
 // Screen
@@ -88,88 +110,119 @@ class RainfallForecastScreen extends ConsumerWidget {
   static const String route = '/rainfall-forecast';
   const RainfallForecastScreen({super.key});
 
-  static const _districts = [
-    'Patna', 'Darbhanga', 'Muzaffarpur', 'Bhagalpur',
-    'Supaul', 'Sitamarhi', 'Madhubani', 'Saran',
-  ];
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final district      = ref.watch(_selectedDistrictProvider);
-    final forecastAsync = ref.watch(_forecastProvider(district));
+    final query      = ref.watch(_searchProvider);
+    final allPreds   = ref.watch(biharBulkPredictionsProvider);
+
+    // Filter by search query; sort critical-first
+    final preds = allPreds
+        .where((p) => query.isEmpty ||
+            p.station.toLowerCase().contains(query.toLowerCase()))
+        .toList()
+      ..sort((a, b) => b.riskScore.compareTo(a.riskScore));
 
     return Scaffold(
       backgroundColor: AppPalette.abyss2,
       appBar: AppBar(
-        title: const Text('Rainfall Forecast'),
+        title: const Text('Risk Forecast — All Stations'),
         backgroundColor: AppPalette.oceanAccent,
         foregroundColor: Colors.white,
-      ),
-      body: Column(
-        children: [
-          SizedBox(
-            height: 48,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 12, vertical: 8),
-              itemCount: _districts.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (_, i) {
-                final d        = _districts[i];
-                final selected = d == district;
-                return GestureDetector(
-                  onTap: () =>
-                      ref.read(_selectedDistrictProvider.notifier).select(d),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: selected
-                          ? AppPalette.oceanAccent
-                          : Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                          color: AppPalette.oceanAccent,
-                          width: selected ? 0 : 1),
-                    ),
-                    child: Text(d,
-                        style: TextStyle(
-                            color: selected
-                                ? Colors.white
-                                : AppPalette.oceanAccent,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600)),
-                  ),
-                );
-              },
-            ),
-          ),
-          Expanded(
-            child: forecastAsync.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
-              error:   (e, _) =>
-                  Center(child: Text('Failed to load: $e')),
-              data: (forecasts) => RefreshIndicator(
-                onRefresh: () =>
-                    ref.refresh(_forecastProvider(district).future),
-                child: ListView(
-                  padding: const EdgeInsets.all(12),
-                  children: [
-                    _RainBarChart(forecasts: forecasts),
-                    const SizedBox(height: 12),
-                    ...forecasts.map((f) => _DayCard(forecast: f)),
-                  ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(48),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+            child: TextField(
+              onChanged: (v) => ref.read(_searchProvider.notifier).set(v),
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+              decoration: InputDecoration(
+                hintText: 'Search station…',
+                hintStyle: const TextStyle(color: Colors.white54),
+                prefixIcon: const Icon(Icons.search, color: Colors.white54, size: 18),
+                filled: true,
+                fillColor: Colors.white12,
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide.none,
                 ),
               ),
             ),
           ),
-        ],
+        ),
       ),
+      body: preds.isEmpty
+          ? const Center(
+              child: Text('No stations found',
+                  style: TextStyle(color: Colors.white54)))
+          : ListView.separated(
+              padding: const EdgeInsets.all(12),
+              itemCount: preds.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 16),
+              itemBuilder: (_, i) {
+                final pred      = preds[i];
+                final forecasts = _predToForecasts(pred);
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Station header
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(pred.station,
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13)),
+                          ),
+                          _SeverityChip(pred.severity),
+                          const SizedBox(width: 6),
+                          Text('${pred.riskScore.toStringAsFixed(0)}%',
+                              style: const TextStyle(
+                                  color: Colors.white54, fontSize: 11)),
+                        ],
+                      ),
+                    ),
+                    _RainBarChart(forecasts: forecasts),
+                    const SizedBox(height: 6),
+                    ...forecasts.map((f) => _DayCard(forecast: f)),
+                  ],
+                );
+              },
+            ),
     );
   }
+}
+
+// ---------------------------------------------------------------------------
+// Severity chip
+// ---------------------------------------------------------------------------
+
+class _SeverityChip extends StatelessWidget {
+  final String severity;
+  const _SeverityChip(this.severity);
+
+  Color get _color => switch (severity) {
+    'CRITICAL' => AppPalette.critical,
+    'SEVERE'   => AppPalette.danger,
+    'MODERATE' => AppPalette.warning,
+    _          => AppPalette.safe,
+  };
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        decoration: BoxDecoration(
+          color: _color.withOpacity(0.18),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: _color, width: 1),
+        ),
+        child: Text(severity,
+            style: TextStyle(
+                fontSize: 9, fontWeight: FontWeight.bold, color: _color)),
+      );
 }
 
 // ---------------------------------------------------------------------------
