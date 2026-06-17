@@ -1,18 +1,11 @@
 // lib/data/bihar_station_metadata.dart
 //
 // Single source of truth for Bihar CWC gauging station metadata.
-// Covers all 32 stations in the befiqr_cwc_service.dart seed +
-// additional WRD Bihar stations.
-//
-// ★ PATNA LEVELS UPDATED — CWC 2025 official gazette values ★
-//   Gandhighat (Ganga @ Patna):
-//     Warning : 49.27 m (GD)  →  stored as relative 5.58 m above datum
-//     Danger  : 50.60 m (GD)  →  stored as relative 5.89 m above datum
-//     HFL     : 52.32 m (GD)  →  stored as relative 6.51 m above datum
-//   Dighaghat (Ganga upstream Patna):
-//     Warning : 48.26 m (GD)  →  4.80 m relative
-//     Danger  : 49.27 m (GD)  →  5.22 m relative
-//     HFL     : 50.40 m (GD)  →  6.10 m relative
+// v2.0 (17 Jun 2026): ALL WL/DL/HFL values synced to bihar_rivers.dart
+//   BEAMS RTDAS + BeFIQR verified absolute MSL values.
+//   Birpur: WL 73.70 / DL 74.70 / HFL 76.02  (was wrong relative 5.60/6.80)
+//   Gandhighat: WL 47.50 / DL 48.60 / HFL 50.52
+//   All Ganga stations: updated to absolute MSL from CWC FFEM gazette.
 library;
 
 import 'package:latlong2/latlong.dart';
@@ -28,8 +21,6 @@ class BiharStationMeta {
   final double       lat;
   final double       lng;
   final List<String> coversCities;
-  // Official CWC level benchmarks (metres, relative to local gauge datum)
-  // null = not published / use live feed value
   final double? warningLevel;
   final double? dangerLevel;
   final double? hfl;
@@ -71,24 +62,24 @@ class BiharStationRegistry {
     // ═══════════════════════════════════════════════════════════════════════
 
     'ekmighat': BiharStationMeta(
-      river: 'Adhwara', site: 'Ekmighat', district: 'Sitamarhi',
-      lat: 26.597, lng: 85.617,
+      river: 'Khiroi', site: 'Ekmighat', district: 'Darbhanga',
+      lat: 26.25, lng: 86.00,
       coversCities: ['Sitamarhi','Runni Saidpur','Pupri','Riga','Parihar','Sursand'],
-      warningLevel: 4.20, dangerLevel: 5.10, hfl: 6.30,
+      warningLevel: 45.00, dangerLevel: 46.94, hfl: 49.52,
     ),
 
     'kamtaul': BiharStationMeta(
       river: 'Adhwara', site: 'Kamtaul', district: 'Darbhanga',
       lat: 26.392, lng: 85.862,
       coversCities: ['Kamtaul','Darbhanga','Baheri','Manigachhi','Biraul','Kusheshwar Asthan'],
-      warningLevel: 3.80, dangerLevel: 4.60, hfl: 5.80,
+      warningLevel: 48.00, dangerLevel: 50.00, hfl: 53.05,
     ),
 
     'sonbarsa': BiharStationMeta(
-      river: 'Adhwara', site: 'Sonbarsa', district: 'Samastipur',
-      lat: 25.993, lng: 86.063,
+      river: 'Jhim', site: 'Sonbarsa', district: 'Sitamarhi',
+      lat: 26.70, lng: 85.48,
       coversCities: ['Samastipur','Sonbarsa','Bibhutipur','Patori','Ujiarpur','Morwa'],
-      warningLevel: 3.50, dangerLevel: 4.20, hfl: 5.40,
+      warningLevel: 80.50, dangerLevel: 81.85, hfl: 83.20,
     ),
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -97,23 +88,23 @@ class BiharStationRegistry {
 
     'benibad': BiharStationMeta(
       river: 'Bagmati', site: 'Benibad', district: 'Muzaffarpur',
-      lat: 26.148, lng: 85.852,
+      lat: 26.05, lng: 85.65,
       coversCities: ['Muzaffarpur','Katra','Minapur','Motipur','Sakra','Gaighat'],
-      warningLevel: 5.50, dangerLevel: 6.40, hfl: 7.80,
+      warningLevel: 47.68, dangerLevel: 48.68, hfl: 50.12,
     ),
 
     'dheng bridge': BiharStationMeta(
       river: 'Bagmati', site: 'Dheng Bridge', district: 'Sitamarhi',
-      lat: 26.740, lng: 85.594,
+      lat: 26.58, lng: 85.49,
       coversCities: ['Dheng','Bajpatti','Sheohar','Piprahi','Belsand','Parsauni'],
-      warningLevel: 4.80, dangerLevel: 5.70, hfl: 7.10,
+      warningLevel: 70.00, dangerLevel: 71.00, hfl: 73.47,
     ),
 
     'hayaghat': BiharStationMeta(
       river: 'Bagmati', site: 'Hayaghat', district: 'Darbhanga',
-      lat: 26.122, lng: 85.762,
+      lat: 26.02, lng: 85.95,
       coversCities: ['Hayaghat','Darbhanga','Jale','Kiratpur','Ghanshyampur','Biraul'],
-      warningLevel: 4.60, dangerLevel: 5.50, hfl: 6.90,
+      warningLevel: 44.50, dangerLevel: 45.72, hfl: 48.96,
     ),
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -122,30 +113,30 @@ class BiharStationRegistry {
 
     'khagaria': BiharStationMeta(
       river: 'Burhi Gandak', site: 'Khagaria', district: 'Khagaria',
-      lat: 25.502, lng: 86.468,
+      lat: 25.50, lng: 86.47,
       coversCities: ['Khagaria','Mansi','Alauli','Chautham','Parwalpur','Gogri'],
-      warningLevel: 4.20, dangerLevel: 5.10, hfl: 6.20,
+      warningLevel: 35.40, dangerLevel: 36.58, hfl: 39.22,
     ),
 
     'rosera': BiharStationMeta(
       river: 'Burhi Gandak', site: 'Rosera', district: 'Samastipur',
-      lat: 25.863, lng: 85.984,
+      lat: 25.86, lng: 85.98,
       coversCities: ['Rosera','Dalsingh Sarai','Bibhutipur','Tajpur','Pusa','Sarairanjan'],
-      warningLevel: 5.20, dangerLevel: 6.10, hfl: 7.50,
+      warningLevel: 41.50, dangerLevel: 42.63, hfl: 46.56,
     ),
 
     'samastipur': BiharStationMeta(
       river: 'Burhi Gandak', site: 'Samastipur', district: 'Samastipur',
-      lat: 25.871, lng: 85.779,
+      lat: 25.862, lng: 85.781,
       coversCities: ['Samastipur','Mohiuddinagar','Pusa','Warisnagar','Shivajinagar','Kalyanpur'],
-      warningLevel: 5.80, dangerLevel: 6.70, hfl: 8.00,
+      warningLevel: 44.80, dangerLevel: 46.00, hfl: 49.40,
     ),
 
     'sikandarpur (muzzafarpur)': BiharStationMeta(
       river: 'Burhi Gandak', site: 'Sikandarpur (Muzzafarpur)', district: 'Muzaffarpur',
-      lat: 26.118, lng: 85.391,
+      lat: 26.1209, lng: 85.3647,
       coversCities: ['Muzaffarpur','Sikandarpur','Aurai','Kanti','Marwan','Paroo'],
-      warningLevel: 6.20, dangerLevel: 7.10, hfl: 8.60,
+      warningLevel: 51.40, dangerLevel: 52.53, hfl: 54.29,
     ),
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -154,89 +145,83 @@ class BiharStationRegistry {
 
     'chatia': BiharStationMeta(
       river: 'Gandak', site: 'Chatia', district: 'East Champaran',
-      lat: 26.680, lng: 84.882,
+      lat: 26.85, lng: 84.90,
       coversCities: ['Chatia','Motihari','Areraj','Dhaka','Banjaria','Paharpur'],
-      warningLevel: 5.60, dangerLevel: 6.50, hfl: 8.10,
+      warningLevel: 68.10, dangerLevel: 69.15, hfl: 70.04,
     ),
 
     'dumariaghat': BiharStationMeta(
-      river: 'Gandak', site: 'Dumariaghat', district: 'West Champaran',
-      lat: 27.093, lng: 84.478,
+      river: 'Gandak', site: 'Dumariaghat', district: 'Gopalganj',
+      lat: 26.4833, lng: 84.4667,
       coversCities: ['Bettiah','Bagaha','Narkatiaganj','Raxaul','Sikta','Gaunaha'],
-      warningLevel: 4.80, dangerLevel: 5.80, hfl: 7.20,
+      warningLevel: 61.10, dangerLevel: 62.22, hfl: 64.36,
     ),
 
     'hajipur': BiharStationMeta(
       river: 'Gandak', site: 'Hajipur', district: 'Vaishali',
-      lat: 25.683, lng: 85.209,
+      lat: 25.6933, lng: 85.2094,
       coversCities: ['Hajipur','Vaishali','Lalganj','Mahua','Raghopur','Patepur'],
-      warningLevel: 5.00, dangerLevel: 5.90, hfl: 7.30,
+      warningLevel: 49.40, dangerLevel: 50.32, hfl: 50.93,
     ),
 
     'rewaghat': BiharStationMeta(
       river: 'Gandak', site: 'Rewaghat', district: 'Muzaffarpur',
-      lat: 26.205, lng: 84.975,
+      lat: 26.10, lng: 85.30,
       coversCities: ['Muzaffarpur','Rewaghat','Minapur','Kanti','Sakra','Bochahan'],
-      warningLevel: 5.40, dangerLevel: 6.30, hfl: 7.80,
+      warningLevel: 53.40, dangerLevel: 54.41, hfl: 55.46,
     ),
 
     // ═══════════════════════════════════════════════════════════════════════
-    // GANGA  ★ PATNA STATIONS UPDATED ★
+    // GANGA — absolute MSL values (CWC 2025 FFEM gazette)
     // ═══════════════════════════════════════════════════════════════════════
 
     'bhagalpur': BiharStationMeta(
       river: 'Ganga', site: 'Bhagalpur', district: 'Bhagalpur',
-      lat: 25.245, lng: 86.978,
+      lat: 25.2425, lng: 86.9842,
       coversCities: ['Bhagalpur','Sultanganj','Kahalgaon','Naugachia','Bihpur','Pirpainti'],
-      warningLevel: 28.96, dangerLevel: 29.96, hfl: 31.50,
+      warningLevel: 32.50, dangerLevel: 33.68, hfl: 34.86,
     ),
 
     'buxar': BiharStationMeta(
       river: 'Ganga', site: 'Buxar', district: 'Buxar',
-      lat: 25.563, lng: 83.978,
+      lat: 25.565, lng: 83.981,
       coversCities: ['Buxar','Dumraon','Simri','Chausa','Brahmpur','Itarhi'],
-      warningLevel: 60.96, dangerLevel: 62.48, hfl: 63.50,
+      warningLevel: 59.20, dangerLevel: 60.30, hfl: 62.10,
     ),
 
-    // ★ PATNA — DIGHAGHAT (upstream gauge) — CWC 2025 official ★
     'dighaghat': BiharStationMeta(
       river: 'Ganga', site: 'Dighaghat', district: 'Patna',
-      lat: 25.623, lng: 85.074,
+      lat: 25.5941, lng: 85.0700,
       coversCities: ['Patna','Danapur','Dinapur','Phulwari Sharif','Maner','Bihta'],
-      warningLevel: 4.80,   // 48.26 m GD → ~4.80 m gauge
-      dangerLevel:  5.22,   // 49.27 m GD → ~5.22 m gauge
-      hfl:          6.10,   // 50.40 m GD → ~6.10 m gauge
+      warningLevel: 49.30, dangerLevel: 50.45, hfl: 52.52,
     ),
 
-    // ★ PATNA — GANDHIGHAT (main Patna city gauge) — CWC 2025 official ★
     'gandhighat': BiharStationMeta(
       river: 'Ganga', site: 'Gandhighat', district: 'Patna',
-      lat: 25.614, lng: 85.127,
+      lat: 25.6129, lng: 85.1376,
       coversCities: ['Patna','Patna City','Fatuha','Bakhtiyarpur','Mokameh','Barh'],
-      warningLevel: 5.58,   // 49.27 m GD → gauge zero 43.69 m → 5.58 m
-      dangerLevel:  5.89,   // 50.60 m GD → 5.89 m gauge
-      hfl:          6.51,   // 52.32 m GD historical HFL → 6.51 m gauge
+      warningLevel: 47.50, dangerLevel: 48.60, hfl: 50.52,
     ),
 
     'hathidah': BiharStationMeta(
       river: 'Ganga', site: 'Hathidah', district: 'Begusarai',
-      lat: 25.381, lng: 86.165,
+      lat: 25.4167, lng: 85.75,
       coversCities: ['Hathidah','Begusarai','Teghra','Lakhisarai','Suryagarha','Mokameh'],
-      warningLevel: 33.54, dangerLevel: 34.54, hfl: 36.10,
+      warningLevel: 40.50, dangerLevel: 41.76, hfl: 43.52,
     ),
 
     'kahalgaon': BiharStationMeta(
       river: 'Ganga', site: 'Kahalgaon', district: 'Bhagalpur',
-      lat: 25.207, lng: 87.268,
+      lat: 25.2167, lng: 87.2667,
       coversCities: ['Kahalgaon','Pirpainti','Sanho','Banka','Katoria','Sultanganj'],
-      warningLevel: 25.91, dangerLevel: 27.43, hfl: 29.00,
+      warningLevel: 30.00, dangerLevel: 31.09, hfl: 32.87,
     ),
 
     'munger': BiharStationMeta(
       river: 'Ganga', site: 'Munger', district: 'Munger',
       lat: 25.375, lng: 86.474,
       coversCities: ['Munger','Jamalpur','Tarapur','Lakhisarai','Suryagarha','Kharagpur'],
-      warningLevel: 36.58, dangerLevel: 37.58, hfl: 39.00,
+      warningLevel: 38.20, dangerLevel: 39.33, hfl: 40.99,
     ),
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -245,71 +230,68 @@ class BiharStationRegistry {
 
     'darauli': BiharStationMeta(
       river: 'Ghaghra', site: 'Darauli', district: 'Siwan',
-      lat: 26.102, lng: 84.136,
+      lat: 26.07, lng: 84.41,
       coversCities: ['Darauli','Siwan','Maharajganj','Barharia','Raghunathpur','Andar'],
-      warningLevel: 5.20, dangerLevel: 6.10, hfl: 7.50,
+      warningLevel: 60.50, dangerLevel: 60.82, hfl: 61.82,
     ),
 
     'gangpur siswan': BiharStationMeta(
       river: 'Ghaghra', site: 'Gangpur Siswan', district: 'Siwan',
-      lat: 26.218, lng: 84.357,
+      lat: 26.25, lng: 84.35,
       coversCities: ['Gangpur Siswan','Siwan','Gopalganj','Bhore','Pachrukhia','Hussainganj'],
-      warningLevel: 5.40, dangerLevel: 6.30, hfl: 7.80,
+      warningLevel: 56.70, dangerLevel: 57.04, hfl: 58.26,
     ),
 
     // ═══════════════════════════════════════════════════════════════════════
-    // KAMALABALAN
+    // KAMALABALAN / KAMLA
     // ═══════════════════════════════════════════════════════════════════════
 
     'jhanjharpur': BiharStationMeta(
-      river: 'Kamalabalan', site: 'Jhanjharpur', district: 'Madhubani',
-      lat: 26.268, lng: 86.280,
+      river: 'Kamla', site: 'Jhanjharpur', district: 'Madhubani',
+      lat: 26.264, lng: 86.279,
       coversCities: ['Jhanjharpur','Madhubani','Phulparas','Pandaul','Laukaha','Jaynagar'],
-      warningLevel: 4.40, dangerLevel: 5.30, hfl: 6.70,
+      warningLevel: 48.50, dangerLevel: 50.00, hfl: 53.11,
     ),
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // KAMLA
-    // ═══════════════════════════════════════════════════════════════════════
 
     'jainagar': BiharStationMeta(
       river: 'Kamla', site: 'Jainagar', district: 'Madhubani',
-      lat: 26.597, lng: 86.247,
+      lat: 26.594, lng: 86.226,
       coversCities: ['Jainagar','Madhubani','Benipatti','Phulparas','Bisfi','Rahika'],
-      warningLevel: 4.60, dangerLevel: 5.50, hfl: 6.90,
+      warningLevel: 67.75, dangerLevel: 67.75, hfl: 71.35,
     ),
 
     // ═══════════════════════════════════════════════════════════════════════
-    // KOSI
+    // KOSI  ★ BIRPUR CORRECTED TO ABSOLUTE MSL ★
     // ═══════════════════════════════════════════════════════════════════════
 
     'baltara': BiharStationMeta(
       river: 'Kosi', site: 'Baltara', district: 'Saharsa',
-      lat: 25.867, lng: 86.563,
+      lat: 25.50, lng: 86.583,
       coversCities: ['Saharsa','Simri Bakhtiyarpur','Banmankhi','Salkhua','Mahishi','Sonbarsa'],
-      warningLevel: 26.21, dangerLevel: 27.21, hfl: 29.00,
+      warningLevel: 32.85, dangerLevel: 33.85, hfl: 36.40,
     ),
 
     'basua': BiharStationMeta(
       river: 'Kosi', site: 'Basua', district: 'Supaul',
-      lat: 26.430, lng: 86.702,
+      lat: 26.1234, lng: 86.602,
       coversCities: ['Basua','Supaul','Triveniganj','Kishanpur','Salkhua','Saraigarh'],
-      warningLevel: 5.50, dangerLevel: 6.40, hfl: 7.80,
+      warningLevel: 46.50, dangerLevel: 47.75, hfl: 49.24,
     ),
 
+    // ★ BIRPUR — corrected from wrong relative (5.60/6.80) → correct absolute MSL ★
     'birpur': BiharStationMeta(
       river: 'Kosi', site: 'Birpur', district: 'Supaul',
-      lat: 26.505, lng: 86.914,
+      lat: 26.5167, lng: 86.90,
       coversCities: ['Birpur','Supaul','Madhepura','Araria','Forbesganj','Saharsa',
                      'Darbhanga','Khagaria','Bhagalpur'],
-      warningLevel: 5.60, dangerLevel: 6.80, hfl: 8.20,
+      warningLevel: 73.70, dangerLevel: 74.70, hfl: 76.02,
     ),
 
     'kursela': BiharStationMeta(
       river: 'Kosi', site: 'Kursela', district: 'Katihar',
-      lat: 25.453, lng: 87.266,
+      lat: 25.48, lng: 87.26,
       coversCities: ['Kursela','Katihar','Manihari','Amdabad','Kadwa','Barari'],
-      warningLevel: 20.42, dangerLevel: 21.34, hfl: 22.80,
+      warningLevel: 28.80, dangerLevel: 30.00, hfl: 32.10,
     ),
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -317,17 +299,17 @@ class BiharStationRegistry {
     // ═══════════════════════════════════════════════════════════════════════
 
     'dhengraghat': BiharStationMeta(
-      river: 'Mahananda', site: 'Dhengraghat', district: 'Kishanganj',
-      lat: 26.098, lng: 87.951,
+      river: 'Mahananda', site: 'Dhengraghat', district: 'Purnia',
+      lat: 25.98, lng: 87.48,
       coversCities: ['Kishanganj','Thakurganj','Kochadhaman','Bahadurganj','Islampur','Jogbani'],
-      warningLevel: 4.90, dangerLevel: 5.80, hfl: 7.20,
+      warningLevel: 34.65, dangerLevel: 35.65, hfl: 38.20,
     ),
 
     'taibpur': BiharStationMeta(
-      river: 'Mahananda', site: 'Taibpur', district: 'Purnia',
-      lat: 25.775, lng: 87.474,
+      river: 'Mahananda', site: 'Taibpur', district: 'Kishanganj',
+      lat: 26.10, lng: 87.95,
       coversCities: ['Purnia','Banmankhi','Kasba','Araria','Forbesganj','Rupauli'],
-      warningLevel: 5.10, dangerLevel: 6.00, hfl: 7.40,
+      warningLevel: 64.40, dangerLevel: 66.00, hfl: 67.22,
     ),
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -336,10 +318,10 @@ class BiharStationRegistry {
 
     'sripalpur': BiharStationMeta(
       river: 'Punpun', site: 'Sripalpur', district: 'Patna',
-      lat: 25.328, lng: 85.038,
+      lat: 25.52, lng: 85.38,
       coversCities: ['Patna (south)','Fatuha','Masaurhi','Jehanabad','Arwal','Bikram'],
-      warningLevel: 3.80, dangerLevel: 4.50, hfl: 5.60,
+      warningLevel: 50.60, dangerLevel: 51.83, hfl: 53.91,
     ),
 
-  }; // end _all
+  };
 }

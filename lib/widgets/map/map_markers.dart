@@ -1,14 +1,25 @@
-// File: lib/widgets/map/map_markers.dart
-// Updated: June 2026
-// Changes: Full rewrite — kStationCoords direct lookup,
-//          all FloodStation stations, pulse animation
+// lib/widgets/map/map_markers.dart
+// v2.0 — 5-colour severity system
+//
+// gaugeRiskFromLevels() / RiverStation.riskLevel emits:
+//   'EXTREME'  → above HFL   → magenta  #E040FB
+//   'CRITICAL' → above DL    → deep red #D32F2F
+//   'DANGER'   → above WL    → orange   #FF6D00
+//   'NORMAL'   → below WL    → green    #388E3C
+//
+// FloodStation.riskLevel (API legacy labels also handled):
+//   'SEVERE'   → #FF5500  orange-red
+//   'WARNING'  → #FBC02D  amber
+//   'HIGH'     → alias for CRITICAL
+//   'MODERATE' → alias for WARNING
+//   'LOW'      → alias for NORMAL
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../models/flood_station.dart';
-import 'station_coord_seed.dart'; // for kStationCoords map ONLY
+import 'station_coord_seed.dart';
 
 class MapMarkers extends StatefulWidget {
   const MapMarkers({
@@ -34,8 +45,7 @@ class _MapMarkersState extends State<MapMarkers>
     _animation = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
-    )
-      ..repeat();
+    )..repeat();
   }
 
   @override
@@ -50,39 +60,49 @@ class _MapMarkersState extends State<MapMarkers>
   }
 
   Color _colorFor(String riskLevel) {
-    switch (riskLevel) {
+    switch (riskLevel.toUpperCase().trim()) {
+      case 'EXTREME':            return const Color(0xFFE040FB); // magenta — above HFL
       case 'CRITICAL':
-        return const Color(0xFFC62828);
-      case 'HIGH':
-        return const Color(0xFFFF8F00);
-      case 'MODERATE':
-        return const Color(0xFFF57F17);
+      case 'HIGH':               return const Color(0xFFD32F2F); // deep red — above DL
+      case 'DANGER':
+      case 'SEVERE':             return const Color(0xFFFF6D00); // orange — above WL
+      case 'WARNING':
+      case 'MODERATE':           return const Color(0xFFFBC02D); // amber — near WL
       case 'LOW':
-        return const Color(0xFF2E7D32);
-      default:
-        return const Color(0xFF757575);
+      case 'NORMAL':             return const Color(0xFF388E3C); // green — safe
+      default:                   return const Color(0xFF757575); // grey — unknown
     }
   }
 
-  double _radiusFor(double? capacityPercent) {
-    if (capacityPercent == null || capacityPercent < 50) return 10.0;
-    if (capacityPercent <= 85) return 13.0;
-    if (capacityPercent <= 100) return 16.0;
-    return 20.0;
+  double _radiusFor(String riskLevel, double? capacityPercent) {
+    if (capacityPercent != null) {
+      if (capacityPercent > 100) return 20.0;
+      if (capacityPercent >= 85)  return 16.0;
+      if (capacityPercent >= 60)  return 13.0;
+      return 10.0;
+    }
+    switch (riskLevel.toUpperCase().trim()) {
+      case 'EXTREME':            return 20.0;
+      case 'CRITICAL':
+      case 'HIGH':               return 16.0;
+      case 'DANGER':
+      case 'SEVERE':             return 13.0;
+      case 'WARNING':
+      case 'MODERATE':           return 11.0;
+      default:                   return  9.0;
+    }
   }
 
   double _amplitudeFor(String riskLevel) {
-    switch (riskLevel) {
+    switch (riskLevel.toUpperCase().trim()) {
+      case 'EXTREME':            return 4.0;
       case 'CRITICAL':
-        return 3.0;
-      case 'HIGH':
-        return 2.0;
-      case 'MODERATE':
-        return 1.0;
-      case 'LOW':
-        return 0.5;
-      default:
-        return 0.0;
+      case 'HIGH':               return 3.0;
+      case 'DANGER':
+      case 'SEVERE':             return 2.0;
+      case 'WARNING':
+      case 'MODERATE':           return 1.0;
+      default:                   return 0.0; // no pulse for NORMAL
     }
   }
 
@@ -94,17 +114,16 @@ class _MapMarkersState extends State<MapMarkers>
       final coord = _resolveCoord(station);
       if (coord == null) continue;
 
-      final color = _colorFor(station.riskLevel);
-      final radius = _radiusFor(station.capacityPercent);
+      final color     = _colorFor(station.riskLevel);
+      final radius    = _radiusFor(station.riskLevel, station.capacityPercent);
       final amplitude = _amplitudeFor(station.riskLevel);
-
-      final widthHeight = (radius + radius * 3.0 + 4) * 2;
+      final wh        = (radius + radius * 3.0 + 4) * 2;
 
       markers.add(
         Marker(
-          point: coord,
-          width: widthHeight,
-          height: widthHeight,
+          point:  coord,
+          width:  wh,
+          height: wh,
           child: GestureDetector(
             onTap: () => widget.onStationTap(station),
             child: RepaintBoundary(
@@ -112,8 +131,8 @@ class _MapMarkersState extends State<MapMarkers>
                 animation: _animation,
                 builder: (_, __) => CustomPaint(
                   painter: _PulseMarkerPainter(
-                    color: color,
-                    radius: radius,
+                    color:     color,
+                    radius:    radius,
                     amplitude: amplitude,
                     animValue: _animation.value,
                   ),
@@ -132,14 +151,14 @@ class _MapMarkersState extends State<MapMarkers>
 }
 
 class _PulseMarkerPainter extends CustomPainter {
-  _PulseMarkerPainter({
+  const _PulseMarkerPainter({
     required this.color,
     required this.radius,
     required this.amplitude,
     required this.animValue,
   });
 
-  final Color color;
+  final Color  color;
   final double radius;
   final double amplitude;
   final double animValue;
@@ -148,35 +167,31 @@ class _PulseMarkerPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
 
-    // 1. Pulse ring (only if amplitude > 0)
+    // 1. Pulse ring
     if (amplitude > 0) {
-      final pulseRadius = radius + (amplitude * radius * animValue);
-      final pulseOpacity = (1.0 - animValue) * 0.6;
-
+      final pulseRadius  = radius + (amplitude * radius * animValue);
+      final pulseOpacity = (1.0 - animValue) * 0.65;
       canvas.drawCircle(
-        center,
-        pulseRadius,
+        center, pulseRadius,
         Paint()
-          ..color = color.withOpacity(pulseOpacity)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.0,
+          ..color       = color.withOpacity(pulseOpacity)
+          ..style       = PaintingStyle.stroke
+          ..strokeWidth = 2.5,
       );
     }
 
     // 2. White border
     canvas.drawCircle(
-      center,
-      radius + 1.5,
+      center, radius + 1.5,
       Paint()
         ..color = Colors.white
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5,
+        ..strokeWidth = 1.8,
     );
 
-    // 3. Solid dot
+    // 3. Solid fill
     canvas.drawCircle(
-      center,
-      radius,
+      center, radius,
       Paint()
         ..color = color
         ..style = PaintingStyle.fill,
@@ -185,6 +200,7 @@ class _PulseMarkerPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _PulseMarkerPainter old) =>
-      old.animValue != animValue || old.color != color;
+      old.animValue != animValue ||
+      old.color     != color     ||
+      old.radius    != radius;
 }
-

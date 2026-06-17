@@ -1,9 +1,9 @@
 // lib/widgets/map/map_legend.dart
 // MapSourceLegend — collapsible overlay showing data sources + risk scale.
-// v1.1: legend labels updated to match riskLabel / AlertSeverity terminology.
+// v2.0: 5-colour risk scale, EXTREME tier added, colours synced with map_risk_helpers v2.0.
 import 'package:flutter/material.dart';
-import '../../models/river_station.dart'; // DangerClass
-import '../../providers/map_command_provider.dart'; // SyncMeta
+import '../../models/river_station.dart';
+import '../../providers/map_command_provider.dart';
 import '../../theme/rx.dart';
 import 'map_risk_helpers.dart';
 
@@ -23,12 +23,13 @@ class MapSourceLegend extends StatelessWidget {
     ('GLOFAS',    '🛰', 'GloFAS Global Forecast'),
   ];
 
-  // Labels now match AlertSeverity / FloodData.riskLevel used across the app
+  // 5-tier risk scale — worst to best.
+  // Labels match gaugeRiskFromLevels() output and riskLabel() in map_risk_helpers.
   static final _legend = [
-    (DangerClass.extreme,     'CRITICAL',  '≥ HFL — Highest Flood Level'),
-    (DangerClass.severe,      'SEVERE',    '≥ Danger Level'),
-    (DangerClass.aboveNormal, 'WARNING',   '≥ Warning Level'),
-    (DangerClass.normal,      'NORMAL',    'Below Warning Level'),
+    (DangerClass.extreme,     'EXTREME',  '≥ HFL — Highest Flood Level'),
+    (DangerClass.severe,      'CRITICAL', '≥ Danger Level'),
+    (DangerClass.aboveNormal, 'WARNING',  '≥ Warning Level'),
+    (DangerClass.normal,      'NORMAL',   'Below Warning Level'),
   ];
 
   @override
@@ -53,7 +54,6 @@ class MapSourceLegend extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Header
           Row(
             children: [
               Text(
@@ -68,14 +68,12 @@ class MapSourceLegend extends StatelessWidget {
               const Spacer(),
               GestureDetector(
                 onTap: onClose,
-                child: Icon(Icons.close,
-                    size: 14, color: rc.textSecondary),
+                child: Icon(Icons.close, size: 14, color: rc.textSecondary),
               ),
             ],
           ),
           const SizedBox(height: 8),
 
-          // Source rows
           for (final (src, emoji, label) in _sources) ...[
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -96,9 +94,7 @@ class MapSourceLegend extends StatelessWidget {
                         ),
                       ),
                       Text(label,
-                          style: TextStyle(
-                              color:    rc.textSecondary,
-                              fontSize: 10)),
+                          style: TextStyle(color: rc.textSecondary, fontSize: 10)),
                       Text(
                         'Updated: ${syncMeta.labelFor(src)}',
                         style: TextStyle(
@@ -116,7 +112,6 @@ class MapSourceLegend extends StatelessWidget {
 
           Divider(height: 12, color: rc.stroke),
 
-          // Risk scale
           Text(
             'RISK SCALE',
             style: TextStyle(
@@ -127,6 +122,7 @@ class MapSourceLegend extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
+
           for (final (dc, lbl, sublbl) in _legend)
             Padding(
               padding: const EdgeInsets.only(bottom: 5),
@@ -135,9 +131,9 @@ class MapSourceLegend extends StatelessWidget {
                   Container(
                     width: 14, height: 14,
                     decoration: BoxDecoration(
-                      color:        riskColor(dc, opacity: 0.8),
+                      color:        riskColor(dc, opacity: 0.85),
                       borderRadius: BorderRadius.circular(3),
-                      border:       Border.all(
+                      border: Border.all(
                           color: riskColorSolid(dc).withValues(alpha: 0.6)),
                     ),
                   ),
@@ -149,9 +145,9 @@ class MapSourceLegend extends StatelessWidget {
                         Text(
                           lbl,
                           style: TextStyle(
-                            color:      rc.textPrimary,
+                            color:      riskColorSolid(dc),
                             fontSize:   10,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                         Text(
