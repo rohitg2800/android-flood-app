@@ -1,4 +1,6 @@
-// lib/providers/live_engine_bridge_provider.dart  v4.2
+// lib/providers/live_engine_bridge_provider.dart  v4.3
+//
+// v4.3 (17 Jun 2026) — Birpur DL updated 74.70 → 76.02
 //
 // v4.2 (17 Jun 2026) — Dataflow audit: threshold + coordinate fixes
 //
@@ -30,13 +32,13 @@ import '../models/river_station.dart';
 import '../services/bihar_live_engine.dart';
 import '../services/threshold_override_store.dart';
 
-// ── Threshold table ──────────────────────────────────────────────────────────
+// ── Threshold table ───────────────────────────────────────────────────────────────────
 // SOURCE: bihar_rivers.dart v4.4 kBiharGauges (BEAMS RTDAS + BeFIQR)
 // All levels in metres MSL.
 const Map<String, ({double warning, double danger, double hfl, String river})>
     _kThresholds = {
 
-  // ── GANGA (7 + WRD stations) ──────────────────────────────────────────────
+  // ── GANGA (7 + WRD stations) ───────────────────────────────────────────
   'gandhighat': (warning: 47.50, danger: 48.60, hfl: 50.52, river: 'Ganga'),
   'dighaghat':  (warning: 49.30, danger: 50.45, hfl: 52.52, river: 'Ganga'),
   'hathidah':   (warning: 40.50, danger: 41.76, hfl: 43.52, river: 'Ganga'),
@@ -58,8 +60,9 @@ const Map<String, ({double warning, double danger, double hfl, String river})>
   'suryagadha':  (warning: 31.19, danger: 40.41, hfl: 40.90, river: 'Ganga'),
 
   // ── KOSI (10 stations) ────────────────────────────────────────────────────
-  'birpur':           (warning: 73.70, danger: 74.70, hfl: 76.02, river: 'Kosi'),
-  'birpur cwc':       (warning: 73.70, danger: 74.70, hfl: 76.02, river: 'Kosi'),
+  // v4.3: Birpur DL updated 74.70 → 76.02 (17 Jun 2026)
+  'birpur':           (warning: 73.70, danger: 76.02, hfl: 76.02, river: 'Kosi'),
+  'birpur cwc':       (warning: 73.70, danger: 76.02, hfl: 76.02, river: 'Kosi'),
   'basua':            (warning: 46.50, danger: 47.75, hfl: 49.24, river: 'Kosi'),
   'baltara':          (warning: 32.85, danger: 33.85, hfl: 36.40, river: 'Kosi'),
   'kursela':          (warning: 28.80, danger: 30.00, hfl: 32.10, river: 'Kosi'),
@@ -86,7 +89,7 @@ const Map<String, ({double warning, double danger, double hfl, String river})>
   'thakraha':    (warning: 75.37, danger: 77.18, hfl: 78.68, river: 'Gandak'),
   'triveni':     (warning: 104.12, danger: 109.67, hfl: 112.79, river: 'Gandak'),
 
-  // ── BAGMATI (13 stations) ─────────────────────────────────────────────────
+  // ── BAGMATI (13 stations) ───────────────────────────────────────────────
   'dheng bridge':        (warning: 70.00, danger: 71.00, hfl: 73.47, river: 'Bagmati'),
   'dhengbridge':         (warning: 70.00, danger: 71.00, hfl: 73.47, river: 'Bagmati'),
   'sonakhan':            (warning: 67.80, danger: 68.80, hfl: 72.05, river: 'Bagmati'),
@@ -105,7 +108,7 @@ const Map<String, ({double warning, double danger, double hfl, String river})>
   'belsand':    (warning: 56.19, danger: 59.25, hfl: 60.75, river: 'Bagmati'),
   'bishunpur':  (warning: 42.42, danger: 47.40, hfl: 48.97, river: 'Bagmati'),
 
-  // ── BURHI GANDAK (5 + WRD stations) ──────────────────────────────────────
+  // ── BURHI GANDAK (5 + WRD stations) ──────────────────────────────────────────
   'sikandarpur': (warning: 51.40, danger: 52.53, hfl: 54.29, river: 'Burhi Gandak'),
   // FIX-3: samastipur WL corrected: was warning==danger (both 46.00)
   'samastipur':  (warning: 44.80, danger: 46.00, hfl: 49.40, river: 'Burhi Gandak'),
@@ -123,13 +126,13 @@ const Map<String, ({double warning, double danger, double hfl, String river})>
   'sakra':         (warning: 42.52, danger: 50.58, hfl: 51.47, river: 'Burhi Gandak'),
   'sugauli':       (warning: 63.58, danger: 66.50, hfl: 69.00, river: 'Burhi Gandak'),
 
-  // ── GHAGHRA (2 stations) ──────────────────────────────────────────────────
+  // ── GHAGHRA (2 stations) ────────────────────────────────────────────────────
   // FIX-4: darauli WL corrected: was 61.20 > danger 60.82 (impossible)
   'darauli':        (warning: 60.50, danger: 60.82, hfl: 61.82, river: 'Ghaghra'),
   'gangpur siswan': (warning: 56.70, danger: 57.04, hfl: 58.26, river: 'Ghaghra'),
   'gangpur':        (warning: 56.70, danger: 57.04, hfl: 58.26, river: 'Ghaghra'),
 
-  // ── KAMLA (4 stations) ────────────────────────────────────────────────────
+  // ── KAMLA (4 stations) ──────────────────────────────────────────────────────
   'jainagar':      (warning: 67.75, danger: 67.75, hfl: 71.35, river: 'Kamla'),
   'jhanjharpur':   (warning: 48.50, danger: 50.00, hfl: 53.11, river: 'Kamla'),
   'kamtaul kamla': (warning: 43.00, danger: 44.00, hfl: 45.45, river: 'Kamla'),
@@ -148,21 +151,21 @@ const Map<String, ({double warning, double danger, double hfl, String river})>
   'fatehpur':   (warning: 43.14, danger: 51.63, hfl: 52.63, river: 'Punpun'),
   'kinjer':     (warning: 61.42, danger: 65.00, hfl: 67.95, river: 'Punpun'),
 
-  // ── ADHWARA / DHAUS / KHIROI (4 stations) ────────────────────────────────
+  // ── ADHWARA / DHAUS / KHIROI (4 stations) ─────────────────────────────────
   'ekmighat':        (warning: 45.00, danger: 46.94, hfl: 49.52, river: 'Khiroi'),
   'kamtaul adhwara': (warning: 48.00, danger: 50.00, hfl: 53.05, river: 'Adhwara'),
   'saulighat':       (warning: 50.00, danger: 52.37, hfl: 55.10, river: 'Dhaus'),
   'agropatti':       (warning: 51.00, danger: 52.75, hfl: 54.53, river: 'Khiroi'),
   'saharghat':       (warning: 52.32, danger: 55.50, hfl: 58.25, river: 'Adhwara'),
 
-  // ── JHIM / LAL BAKEYA / BALAN / BHUTAHI BALAN ────────────────────────────
+  // ── JHIM / LAL BAKEYA / BALAN / BHUTAHI BALAN ────────────────────────────────
   'sonbarsa':        (warning: 80.50, danger: 81.85, hfl: 83.20, river: 'Jhim'),
   'lalbakeya':       (warning: 73.00, danger: 74.00, hfl: 75.50, river: 'Lalbakeya'),
   'goabari':         (warning: 69.50, danger: 71.15, hfl: 73.86, river: 'Lal Bakeya'),
   'phulparas balan': (warning: 59.50, danger: 60.80, hfl: 61.80, river: 'Balan'),
   'laukaha':         (warning: 78.50, danger: 79.80, hfl: 80.80, river: 'Bhutahi Balan'),
 
-  // ── KHANDO / KAREH ───────────────────────────────────────────────────────
+  // ── KHANDO / KAREH ───────────────────────────────────────────────────────────────
   'dagmara':  (warning: 60.50, danger: 61.50, hfl: 62.50, river: 'Khando'),
   'karachin': (warning: 38.50, danger: 40.00, hfl: 41.90, river: 'Kareh'),
 
@@ -193,7 +196,7 @@ const Map<String, ({double warning, double danger, double hfl, String river})>
   'banka':        (warning: 80.47, danger: 86.75, hfl: 87.40, river: 'Chandan'),
 };
 
-// ── Station coordinates ──────────────────────────────────────────────────────
+// ── Station coordinates ──────────────────────────────────────────────────────────────────
 const Map<String, ({double lat, double lon})> _kCoords = {
   // GANGA
   'gandhighat':        (lat: 25.614, lon: 85.127),
@@ -346,7 +349,7 @@ const Map<String, ({double lat, double lon})> _kCoords = {
   'yadunathpur':       (lat: 24.595, lon: 83.906),
 };
 
-// ── _norm ────────────────────────────────────────────────────────────────────
+// ── _norm ────────────────────────────────────────────────────────────────────────────
 String _norm(String v) => v
     .toLowerCase()
     .replaceAll(RegExp(r'\s*\(.*?\)'), '')
@@ -354,7 +357,7 @@ String _norm(String v) => v
     .replaceAll(RegExp(r' +'), ' ')
     .trim();
 
-// ── _lookupThreshold ─────────────────────────────────────────────────────────
+// ── _lookupThreshold ───────────────────────────────────────────────────────────────
 // Priority: 1. ThresholdOverrideStore (live RTDAS)  2. _kThresholds  3. null
 ({double warning, double danger, double hfl, String river})?
     _lookupThreshold(String normName) {
@@ -378,7 +381,7 @@ String _norm(String v) => v
   return null;
 }
 
-// ── Provider ─────────────────────────────────────────────────────────────────
+// ── Provider ─────────────────────────────────────────────────────────────────────────
 class LiveEngineBridgeNotifier extends Notifier<List<RiverStation>> {
   StreamSubscription<BiharLiveFeed>? _sub;
 
