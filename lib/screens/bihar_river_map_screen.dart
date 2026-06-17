@@ -1,7 +1,10 @@
 // File: lib/screens/bihar_river_map_screen.dart
 // Updated: June 2026
-// Changes: Wired FloodDataProvider + MapMarkers +
-//          MapTopBar.onStationSelected + loading overlay (Task 5)
+// Changes:
+//   - Severity chip filter row (NORMAL / WARNING / DANGER / CRITICAL)
+//   - Hide-NORMAL FAB (eye icon)
+//   - _toFloodStations() respects effectiveVisibleClassesProvider
+//   - MapTelemetrySheet now receives totalCount
 library;
 
 import 'package:flutter/material.dart';
@@ -16,6 +19,7 @@ import '../models/flood_station.dart';
 import '../models/river_station.dart';
 import '../providers/flood_data_provider.dart';
 import '../providers/map_command_provider.dart';
+import '../providers/map_severity_filter_provider.dart';
 import '../providers/real_time_river_provider.dart';
 import '../providers/live_engine_bridge_provider.dart';
 import '../theme/rx.dart';
@@ -25,6 +29,20 @@ const _kBiharCenter  = LatLng(25.78, 85.17);
 const _kBiharZoom   = 7.2;
 const _kIndiaCenter  = LatLng(22.5, 80.0);
 const _kIndiaZoom    = 4.5;
+
+// ── Chip label / colour helpers ───────────────────────────────────────────────
+_ChipMeta _chipMeta(DangerClass dc) => switch (dc) {
+  DangerClass.extreme     => _ChipMeta('CRITICAL', const Color(0xFFC62828)),
+  DangerClass.severe      => _ChipMeta('DANGER',   const Color(0xFFE65100)),
+  DangerClass.aboveNormal => _ChipMeta('WARNING',  const Color(0xFFF9A825)),
+  DangerClass.normal      => _ChipMeta('NORMAL',   const Color(0xFF2E7D32)),
+};
+
+class _ChipMeta {
+  final String label;
+  final Color  color;
+  const _ChipMeta(this.label, this.color);
+}
 
 class BiharRiverMapScreen extends ConsumerStatefulWidget {
   const BiharRiverMapScreen({super.key});
@@ -59,8 +77,6 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
     for (final c in _pulseCtrl.values) c.dispose();
     super.dispose();
   }
-
-
 
   // ── GeoJSON → Polygon layer ──────────────────────────────────────────────
   // ignore: unused_element
@@ -115,15 +131,11 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
           .toList())
       .toList();
 
-  // ── Legacy WRD markers (kept for existing RiverStation layer) ────────────
   // ignore: unused_element
   String? _levelLabel(RiverStation s) {
     if (s.current <= 0) return null;
     return '${s.current.toStringAsFixed(2)}m';
   }
-
-
-
 
   void _onMarkerTap(RiverStation s) {
     HapticFeedback.selectionClick();
@@ -136,7 +148,6 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
     );
   }
 
-  // ── Station popup for MapMarkers / MapTopBar ─────────────────────────────
   void _showStationPopup(FloodStation station) {
     showModalBottomSheet(
       context: context,
@@ -148,14 +159,26 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
 
   @override
   Widget build(BuildContext context) {
-    final rc        = context.rc;
-    final mode      = ref.watch(mapViewModeProvider);
-    final isBihar   = mode == MapViewMode.bihar;
-    final stations  = ref.watch(liveEngineStationsProvider);
-    final distRisk  = ref.watch(biharDistrictRiskProvider);
-    final syncMeta  = ref.watch(mapSyncMetaProvider);
-    final geoAsync  = ref.watch(biharGeoJsonProvider);
-    final isLoading = ref.watch(wrdIsLoadingProvider);
+    final rc             = context.rc;
+    final mode           = ref.watch(mapViewModeProvider);
+    final isBihar        = mode == MapViewMode.bihar;
+    final allStations    = ref.watch(liveEngineStationsProvider);
+    final distRisk       = ref.watch(biharDistrictRiskProvider);
+    final syncMeta       = ref.watch(mapSyncMetaProvider);
+    final geoAsync       = ref.watch(biharGeoJsonProvider);
+    final isLoading      = ref.watch(wrdIsLoadingProvider);
+    final activeFilters  = ref.watch(activeFiltersProvider);
+    final hideNormal     = ref.watch(hideNormalProvider);
+    final visibleClasses = ref.watch(effectiveVisibleClassesProvider);
+
+    // Apply filter to station list
+    final filteredStations = visibleClasses == null
+        ? allStations
+        : allStations
+            .where((s) => visibleClasses.contains(s.dangerClass))
+            .toList();
+
+    final isFilterActive = visibleClasses != null;
 
     return pv.ChangeNotifierProvider(
       create: (_) => FloodDataProvider(),
@@ -186,14 +209,15 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
                     loading: () => const SizedBox.shrink(),
                     error:   (_, __) => const SizedBox.shrink(),
                   ),
-                  // Unified live markers — all 157 stations from engine
+                  // Filtered markers
                   MapMarkers(
-                    stations:     _toFloodStations(stations),
+                    stations:     _toFloodStations(filteredStations),
                     onStationTap: _showStationPopup,
                   ),
                 ],
               ),
 
+              // ── Top bar ──────────────────────────────────────────────────
               Positioned(
                 top:   MediaQuery.of(context).padding.top + 8,
                 left:  12,
@@ -201,7 +225,8 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
                 child: _BiharMapTopBar(
                   syncMeta:       syncMeta,
                   isLoading:      isLoading,
-                  stationCount:   stations.length,
+                  stationCount:   filteredStations.length,
+                  totalCount:     allStations.length,
                   drawerOpen:     _showDrawer,
                   onDrawerToggle: () =>
                       setState(() => _showDrawer = !_showDrawer),
@@ -228,6 +253,25 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
                 ),
               ),
 
+              // ── Severity chip row (shown above drawer when open) ──────────
+              if (_showDrawer)
+                Positioned(
+                  bottom: MediaQuery.of(context).size.height * 0.45 + 4,
+                  left:   0,
+                  right:  0,
+                  child: _SeverityChipBar(
+                    activeFilters: activeFilters,
+                    hideNormal:    hideNormal,
+                    onToggleChip: (dc) =>
+                        ref.read(activeFiltersProvider.notifier).toggle(dc),
+                    onClear: () {
+                      ref.read(activeFiltersProvider.notifier).clear();
+                      ref.read(hideNormalProvider.notifier).clear();
+                    },
+                  ),
+                ),
+
+              // ── Legend ───────────────────────────────────────────────────
               if (_showLegend)
                 Positioned(
                   bottom: _showDrawer ? 340 : 100,
@@ -251,10 +295,36 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
                   ),
                 ),
 
+              // ── Hide-NORMAL FAB ──────────────────────────────────────────
+              Positioned(
+                bottom: _showDrawer ? 340 : 56,
+                right:  12,
+                child: FloatingActionButton.small(
+                  heroTag:         'bmap_hide_normal_fab',
+                  backgroundColor: hideNormal
+                      ? rc.accent
+                      : rc.cardBg,
+                  tooltip: hideNormal
+                      ? 'Showing elevated only — tap to reset'
+                      : 'Hide NORMAL stations',
+                  onPressed: () =>
+                      ref.read(hideNormalProvider.notifier).toggle(),
+                  child: Icon(
+                    hideNormal
+                        ? Icons.visibility_off_rounded
+                        : Icons.visibility_rounded,
+                    color: hideNormal ? rc.scaffoldBg : rc.accent,
+                    size: 18,
+                  ),
+                ),
+              ),
+
+              // ── Telemetry drawer ─────────────────────────────────────────
               if (_showDrawer)
                 MapTelemetrySheet(
-                  stations: stations,
-                  onClose:  () => setState(() => _showDrawer = false),
+                  stations:   filteredStations,
+                  totalCount: allStations.length,
+                  onClose:    () => setState(() => _showDrawer = false),
                   onTap: (s) {
                     if (coordFor(s) case final coord?) {
                       _mapController.move(coord, 10);
@@ -264,7 +334,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
                   },
                 ),
 
-              // Legacy WRD loading indicator
+              // ── Legacy WRD loading indicator ──────────────────────────────
               if (isLoading)
                 Positioned(
                   top:   MediaQuery.of(context).padding.top + 72,
@@ -301,7 +371,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
                   ),
                 ),
 
-              // GloFAS loading overlay
+              // ── GloFAS loading overlay ────────────────────────────────────
               pv.Consumer<FloodDataProvider>(
                 builder: (_, p, __) {
                   if (!p.isLoading || p.allStations.isNotEmpty) {
@@ -343,6 +413,46 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
                   );
                 },
               ),
+
+              // ── Filter active banner ──────────────────────────────────────
+              if (isFilterActive && !_showDrawer)
+                Positioned(
+                  bottom: 56,
+                  left:   60,
+                  right:  60,
+                  child: Center(
+                    child: GestureDetector(
+                      onTap: () {
+                        ref.read(activeFiltersProvider.notifier).clear();
+                        ref.read(hideNormalProvider.notifier).clear();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 6),
+                        decoration: BoxDecoration(
+                          color:        rc.accent.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.filter_alt_rounded,
+                                color: rc.scaffoldBg, size: 14),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Filter active — tap to clear',
+                              style: TextStyle(
+                                color:      rc.scaffoldBg,
+                                fontSize:   11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -351,8 +461,96 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
   }
 }
 
+// ── Severity chip bar ─────────────────────────────────────────────────────────
+class _SeverityChipBar extends StatelessWidget {
+  final Set<DangerClass>      activeFilters;
+  final bool                  hideNormal;
+  final void Function(DangerClass) onToggleChip;
+  final VoidCallback          onClear;
 
-// ── Inline FloodStation bottom sheet (no RiverStation dependency) ─────────────
+  const _SeverityChipBar({
+    required this.activeFilters,
+    required this.hideNormal,
+    required this.onToggleChip,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final rc = context.rc;
+    return Container(
+      color: rc.scaffoldBg.withOpacity(0.94),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Row(
+        children: [
+          ...DangerClass.values.map((dc) {
+            final meta    = _chipMeta(dc);
+            final isActive = activeFilters.contains(dc);
+            final isDimmed = hideNormal && dc == DangerClass.normal;
+            return Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: GestureDetector(
+                onTap: () => onToggleChip(dc),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: isActive
+                        ? meta.color
+                        : meta.color.withOpacity(isDimmed ? 0.1 : 0.14),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: meta.color.withOpacity(
+                          isActive ? 1.0 : (isDimmed ? 0.2 : 0.45)),
+                      width: isActive ? 1.5 : 1.0,
+                    ),
+                  ),
+                  child: Text(
+                    meta.label,
+                    style: TextStyle(
+                      color: isActive
+                          ? Colors.white
+                          : meta.color.withOpacity(isDimmed ? 0.4 : 0.9),
+                      fontSize:   11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
+          const Spacer(),
+          if (activeFilters.isNotEmpty)
+            GestureDetector(
+              onTap: onClear,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 5),
+                decoration: BoxDecoration(
+                  color:        rc.cardBg,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                      color: rc.stroke.withOpacity(0.5), width: 1),
+                ),
+                child: Text(
+                  'CLEAR',
+                  style: TextStyle(
+                    color:      rc.textSecondary,
+                    fontSize:   11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Inline FloodStation bottom sheet ─────────────────────────────────────────
 class _FloodStationSheet extends StatelessWidget {
   final FloodStation station;
   const _FloodStationSheet({required this.station});
@@ -466,7 +664,8 @@ class _FloodStationSheet extends StatelessWidget {
 class _BiharMapTopBar extends StatelessWidget {
   final SyncMeta syncMeta;
   final bool     isLoading;
-  final int      stationCount;
+  final int      stationCount;   // filtered count
+  final int      totalCount;     // unfiltered total
   final bool     drawerOpen;
   final VoidCallback onDrawerToggle;
   final VoidCallback onToggle;
@@ -477,6 +676,7 @@ class _BiharMapTopBar extends StatelessWidget {
     required this.syncMeta,
     required this.isLoading,
     required this.stationCount,
+    required this.totalCount,
     required this.drawerOpen,
     required this.onDrawerToggle,
     required this.onToggle,
@@ -486,14 +686,22 @@ class _BiharMapTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rc = context.rc;
+    final rc         = context.rc;
+    final isFiltered = stationCount != totalCount;
+    final countLabel = isFiltered
+        ? '$stationCount / $totalCount'
+        : '$stationCount stations';
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color:        rc.cardBg.withOpacity(0.93),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-            color: rc.stroke.withOpacity(0.4), width: 1),
+            color: isFiltered
+                ? rc.accent.withOpacity(0.6)
+                : rc.stroke.withOpacity(0.4),
+            width: isFiltered ? 1.5 : 1),
         boxShadow: [
           BoxShadow(
             color:      Colors.black.withOpacity(0.18),
@@ -530,9 +738,11 @@ class _BiharMapTopBar extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '$stationCount stations  \u2022  ${syncMeta.freshnessLabel}',
+                  '$countLabel  \u2022  ${syncMeta.freshnessLabel}',
                   style: TextStyle(
-                      color: rc.textSecondary, fontSize: 11),
+                    color: isFiltered ? rc.accent : rc.textSecondary,
+                    fontSize: 11,
+                  ),
                 ),
               ],
             ),

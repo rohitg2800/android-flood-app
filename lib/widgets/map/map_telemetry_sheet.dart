@@ -1,26 +1,33 @@
 // lib/widgets/map/map_telemetry_sheet.dart
-// MapTelemetrySheet — bottom sheet listing all live stations.
-// Tapping a row flies the map to that station's coordinates.
+// MapTelemetrySheet — bottom sheet listing filtered live stations.
+// v2: shows "N / Total stations" when a filter is active.
 import 'package:flutter/material.dart';
 import '../../models/river_station.dart';
 import '../../theme/rx.dart';
 import 'map_risk_helpers.dart';
 
 class MapTelemetrySheet extends StatelessWidget {
-  final List<RiverStation>          stations;
+  final List<RiverStation>          stations;      // already-filtered list
+  final int                         totalCount;    // unfiltered total
   final VoidCallback                onClose;
   final void Function(RiverStation) onTap;
 
   const MapTelemetrySheet({
     super.key,
     required this.stations,
+    required this.totalCount,
     required this.onClose,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final rc = context.rc;
+    final rc        = context.rc;
+    final isFiltered = stations.length != totalCount;
+    final countLabel = isFiltered
+        ? '${stations.length} / $totalCount stations'
+        : '${stations.length} stations';
+
     return Positioned(
       bottom: 0, left: 0, right: 0,
       child: ClipRRect(
@@ -42,9 +49,7 @@ class MapTelemetrySheet extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Top border line — replaces Border(top:) to avoid borderRadius conflict
               Container(height: 1, color: rc.stroke),
-              // Drag handle
               Container(
                 margin: const EdgeInsets.symmetric(vertical: 8),
                 width: 36, height: 4,
@@ -62,9 +67,9 @@ class MapTelemetrySheet extends StatelessWidget {
                         color: rc.accent, size: 16),
                     const SizedBox(width: 8),
                     Text(
-                      'LIVE TELEMETRY  (${stations.length} stations)',
+                      'LIVE TELEMETRY  ($countLabel)',
                       style: TextStyle(
-                        color:         rc.textPrimary,
+                        color:         isFiltered ? rc.accent : rc.textPrimary,
                         fontSize:      12,
                         fontWeight:    FontWeight.w700,
                         letterSpacing: 0.8,
@@ -85,7 +90,7 @@ class MapTelemetrySheet extends StatelessWidget {
                     ? Padding(
                         padding: const EdgeInsets.all(24),
                         child: Text(
-                          'No station data available.',
+                          'No stations match the current filter.',
                           style: TextStyle(
                               color: rc.textSecondary, fontSize: 13),
                         ),
