@@ -58,6 +58,7 @@ import 'services/notification_channel_service.dart';
 import 'services/fcm_topic_manager.dart';
 import 'services/alert_notification_bridge.dart';
 import 'services/alert_engine.dart';
+import 'services/offline_cache_manager.dart';
 import 'services/rtdas_threshold_sync_service.dart';
 import 'services/active_alert_controller.dart';
 import 'theme/river_theme.dart';
@@ -66,6 +67,7 @@ import 'providers/theme_provider.dart';
 import 'providers/locale_provider.dart';
 import 'services/data_fetch_engine.dart';
 import 'app_router.dart';
+import 'providers/notification_watcher_provider.dart';
 
 final FlutterLocalNotificationsPlugin _localNotifications =
     FlutterLocalNotificationsPlugin();
@@ -176,6 +178,7 @@ Future<void> main() async {
     Hive.registerAdapter(IncidentTypeAdapter());
     Hive.registerAdapter(CommunityIncidentAdapter());
     await Hive.openBox<CommunityIncident>('community_incidents');
+    await OfflineCacheManager.instance.init();
     final prefs = await SharedPreferences.getInstance();
     final savedLangCode = prefs.getString('app_locale') ?? 'en';
     await SystemChrome.setPreferredOrientations([
@@ -311,12 +314,10 @@ class FloodWatchApp extends ConsumerWidget {
 
   static ThemeData _themeFor(AppThemeMode mode) {
     switch (mode) {
-      case AppThemeMode.light:        return RiverColors.lightTheme();
       case AppThemeMode.dark:         return RiverColors.darkTheme();
       case AppThemeMode.sunset:       return RiverColors.sunsetTheme();
       case AppThemeMode.ocean:        return RiverColors.oceanTheme();
       case AppThemeMode.roboticDark:  return const RoboticTheme(isDark: true).toThemeData();
-      case AppThemeMode.roboticLight: return const RoboticTheme(isDark: false).toThemeData();
       case AppThemeMode.system:       return RiverColors.darkTheme();
     }
   }
@@ -326,6 +327,7 @@ class FloodWatchApp extends ConsumerWidget {
     final mode          = ref.watch(themeModeProvider);
     final themeNotifier = ref.read(themeModeProvider.notifier);
     final locale        = ref.watch(localeProvider);
+    ref.watch(notificationWatcherProvider); // flood local notifs
     final ThemeData lightSlot;
     final ThemeData darkSlot;
     if (mode == AppThemeMode.system) {

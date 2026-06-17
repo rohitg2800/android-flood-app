@@ -9,6 +9,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../widgets/app_icon_box.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../mixins/auto_refresh_mixin.dart';
@@ -41,6 +42,9 @@ import 'settings_screen.dart';
 
 import 'india_river_explorer_screen.dart';
 import 'crowd_report_feed_screen.dart';
+import '../providers/bihar_prediction_provider.dart';
+import '../models/flood_prediction.dart';
+import 'city_detail_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Custom mid-tone palette — not too light, not too dark
@@ -278,11 +282,53 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     return Scaffold(
       backgroundColor: t.scaffoldBg,
       appBar: _buildAppBar(t, badgeCount),
-      floatingActionButton: _buildFab(context, t),
-      body: liveAsync.when(
-        loading: () => Center(child: CircularProgressIndicator(color: t.accent)),
-        error:   (e, _) => _errorView(context, e, t),
-        data:    (live) => _buildBody(context, live, t, merged),
+      body: Stack(
+        children: [
+          liveAsync.when(
+            loading: () => Center(child: CircularProgressIndicator(color: t.accent)),
+            error:   (e, _) => _errorView(context, e, t),
+            data:    (live) => _buildBody(context, live, t, merged),
+          ),
+          Positioned(
+            right: 0,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: GestureDetector(
+                onTap: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const SosScreen())),
+                child: Container(
+                  width: 28,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE53935),
+                    borderRadius: const BorderRadius.horizontal(
+                        left: Radius.circular(10)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFE53935).withValues(alpha: 0.45),
+                        blurRadius: 12,
+                        offset: const Offset(-2, 0),
+                      ),
+                    ],
+                  ),
+                  child: RotatedBox(
+                    quarterTurns: 3,
+                    child: const Text(
+                      'SOS',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -427,7 +473,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 crossAxisCount:   2,
                 crossAxisSpacing: 10,
                 mainAxisSpacing:  10,
-                childAspectRatio: 2.4,
+                childAspectRatio: 2.6,
               ),
               itemCount: 4,
               itemBuilder: (_, i) => [
@@ -441,7 +487,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 ),
                 Td3StatTile(
                   icon:       Icons.warning_amber_rounded,
-                  value:      '${merged.where((s) => s.dangerClass.index >= 1).length}',
+                  value:      '${merged.where((s) => s.dangerClass.index == 1 || s.dangerClass.index == 2).length}',
                   label:      'Warning',
                   valueColor: _P.evacAmber,
                   onTap: () => Navigator.push(ctx,
@@ -462,6 +508,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               ][i],
             ),
           ),
+
+          _riskForecastStrip(ctx, t),
 
           _sectionHeader(ctx, t, 'Monitoring & Maps',
               Icons.radar_rounded, _P.riverBlue),
@@ -484,6 +532,64 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           _tileGrid(ctx, t, _analyticsTiles),
 
           const SliverToBoxAdapter(child: SizedBox(height: 96)),
+        ],
+      ),
+    );
+  }
+
+  // ── Risk forecast strip ─────────────────────────────────────────────────
+  Widget _riskForecastStrip(BuildContext ctx, RiverColors t) {
+    final preds = ref.watch(biharBulkPredictionsProvider).take(5).toList();
+    if (preds.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+    return SliverToBoxAdapter(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+            child: Row(children: [
+              Container(
+                width: 30, height: 30,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(colors: [
+                    _P.aiViolet.withValues(alpha: 0.28),
+                    _P.aiViolet.withValues(alpha: 0.10),
+                  ]),
+                  borderRadius: BorderRadius.circular(9),
+                  border: Border.all(color: _P.aiViolet.withValues(alpha: 0.30), width: 1),
+                ),
+                child: Center(child: Icon(Icons.auto_awesome_rounded, color: _P.aiViolet, size: 16)),
+              ),
+              const SizedBox(width: 9),
+              Text('RISK FORECAST', style: TextStyle(
+                  color: _P.aiViolet, fontSize: 11,
+                  fontWeight: FontWeight.w800, letterSpacing: 1.4)),
+              const Spacer(),
+              GestureDetector(
+                onTap: () => Navigator.push(ctx,
+                    MaterialPageRoute(builder: (_) => const AiPredictionScreen())),
+                child: Text('See all', style: TextStyle(
+                    color: t.accent, fontSize: 11, fontWeight: FontWeight.w600)),
+              ),
+            ]),
+          ),
+          SizedBox(
+            height: 116,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+              cacheExtent: 320,
+              itemCount: preds.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (_, i) => RepaintBoundary(
+                child: _RiskCard(pred: preds[i], onTap: () {
+                  Navigator.push(ctx, MaterialPageRoute(
+                    builder: (_) => CityDetailScreen(cityName: preds[i].station.split(' (').first),
+                  ));
+                }),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -543,7 +649,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           crossAxisCount:   3,
           crossAxisSpacing: 10,
           mainAxisSpacing:  10,
-          childAspectRatio: 1.0,
+          childAspectRatio: 1.05,
         ),
         itemCount: tiles.length,
         itemBuilder: (_, i) => _LauncherTile(
@@ -721,7 +827,7 @@ class _SearchSheetState extends State<_SearchSheet> {
               separatorBuilder: (_, __) => const SizedBox(height: 8),
               itemBuilder: (_, i) {
                 final tile = _results[i];
-                return Td3Card(
+                return RepaintBoundary(child: Td3Card(
                   accentColor: tile.color,
                   elevation:   Td3.elevLow,
                   onTap:       () => widget.onOpen(tile),
@@ -730,17 +836,10 @@ class _SearchSheetState extends State<_SearchSheet> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Container(
-                          width: 38, height: 38,
-                          decoration: BoxDecoration(
-                            color: tile.color.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(11),
-                            border: Border.all(
-                                color: tile.color.withValues(alpha: 0.25), width: 1),
-                          ),
-                          child: Center(
-                            child: Icon(tile.icon, color: tile.color, size: 20),
-                          ),
+                        AppIconBox(
+                          icon:  tile.icon,
+                          color: tile.color,
+                          size:  38,
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -753,11 +852,98 @@ class _SearchSheetState extends State<_SearchSheet> {
                       ],
                     ),
                   ),
-                );
+                ));
               },
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Risk Forecast Strip  (Step 6.1)
+// ─────────────────────────────────────────────────────────────────────────────
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// _RiskCard  (Step 6.1)
+// ─────────────────────────────────────────────────────────────────────────────
+class _RiskCard extends StatelessWidget {
+  final FloodPrediction pred;
+  final VoidCallback    onTap;
+  const _RiskCard({required this.pred, required this.onTap});
+
+  Color _sevColor() {
+    switch (pred.severity.toUpperCase()) {
+      case 'CRITICAL': return const Color(0xFFE53935);
+      case 'SEVERE':   return const Color(0xFFFFB300);
+      case 'MODERATE': return const Color(0xFFFDD835);
+      default:         return const Color(0xFF43A047);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t   = RiverColors.of(context);
+    final c   = _sevColor();
+    final bar = (pred.riskScore / 100).clamp(0.0, 1.0);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 160,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: c.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: c.withValues(alpha: 0.35)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(children: [
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: c.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: c.withValues(alpha: 0.4)),
+                  ),
+                  child: Text(pred.severity,
+                      style: TextStyle(color: c, fontSize: 9,
+                          fontWeight: FontWeight.w900, letterSpacing: 0.4),
+                      overflow: TextOverflow.ellipsis),
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, color: t.textSecondary, size: 14),
+            ]),
+            const SizedBox(height: 4),
+            Text(
+              pred.station.split(' (').first,
+              style: TextStyle(color: t.textPrimary, fontSize: 11,
+                  fontWeight: FontWeight.w800),
+              maxLines: 1, overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 2),
+            Text('24h: ${pred.predicted24h.toStringAsFixed(2)} m',
+                style: TextStyle(color: t.textSecondary, fontSize: 9)),
+            const SizedBox(height: 4),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: bar, minHeight: 4,
+                backgroundColor: c.withValues(alpha: 0.15),
+                valueColor: AlwaysStoppedAnimation<Color>(c),
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text('Risk: ${pred.riskScore.toInt()}',
+                style: TextStyle(color: c, fontSize: 9, fontWeight: FontWeight.w700)),
+          ],
+        ),
       ),
     );
   }

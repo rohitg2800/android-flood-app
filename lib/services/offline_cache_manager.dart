@@ -44,6 +44,7 @@ class OfflineCacheManager {
   late Box<String> _data;
   late Box<String> _queue;
   bool             _initialised = false;
+  bool get initialised => _initialised;
   StreamSubscription? _connectivitySub;
 
   // ────────────────────────────────────────────────────────────────────────────
@@ -218,4 +219,57 @@ class OfflineCacheManager {
         'OfflineCacheManager.init() must be called before use. '
         'Add it to main() after Hive.initFlutter().');
   }
+
+  // ── FloodPrediction cache (Step 8c) ────────────────────────────────────────
+  static const _kPredictionsKey = 'bulk_predictions';
+  static const _kPredTtlMs      = 15 * 60 * 1000; // 15 min
+
+  /// Persist bulk Bihar predictions as JSON list.
+  Future<void> savePredictions(List<Map<String, dynamic>> preds) async {
+    if (!_initialised) await init();
+    final encoded = jsonEncode(preds);
+    await _data.put(_kPredictionsKey, encoded);
+    await _meta.put(
+      '${_kPredictionsKey}_ts',
+      DateTime.now().millisecondsSinceEpoch.toString(),
+    );
+    debugPrint('[OfflineCache] saved ${preds.length} predictions');
+  }
+
+  /// Load cached predictions. Returns null if absent or stale.
+  List<Map<String, dynamic>>? loadPredictions({bool ignoreStale = false}) {
+    if (!_initialised) return null;
+    if (!ignoreStale && isPredictionStale()) return null;
+    final raw = _data.get(_kPredictionsKey);
+    if (raw == null) return null;
+    try {
+      return (jsonDecode(raw) as List)
+          .cast<Map<String, dynamic>>();
+    } catch (e) {
+      debugPrint('[OfflineCache] loadPredictions parse error: $e');
+      return null;
+    }
+  }
+
+  /// True when prediction cache is missing or older than 15 min.
+  bool isPredictionStale() {
+    final tsStr = _meta.get('${_kPredictionsKey}_ts');
+    if (tsStr == null) return true;
+    final ts  = int.tryParse(tsStr) ?? 0;
+    final age = DateTime.now().millisecondsSinceEpoch - ts;
+    return age > _kPredTtlMs;
+  }
+
+  /// Age of prediction cache as a human string, e.g. "3 min ago".
+  String predictionCacheAge() {
+    final tsStr = _meta.get('${_kPredictionsKey}_ts');
+    if (tsStr == null) return 'no cache';
+    final ts      = int.tryParse(tsStr) ?? 0;
+    final ageMs   = DateTime.now().millisecondsSinceEpoch - ts;
+    final ageMins = (ageMs / 60000).round();
+    if (ageMins < 1)  return 'just now';
+    if (ageMins < 60) return '$ageMins min ago';
+    return '${(ageMins / 60).round()} hr ago';
+  }
+
 }

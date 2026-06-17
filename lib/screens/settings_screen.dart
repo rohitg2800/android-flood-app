@@ -65,12 +65,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Color _sc(String key) => _sectionColors[key] ?? const Color(0xFF2196F3);
 
   static const _themes = [
-    (AppThemeMode.light,        Icons.wb_sunny_rounded,        'Day River',      'Warm gold · bright daytime UI',     Color(0xFFFFB800)),
     (AppThemeMode.dark,         Icons.nights_stay_rounded,     'Night River',    'Deep abyss with gold accents',      Color(0xFFFFD966)),
     (AppThemeMode.sunset,       Icons.wb_twilight_rounded,     'Sunset Warm',    'Red-orange fiery glow',             Color(0xFFFF6B35)),
     (AppThemeMode.ocean,        Icons.water_rounded,           'Deep Ocean',     'Cyan + midnight navy',              Color(0xFF00C6FF)),
     (AppThemeMode.roboticDark,  Icons.memory_rounded,          'Tactical Dark',  'Amber HUD on near-black',           Color(0xFFf59e0b)),
-    (AppThemeMode.roboticLight, Icons.developer_board_rounded, 'Tactical Light', 'Amber HUD on light surface',        Color(0xFFB45309)),
   ];
 
   @override

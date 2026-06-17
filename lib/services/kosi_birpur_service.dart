@@ -151,9 +151,18 @@ class KosiBirpurService {
   final BefiqrCwcService _cwcSvc = BefiqrCwcService();
 
   Future<KosiBirpurReading?> fetchLive() async {
+    // v3.5: CWC is the authoritative source (same as bihar_live_provider).
+    // Try it first synchronously — only race fallbacks if CWC returns null.
+    final cwc = await _tryFromCwcService().timeout(
+        const Duration(seconds: 13), onTimeout: () => null);
+    if (cwc != null) {
+      debugPrint('[KosiBirpur] fetchLive ✅ CWC preferred: \${cwc.levelM} m');
+      return cwc;
+    }
+
+    // CWC unavailable — race remaining sources.
     final futures = <Future<KosiBirpurReading?>>[
       _tryBeamsDirect(),
-      _tryFromCwcService(),
       _tryWRIS(),
       _tryFFSEndpoint('https://ffs.india-water.gov.in/ffs/pages/getFloodData.php'),
       _tryFFSEndpoint('https://ffs.india-water.gov.in/ffs/api/station/KOSI-BIRPUR'),

@@ -57,12 +57,10 @@ class ThemePickerSheet extends ConsumerWidget {
               final isSelected = mode == current;
               final modeLabel = switch (mode) {
                 AppThemeMode.system       => 'Auto',
-                AppThemeMode.light        => 'Day River',
                 AppThemeMode.dark         => 'Night River',
                 AppThemeMode.sunset       => 'Sunset Warm',
                 AppThemeMode.ocean        => 'Deep Ocean',
                 AppThemeMode.roboticDark  => 'Tactical Dark',
-                AppThemeMode.roboticLight => 'Tactical Light',
               };
               return GestureDetector(
                 onTap: () {
@@ -120,12 +118,10 @@ class ThemePickerSheet extends ConsumerWidget {
   IconData _iconFor(AppThemeMode mode) {
     switch (mode) {
       case AppThemeMode.system:       return Icons.brightness_auto_outlined;
-      case AppThemeMode.light:        return Icons.light_mode_outlined;
       case AppThemeMode.dark:         return Icons.dark_mode_outlined;
       case AppThemeMode.sunset:       return Icons.wb_twilight_outlined;
       case AppThemeMode.ocean:        return Icons.water_outlined;
       case AppThemeMode.roboticDark:  return Icons.memory_outlined;
-      case AppThemeMode.roboticLight: return Icons.developer_board_outlined;
     }
   }
 }

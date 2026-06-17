@@ -257,20 +257,17 @@ class _PremiumNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 0, 72, 18),
+      padding: EdgeInsets.fromLTRB(0, 0, 0, MediaQuery.of(context).padding.bottom),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(38),
+        borderRadius: BorderRadius.zero,
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
           child: Container(
             height: 68,
             decoration: BoxDecoration(
-              color: scheme.surface.withValues(alpha: 0.88),
-              borderRadius: BorderRadius.circular(38),
-              border: Border.all(
-                color: scheme.primary.withValues(alpha: 0.24),
-                width: 1.2,
-              ),
+              color: scheme.surface.withValues(alpha: 0.92),
+              borderRadius: BorderRadius.zero,
+
               boxShadow: [
                 BoxShadow(
                   color: scheme.primary.withValues(alpha: 0.16),

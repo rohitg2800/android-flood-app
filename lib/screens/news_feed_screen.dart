@@ -17,6 +17,7 @@ class NewsFeedScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = RiverColors.of(context);
     final newsAsync  = ref.watch(liveNewsProvider);
     final grouped    = ref.watch(filteredNewsProvider);
     final filter     = ref.watch(newsFilterProvider);
@@ -27,15 +28,15 @@ class NewsFeedScreen extends ConsumerWidget {
     final totalItems = grouped.values.fold(0, (s, l) => s + l.length);
 
     return Scaffold(
-      backgroundColor: AppPalette.abyss0,
+      backgroundColor: t.scaffoldBg,
       appBar: AppBar(
-        backgroundColor: AppPalette.abyss0,
+        backgroundColor: t.scaffoldBg,
         title: Row(
           children: [
-            const Text(
+            Text(
               'FLOOD NEWS',
               style: TextStyle(
-                color: AppPalette.cyan,
+                color: t.accent,
                 fontWeight: FontWeight.bold,
                 fontSize: 15,
                 letterSpacing: 0.8,
@@ -45,13 +46,13 @@ class NewsFeedScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
               decoration: BoxDecoration(
-                color: AppPalette.cyan.withValues(alpha: 0.15),
+                color: t.accent.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
                 '7 days',
-                style: const TextStyle(
-                    color: AppPalette.cyan, fontSize: 10, fontWeight: FontWeight.w700),
+                style: TextStyle(
+                    color: t.accent, fontSize: 10, fontWeight: FontWeight.w700),
               ),
             ),
           ],
@@ -66,7 +67,7 @@ class NewsFeedScreen extends ConsumerWidget {
               onPressed: () => ref.read(newsFilterProvider.notifier).reset(),
             ),
           IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: AppPalette.cyan),
+            icon: Icon(Icons.refresh_rounded, color: t.accent),
             tooltip: 'Refresh now',
             onPressed: () => ref.invalidate(liveNewsProvider),
           ),
@@ -101,9 +102,10 @@ class _RefreshBar extends StatelessWidget {
   const _RefreshBar({required this.countdown});
   @override
   Widget build(BuildContext context) {
+    final t = RiverColors.of(context);
     return Container(
       height: 26,
-      color: AppPalette.abyss1,
+      color: t.scaffoldBg,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
       child: Row(
         children: [
@@ -114,15 +116,15 @@ class _RefreshBar extends StatelessWidget {
               borderRadius: BorderRadius.circular(3),
               child: LinearProgressIndicator(
                 value: countdown / 60.0,
-                backgroundColor: AppPalette.abyss2,
-                valueColor: const AlwaysStoppedAnimation<Color>(AppPalette.cyan),
+                backgroundColor: t.cardBg,
+                valueColor: AlwaysStoppedAnimation<Color>(t.accent),
                 minHeight: 3,
               ),
             ),
           ),
           const SizedBox(width: 8),
           Text('Next in ${countdown}s',
-              style: const TextStyle(color: AppPalette.textGrey, fontSize: 10)),
+              style: TextStyle(color: t.textSecondary, fontSize: 10)),
         ],
       ),
     );
@@ -136,10 +138,11 @@ class _FilterBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final t = RiverColors.of(context);
     final notifier = ref.read(newsFilterProvider.notifier);
     return Container(
       height: 78,
-      color: AppPalette.abyss1,
+      color: t.scaffoldBg,
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -153,14 +156,14 @@ class _FilterBar extends ConsumerWidget {
                   _FilterChip(
                     label: '${d}d',
                     active: filter.days == d,
-                    color: AppPalette.cyan,
+                    color: t.accent,
                     onTap: () => notifier.setDays(d),
                   ),
                 const SizedBox(width: 10),
                 const _Divider(),
                 const SizedBox(width: 10),
                 // Source chips
-                for (final s in _kSources.entries)
+                for (final s in _kSources(t).entries)
                   _FilterChip(
                     label: s.key,
                     active: filter.sources.contains(s.key),
@@ -191,13 +194,13 @@ class _FilterBar extends ConsumerWidget {
     );
   }
 
-  static const _kSources = <String, Color>{
-    'IMD':   AppPalette.cyan,
+  static Map<String, Color> _kSources(RiverColors t) => {
+    'IMD':   t.accent,
     'NDMA':  AppPalette.danger,
     'CWC':   AppPalette.safe,
     'WRIS':  AppPalette.gold,
-    'GDACS': AppPalette.textGrey,
-    'PIB':   AppPalette.cyan,
+    'GDACS': t.textSecondary,
+    'PIB':   t.accent,
   };
 
   static String _severityLabel(NewsSeverity sv) {
@@ -214,7 +217,7 @@ class _FilterBar extends ConsumerWidget {
       case NewsSeverity.critical: return AppPalette.critical;
       case NewsSeverity.high:     return AppPalette.danger;
       case NewsSeverity.moderate: return AppPalette.warning;
-      case NewsSeverity.info:     return AppPalette.textGrey;
+      case NewsSeverity.info:     return const Color(0xFF9E9E9E);
     }
   }
 }
@@ -232,6 +235,7 @@ class _FilterChip extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) {
+    final t = RiverColors.of(context);
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -239,7 +243,7 @@ class _FilterChip extends StatelessWidget {
         margin: const EdgeInsets.only(right: 6),
         padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
         decoration: BoxDecoration(
-          color:  active ? color.withValues(alpha: 0.22) : AppPalette.abyss2,
+          color:  active ? color.withValues(alpha: 0.22) : t.cardBg,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: active ? color : color.withValues(alpha: 0.25),
@@ -249,7 +253,7 @@ class _FilterChip extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            color:      active ? color : AppPalette.textGrey,
+            color:      active ? color : t.textSecondary,
             fontSize:   10,
             fontWeight: active ? FontWeight.w800 : FontWeight.w500,
           ),
@@ -262,8 +266,10 @@ class _FilterChip extends StatelessWidget {
 class _Divider extends StatelessWidget {
   const _Divider();
   @override
-  Widget build(BuildContext context) =>
-      Container(width: 1, height: 16, color: AppPalette.textGrey.withValues(alpha: 0.25));
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).extension<RiverColors>()!;
+    return Container(width: 1, height: 16, color: t.textSecondary.withValues(alpha: 0.25));
+  }
 }
 
 // ── Timeline (day-grouped) ───────────────────────────────────────────────────
@@ -274,6 +280,7 @@ class _Timeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = Theme.of(context).extension<RiverColors>()!;
     final days = grouped.keys.toList(); // already sorted newest-first
 
     // Build a flat list: [dayHeader, item, item, ..., dayHeader, item, ...]
@@ -290,18 +297,18 @@ class _Timeline extends StatelessWidget {
       children: [
         // Summary bar
         Container(
-          color: AppPalette.abyss1,
+          color: t.scaffoldBg,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           child: Row(
             children: [
               Text(
                 '$totalItems items across ${grouped.length} day${grouped.length == 1 ? '' : 's'}',
-                style: const TextStyle(color: AppPalette.textGrey, fontSize: 11),
+                style: TextStyle(color: t.textSecondary, fontSize: 11),
               ),
               const Spacer(),
               Text(
                 'Sources: IMD · NDMA · CWC · WRIS · GDACS · PIB',
-                style: const TextStyle(color: AppPalette.textGrey, fontSize: 9),
+                style: TextStyle(color: t.textSecondary, fontSize: 9),
               ),
             ],
           ),
@@ -338,6 +345,7 @@ class _DayHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = RiverColors.of(context);
     return Padding(
       padding: const EdgeInsets.only(top: 16, bottom: 8),
       child: Row(
@@ -345,15 +353,15 @@ class _DayHeader extends StatelessWidget {
           Container(
             width: 3, height: 14,
             decoration: BoxDecoration(
-              color: AppPalette.cyan,
+              color: t.accent,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
           const SizedBox(width: 8),
           Text(
             _label,
-            style: const TextStyle(
-              color: AppPalette.cyan,
+            style: TextStyle(
+              color: t.accent,
               fontSize: 11,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.5,
@@ -363,17 +371,17 @@ class _DayHeader extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
             decoration: BoxDecoration(
-              color: AppPalette.cyan.withValues(alpha: 0.12),
+              color: t.accent.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
               '$count',
-              style: const TextStyle(
-                  color: AppPalette.cyan, fontSize: 10, fontWeight: FontWeight.w700),
+              style: TextStyle(
+                  color: t.accent, fontSize: 10, fontWeight: FontWeight.w700),
             ),
           ),
-          const Expanded(child: Divider(
-            color: AppPalette.abyss3, thickness: 1, indent: 8,
+          Expanded(child: Divider(
+            color: t.cardBgElevated, thickness: 1, indent: 8,
           )),
         ],
       ),
@@ -386,13 +394,13 @@ class _NewsCard extends StatelessWidget {
   final NewsItem item;
   const _NewsCard({required this.item});
 
-  static const _kSourceColors = <String, Color>{
-    'IMD':   AppPalette.cyan,
+  static Map<String, Color> _kSourceColors(RiverColors t) => <String, Color>{
+    'IMD':   t.accent,
     'NDMA':  AppPalette.danger,
     'CWC':   AppPalette.safe,
     'WRIS':  AppPalette.gold,
-    'GDACS': AppPalette.textGrey,
-    'PIB':   AppPalette.cyan,
+    'GDACS': t.textSecondary,
+    'PIB':   t.accent,
   };
 
   Color get _sevColor {
@@ -400,7 +408,7 @@ class _NewsCard extends StatelessWidget {
       case NewsSeverity.critical: return AppPalette.critical;
       case NewsSeverity.high:     return AppPalette.danger;
       case NewsSeverity.moderate: return AppPalette.warning;
-      case NewsSeverity.info:     return AppPalette.textGrey;
+      case NewsSeverity.info:     return const Color(0xFF9E9E9E);
     }
   }
 
@@ -415,31 +423,23 @@ class _NewsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = RiverColors.of(context);
     final sevColor = _sevColor;
-    final srcColor = _kSourceColors[item.source] ?? AppPalette.textGrey;
+    final srcColor = _kSourceColors(t)[item.source] ?? t.textSecondary;
     final timeStr  = _timeLabel(item.publishedAt);
 
-    return GestureDetector(
-      onTap: () async {
-        if (item.url.isNotEmpty) {
-          final uri = Uri.tryParse(item.url);
-          if (uri != null && await canLaunchUrl(uri)) {
-            await launchUrl(uri, mode: LaunchMode.externalApplication);
-          }
-        }
-      },
-      child: Container(
+    return Container(
         margin: const EdgeInsets.only(bottom: 9),
         padding: const EdgeInsets.all(13),
         decoration: BoxDecoration(
-          color: AppPalette.abyss2,
+          color: t.cardBg,
           borderRadius: BorderRadius.circular(13),
           border: Border.all(color: sevColor.withValues(alpha: 0.20)),
           // Left accent stripe via gradient
           gradient: LinearGradient(
             colors: [
               sevColor.withValues(alpha: 0.06),
-              AppPalette.abyss2,
+              t.cardBg,
             ],
             stops: const [0.0, 0.12],
           ),
@@ -482,20 +482,16 @@ class _NewsCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 Text(timeStr,
-                    style: const TextStyle(color: AppPalette.textGrey, fontSize: 10)),
-                if (item.url.isNotEmpty) ...[
-                  const SizedBox(width: 5),
-                  Icon(Icons.open_in_new_rounded,
-                      color: AppPalette.textGrey.withValues(alpha: 0.5), size: 12),
-                ],
+                    style: TextStyle(color: t.textSecondary, fontSize: 10)),
+
               ],
             ),
             const SizedBox(height: 7),
             // Title
             Text(
               item.title,
-              style: const TextStyle(
-                color:      AppPalette.textWhite,
+              style: TextStyle(
+                color:      t.textPrimary,
                 fontWeight: FontWeight.w700,
                 fontSize:   13,
                 height:     1.35,
@@ -508,14 +504,13 @@ class _NewsCard extends StatelessWidget {
                 item.summary,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                    color: AppPalette.textGrey, fontSize: 12, height: 1.4),
+                style: TextStyle(
+                    color: t.textSecondary, fontSize: 12, height: 1.4),
               ),
             ],
           ],
         ),
-      ),
-    );
+      );
   }
 
   String _timeLabel(DateTime t) {
@@ -531,35 +526,41 @@ class _NewsCard extends StatelessWidget {
 class _LoadingView extends StatelessWidget {
   const _LoadingView();
   @override
-  Widget build(BuildContext context) => const Center(
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).extension<RiverColors>()!;
+    return Center(
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        CircularProgressIndicator(color: AppPalette.cyan, strokeWidth: 2),
+        CircularProgressIndicator(color: t.accent, strokeWidth: 2),
         SizedBox(height: 16),
         Text('Fetching 7-day news…',
-            style: TextStyle(color: AppPalette.textGrey, fontSize: 13)),
+            style: TextStyle(color: t.textSecondary, fontSize: 13)),
         SizedBox(height: 6),
         Text('IMD · NDMA · CWC · WRIS · GDACS · PIB',
-            style: TextStyle(color: AppPalette.textGrey, fontSize: 11)),
+            style: TextStyle(color: t.textSecondary, fontSize: 11)),
       ],
     ),
-  );
+    );
+  }
 }
 
 class _EmptyView extends StatelessWidget {
   const _EmptyView();
   @override
-  Widget build(BuildContext context) => const Center(
-    child: Padding(
-      padding: EdgeInsets.all(24),
-      child: Text(
-        'No items match the current filters.\nTry widening the date range or clearing source filters.',
-        textAlign: TextAlign.center,
-        style: TextStyle(color: AppPalette.textGrey, fontSize: 13, height: 1.5),
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).extension<RiverColors>()!;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(
+          'No items match the current filters.\nTry widening the date range or clearing source filters.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: t.textSecondary, fontSize: 13, height: 1.5),
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _ErrorView extends StatelessWidget {
@@ -567,7 +568,9 @@ class _ErrorView extends StatelessWidget {
   final VoidCallback onRetry;
   const _ErrorView({required this.message, required this.onRetry});
   @override
-  Widget build(BuildContext context) => Center(
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).extension<RiverColors>()!;
+    return Center(
     child: Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -575,23 +578,24 @@ class _ErrorView extends StatelessWidget {
         children: [
           const Icon(Icons.cloud_off_rounded, color: AppPalette.warning, size: 40),
           const SizedBox(height: 12),
-          const Text('Could not fetch news',
-              style: TextStyle(color: AppPalette.textWhite,
+          Text('Could not fetch news',
+              style: TextStyle(color: t.textPrimary,
                   fontSize: 14, fontWeight: FontWeight.w600)),
           const SizedBox(height: 6),
           Text(message, textAlign: TextAlign.center,
-              style: const TextStyle(color: AppPalette.textGrey, fontSize: 12)),
+              style: TextStyle(color: t.textSecondary, fontSize: 12)),
           const SizedBox(height: 16),
           ElevatedButton.icon(
             onPressed: onRetry,
             style: ElevatedButton.styleFrom(
-                backgroundColor: AppPalette.cyan.withValues(alpha: 0.15)),
-            icon: const Icon(Icons.refresh_rounded, color: AppPalette.cyan, size: 16),
-            label: const Text('Retry',
-                style: TextStyle(color: AppPalette.cyan, fontSize: 13)),
+                backgroundColor: t.accent.withValues(alpha: 0.15)),
+            icon: Icon(Icons.refresh_rounded, color: t.accent, size: 16),
+            label: Text('Retry',
+                style: TextStyle(color: t.accent, fontSize: 13)),
           ),
         ],
       ),
     ),
-  );
+    );
+  }
 }

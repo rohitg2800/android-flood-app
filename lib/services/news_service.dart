@@ -111,15 +111,17 @@ class NewsService {
 
     final results = await Future.wait([
       _tryImdNowcastRss(),
-
-      _tryAsdmaRss(),
-      _tryCwcScrape(),
+      _tryBiharFmis(),
+      _tryCwcAff(),
       _tryGdacs(),
-      _tryReliefWeb(),
       _tryPib(),
-      _tryMosdacRss(),
+      _tryTheHindu(),
+      _tryNdtv(),
     ], eagerError: false);
 
+    for (int i = 0; i < results.length; i++) {
+      debugPrint('[NewsService] source[' + i.toString() + '] -> ' + results[i].length.toString() + ' items');
+    }
     final merged = <String, NewsItem>{};
     for (final list in results) {
       for (final item in list) {
@@ -159,46 +161,25 @@ class NewsService {
     return {for (final k in keys) k: map[k]!};
   }
 
-  // ── A: IMD Nowcast RSS ───────────────────────────────────────────────────────
+  // ── IMD Nowcast RSS ──────────────────────────────────────────────────────
   Future<List<NewsItem>> _tryImdNowcastRss() async {
     const url = 'https://mausam.imd.gov.in/imd_latest/contents/dist_nowcast_rss.php';
     try {
       final resp = await http.get(Uri.parse(url), headers: {
-        'User-Agent': 'OpsFlood/4.0',
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36',
         'Accept': 'application/rss+xml,text/xml,*/*',
       }).timeout(_timeout);
       if (resp.statusCode == 200) {
         final all = _parseRss(resp.body, 'IMD');
-        // Bihar-only filter
         return all.where((i) => _isBihar(i.title + i.summary)).toList();
       }
     } catch (e) { debugPrint('[NewsService] IMD-Nowcast: $e'); }
     return [];
   }
 
-  // ── C: PIB Bihar SDMA feed (replaces dead SACHET API) ────────────────────
-  Future<List<NewsItem>> _tryAsdmaRss() async {
-    // PIB Regid=46 = Bihar regional press releases
-    const url = 'https://www.pib.gov.in/RssMain.aspx?ModId=6&Lang=1&Regid=46';
-    try {
-      final resp = await http.get(Uri.parse(url), headers: {
-        'User-Agent': 'OpsFlood/4.0',
-        'Accept': 'text/xml,application/rss+xml,*/*',
-      }).timeout(_timeout);
-      if (resp.statusCode == 200) {
-        final all = _parseRss(resp.body, 'SDMA');
-        return all.where((item) {
-          final t = (item.title + item.summary).toLowerCase();
-          return _isBihar(t) && _kFloodWords.any(t.contains);
-        }).toList();
-      }
-    } catch (e) { debugPrint('[NewsService] SDMA: $e'); }
-    return [];
-  }
-
-  // CWC bulletins are national but titled to cover Bihar basins
-  Future<List<NewsItem>> _tryCwcScrape() async {
-    const url = 'https://cwc.gov.in/en/daliy-flood-bulletin';
+  // ── A: Bihar FMIS Daily Flood Bulletin ──────────────────────────────────
+  Future<List<NewsItem>> _tryBiharFmis() async {
+    const url = 'https://www.fmiscwrdbihar.gov.in/Load_FMIS_Site/Daily_FloodBulletin.html';
     try {
       final resp = await http.get(Uri.parse(url), headers: {
         'User-Agent': 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36',
@@ -207,39 +188,65 @@ class NewsService {
       if (resp.statusCode == 200) {
         final doc   = html_parser.parse(resp.body);
         final items = <NewsItem>[];
-        final rows  = doc.querySelectorAll('table tr, .view-content .views-row');
-        for (final row in rows.take(14)) {
-          final links = row.querySelectorAll('a');
-          final cells = row.querySelectorAll('td');
-          for (final link in links) {
-            final href = link.attributes['href'] ?? '';
-            final text = link.text.trim();
-            if (href.isEmpty || text.isEmpty) continue;
-            if (!href.toLowerCase().contains('bulletin') &&
-                !text.toLowerCase().contains('bulletin') &&
-                !href.toLowerCase().contains('.pdf')) continue;
-            final fullUrl  = href.startsWith('http') ? href : 'https://cwc.gov.in$href';
-            final dateText = cells.isNotEmpty ? cells.first.text.trim() : text;
-            final pub      = _parseDateFuzzy(dateText) ?? DateTime.now();
-            // CWC national bulletin — always include since it covers Bihar
-            items.add(NewsItem(
-              title:       'CWC Daily Flood Bulletin — ${DateFormat('dd MMM yyyy').format(pub)}',
-              summary:     'National CWC flood bulletin covering Ganga-Bihar basin. Tap to open PDF.',
-              url:         fullUrl,
-              source:      'CWC',
-              publishedAt: pub,
-              severity:    NewsSeverity.info,
-            ));
-          }
+        for (final a in doc.querySelectorAll('a')) {
+          final href = a.attributes['href'] ?? '';
+          final text = a.text.trim();
+          if (href.isEmpty || text.isEmpty) continue;
+          final lhref = href.toLowerCase();
+          if (!lhref.contains('.pdf') && !lhref.contains('bulletin')) continue;
+          final fullUrl = href.startsWith('http') ? href : 'https://www.fmiscwrdbihar.gov.in$href';
+          final pub = _parseDateFuzzy(text) ?? DateTime.now();
+          items.add(NewsItem(
+            title:       'Bihar FMIS Flood Bulletin — ${DateFormat("dd MMM yyyy").format(pub)}',
+            summary:     'Official Bihar flood situation report. Covers Gandak, Kosi, Bagmati, Kamla & Mahananda river basins. Includes river levels, rainfall from Nepal catchments, and district-wise flood status. Tap to open PDF.',
+            url:         fullUrl,
+            source:      'CWC',
+            publishedAt: pub,
+            severity:    NewsSeverity.high,
+          ));
         }
         final seen = <String>{};
-        return items.where((i) => seen.add(i.dayKey)).toList();
+        return items.where((i) => seen.add(i.dayKey)).take(7).toList();
       }
-    } catch (e) { debugPrint('[NewsService] CWC-Scrape: $e'); }
+    } catch (e) { debugPrint('[NewsService] BiharFMIS: $e'); }
     return [];
   }
 
-  // ── E: GDACS Flood RSS (Bihar / Ganga basin filter) ───────────────────────
+  // ── B: CWC Advanced Flood Forecast ───────────────────────────────────────
+  Future<List<NewsItem>> _tryCwcAff() async {
+    const url = 'https://aff.india-water.gov.in/';
+    try {
+      final resp = await http.get(Uri.parse(url), headers: {
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36',
+        'Accept': 'text/html,*/*',
+      }).timeout(_timeout);
+      if (resp.statusCode == 200) {
+        final doc   = html_parser.parse(resp.body);
+        final items = <NewsItem>[];
+        for (final row in doc.querySelectorAll('tr')) {
+          final text = row.text.trim();
+          if (text.length < 10 || !_isBihar(text)) continue;
+          final links   = row.querySelectorAll('a');
+          final href    = links.isNotEmpty ? (links.first.attributes['href'] ?? '') : '';
+          final fullUrl = href.startsWith('http') ? href
+              : (href.isNotEmpty ? 'https://aff.india-water.gov.in${href}' : 'https://aff.india-water.gov.in');
+          final trunc = text.length > 300 ? '${text.substring(0, 297)}...' : text;
+          items.add(NewsItem(
+            title:       'CWC 5-Day Flood Forecast — ${text.substring(0, text.length.clamp(0, 60))}',
+            summary:     trunc,
+            url:         fullUrl,
+            source:      'CWC',
+            publishedAt: DateTime.now(),
+            severity:    _severity(text),
+          ));
+        }
+        return items.take(5).toList();
+      }
+    } catch (e) { debugPrint('[NewsService] CWC-AFF: $e'); }
+    return [];
+  }
+
+  // ── C: GDACS Flood RSS ────────────────────────────────────────────────────
   Future<List<NewsItem>> _tryGdacs() async {
     const url = 'https://www.gdacs.org/xml/rss_fl.xml';
     try {
@@ -250,17 +257,16 @@ class NewsService {
       if (resp.statusCode == 200) {
         final all = _parseRss(resp.body, 'GDACS');
         return all
-            .where((item) => _isBihar(item.title + item.summary))
-            .map((item) => NewsItem(
-                  title:       item.title,
-                  summary:     item.summary,
-                  url:         item.url,
-                  source:      item.source,
-                  publishedAt: item.publishedAt,
-                  // Boost Bihar GDACS events to HIGH minimum
-                  severity: item.severity.index < NewsSeverity.high.index
-                      ? NewsSeverity.high
-                      : item.severity,
+            .where((i) => _isBihar(i.title + i.summary))
+            .map((i) => NewsItem(
+                  title:       i.title,
+                  summary:     i.summary.isNotEmpty ? i.summary
+                               : 'GDACS flood event detected in Bihar/Ganga basin. Tap for full GDACS report.',
+                  url:         i.url,
+                  source:      'GDACS',
+                  publishedAt: i.publishedAt,
+                  severity:    i.severity.index < NewsSeverity.high.index
+                               ? NewsSeverity.high : i.severity,
                 ))
             .toList();
       }
@@ -268,54 +274,9 @@ class NewsService {
     return [];
   }
 
-  // ── F: ReliefWeb API — Bihar flood reports ────────────────────────────────
-  Future<List<NewsItem>> _tryReliefWeb() async {
-    // Filter by country=India AND theme=Flood AND search="Bihar"
-    const url = 'https://api.reliefweb.int/v1/reports?appname=opsflood'
-        '&filter[operator]=AND'
-        '&filter[conditions][0][field]=country.name&filter[conditions][0][value]=India'
-        '&filter[conditions][1][field]=theme.name&filter[conditions][1][value]=Flood'
-        '&query[value]=Bihar&query[fields][]=title&query[fields][]=body'
-        '&fields[include][]=title&fields[include][]=date&fields[include][]=url'
-        '&fields[include][]=body-html&fields[include][]=source.name'
-        '&sort[]=date:desc&limit=20';
-    try {
-      final resp = await http.get(Uri.parse(url), headers: {
-        'User-Agent': 'OpsFlood/4.0',
-        'Accept': 'application/json',
-      }).timeout(_timeout);
-      if (resp.statusCode == 200) {
-        final body = jsonDecode(resp.body) as Map<String, dynamic>;
-        final data = (body['data'] as List? ?? []).cast<Map<String, dynamic>>();
-        final now  = DateTime.now();
-        return data.map((r) {
-          final fields   = r['fields'] as Map<String, dynamic>? ?? {};
-          final title    = fields['title']?.toString() ?? 'ReliefWeb Bihar Flood Report';
-          final dateStr  = (fields['date'] as Map?)?.values.first?.toString() ?? '';
-          final pub      = DateTime.tryParse(dateStr) ?? now;
-          final bodyHtml = fields['body-html']?.toString() ?? '';
-          final summary  = html_parser.parse(bodyHtml).body?.text.trim() ?? '';
-          final link     = fields['url']?.toString() ?? 'https://reliefweb.int';
-          final trunc    = summary.length > 300 ? '${summary.substring(0, 297)}…' : summary;
-          // Extra Bihar check on parsed body too
-          if (!_isBihar(title + summary)) return null;
-          return NewsItem(
-            title:       title,
-            summary:     trunc,
-            url:         link,
-            source:      'RWeb',
-            publishedAt: pub,
-            severity:    _severity(title + summary),
-          );
-        }).whereType<NewsItem>().toList();
-      }
-    } catch (e) { debugPrint('[NewsService] ReliefWeb: $e'); }
-    return [];
-  }
-
-  // ── G: PIB RSS (Bihar + flood keyword filter) ─────────────────────────────
+  // ── D: PIB RSS (Bihar + flood keyword) ───────────────────────────────────
   Future<List<NewsItem>> _tryPib() async {
-    const url = 'https://www.pib.gov.in/RssMain.aspx?ModId=6&Lang=1&Regid=3';
+    const url = 'https://pib.gov.in/newsite/rssenglish.aspx';
     try {
       final resp = await http.get(Uri.parse(url), headers: {
         'User-Agent': 'OpsFlood/4.0',
@@ -332,42 +293,93 @@ class NewsService {
     return [];
   }
 
-  // ── H: MOSDAC / ISRO RSS (Bihar filter) ───────────────────────────────────
-  Future<List<NewsItem>> _tryMosdacRss() async {
-    const url = 'https://www.mosdac.gov.in/isrocast.xml';
+  // ── E: The Hindu RSS ────────────────────────────────────────────────────
+  Future<List<NewsItem>> _tryTheHindu() async {
+    const url = 'https://www.thehindu.com/news/national/feeder/default.rss';
     try {
       final resp = await http.get(Uri.parse(url), headers: {
         'User-Agent': 'OpsFlood/4.0',
         'Accept': 'text/xml,application/rss+xml,*/*',
       }).timeout(_timeout);
       if (resp.statusCode == 200) {
-        final all = _parseRss(resp.body, 'ISRO');
+        final all = _parseRss(resp.body, 'Hindu');
         return all.where((item) {
           final t = (item.title + item.summary).toLowerCase();
           return _isBihar(t) && _kFloodWords.any(t.contains);
         }).toList();
       }
-    } catch (e) { debugPrint('[NewsService] MOSDAC: $e'); }
+    } catch (e) { debugPrint('[NewsService] TheHindu: $e'); }
     return [];
   }
 
-  // ── RSS parser ────────────────────────────────────────────────────────────
+  // ── F: NDTV India RSS ────────────────────────────────────────────────────
+  Future<List<NewsItem>> _tryNdtv() async {
+    const url = 'https://feeds.feedburner.com/ndtvnews-india-news';
+    try {
+      final resp = await http.get(Uri.parse(url), headers: {
+        'User-Agent': 'OpsFlood/4.0',
+        'Accept': 'text/xml,application/rss+xml,*/*',
+      }).timeout(_timeout);
+      if (resp.statusCode == 200) {
+        final all = _parseRss(resp.body, 'NDTV');
+        return all.where((item) {
+          final t = (item.title + item.summary).toLowerCase();
+          return _isBihar(t) && _kFloodWords.any(t.contains);
+        }).toList();
+      }
+    } catch (e) { debugPrint('[NewsService] NDTV: $e'); }
+    return [];
+  }
+
+  // ── G: NewsOnAir RSS (All India Radio) ───────────────────────────────────
+  Future<List<NewsItem>> _tryNewsOnAir() async {
+    const url = 'https://www.newsonair.gov.in/feed/';
+    try {
+      final resp = await http.get(Uri.parse(url), headers: {
+        'User-Agent': 'OpsFlood/4.0',
+        'Accept': 'text/xml,application/rss+xml,*/*',
+      }).timeout(_timeout);
+      if (resp.statusCode == 200) {
+        final all = _parseRss(resp.body, 'AIR');
+        return all.where((item) {
+          final t = (item.title + item.summary).toLowerCase();
+          return _isBihar(t) && _kFloodWords.any(t.contains);
+        }).toList();
+      }
+    } catch (e) { debugPrint('[NewsService] NewsOnAir: $e'); }
+    return [];
+  }
+
   static List<NewsItem> _parseRss(String xml, String source) {
     final items = <NewsItem>[];
     try {
-      final doc   = html_parser.parse(xml);
-      final nodes = doc.querySelectorAll('item');
-      for (final node in nodes) {
-        final title   = node.querySelector('title')?.text.trim()       ?? '';
-        final desc    = node.querySelector('description')?.text.trim() ?? '';
-        final link    = node.querySelector('link')?.text.trim()        ??
-                        node.querySelector('guid')?.text.trim()        ?? '';
-        final pubDate = node.querySelector('pubDate')?.text.trim()     ?? '';
+      // Use regex to handle <item xmlns:...> attributes and CDATA
+      final rx = RegExp(r'<item[^>]*>(.*?)</item>', dotAll: true);
+      for (final m in rx.allMatches(xml)) {
+        final raw     = m.group(1)!;
+        final title   = _rxText(raw, 'title');
+        final desc    = _rxCdata(raw, 'description');
+        if (items.isEmpty) debugPrint('[RSS-RAW] first item raw: ${raw.substring(0, raw.length.clamp(0, 500))}');
+        final link    = _rxText(raw, 'link').isNotEmpty
+                        ? _rxText(raw, 'link') : _rxText(raw, 'guid');
+        final pubDate = _rxText(raw, 'pubDate').isNotEmpty
+                        ? _rxText(raw, 'pubDate') : _rxText(raw, 'sent');
+        final onset   = _rxText(raw, 'Onset');
+        final expires = _rxText(raw, 'Expires');
         if (title.isEmpty) continue;
         final cleanDesc = html_parser.parse(desc).body?.text.trim() ?? desc;
-        final truncated = cleanDesc.length > 300
-            ? '${cleanDesc.substring(0, 297)}…'
-            : cleanDesc;
+        // Build rich summary with onset/expires for IMD
+        String summary = cleanDesc;
+        if (onset.isNotEmpty && expires.isNotEmpty) {
+          final onsetDt   = DateTime.tryParse(onset);
+          final expiresDt = DateTime.tryParse(expires);
+          if (onsetDt != null && expiresDt != null) {
+            final fmt = DateFormat('HH:mm');
+            summary = '${cleanDesc.trimRight()}\nValid: ${fmt.format(onsetDt.toLocal())} - ${fmt.format(expiresDt.toLocal())}';
+          }
+        }
+        final truncated = summary.length > 400 ? '${summary.substring(0, 397)}...' : summary;
+        debugPrint('[RSS-$source] $title | ${truncated.substring(0, truncated.length.clamp(0, 80))}');
         items.add(NewsItem(
           title:       title,
           summary:     truncated,
@@ -379,6 +391,20 @@ class NewsService {
       }
     } catch (e) { debugPrint('[NewsService] RSS parse ($source): $e'); }
     return items;
+  }
+
+  static String _rxText(String xml, String tag) {
+    final m = RegExp('<$tag[^>]*>([^<]*)</$tag>', dotAll: true).firstMatch(xml);
+    return m?.group(1)?.trim() ?? '';
+  }
+
+  static String _rxCdata(String xml, String tag) {
+    final cdataRx = RegExp('<' + tag + r'[^>]*><!\[CDATA\[(.*?)\]\]></' + tag + r'>', dotAll: true);
+    final cm = cdataRx.firstMatch(xml);
+    if (cm != null) return cm.group(1)?.trim() ?? '';
+    final plainRx = RegExp('<' + tag + r'[^>]*>(.*?)</' + tag + r'>', dotAll: true);
+    final pm = plainRx.firstMatch(xml);
+    return pm?.group(1)?.trim() ?? '';
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────

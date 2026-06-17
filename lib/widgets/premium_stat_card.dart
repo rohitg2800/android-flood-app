@@ -4,6 +4,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'app_icon_box.dart';
 import '../theme/river_theme.dart';
 
 class PremiumStatCard extends StatelessWidget {
@@ -49,14 +50,7 @@ class PremiumStatCard extends StatelessWidget {
           // icon + optional delta
           Row(
             children: [
-              Container(
-                width: 32, height: 32,
-                decoration: BoxDecoration(
-                  color:        color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: color, size: 17),
-              ),
+              AppIconBox.small(icon: icon, color: color),
               const Spacer(),
               if (delta != null)
                 Container(

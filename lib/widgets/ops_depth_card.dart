@@ -3,6 +3,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'app_icon_box.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../theme/app_palette.dart';
 import '../theme/river_theme.dart';
@@ -96,7 +97,7 @@ class OpsDepthCard extends StatelessWidget {
               // ── Header row ──────────────────────────────────────────
               Row(
                 children: [
-                  Icon(sev.icon, color: sev.color, size: 18),
+                  AppIconBox.small(icon: sev.icon, color: sev.color),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(

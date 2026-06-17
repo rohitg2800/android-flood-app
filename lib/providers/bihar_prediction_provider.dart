@@ -6,11 +6,13 @@
 
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/flood_prediction.dart';
 import '../models/prediction_point.dart';
 import '../providers/bihar_live_provider.dart';
+import '../services/offline_cache_manager.dart';
 import '../providers/weather_provider.dart';
 import '../services/predict.dart' as predict_lib;
 
@@ -128,8 +130,18 @@ final biharBulkPredictionsProvider =
   final rainfallMod = wxState.current != null
       ? (wxState.rainfall7dMm / 200).clamp(0.0, 1.0)
       : 0.3;
+  final cache       = OfflineCacheManager.instance;
 
-  return stations
+  // ── Offline fallback: return cached data when live feed is empty ──────────
+  if (stations.isEmpty && cache.initialised) {
+    final cached = cache.loadPredictions(ignoreStale: true);
+    if (cached != null && cached.isNotEmpty) {
+      debugPrint('[BulkPreds] offline — serving ${cached.length} cached predictions');
+      return cached.map(_predFromMap).toList();
+    }
+  }
+
+  final preds = stations
       .map((s) => _liveRuleEngine(
             cityName:     s.city,
             riverName:    s.river,
@@ -143,7 +155,57 @@ final biharBulkPredictionsProvider =
           ))
       .toList()
     ..sort((a, b) => b.riskScore.compareTo(a.riskScore));
+
+  // ── Persist to cache whenever we have fresh data ──────────────────────────
+  if (preds.isNotEmpty && cache.initialised) {
+    cache.savePredictions(preds.map(_predToMap).toList());
+  }
+
+  return preds;
 });
+
+// ── Cache serialisation helpers ───────────────────────────────────────────────
+Map<String, dynamic> _predToMap(FloodPrediction p) => {
+  'station':       p.station,
+  'severity':      p.severity,
+  'riskScore':     p.riskScore,
+  'currentLevel':  p.currentLevel,
+  'warningLevel':  p.warningLevel,
+  'dangerLevel':   p.dangerLevel,
+  'predicted24h':  p.predicted24h,
+  'predicted48h':  p.predicted48h,
+  'predicted72h':  p.predicted72h,
+  'trend':         p.trend,
+  'confidencePct': p.confidencePct,
+  'modelVersion':  p.modelVersion,
+  'outlook':       p.outlook,
+  'fromBackend':   p.fromBackend,
+  'updatedAt':     p.updatedAt.toIso8601String(),
+};
+
+FloodPrediction _predFromMap(Map<String, dynamic> m) {
+  final t = DateTime.tryParse(m['updatedAt'] as String? ?? '') ?? DateTime.now();
+  return FloodPrediction(
+    station:       m['station']       as String,
+    severity:      m['severity']      as String,
+    riskScore:     (m['riskScore']    as num).toDouble(),
+    currentLevel:  (m['currentLevel'] as num).toDouble(),
+    warningLevel:  (m['warningLevel'] as num).toDouble(),
+    dangerLevel:   (m['dangerLevel']  as num).toDouble(),
+    predicted24h:  (m['predicted24h'] as num).toDouble(),
+    predicted48h:  (m['predicted48h'] as num).toDouble(),
+    predicted72h:  (m['predicted72h'] as num).toDouble(),
+    trend:         m['trend']         as String,
+    confidencePct: (m['confidencePct'] as num).toDouble(),
+    modelVersion:  m['modelVersion']  as String,
+    outlook:       m['outlook']       as String,
+    fromBackend:   m['fromBackend']   as bool,
+    next24h:       [PredictionPoint(time: t, level: (m['predicted24h'] as num).toDouble())],
+    next48h:       [PredictionPoint(time: t.add(const Duration(hours: 24)), level: (m['predicted48h'] as num).toDouble())],
+    next72h:       [PredictionPoint(time: t.add(const Duration(hours: 48)), level: (m['predicted72h'] as num).toDouble())],
+    updatedAt:     t,
+  );
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers

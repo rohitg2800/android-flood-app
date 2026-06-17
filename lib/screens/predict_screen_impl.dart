@@ -25,6 +25,7 @@ import '../models/river_station.dart';
 import '../providers/prediction_provider.dart';
 import '../models/flood_prediction.dart';
 import '../providers/real_time_river_provider.dart';
+import '../providers/bihar_prediction_provider.dart';
 import '../services/predict.dart' as predict_lib;
 
 
@@ -171,6 +172,8 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
                             );
                           },
                         ),
+                      _AllCitiesForecast(theme: t),
+                      const SizedBox(height: 20),
                       _StationPickerCard(
                         stations: stations,
                         selectedId: _selectedStationId,
@@ -1235,6 +1238,225 @@ class _LoadingState extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  All Cities Live Forecast  (Step 6.2)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _AllCitiesForecast extends ConsumerStatefulWidget {
+  final RiverColors theme;
+  const _AllCitiesForecast({required this.theme});
+  @override
+  ConsumerState<_AllCitiesForecast> createState() => _AllCitiesForecastState();
+}
+
+class _AllCitiesForecastState extends ConsumerState<_AllCitiesForecast>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabs;
+  int _horizonIdx = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabs = TabController(length: 3, vsync: this);
+    _tabs.addListener(() => setState(() => _horizonIdx = _tabs.index));
+  }
+
+  @override
+  void dispose() { _tabs.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) {
+    final t     = widget.theme;
+    final preds = ref.watch(biharBulkPredictionsProvider);
+
+    return Container(
+      decoration: AppPalette.glassMorph(
+          borderColor: AppPalette.gold.withValues(alpha: 0.25), radius: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+            child: Row(children: [
+              const Icon(Icons.auto_awesome_rounded,
+                  color: AppPalette.gold, size: 16),
+              const SizedBox(width: 8),
+              Text('All Cities — Live Forecast',
+                  style: TextStyle(color: t.textPrimary, fontSize: 14,
+                      fontWeight: FontWeight.w800)),
+            ]),
+          ),
+          const SizedBox(height: 10),
+          TabBar(
+            controller: _tabs,
+            indicatorColor: AppPalette.gold,
+            labelColor: AppPalette.gold,
+            unselectedLabelColor: AppPalette.textGrey,
+            labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+            tabs: const [Tab(text: '24 h'), Tab(text: '48 h'), Tab(text: '72 h')],
+          ),
+          const SizedBox(height: 8),
+          if (preds.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Center(child: Text('No live data yet',
+                  style: TextStyle(color: t.textSecondary))),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 14),
+              itemCount: preds.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              itemBuilder: (_, i) => RepaintBoundary(child: _CitySparkRow(
+                pred:       preds[i],
+                horizonIdx: _horizonIdx,
+                theme:      t,
+              )),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  City Spark Row  (Step 6.2)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _CitySparkRow extends StatelessWidget {
+  final FloodPrediction pred;
+  final int             horizonIdx;
+  final RiverColors     theme;
+  const _CitySparkRow({
+    required this.pred,
+    required this.horizonIdx,
+    required this.theme,
+  });
+
+  Color _sevColor() {
+    switch (pred.severity.toUpperCase()) {
+      case 'CRITICAL': return AppPalette.critical;
+      case 'SEVERE':   return AppPalette.danger;
+      case 'MODERATE': return AppPalette.warning;
+      default:         return AppPalette.safe;
+    }
+  }
+
+  List<FlSpot> _spots() {
+    final series = horizonIdx == 0
+        ? pred.next24h
+        : horizonIdx == 1
+            ? pred.next48h
+            : pred.next72h;
+    return series.asMap().entries
+        .map((e) => FlSpot(e.key.toDouble(), e.value.level))
+        .toList();
+  }
+
+  double get _peakLevel => horizonIdx == 0
+      ? pred.predicted24h
+      : horizonIdx == 1
+          ? pred.predicted48h
+          : pred.predicted72h;
+
+  @override
+  Widget build(BuildContext context) {
+    final c     = _sevColor();
+    final spots = _spots();
+    final bar   = (pred.riskScore / 100).clamp(0.0, 1.0);
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: c.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: c.withValues(alpha: 0.30)),
+      ),
+      child: Row(children: [
+        Expanded(
+          flex: 2,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(pred.station.split(' (').first,
+                  style: TextStyle(color: theme.textPrimary,
+                      fontSize: 12, fontWeight: FontWeight.w800),
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+              const SizedBox(height: 3),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: c.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(pred.severity,
+                    style: TextStyle(color: c, fontSize: 9,
+                        fontWeight: FontWeight.w900)),
+              ),
+              const SizedBox(height: 6),
+              Text('${_peakLevel.toStringAsFixed(2)} m',
+                  style: TextStyle(color: c, fontSize: 13,
+                      fontWeight: FontWeight.w900)),
+              const SizedBox(height: 4),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(3),
+                child: LinearProgressIndicator(
+                  value: bar, minHeight: 4,
+                  backgroundColor: c.withValues(alpha: 0.12),
+                  valueColor: AlwaysStoppedAnimation<Color>(c),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        SizedBox(
+          width: 120, height: 60,
+          child: spots.length < 2
+              ? Center(child: Text('…',
+                  style: TextStyle(color: theme.textSecondary)))
+              : LineChart(
+                  LineChartData(
+                    gridData:   const FlGridData(show: false),
+                    borderData: FlBorderData(show: false),
+                    titlesData: const FlTitlesData(
+                      leftTitles:   AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      rightTitles:  AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      topTitles:    AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    ),
+                    lineBarsData: [
+                      LineChartBarData(
+                        spots:    spots,
+                        isCurved: true,
+                        color:    c,
+                        barWidth: 2,
+                        dotData:  const FlDotData(show: false),
+                        belowBarData: BarAreaData(
+                          show: true,
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end:   Alignment.bottomCenter,
+                            colors: [
+                              c.withValues(alpha: 0.25),
+                              c.withValues(alpha: 0.0),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                    lineTouchData: const LineTouchData(enabled: false),
+                  ),
+                ),
+        ),
+      ]),
     );
   }
 }

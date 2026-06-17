@@ -22,6 +22,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../data/bihar_station_metadata.dart';
 
 import '../services/bihar_live_engine.dart';
 
@@ -101,7 +102,13 @@ class BiharStationData {
       river = item.subtitle.substring('River: '.length).trim();
     }
 
-    final district = (item.raw['district'] as String?)?.trim() ?? '';
+    final _rawDistrict = (item.raw['district'] as String?)?.trim() ?? '';
+    final district = _rawDistrict.isNotEmpty
+        ? _rawDistrict
+        : (BiharStationRegistry.forSite(item.title) ??
+               BiharStationRegistry.forSite(
+                   item.title.replaceAll(RegExp(r'\s*\(.*?\)'), '').trim()))
+              ?.district ?? '';
     final state    = (item.raw['state'] as String?)?.trim().isNotEmpty == true
         ? (item.raw['state'] as String).trim()
         : 'Bihar';
