@@ -77,7 +77,7 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
   }
 
   // trend is a String: 'rising' | 'stable' | 'falling'
-  String _severityFromPrediction(FloodPrediction p) { return severityFromPercent(p.progressPct.clamp(0.0, 100.0));
+  String _severityFromPrediction(FloodPrediction p) {
     final pct = p.progressPct.clamp(0.0, 100.0);
     if (pct >= 100) return 'CRITICAL';
     if (pct >= 80)  return 'SEVERE';

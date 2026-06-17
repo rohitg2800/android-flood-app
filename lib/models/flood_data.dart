@@ -230,7 +230,7 @@ class FloodData {
     final sev = predictedSeverity?.toUpperCase() ?? riskLevel;
     switch (sev) {
       case 'CRITICAL': return const Color(0xFFFF1A44);
-      case 'SEVERE':   return AppPalette.severe;
+      case 'SEVERE':   return const Color(0xFFFF5500);
       case 'DANGER':   return const Color(0xFFFF5500);
       case 'HIGH':     return const Color(0xFFFFA520);
       case 'WARNING':  return const Color(0xFFFFA520);
