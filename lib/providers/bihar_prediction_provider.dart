@@ -132,9 +132,9 @@ final biharBulkPredictionsProvider =
       : 0.3;
   final cache       = OfflineCacheManager.instance;
 
-  // ── Offline fallback: return cached data when live feed is empty ──────────
-  if (stations.isEmpty && cache.initialised) {
-    final cached = cache.loadPredictions(ignoreStale: true);
+  // ── Offline fallback: only when live feed has errored (not just loading) ──
+  if (stations.isEmpty && cache.initialised && !liveAsync.isLoading) {
+    final cached = cache.loadPredictions(ignoreStale: false);
     if (cached != null && cached.isNotEmpty) {
       debugPrint('[BulkPreds] offline — serving ${cached.length} cached predictions');
       return cached.map(_predFromMap).toList();

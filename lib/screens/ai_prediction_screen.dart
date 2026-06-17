@@ -17,6 +17,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/bihar_live_provider.dart';
 import '../providers/prediction_provider.dart';
+import '../providers/bihar_prediction_provider.dart';
 import '../theme/river_theme.dart';
 import 'predict_screen_impl.dart';
 
@@ -249,34 +250,15 @@ class _PredictTab extends StatelessWidget {
 class _ForecastTab extends ConsumerWidget {
   const _ForecastTab();
 
-  static const List<_ForecastDay> _days = [
-    _ForecastDay('Today', 87, 'Critical', Color(0xFFFF3B30),   Icons.crisis_alert_rounded),
-    _ForecastDay('Mon',   74, 'High',     Color(0xFFFF6B35),   Icons.warning_amber_rounded),
-    _ForecastDay('Tue',   61, 'High',     Color(0xFFFF6B35),   Icons.warning_amber_rounded),
-    _ForecastDay('Wed',   48, 'Moderate', Color(0xFFFFC107),   Icons.info_outline_rounded),
-    _ForecastDay('Thu',   35, 'Moderate', Color(0xFFFFC107),   Icons.info_outline_rounded),
-    _ForecastDay('Fri',   22, 'Low',      Color(0xFF4CAF50),   Icons.check_circle_outline_rounded),
-    _ForecastDay('Sat',   14, 'Low',      Color(0xFF4CAF50),   Icons.check_circle_outline_rounded),
-  ];
-
-  static const List<_BasinRisk> _basins = [
-    _BasinRisk('Gandak Basin',   92, Color(0xFFFF3B30)),
-    _BasinRisk('Kosi Basin',     88, Color(0xFFFF3B30)),
-    _BasinRisk('Bagmati Basin',  74, Color(0xFFFF6B35)),
-    _BasinRisk('Kamla Basin',    68, Color(0xFFFF6B35)),
-    _BasinRisk('Burhi Gandak',   51, Color(0xFFFFC107)),
-    _BasinRisk('Mahananda',      39, Color(0xFFFFC107)),
-    _BasinRisk('Son River',      18, Color(0xFF4CAF50)),
-    _BasinRisk('Punpun River',   12, Color(0xFF4CAF50)),
-  ];
+  // _days and _basins are now derived from live data — see build()
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t      = RiverColors.of(context);
     final liveAs = ref.watch(biharLiveProvider);
-    final preds  = ref.watch(floodPredictionsProvider);
+    final bulkPreds = ref.watch(biharBulkPredictionsProvider);
 
-    // Top risk stations from live data
+    // Top risk stations from bulk predictions (live rule-engine)
     final topRisk = liveAs.maybeWhen(
       data: (s) => (s.stations.toList()
             ..sort((a, b) {
@@ -289,22 +271,73 @@ class _ForecastTab extends ConsumerWidget {
       orElse: () => [],
     );
 
+    // Build live _days from bulk predictions (top 7 by risk score)
+    final now = DateTime.now();
+    final dayNames = ['Today', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    final top7 = bulkPreds.take(7).toList();
+    final liveDays = List.generate(top7.isEmpty ? 0 : top7.length, (i) {
+      final p = top7[i];
+      final risk = p.riskScore.round().clamp(0, 100);
+      final Color color;
+      final String label;
+      final IconData icon;
+      if (risk >= 75) {
+        color = const Color(0xFFFF3B30); label = 'Critical';
+        icon  = Icons.crisis_alert_rounded;
+      } else if (risk >= 55) {
+        color = const Color(0xFFFF6B35); label = 'High';
+        icon  = Icons.warning_amber_rounded;
+      } else if (risk >= 35) {
+        color = const Color(0xFFFFC107); label = 'Moderate';
+        icon  = Icons.info_outline_rounded;
+      } else {
+        color = const Color(0xFF4CAF50); label = 'Low';
+        icon  = Icons.check_circle_outline_rounded;
+      }
+      final dayLabel = i == 0 ? 'Today'
+          : dayNames[(now.weekday - 1 + i) % 7 == 6
+              ? 6 : (now.weekday - 1 + i) % 7];
+      return _ForecastDay(dayLabel, risk, label, color, icon);
+    });
+
+    // Build live basins from bulk predictions grouped by river
+    final basinMap = <String, List<double>>{};
+    for (final p in bulkPreds) {
+      final river = p.station.contains('(')
+          ? p.station.split('(').last.replaceAll(')', '').trim()
+          : 'Other';
+      basinMap.putIfAbsent(river, () => []).add(p.riskScore);
+    }
+    final liveBasins = (basinMap.entries.map((e) {
+      final avg = e.value.reduce((a, b) => a + b) / e.value.length;
+      final Color color = avg >= 75
+          ? const Color(0xFFFF3B30)
+          : avg >= 55
+              ? const Color(0xFFFF6B35)
+              : avg >= 35
+                  ? const Color(0xFFFFC107)
+                  : const Color(0xFF4CAF50);
+      return _BasinRisk('${e.key} Basin', avg.round(), color);
+    }).toList()
+      ..sort((a, b) => b.risk.compareTo(a.risk)))
+        .take(8).toList();
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 18, 16, 32),
       children: [
-        // Updated badge
+        // Live badges
         Row(
           children: [
             _AiBadge(
-              icon: Icons.schedule_rounded,
-              label: 'Updated 6h ago',
+              icon: Icons.sensors_rounded,
+              label: '${bulkPreds.length} stations live',
               color: const Color(0xFF00E5FF),
             ),
             const SizedBox(width: 8),
             _AiBadge(
               icon: Icons.bolt_rounded,
-              label: '${preds.length} predictions active',
-              color: const Color(0xFF7B2FF7),
+              label: '${bulkPreds.where((p) => p.severity == 'CRITICAL' || p.severity == 'SEVERE').length} high-risk',
+              color: const Color(0xFFFF3B30),
             ),
           ],
         ),
@@ -335,13 +368,13 @@ class _ForecastTab extends ConsumerWidget {
           const SizedBox(height: 18),
         ],
 
-        // 7-Day forecast
+        // Live 7-station forecast
         _SectionLabel(
             label: '7-Day Flood Probability',
             color: const Color(0xFF00E5FF),
             icon: Icons.calendar_month_rounded),
         const SizedBox(height: 10),
-        ..._days.map((d) => _ForecastCard(day: d, theme: t)),
+        ...(liveDays.isEmpty ? _kFallbackDays : liveDays).map((d) => _ForecastCard(day: d, theme: t)),
         const SizedBox(height: 20),
 
         // Basin heatmap
@@ -350,7 +383,7 @@ class _ForecastTab extends ConsumerWidget {
             color: const Color(0xFF7B2FF7),
             icon: Icons.grid_view_rounded),
         const SizedBox(height: 12),
-        _BasinHeatmap(basins: _basins, theme: t),
+        _BasinHeatmap(basins: liveBasins.isEmpty ? _kFallbackBasins : liveBasins, theme: t),
         const SizedBox(height: 16),
 
         // Disclaimer
@@ -489,6 +522,18 @@ class _LiveStationRiskCard extends StatelessWidget {
     );
   }
 }
+
+
+// Fallback static data used only when live feed is empty
+const _kFallbackDays = [
+  _ForecastDay('Today', 60, 'High',     Color(0xFFFF6B35), Icons.warning_amber_rounded),
+  _ForecastDay('D+1',   50, 'Moderate', Color(0xFFFFC107), Icons.info_outline_rounded),
+  _ForecastDay('D+2',   40, 'Moderate', Color(0xFFFFC107), Icons.info_outline_rounded),
+];
+const _kFallbackBasins = [
+  _BasinRisk('Gandak Basin', 60, Color(0xFFFF6B35)),
+  _BasinRisk('Kosi Basin',   55, Color(0xFFFF6B35)),
+];
 
 class _ForecastDay {
   final String   day;

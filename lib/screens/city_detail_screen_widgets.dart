@@ -6,8 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/flood_data.dart';
 import '../models/river_monitoring.dart';
+import '../providers/bihar_prediction_provider.dart';
 import '../theme/river_theme.dart';
 import '../widgets/sparkline_chart.dart';
 import 'bihar_river_map_screen.dart';
@@ -388,6 +390,122 @@ class _ContactTile extends StatelessWidget {
         ]),
       ),
     );
+  }
+}
+
+
+// ── Live prediction banner ─────────────────────────────────────────────────
+/// Shows 24h/48h/72h predicted levels + outlook sourced from
+/// biharPredictionProvider. Drop this anywhere in city detail screen.
+class PredictionBanner extends ConsumerWidget {
+  final String stationId;
+  final String cityName;
+  const PredictionBanner({
+    super.key,
+    required this.stationId,
+    required this.cityName,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t       = RiverColors.of(context);
+    final predAsync = ref.watch(biharPredictionProvider((stationId, cityName)));
+
+    return predAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error:   (_, __) => const SizedBox.shrink(),
+      data: (pred) {
+        final Color sColor = switch (pred.severity) {
+          'CRITICAL' => AppPalette.critical,
+          'SEVERE'   => AppPalette.danger,
+          'MODERATE' => AppPalette.warning,
+          _          => AppPalette.safe,
+        };
+        return Container(
+          margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: sColor.withValues(alpha: 0.07),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: sColor.withValues(alpha: 0.30)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                Icon(Icons.auto_awesome_rounded, color: sColor, size: 14),
+                const SizedBox(width: 6),
+                Text('AI Forecast',
+                    style: TextStyle(
+                        color: sColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.8)),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: sColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: sColor.withValues(alpha: 0.4)),
+                  ),
+                  child: Text(pred.severity,
+                      style: TextStyle(
+                          color: sColor,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900)),
+                ),
+              ]),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _PredLevel('24h', pred.predicted24h, sColor),
+                  _PredLevel('48h', pred.predicted48h, sColor),
+                  _PredLevel('72h', pred.predicted72h, sColor),
+                  _PredLevel('Risk', pred.riskScore, AppPalette.warning,
+                      suffix: '%'),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(pred.outlook,
+                  style: TextStyle(
+                      color: t.textSecondary,
+                      fontSize: 11,
+                      height: 1.4)),
+              const SizedBox(height: 4),
+              Text(
+                'Confidence: ${pred.confidencePct.toStringAsFixed(0)}%  •  ${pred.modelVersion}',
+                style: TextStyle(color: t.textSecondary, fontSize: 10),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _PredLevel extends StatelessWidget {
+  final String label;
+  final double value;
+  final Color  color;
+  final String suffix;
+  const _PredLevel(this.label, this.value, this.color, {this.suffix = ' m'});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = RiverColors.of(context);
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      Text(label,
+          style: TextStyle(color: t.textSecondary, fontSize: 10)),
+      const SizedBox(height: 3),
+      Text('${value.toStringAsFixed(suffix == '%' ? 0 : 2)}$suffix',
+          style: TextStyle(
+              color: color,
+              fontSize: 13,
+              fontWeight: FontWeight.w800)),
+    ]);
   }
 }
 
