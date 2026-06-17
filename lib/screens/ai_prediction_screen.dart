@@ -58,7 +58,6 @@ class _AiPredictionScreenState extends ConsumerState<AiPredictionScreen>
   Widget build(BuildContext context) {
     final t = RiverColors.of(context);
     const cyan   = Color(0xFF00E5FF);
-    const violet = Color(0xFF7B2FF7);
 
     return Scaffold(
       backgroundColor: t.scaffoldBg,
