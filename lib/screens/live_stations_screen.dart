@@ -1,8 +1,9 @@
-// lib/screens/live_stations_screen.dart  v3.2
+// lib/screens/live_stations_screen.dart  v3.3
 //
-// v3.2:
-//   • Fix: CityDetailScreen takes cityName:String, not station:RiverStation.
-//     Pass s.city directly as cityName.
+// v3.3:
+//   • onTap now passes liveLevel: s.currentLevel and liveRisk: s.riskLabel
+//     to CityDetailScreen so the level shown on the card matches the detail.
+//     Note: BiharStationData uses riskLabel (not riskLevel).
 library;
 
 import 'package:flutter/material.dart';
@@ -203,11 +204,16 @@ class LiveStationsScreen extends ConsumerWidget {
                           station:           rs,
                           index:             i,
                           confidencePercent: conf,
-                          // ✅ Fixed: use cityName: s.city (correct constructor)
+                          // ✅ Pass live values so CityDetailScreen shows same
+                          //    number as the card. riskLabel is the correct
+                          //    field name on BiharStationData (not riskLevel).
                           onTap: () => Navigator.of(ctx).push(
                             MaterialPageRoute<void>(
-                              builder: (_) =>
-                                  CityDetailScreen(cityName: s.city),
+                              builder: (_) => CityDetailScreen(
+                                cityName:  s.city,
+                                liveLevel: s.currentLevel,
+                                liveRisk:  s.riskLabel,
+                              ),
                             ),
                           ),
                         );
