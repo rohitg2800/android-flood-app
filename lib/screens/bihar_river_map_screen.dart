@@ -5,6 +5,7 @@
 //   - Hide-NORMAL FAB (eye icon)
 //   - _toFloodStations() respects effectiveVisibleClassesProvider
 //   - MapTelemetrySheet now receives totalCount
+//   - Pre-monsoon baseline filter chip + preMonsoonBaselineProvider wired in
 library;
 
 import 'package:flutter/material.dart';
@@ -30,7 +31,7 @@ const _kBiharZoom   = 7.2;
 const _kIndiaCenter  = LatLng(22.5, 80.0);
 const _kIndiaZoom    = 4.5;
 
-// ── Chip label / colour helpers ───────────────────────────────────────────────
+// ── Chip label / colour helpers ────────────────────────────────────────────────
 _ChipMeta _chipMeta(DangerClass dc) => switch (dc) {
   DangerClass.extreme     => _ChipMeta('CRITICAL', const Color(0xFFC62828)),
   DangerClass.severe      => _ChipMeta('DANGER',   const Color(0xFFE65100)),
@@ -78,7 +79,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
     super.dispose();
   }
 
-  // ── GeoJSON → Polygon layer ──────────────────────────────────────────────
+  // ── GeoJSON → Polygon layer ───────────────────────────────────────────────
   // ignore: unused_element
   List<Polygon> _buildPolygons(
     Map<String, dynamic> geoJson,
@@ -157,28 +158,48 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
     );
   }
 
+  void _clearAllFilters() {
+    ref.read(activeFiltersProvider.notifier).clear();
+    ref.read(hideNormalProvider.notifier).clear();
+    ref.read(preMonsoonBaselineProvider.notifier).disable();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final rc             = context.rc;
-    final mode           = ref.watch(mapViewModeProvider);
-    final isBihar        = mode == MapViewMode.bihar;
-    final allStations    = ref.watch(liveEngineStationsProvider);
-    final distRisk       = ref.watch(biharDistrictRiskProvider);
-    final syncMeta       = ref.watch(mapSyncMetaProvider);
-    final geoAsync       = ref.watch(biharGeoJsonProvider);
-    final isLoading      = ref.watch(wrdIsLoadingProvider);
-    final activeFilters  = ref.watch(activeFiltersProvider);
-    final hideNormal     = ref.watch(hideNormalProvider);
-    final visibleClasses = ref.watch(effectiveVisibleClassesProvider);
+    final rc              = context.rc;
+    final mode            = ref.watch(mapViewModeProvider);
+    final isBihar         = mode == MapViewMode.bihar;
+    final allStations     = ref.watch(liveEngineStationsProvider);
+    final distRisk        = ref.watch(biharDistrictRiskProvider);
+    final syncMeta        = ref.watch(mapSyncMetaProvider);
+    final geoAsync        = ref.watch(biharGeoJsonProvider);
+    final isLoading       = ref.watch(wrdIsLoadingProvider);
+    final activeFilters   = ref.watch(activeFiltersProvider);
+    final hideNormal      = ref.watch(hideNormalProvider);
+    final visibleClasses  = ref.watch(effectiveVisibleClassesProvider);
+    final baselineFilter  = ref.watch(preMonsoonBaselineProvider);
+    final isPreMonsoon    = isPreMonsoonPeriod();
 
-    // Apply filter to station list
-    final filteredStations = visibleClasses == null
-        ? allStations
-        : allStations
-            .where((s) => visibleClasses.contains(s.dangerClass))
-            .toList();
+    // ── Apply all three filters to the RiverStation marker list ─────────────
+    final filteredStations = allStations.where((s) {
+      // 1. DangerClass filter
+      if (visibleClasses != null && !visibleClasses.contains(s.dangerClass)) {
+        return false;
+      }
+      // 2. Hide NORMAL
+      if (hideNormal && s.dangerClass == DangerClass.normal) return false;
+      // 3. Pre-monsoon baseline: progressPct*100 proxies riskScore for
+      //    RiverStation (which has no riskScore field of its own).
+      if (baselineFilter &&
+          s.progressPct * 100 < kPreMonsoonBaselineRiskThreshold) {
+        return false;
+      }
+      return true;
+    }).toList();
 
-    final isFilterActive = visibleClasses != null;
+    final isFilterActive = visibleClasses != null ||
+        hideNormal ||
+        baselineFilter;
 
     return pv.ChangeNotifierProvider(
       create: (_) => FloodDataProvider(),
@@ -217,7 +238,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
                 ],
               ),
 
-              // ── Top bar ──────────────────────────────────────────────────
+              // ── Top bar ────────────────────────────────────────────────────────
               Positioned(
                 top:   MediaQuery.of(context).padding.top + 8,
                 left:  12,
@@ -253,25 +274,26 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
                 ),
               ),
 
-              // ── Severity chip row (shown above drawer when open) ──────────
+              // ── Severity chip row + baseline chip (shown in drawer) ─────────
               if (_showDrawer)
                 Positioned(
                   bottom: MediaQuery.of(context).size.height * 0.45 + 4,
                   left:   0,
                   right:  0,
                   child: _SeverityChipBar(
-                    activeFilters: activeFilters,
-                    hideNormal:    hideNormal,
+                    activeFilters:   activeFilters,
+                    hideNormal:      hideNormal,
+                    baselineActive:  baselineFilter,
+                    showBaselineDot: isPreMonsoon,
                     onToggleChip: (dc) =>
                         ref.read(activeFiltersProvider.notifier).toggle(dc),
-                    onClear: () {
-                      ref.read(activeFiltersProvider.notifier).clear();
-                      ref.read(hideNormalProvider.notifier).clear();
-                    },
+                    onToggleBaseline: () =>
+                        ref.read(preMonsoonBaselineProvider.notifier).toggle(),
+                    onClear: _clearAllFilters,
                   ),
                 ),
 
-              // ── Legend ───────────────────────────────────────────────────
+              // ── Legend ────────────────────────────────────────────────────────────
               if (_showLegend)
                 Positioned(
                   bottom: _showDrawer ? 340 : 100,
@@ -295,15 +317,13 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
                   ),
                 ),
 
-              // ── Hide-NORMAL FAB ──────────────────────────────────────────
+              // ── Hide-NORMAL FAB ────────────────────────────────────────────────
               Positioned(
                 bottom: _showDrawer ? 340 : 56,
                 right:  12,
                 child: FloatingActionButton.small(
                   heroTag:         'bmap_hide_normal_fab',
-                  backgroundColor: hideNormal
-                      ? rc.accent
-                      : rc.cardBg,
+                  backgroundColor: hideNormal ? rc.accent : rc.cardBg,
                   tooltip: hideNormal
                       ? 'Showing elevated only — tap to reset'
                       : 'Hide NORMAL stations',
@@ -319,7 +339,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
                 ),
               ),
 
-              // ── Telemetry drawer ─────────────────────────────────────────
+              // ── Telemetry drawer ──────────────────────────────────────────────────
               if (_showDrawer)
                 MapTelemetrySheet(
                   stations:   filteredStations,
@@ -334,7 +354,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
                   },
                 ),
 
-              // ── Legacy WRD loading indicator ──────────────────────────────
+              // ── Legacy WRD loading indicator ─────────────────────────────────
               if (isLoading)
                 Positioned(
                   top:   MediaQuery.of(context).padding.top + 72,
@@ -358,7 +378,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            'Fetching live data\u2026',
+                            'Fetching live data…',
                             style: TextStyle(
                               color:      rc.textPrimary,
                               fontSize:   12,
@@ -371,7 +391,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
                   ),
                 ),
 
-              // ── GloFAS loading overlay ────────────────────────────────────
+              // ── GloFAS loading overlay ─────────────────────────────────────
               pv.Consumer<FloodDataProvider>(
                 builder: (_, p, __) {
                   if (!p.isLoading || p.allStations.isNotEmpty) {
@@ -399,7 +419,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'Loading GloFAS stations\u2026',
+                              'Loading GloFAS stations…',
                               style: TextStyle(
                                 color:      rc.textPrimary,
                                 fontSize:   12,
@@ -414,7 +434,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
                 },
               ),
 
-              // ── Filter active banner ──────────────────────────────────────
+              // ── Filter active banner ────────────────────────────────────────────
               if (isFilterActive && !_showDrawer)
                 Positioned(
                   bottom: 56,
@@ -422,10 +442,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
                   right:  60,
                   child: Center(
                     child: GestureDetector(
-                      onTap: () {
-                        ref.read(activeFiltersProvider.notifier).clear();
-                        ref.read(hideNormalProvider.notifier).clear();
-                      },
+                      onTap: _clearAllFilters,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 6),
@@ -461,96 +478,164 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
   }
 }
 
-// ── Severity chip bar ─────────────────────────────────────────────────────────
+// ── Severity chip bar ───────────────────────────────────────────────────────────
 class _SeverityChipBar extends StatelessWidget {
-  final Set<DangerClass>      activeFilters;
-  final bool                  hideNormal;
+  final Set<DangerClass>           activeFilters;
+  final bool                       hideNormal;
+  final bool                       baselineActive;
+  final bool                       showBaselineDot; // true during Jun 1-14
   final void Function(DangerClass) onToggleChip;
-  final VoidCallback          onClear;
+  final VoidCallback               onToggleBaseline;
+  final VoidCallback               onClear;
 
   const _SeverityChipBar({
     required this.activeFilters,
     required this.hideNormal,
+    required this.baselineActive,
+    required this.showBaselineDot,
     required this.onToggleChip,
+    required this.onToggleBaseline,
     required this.onClear,
   });
 
   @override
   Widget build(BuildContext context) {
     final rc = context.rc;
+    const baselineColor = Color(0xFFF57F17); // amber-800
+
     return Container(
       color: rc.scaffoldBg.withOpacity(0.94),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: Row(
-        children: [
-          ...DangerClass.values.map((dc) {
-            final meta    = _chipMeta(dc);
-            final isActive = activeFilters.contains(dc);
-            final isDimmed = hideNormal && dc == DangerClass.normal;
-            return Padding(
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            // ── DangerClass chips ────────────────────────────────────────────
+            ...DangerClass.values.map((dc) {
+              final meta     = _chipMeta(dc);
+              final isActive = activeFilters.contains(dc);
+              final isDimmed = hideNormal && dc == DangerClass.normal;
+              return Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: GestureDetector(
+                  onTap: () => onToggleChip(dc),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: isActive
+                          ? meta.color
+                          : meta.color.withOpacity(isDimmed ? 0.1 : 0.14),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: meta.color.withOpacity(
+                            isActive ? 1.0 : (isDimmed ? 0.2 : 0.45)),
+                        width: isActive ? 1.5 : 1.0,
+                      ),
+                    ),
+                    child: Text(
+                      meta.label,
+                      style: TextStyle(
+                        color: isActive
+                            ? Colors.white
+                            : meta.color
+                                .withOpacity(isDimmed ? 0.4 : 0.9),
+                        fontSize:      11,
+                        fontWeight:    FontWeight.w700,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
+
+            // ── Pre-monsoon BASELINE chip ─────────────────────────────────────
+            Padding(
               padding: const EdgeInsets.only(right: 6),
               child: GestureDetector(
-                onTap: () => onToggleChip(dc),
+                onTap: onToggleBaseline,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: isActive
-                        ? meta.color
-                        : meta.color.withOpacity(isDimmed ? 0.1 : 0.14),
+                    color: baselineActive
+                        ? baselineColor
+                        : baselineColor.withOpacity(0.14),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: meta.color.withOpacity(
-                          isActive ? 1.0 : (isDimmed ? 0.2 : 0.45)),
-                      width: isActive ? 1.5 : 1.0,
+                      color: baselineColor
+                          .withOpacity(baselineActive ? 1.0 : 0.45),
+                      width: baselineActive ? 1.5 : 1.0,
                     ),
                   ),
-                  child: Text(
-                    meta.label,
-                    style: TextStyle(
-                      color: isActive
-                          ? Colors.white
-                          : meta.color.withOpacity(isDimmed ? 0.4 : 0.9),
-                      fontSize:   11,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.4,
-                    ),
-                  ),
-                ),
-              ),
-            );
-          }),
-          const Spacer(),
-          if (activeFilters.isNotEmpty)
-            GestureDetector(
-              onTap: onClear,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 5),
-                decoration: BoxDecoration(
-                  color:        rc.cardBg,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                      color: rc.stroke.withOpacity(0.5), width: 1),
-                ),
-                child: Text(
-                  'CLEAR',
-                  style: TextStyle(
-                    color:      rc.textSecondary,
-                    fontSize:   11,
-                    fontWeight: FontWeight.w600,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'BASELINE',
+                        style: TextStyle(
+                          color: baselineActive
+                              ? Colors.white
+                              : baselineColor.withOpacity(0.9),
+                          fontSize:      11,
+                          fontWeight:    FontWeight.w700,
+                          letterSpacing: 0.4,
+                        ),
+                      ),
+                      // Amber dot when in pre-monsoon window (Jun 1-14)
+                      if (showBaselineDot) ...[
+                        const SizedBox(width: 4),
+                        Container(
+                          width:  6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: Colors.amber,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ),
             ),
-        ],
+
+            const SizedBox(width: 4),
+
+            // ── CLEAR button ───────────────────────────────────────────────────
+            if (activeFilters.isNotEmpty || baselineActive)
+              GestureDetector(
+                onTap: onClear,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 5),
+                  decoration: BoxDecoration(
+                    color:        rc.cardBg,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                        color: rc.stroke.withOpacity(0.5), width: 1),
+                  ),
+                  child: Text(
+                    'CLEAR',
+                    style: TextStyle(
+                      color:      rc.textSecondary,
+                      fontSize:   11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
 }
 
-// ── Inline FloodStation bottom sheet ─────────────────────────────────────────
+// ── Inline FloodStation bottom sheet ───────────────────────────────────────────
 class _FloodStationSheet extends StatelessWidget {
   final FloodStation station;
   const _FloodStationSheet({required this.station});
@@ -660,7 +745,7 @@ class _FloodStationSheet extends StatelessWidget {
   }
 }
 
-// ── Bihar-specific top bar ─────────────────────────────────────────────────────
+// ── Bihar-specific top bar ─────────────────────────────────────────────────────────
 class _BiharMapTopBar extends StatelessWidget {
   final SyncMeta syncMeta;
   final bool     isLoading;
@@ -738,7 +823,7 @@ class _BiharMapTopBar extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '$countLabel  \u2022  ${syncMeta.freshnessLabel}',
+                  '$countLabel  •  ${syncMeta.freshnessLabel}',
                   style: TextStyle(
                     color: isFiltered ? rc.accent : rc.textSecondary,
                     fontSize: 11,
