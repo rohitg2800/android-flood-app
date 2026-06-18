@@ -89,7 +89,7 @@ _STATION_REGISTRY: List[Dict[str, Any]] = [
     {"station": "Benibad",          "river": "Bagmati",      "district": "Muzaffarpur / Gaighat",      "hfl": 50.01, "danger_level_m": 48.68, "lat": 26.005, "lon": 85.608},
     {"station": "Dheng Bridge",     "river": "Bagmati",      "district": "Sitamarhi / Suppi",          "hfl": 73.47, "danger_level_m": 71.00, "lat": 26.587, "lon": 85.480},
     {"station": "Hayaghat",         "river": "Bagmati",      "district": "Darbhanga / Hayaghat",       "hfl": 48.96, "danger_level_m": 45.72, "lat": 25.985, "lon": 85.806},
-    {"station": "Runisaidpur",      "river": "Bagmati",      "district": "Sitamarhi / Runisaidpur",    "hfl": 76.30, "danger_level_m": 74.42, "lat": 26.549, "lon": 85.712},
+    {"station": "Runisaidpur",      "river": "Bagmati",      "district": "Muzaffarpur / Aurai",        "hfl": 58.15, "danger_level_m": 55.00, "lat": 26.549, "lon": 85.712},
     {"station": "Sitamarhi",        "river": "Bagmati",      "district": "Sitamarhi / Sadar",          "hfl": 79.20, "danger_level_m": 77.22, "lat": 26.593, "lon": 85.489},
     {"station": "Nirmali",          "river": "Bagmati",      "district": "Supaul / Nirmali",           "hfl": 46.35, "danger_level_m": 44.22, "lat": 26.313, "lon": 86.587},
 
@@ -103,9 +103,9 @@ _STATION_REGISTRY: List[Dict[str, Any]] = [
 
     # ── Gandak ────────────────────────────────────────────────────────────────
     {"station": "Chatia",           "river": "Gandak",       "district": "East Champaran / Areraj",    "hfl": 70.04, "danger_level_m": 69.15, "lat": 26.838, "lon": 84.879},
-    {"station": "Dumariaghat",      "river": "Gandak",       "district": "Gopalganj / Sidhwalia",      "hfl": 64.36, "danger_level_m": 62.22, "lat": 26.491, "lon": 84.427},
+    {"station": "Dumariaghat",      "river": "Gandak",       "district": "Gopalganj / Sidhwalia",      "hfl": 63.70, "danger_level_m": 62.22, "lat": 26.491, "lon": 84.427},
     {"station": "Gopalpur",         "river": "Gandak",       "district": "Gopalganj / Kuchaikot",      "hfl": 66.40, "danger_level_m": 64.50, "lat": 26.620, "lon": 84.226},
-    {"station": "Hajipur",          "river": "Gandak",       "district": "Vaishali / Hajipur",         "hfl": 50.90, "danger_level_m": 50.30, "lat": 25.686, "lon": 85.208},
+    {"station": "Hajipur",          "river": "Gandak",       "district": "Vaishali / Hajipur",         "hfl": 50.93, "danger_level_m": 50.32, "lat": 25.686, "lon": 85.208},
     {"station": "Mirganj",          "river": "Gandak",       "district": "Gopalganj / Mirganj",        "hfl": 62.48, "danger_level_m": 60.98, "lat": 26.483, "lon": 84.368},
     {"station": "Rewaghat",         "river": "Gandak",       "district": "Muzaffarpur / Saraiya",      "hfl": 55.46, "danger_level_m": 54.41, "lat": 25.940, "lon": 85.383},
 
@@ -118,7 +118,7 @@ _STATION_REGISTRY: List[Dict[str, Any]] = [
     {"station": "Hathidah",         "river": "Ganga",        "district": "Patna / Mokameh",            "hfl": 43.52, "danger_level_m": 41.76, "lat": 25.390, "lon": 85.614},
     {"station": "Kahalgaon",        "river": "Ganga",        "district": "Bhagalpur / Gopalpur",       "hfl": 32.87, "danger_level_m": 31.09, "lat": 25.241, "lon": 87.248},
     {"station": "Munger",           "river": "Ganga",        "district": "Munger / Sadar Munger",      "hfl": 40.99, "danger_level_m": 39.33, "lat": 25.375, "lon": 86.473},
-    {"station": "Sultanganj",       "river": "Ganga",        "district": "Bhagalpur / Sultanganj",     "hfl": 36.14, "danger_level_m": 34.45, "lat": 25.252, "lon": 86.744},
+    {"station": "Sultanganj",       "river": "Ganga",        "district": "Bhagalpur / Sultanganj",     "hfl": 36.14, "danger_level_m": 34.50, "lat": 25.252, "lon": 86.744},
 
     # ── Ghaghra ───────────────────────────────────────────────────────────────
     {"station": "Darauli",          "river": "Ghaghra",      "district": "Siwan / Darauli",            "hfl": 61.82, "danger_level_m": 60.82, "lat": 26.012, "lon": 84.548},
@@ -134,7 +134,7 @@ _STATION_REGISTRY: List[Dict[str, Any]] = [
     # ── Kosi ──────────────────────────────────────────────────────────────────
     {"station": "Baltara",          "river": "Kosi",         "district": "Khagaria / Beldaur",         "hfl": 36.40, "danger_level_m": 33.85, "lat": 25.458, "lon": 86.584},
     {"station": "Basua",            "river": "Kosi",         "district": "Supaul / Supaul",            "hfl": 49.24, "danger_level_m": 47.75, "lat": 26.124, "lon": 86.604},
-    {"station": "Birpur",           "river": "Kosi",         "district": "Supaul / Birpur",            "hfl": 76.02, "danger_level_m": 76.02, "lat": 26.508, "lon": 86.918},
+    {"station": "Birpur",           "river": "Kosi",         "district": "Supaul / Birpur",            "hfl": 76.02, "danger_level_m": 74.70, "lat": 26.508, "lon": 86.918},
     {"station": "Koparia",          "river": "Kosi",         "district": "Supaul / Triveniganj",       "hfl": 47.85, "danger_level_m": 46.20, "lat": 26.203, "lon": 86.772},
     {"station": "Kursela",          "river": "Kosi",         "district": "Katihar / Kursela",          "hfl": 32.10, "danger_level_m": 30.00, "lat": 25.468, "lon": 87.258},
     {"station": "Naugachia",        "river": "Kosi",         "district": "Bhagalpur / Naugachia",      "hfl": 33.85, "danger_level_m": 32.10, "lat": 25.390, "lon": 87.097},
