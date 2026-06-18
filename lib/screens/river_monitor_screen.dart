@@ -126,6 +126,7 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
     final all = baselineOn
         ? sorted.where((d) =>
             d.riskScore == null ||
+            d.dangerLevel == 0 ||
             d.riskScore! >= kPreMonsoonBaselineRiskThreshold).toList()
         : sorted;
 

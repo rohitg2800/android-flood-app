@@ -245,8 +245,8 @@ class FloodData {
         river:        j['river']         as String? ?? '',
         district:     j['district']      as String? ?? '',
         currentLevel: (j['current_level']  as num?)?.toDouble() ?? 0,
-        dangerLevel:  (j['danger_level']   as num?)?.toDouble() ?? 0,
-        warningLevel: (j['warning_level']  as num?)?.toDouble() ?? 0,
+        dangerLevel:  ((j['danger_level'] ?? j['danger_level_m']) as num?)?.toDouble() ?? 0,
+        warningLevel: ((j['warning_level'] ?? j['warning_level_m']) as num?)?.toDouble() ?? 0,
         previousLevel:(j['previous_level'] as num?)?.toDouble(),
         observedAt: j['observed_at'] != null
             ? DateTime.tryParse(j['observed_at'] as String)

@@ -127,3 +127,35 @@ async def get_cwc_stations(
 
     _cache_ts = now
     return result
+
+
+# ── /api/v1/stations/all  (Flutter app endpoint) ────────────────────────────
+@router.get("/v1/stations/all", summary="All stations (Flutter app)")
+async def all_stations_v1():
+    """
+    Returns all stations in the flat list format expected by
+    IndiaStationsService in the Flutter app.
+    """
+    from backend.routers.wrd_bihar import get_wrd_bihar_data
+    try:
+        rows = await get_wrd_bihar_data()
+    except Exception:
+        rows = []
+
+    result = []
+    for r in rows:
+        result.append({
+            "station_id":    r.get("id") or r.get("station_id", ""),
+            "city":          r.get("name") or r.get("station_name", ""),
+            "state":         "Bihar",
+            "district":      r.get("district", ""),
+            "river_name":    r.get("river") or r.get("river_name", ""),
+            "latitude":      r.get("lat") or r.get("latitude"),
+            "longitude":     r.get("lon") or r.get("longitude"),
+            "current_level": r.get("current_level") or r.get("water_level"),
+            "danger_level":  r.get("danger_level"),
+            "warning_level": r.get("warning_level"),
+            "flow_rate":     r.get("discharge") or r.get("flow_rate"),
+            "rainfall_24h":  r.get("rainfall_24h"),
+        })
+    return result

@@ -482,11 +482,11 @@ class _MetaChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.max,
+    mainAxisSize: MainAxisSize.min,
     children: [
       Icon(icon, size: 11, color: rc.textMuted),
       const SizedBox(width: 3),
-      Expanded(child: Text(label,
+      Flexible(child: Text(label,
           style: rc.labelXs.copyWith(color: rc.textSecondary),
           overflow: TextOverflow.ellipsis),),
     ],
