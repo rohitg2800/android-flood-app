@@ -1,4 +1,12 @@
-// lib/screens/river_monitor_screen.dart  v2.1.0
+// lib/screens/river_monitor_screen.dart  v2.2.0
+//
+// v2.2.0 (18 Jun 2026)
+//   • Baseline filter: when preMonsoonBaselineProvider is enabled, stations
+//     whose ML riskScore is below kPreMonsoonBaselineRiskThreshold are hidden
+//     from the list and excluded from critCount/sevCount/breachCount.
+//     Stations with no riskScore (null) are always shown.
+//   • A dismissible info chip is shown when the filter is active so the user
+//     knows why the list is shorter than the total count.
 //
 // v2.1.0 (15 Jun 2026)
 //   P0 fix: single-pass max() for critCount/sevCount — no more double-counting
@@ -14,6 +22,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../models/flood_data.dart';
 import '../providers/flood_providers.dart';
+import '../providers/bihar_prediction_provider.dart';
 import '../theme/river_theme.dart';
 import '../theme/theme_3d.dart';
 import '../app_router.dart';
@@ -49,8 +58,6 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
         .animate(CurvedAnimation(parent: _headerAnim, curve: Curves.easeOutCubic));
   }
 
-  // P1: start/stop ripple — WidgetsBindingObserver handles app background;
-  // didChangeDependencies handles modal route changes and tab switches.
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -84,7 +91,6 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
     }
   }
 
-
   List<FloodData> _filtered(List<FloodData> all) {
     if (_query.isEmpty) return all;
     final q = _query.toLowerCase();
@@ -112,25 +118,38 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
 
   @override
   Widget build(BuildContext context) {
-    final rawAll    = ref.watch(liveLevelsProvider);
-    final loading   = ref.watch(isLoadingProvider);
-    final offline   = ref.watch(isOfflineProvider);
-    final lastFetch = ref.watch(lastFetchTimeProvider);
-    final t         = RiverColors.of(context);
+    final rawAll       = ref.watch(liveLevelsProvider);
+    final loading      = ref.watch(isLoadingProvider);
+    final offline      = ref.watch(isOfflineProvider);
+    final lastFetch    = ref.watch(lastFetchTimeProvider);
+    final baselineOn   = ref.watch(preMonsoonBaselineProvider);
+    final t            = RiverColors.of(context);
 
-    final all = [...rawAll]..sort((a, b) {
+    // Sort descending by riskScore
+    final sorted = [...rawAll]..sort((a, b) {
         final sa = (a.riskScore ?? 0).toDouble();
         final sb = (b.riskScore ?? 0).toDouble();
         return sb.compareTo(sa);
       });
 
+    // Apply baseline filter: hide stations with riskScore below threshold.
+    // Stations with null riskScore (no ML data) are always shown.
+    final all = baselineOn
+        ? sorted.where((d) =>
+            d.riskScore == null ||
+            d.riskScore! >= kPreMonsoonBaselineRiskThreshold).toList()
+        : sorted;
+
     final levels = _filtered(all);
 
-    // P0: correct single-pass counts
+    // Counts from filtered set
     final critCount   = _countCritical(all);
     final sevCount    = _countSevere(all);
     final normCount   = all.length - critCount - sevCount;
     final breachCount = all.where((d) => d.willBreachDanger == true).length;
+
+    // How many stations were hidden by the baseline filter
+    final hiddenCount = baselineOn ? rawAll.length - all.length : 0;
 
     return Scaffold(
       backgroundColor: t.scaffoldBg,
@@ -147,7 +166,7 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
                   child: _HeroHeader(
                     ripple:      _rippleAnim,
                     t:           t,
-                    total:       all.length,
+                    total:       rawAll.length,  // always show raw total
                     critCount:   critCount,
                     sevCount:    sevCount,
                     normCount:   normCount,
@@ -172,6 +191,41 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
               ),
             ),
           ),
+
+          // Baseline-active info chip
+          if (baselineOn && hiddenCount > 0)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF7B2FF7).withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                        color: const Color(0xFF7B2FF7).withValues(alpha: 0.35)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.filter_list_rounded,
+                          color: Color(0xFF7B2FF7), size: 14),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Baseline filter active — $hiddenCount low-risk '
+                          'station${hiddenCount == 1 ? '' : 's'} hidden',
+                          style: const TextStyle(
+                              color: Color(0xFF7B2FF7),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
 
           if (all.isNotEmpty)
             SliverToBoxAdapter(
@@ -217,7 +271,6 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (ctx, i) => _AnimatedCard(
-                    // P1: cap stagger index at 20 to limit concurrent controllers
                     index: math.min(i, 20),
                     child: _RiverCard(
                       data: levels[i],
@@ -698,12 +751,11 @@ class _RiverCardState extends State<_RiverCard>
     }
   }
 
-  // P1: MODERATE → amber (0xFFFFAB00) — was misleading green same as safe
   Color _mlColor(String? sev) {
     switch (sev?.toUpperCase()) {
       case 'CRITICAL': return const Color(0xFFFF1744);
       case 'SEVERE':   return AppPalette.severe;
-      case 'MODERATE': return const Color(0xFFFFAB00); // amber, not green
+      case 'MODERATE': return const Color(0xFFFFAB00);
       default:         return const Color(0xFF10E88A);
     }
   }
@@ -765,7 +817,6 @@ class _RiverCardState extends State<_RiverCard>
                       ),
                     ),
                   ),
-                  // P1: clamp to >=0 so wave never renders at negative offset
                   Positioned(
                     bottom: math.max(0, (120 * _fillTween.value) - 8),
                     left: 0, right: 0,
@@ -780,11 +831,9 @@ class _RiverCardState extends State<_RiverCard>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
 
-                        // Breach banner
                         if (willBreach)
                           _BreachBanner(peak: peak),
 
-                        // Row 1: cylinder + title + ML chip + risk badge
                         Row(
                           children: [
                             _Cylinder3D(
@@ -865,7 +914,6 @@ class _RiverCardState extends State<_RiverCard>
 
                         const SizedBox(height: 14),
 
-                        // Row 2: stat chips
                         Row(
                           children: [
                             if (d.currentLevel != null)
@@ -898,10 +946,8 @@ class _RiverCardState extends State<_RiverCard>
 
                         const SizedBox(height: 10),
 
-                        // Row 3: fill bar
                         _FillBar(fillPct: fillPct, fillValue: _fillTween.value, rc: rc, t: t),
 
-                        // Row 4: ML risk score bar
                         if (riskScore != null) ...[
                           const SizedBox(height: 8),
                           _MlScoreBar(riskScore: riskScore, confidence: confidence, t: t),
@@ -909,7 +955,6 @@ class _RiverCardState extends State<_RiverCard>
 
                         const SizedBox(height: 8),
 
-                        // Row 5: tap cue
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
