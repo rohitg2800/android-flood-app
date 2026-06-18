@@ -453,11 +453,11 @@ class _MetaRow extends StatelessWidget {
           rc: rc,
         ),
         const SizedBox(width: 6),
-        _MetaChip(
+        Flexible(child: _MetaChip(
           icon: Icons.update_rounded,
           label: station.lastUpdated ?? '—',
           rc: rc,
-        ),
+        ),),
         const Spacer(),
         if (station.dataSource != null)
           Text(
@@ -487,7 +487,8 @@ class _MetaChip extends StatelessWidget {
       Icon(icon, size: 11, color: rc.textMuted),
       const SizedBox(width: 3),
       Text(label,
-          style: rc.labelXs.copyWith(color: rc.textSecondary)),
+          style: rc.labelXs.copyWith(color: rc.textSecondary),
+          overflow: TextOverflow.ellipsis),
     ],
   );
 }
