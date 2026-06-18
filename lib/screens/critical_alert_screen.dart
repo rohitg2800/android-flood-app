@@ -73,7 +73,7 @@ void showCriticalAlertBanner(
   entry = OverlayEntry(
     builder: (overlayContext) {
       final mq           = MediaQuery.of(overlayContext);
-      final bottomOffset = mq.padding.bottom + 56.0 + 12.0;
+      final bottomOffset = mq.padding.bottom + kBottomNavigationBarHeight + 12.0;
 
       return Positioned.fill(
         child: Stack(
@@ -574,9 +574,7 @@ class _GlassBtn extends StatelessWidget {
       onTap: onTap,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(9),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
+        child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             decoration: BoxDecoration(
               color:        color.withOpacity(0.18),
@@ -605,8 +603,6 @@ class _GlassBtn extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-        ),
       ),
     );
   }
