@@ -590,3 +590,31 @@ async def wrd_bihar_health() -> Dict[str, Any]:
     except requests.RequestException as exc:
         return {"reachable": False, "error": str(exc)[:250],
                 "url": primary_url, "timestamp": _now_iso()}
+
+
+# ── /api/v1/stations/all  (Flutter IndiaStationsService endpoint) ────────────
+@router.get("/stations/all", summary="All Bihar stations (Flutter app format)")
+async def stations_all_v1():
+    """
+    Flat list of all Bihar stations in the shape expected by
+    IndiaStationsService (lib/services/india_stations_service.dart).
+    """
+    data = await _get_stations()          # existing cached fetch
+    stations = data.get("stations", [])
+    result = []
+    for s in stations:
+        result.append({
+            "station_id":    s.get("station", ""),
+            "city":          s.get("station", ""),
+            "state":         "Bihar",
+            "district":      s.get("district", ""),
+            "river_name":    s.get("river", ""),
+            "latitude":      s.get("lat"),
+            "longitude":     s.get("lon"),
+            "current_level": s.get("current_level_m"),
+            "danger_level":  s.get("danger_level_m"),
+            "warning_level": s.get("warning_level_m"),
+            "flow_rate":     s.get("discharge"),
+            "rainfall_24h":  s.get("rainfall_24h"),
+        })
+    return result
