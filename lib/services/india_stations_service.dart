@@ -1,7 +1,7 @@
 // lib/services/india_stations_service.dart
 //
 // OpsFlood — IndiaStationsService
-// Fetches stations from opsflood.onrender.com/api/v1/stations/all
+// Fetches stations from opsflood.onrender.com/api/wrd-bihar/stations
 // and returns ONLY Bihar stations (state filter applied).
 // Merges with GloFAS discharge for every lat/lon.
 //
@@ -54,9 +54,9 @@ class IndiaStationsService {
   Future<List<FloodData>> fetchAll() async {
     // Try primary URL, then backupUrl if set.
     final urls = [
-      '${AppConfig.baseUrl}/api/v1/stations/all',
+      '${AppConfig.baseUrl}/api/wrd-bihar/stations',
       if (AppConfig.backupUrl.isNotEmpty)
-        '${AppConfig.backupUrl}/api/v1/stations/all',
+        '${AppConfig.backupUrl}/api/wrd-bihar/stations',
     ];
 
     for (final urlStr in urls) {
@@ -176,7 +176,7 @@ class IndiaStationsService {
   // ── FloodData builder ────────────────────────────────────────────────────
 
   FloodData? _toFloodData(Map raw) {
-    final city  = raw['city']?.toString() ?? raw['station_name']?.toString() ?? '';
+    final city  = raw['city']?.toString() ?? raw['station_name']?.toString() ?? raw['station']?.toString() ?? '';
     final state = raw['state']?.toString() ?? raw['state_name']?.toString() ?? '';
     if (city.isEmpty || state.isEmpty || !_isBihar(state)) return null;
 
