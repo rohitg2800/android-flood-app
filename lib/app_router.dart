@@ -1,4 +1,4 @@
-// lib/app_router.dart  nav-v1
+// lib/app_router.dart  nav-v2
 // OpsFlood — Central App Router
 //
 // Single source of truth for ALL named routes.
@@ -17,6 +17,8 @@ import 'screens/bihar_river_map_screen.dart';
 import 'screens/news_feed_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/notification_settings_screen.dart';
+import 'screens/alert_settings_screen.dart';
+import 'screens/accessibility_settings_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/sos_screen.dart';
 import 'screens/evacuation_routes_screen.dart';
@@ -57,12 +59,12 @@ class Routes {
   static const dashboard            = '/dashboard';
   static const monitors             = '/monitors';
   static const alerts               = '/alerts';
-  static const map                  = '/map';
+  static const map                  = '/map';         // alias → BiharRiverMapScreen (bottom-nav tab)
   static const community            = '/community';
   static const settings             = '/settings';
 
   // ── Map variants
-  static const biharRiverMap        = '/bihar-river-map';
+  static const biharRiverMap        = '/bihar-river-map';      // canonical deep-link
   static const indiaRiverExplorer   = '/india-river-explorer';
 
   // ── Data / detail screens
@@ -97,9 +99,11 @@ class Routes {
   static const export_              = '/export';
 
   // ── Settings sub-screens
-  static const notificationSettings = '/notification-settings';
-  static const profile              = '/profile';
-  static const adminDashboard       = '/admin';
+  static const notificationSettings    = '/notification-settings';
+  static const alertSettings           = '/alert-settings';
+  static const accessibilitySettings   = '/settings/accessibility';
+  static const profile                 = '/profile';
+  static const adminDashboard          = '/admin';
 }
 
 // ---------------------------------------------------------------------------
@@ -216,6 +220,10 @@ class AppRouter {
       // ── Settings sub-screens
       case Routes.notificationSettings:
         page = const NotificationSettingsScreen(); break;
+      case Routes.alertSettings:
+        page = const AlertSettingsScreen(); break;
+      case Routes.accessibilitySettings:
+        page = const AccessibilitySettingsScreen(); break;
       case Routes.profile:
         page = const ProfileScreen(); break;
       case Routes.adminDashboard:

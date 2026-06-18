@@ -1,14 +1,12 @@
-// lib/screens/settings_screen.dart  v4.0  (full UI audit 15 Jun 2026)
+// lib/screens/settings_screen.dart  v5.0  (router audit 18 Jun 2026)
 //
-// v4.0 audit fixes:
-//   • Each _CollapsibleSection header icon badge uses a UNIQUE per-section
-//     accent colour instead of global t.accent — makes each section visually distinct
-//   • Each _tile() row: icon badge now uses a PER-ROUTE colour matching dashboard _P
-//   • Chevron indicator: per-section colour instead of global accent
-//   • Version footer: styled properly with app icon + glow
-//   • SliverPadding bottom 40 → 60 (never clipped by FAB)
-//   • Section order: most-used sections at top, admin last
-//   • "Auto" system chip added back (was removed in v3.3, requested back)
+// v5.0 changes:
+//   • Account section: added Alert Settings tile (bell icon)
+//   • New 'Accessibility' section inserted between Account and Data
+//     with Accessibility Settings tile (font/contrast/language)
+//   • _expanded + _sectionColors maps updated for 'accessibility'
+//   • Section order: appearance → account → accessibility → data → tools
+//                    → maps → weather → prediction → community → news → admin
 library;
 
 import 'package:flutter/material.dart';
@@ -30,16 +28,17 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final Map<String, bool> _expanded = {
-    'appearance': true,
-    'account':    true,
-    'data':       true,
-    'tools':      true,
-    'maps':       true,
-    'weather':    false,
-    'community':  false,
-    'prediction': false,
-    'news':       false,
-    'admin':      false,
+    'appearance':    true,
+    'account':       true,
+    'accessibility': false,
+    'data':          true,
+    'tools':         true,
+    'maps':          true,
+    'weather':       false,
+    'community':     false,
+    'prediction':    false,
+    'news':          false,
+    'admin':         false,
   };
 
   void _toggle(String key) {
@@ -50,16 +49,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   // ── Per-section accent colours (mid-tone, matching dashboard _P) ──────────
   static const _sectionColors = {
-    'appearance': Color(0xFF7E57C2),
-    'account':    Color(0xFF2196F3),
-    'data':       Color(0xFF0288D1),
-    'tools':      Color(0xFF26A69A),
-    'maps':       Color(0xFF00897B),
-    'weather':    Color(0xFFFF8F00),
-    'prediction': Color(0xFF7E57C2),
-    'community':  Color(0xFF388E3C),
-    'news':       Color(0xFFF9A825),
-    'admin':      Color(0xFFB71C1C),
+    'appearance':    Color(0xFF7E57C2),
+    'account':       Color(0xFF2196F3),
+    'accessibility': Color(0xFF00ACC1),
+    'data':          Color(0xFF0288D1),
+    'tools':         Color(0xFF26A69A),
+    'maps':          Color(0xFF00897B),
+    'weather':       Color(0xFFFF8F00),
+    'prediction':    Color(0xFF7E57C2),
+    'community':     Color(0xFF388E3C),
+    'news':          Color(0xFFF9A825),
+    'admin':         Color(0xFFB71C1C),
   };
 
   Color _sc(String key) => _sectionColors[key] ?? const Color(0xFF2196F3);
@@ -89,7 +89,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               IconButton(
                 icon: Icon(Icons.info_outline_rounded, color: t.textSecondary, size: 20),
                 tooltip: 'About',
-                onPressed: () {}, // placeholder
+                onPressed: () {},
               ),
             ],
           ),
@@ -118,8 +118,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   accentColor: _sc('account'),
                   open: _isOpen('account'), onToggle: () => _toggle('account'),
                   child: _tiles(t, _sc('account'), [
-                    (Icons.person_rounded,           const Color(0xFF2196F3), 'Profile',               Routes.profile),
-                    (Icons.notifications_rounded,    const Color(0xFFFF8F00), 'Notification Settings', Routes.notificationSettings),
+                    (Icons.person_rounded,              const Color(0xFF2196F3), 'Profile',               Routes.profile),
+                    (Icons.notifications_rounded,       const Color(0xFFFF8F00), 'Notification Settings', Routes.notificationSettings),
+                    (Icons.notifications_active_rounded,const Color(0xFFE53935), 'Alert Settings',        Routes.alertSettings),
+                  ]),
+                ),
+                _gap,
+
+                // ── Accessibility ────────────────────────────────────────────
+                _CollapsibleSection(
+                  t: t, sectionKey: 'accessibility',
+                  icon: Icons.accessibility_new_rounded, title: 'Accessibility',
+                  accentColor: _sc('accessibility'),
+                  open: _isOpen('accessibility'), onToggle: () => _toggle('accessibility'),
+                  child: _tiles(t, _sc('accessibility'), [
+                    (Icons.accessibility_new_rounded, const Color(0xFF00ACC1), 'Accessibility Settings', Routes.accessibilitySettings),
                   ]),
                 ),
                 _gap,
@@ -160,7 +173,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   accentColor: _sc('maps'),
                   open: _isOpen('maps'), onToggle: () => _toggle('maps'),
                   child: _tiles(t, _sc('maps'), [
-                    (Icons.layers_rounded,        const Color(0xFF546E7A), 'Flood Command Map',    Routes.map),
                     (Icons.map_rounded,           const Color(0xFF00897B), 'Bihar River Map',      Routes.biharRiverMap),
                     (Icons.travel_explore_rounded,const Color(0xFF0097A7), 'India River Explorer', Routes.indiaRiverExplorer),
                     (Icons.directions_run_rounded,const Color(0xFFF57F17), 'Evacuation Routes',    Routes.evacuation),
@@ -201,8 +213,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   accentColor: _sc('community'),
                   open: _isOpen('community'), onToggle: () => _toggle('community'),
                   child: _tiles(t, _sc('community'), [
-                    (Icons.forum_rounded,          const Color(0xFF6A1B9A), 'Crowd Reports',   Routes.crowdReports),
-                    (Icons.report_problem_rounded, const Color(0xFFE64A19), 'Incident Report', Routes.incidentReport),
+                    (Icons.forum_rounded,             const Color(0xFF6A1B9A), 'Crowd Reports',   Routes.crowdReports),
+                    (Icons.report_problem_rounded,    const Color(0xFFE64A19), 'Incident Report', Routes.incidentReport),
                     (Icons.health_and_safety_rounded, const Color(0xFFC62828), 'SOS & Emergency', Routes.sos),
                   ]),
                 ),
@@ -247,7 +259,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   static const _gap = SizedBox(height: 10);
 
-  // ── Tile list — now takes a sectionColor for divider tinting ─────────────
+  // ── Tile list — takes a sectionColor for divider tinting ─────────────────
   Widget _tiles(
     RiverColors t,
     Color sectionColor,
@@ -368,7 +380,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  // ── Single nav tile — now takes a per-tile iconColor ─────────────────────
+  // ── Single nav tile ───────────────────────────────────────────────────────
   Widget _tile(
     RiverColors t,
     IconData    icon,
@@ -389,7 +401,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Per-tile icon badge with unique colour
               Container(
                 width: 36, height: 36,
                 decoration: BoxDecoration(
@@ -415,7 +426,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ),
               const SizedBox(width: 4),
-              // Chevron — subtle, uses iconColor tint
               Container(
                 width: 24, height: 24,
                 decoration: BoxDecoration(
@@ -437,18 +447,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // _CollapsibleSection  v4.0
-//
-// Accepts accentColor parameter — each section has its own colour.
-// Header icon badge uses that colour.
-// Chevron button uses that colour.
-// Divider line between header and body uses that colour.
 // ─────────────────────────────────────────────────────────────────────────────
 class _CollapsibleSection extends StatelessWidget {
   final RiverColors  t;
   final String       sectionKey;
   final IconData     icon;
   final String       title;
-  final Color        accentColor; // v4: per-section colour
+  final Color        accentColor;
   final bool         open;
   final VoidCallback onToggle;
   final Widget       child;
@@ -487,7 +492,6 @@ class _CollapsibleSection extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Per-section colour icon badge
                     Container(
                       width: 34, height: 34,
                       decoration: BoxDecoration(
@@ -543,7 +547,6 @@ class _CollapsibleSection extends StatelessWidget {
               firstChild: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Divider line uses section colour
                   Container(
                     height: 1,
                     decoration: BoxDecoration(
@@ -577,7 +580,6 @@ class _VersionFooter extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Gradient divider
         Container(
           height: 1,
           margin: const EdgeInsets.only(bottom: 16),
