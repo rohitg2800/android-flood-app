@@ -61,21 +61,18 @@ final wrdStationsProvider = wrdRiverStationsProvider;
 
 // ── merged stations ───────────────────────────────────────────────────────────────────────────────────
 /// Merged station list: WRD base + DataFetch overlay.
-/// This is the canonical provider that all map/alert screens consume.
+String _normCity(String s) => s.toLowerCase().replaceAll(RegExp(r"\s*\(.*?\)"), "").replaceAll(RegExp(r"[^a-z0-9]"), " ").replaceAll(RegExp(r" +"), " ").trim();
+
 final mergedStationsProvider = Provider<List<RiverStation>>((ref) {
   final base       = ref.watch(wrdRiverStationsProvider);
   final dfStations = ref.watch(dataFetchStationsProvider);
 
   if (dfStations.isEmpty) return base;
 
-  final dfMap = <String, RiverStation>{
-    for (final s in dfStations) s.station: s,
-  };
-
   return [
-    for (final s in base) dfMap[s.station] ?? s,
+    for (final s in base) dfStations.where((d) => _normCity(d.city) == _normCity(s.city)).firstOrNull ?? s,
     for (final s in dfStations)
-      if (!base.any((b) => b.station == s.station)) s,
+      if (!base.any((b) => _normCity(b.city) == _normCity(s.city))) s,
   ];
 });
 

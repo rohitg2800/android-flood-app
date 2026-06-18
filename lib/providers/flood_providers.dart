@@ -237,7 +237,7 @@ List<FloodData> _deduplicateByCity(List<FloodData> raw) {
     // v10.5: always normalise the key so 'Birpur', 'Birpur (CWC)', 'birpur cwc'
     // all collapse to the same key instead of producing 3 separate cards.
     final key = _normCityKey(
-        fd.stationName.isNotEmpty ? fd.stationName : fd.city);
+        fd.city);
     if (!map.containsKey(key)) {
       map[key] = fd;
     } else {
