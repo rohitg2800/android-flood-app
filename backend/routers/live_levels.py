@@ -241,35 +241,53 @@ def _get_glofas_cache() -> List[Dict[str, Any]]:
 
 
 def _get_wrd_bihar_stations() -> List[Dict[str, Any]]:
+    """
+    Always returns all registry stations (169).
+    Overlays live scrape data where available.
+    """
     try:
         for mod_name in ("backend.routers.wrd_bihar", "routers.wrd_bihar"):
             mod = sys.modules.get(mod_name)
-            if mod is not None:
-                # 1. Try live scrape cache first
-                cache = getattr(mod, "_CACHE", None)
-                cache_key = getattr(mod, "_CACHE_KEY", None)
-                if cache is not None and cache_key and cache_key in cache:
-                    stations = cache[cache_key].get("stations", [])
-                    if stations:
-                        return stations
-                # 2. Fall back to full 169-station registry (always present)
-                registry = getattr(mod, "_STATION_REGISTRY", None)
-                if registry:
-                    return [
-                        {
-                            "station":         s["station"],
-                            "river":           s.get("river", ""),
-                            "district":        s.get("district", ""),
-                            "danger_level_m":  s.get("danger_level_m", 0.0),
-                            "warning_level_m": s.get("warning_level_m", 0.0),
-                            "current_level_m": None,
-                            "lat":             s.get("lat"),
-                            "lon":             s.get("lon"),
-                            "last_update":     None,
-                            "trend":           None,
-                        }
-                        for s in registry
-                    ]
+            if mod is None:
+                continue
+
+            registry = getattr(mod, "_STATION_REGISTRY", None)
+            if not registry:
+                continue
+
+            # Build base from full registry (always 169 entries)
+            base: Dict[str, Dict[str, Any]] = {
+                s["station"]: {
+                    "station":         s["station"],
+                    "river":           s.get("river", ""),
+                    "district":        s.get("district", ""),
+                    "danger_level_m":  s.get("danger_level_m", 0.0),
+                    "warning_level_m": s.get("warning_level_m", 0.0),
+                    "current_level_m": None,
+                    "lat":             s.get("lat"),
+                    "lon":             s.get("lon"),
+                    "last_update":     None,
+                    "trend":           None,
+                }
+                for s in registry
+            }
+
+            # Overlay live scrape data on top (31 stations when scrape runs)
+            cache     = getattr(mod, "_CACHE", None)
+            cache_key = getattr(mod, "_CACHE_KEY", None)
+            if cache is not None and cache_key and cache_key in cache:
+                for live in cache[cache_key].get("stations", []):
+                    name = live.get("station", "")
+                    if name in base:
+                        base[name].update({
+                            "current_level_m": live.get("current_level_m"),
+                            "last_update":     live.get("last_update") or live.get("timestamp"),
+                            "trend":           live.get("trend"),
+                            "above_below_danger_m": live.get("above_below_danger_m"),
+                        })
+
+            return list(base.values())
+
     except Exception:
         pass
     return []
