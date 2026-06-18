@@ -1,8 +1,12 @@
-// lib/providers/bihar_prediction_provider.dart  v1.1
+// lib/providers/bihar_prediction_provider.dart  v1.2
 //
 // Step 5.1 — Per-city ML prediction provider backed by biharLiveProvider.
 //
 // v1.1: stationId now used in second-pass fallback scan (fixes unused_local_variable).
+// v1.2: BUGFIX — use static kBiharGauges thresholds when live API returns null/0
+//       dangerLevel or warningLevel, instead of fabricating currentLevel*1.5.
+//       Fixes Patna card (and all WRD stations) showing wrong riskScore /
+//       severity / predicted24h on the dashboard Risk Forecast Strip.
 
 library;
 
@@ -17,6 +21,42 @@ import '../providers/weather_provider.dart';
 import '../services/predict.dart' as predict_lib;
 import '../providers/kosi_birpur_provider.dart';
 import '../services/kosi_birpur_service.dart';
+import '../data/bihar_rivers.dart';   // kBiharGauges — static CWC thresholds
+
+// ─────────────────────────────────────────────────────────────────────────────
+// _staticThreshold
+//
+// Looks up the canonical WL / DL from kBiharGauges for a given city/station
+// name (and optionally stationId).  Returns null when no match is found so
+// callers can chain their own fallback.
+//
+// Match priority:
+//   1. city contains gauge.station  OR  gauge.station contains city  (case-insensitive)
+//   2. same check against stationId tokens (e.g. "BR_GANDHIGHAT_CWC" → "gandhighat")
+// ─────────────────────────────────────────────────────────────────────────────
+({double warningLevel, double dangerLevel})? _staticThreshold(
+  String city, {
+  String stationId = '',
+}) {
+  final cityL = city.toLowerCase();
+  for (final g in kBiharGauges) {
+    final gL = g.station.toLowerCase();
+    if (cityL.contains(gL) || gL.contains(cityL)) {
+      return (warningLevel: g.warningLevel, dangerLevel: g.dangerLevel);
+    }
+  }
+  // Second pass: stationId tokens
+  if (stationId.isNotEmpty) {
+    final idL = stationId.toLowerCase();
+    for (final g in kBiharGauges) {
+      final gL = g.station.toLowerCase();
+      if (idL.contains(gL) || gL.contains(idL)) {
+        return (warningLevel: g.warningLevel, dangerLevel: g.dangerLevel);
+      }
+    }
+  }
+  return null;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // biharPredictionProvider
@@ -62,17 +102,27 @@ final biharPredictionProvider =
     }
   }
 
-  // ── 2. Extract live values (with safe defaults) ───────────────────────────
+  // ── 2. Extract live values — resolve DL/WL from static gauges if API
+  //       returns null/0 (fixes wrong riskScore for WRD/Patna stations) ──────
   final currentLevel = station?.currentLevel ?? 0.0;
-  final dangerLevel  = station?.dangerLevel  ?? (currentLevel > 0 ? currentLevel * 1.5 : 10.0);
-  final warningLevel = station?.warningLevel ?? dangerLevel * 0.75;
+  final riverName    = station?.river        ?? '';
   final diff24h      = station?.diff24h      ?? 0.0;
   final riskLabel    = station?.riskLabel    ?? 'NORMAL';
-  final riverName    = station?.river        ?? '';
+
+  final _static = _staticThreshold(cityName, stationId: stationId);
+
+  final dangerLevel = (station?.dangerLevel != null && station!.dangerLevel! > 0)
+      ? station.dangerLevel!
+      : (_static?.dangerLevel ??
+            (currentLevel > 0 ? currentLevel * 1.5 : 10.0));
+
+  final warningLevel = (station?.warningLevel != null && station!.warningLevel! > 0)
+      ? station.warningLevel!
+      : (_static?.warningLevel ?? dangerLevel * 0.80);
 
   // ── 3. Weather rainfall modifier ─────────────────────────────────────────
-  final wxState     = ref.watch(weatherProvider);
-  final rain7d      = wxState.rainfall7dMm;
+  final wxState        = ref.watch(weatherProvider);
+  final rain7d         = wxState.rainfall7dMm;
   final stationRain24h = station?.rainfall24h;
   final rainfallMod    = stationRain24h != null
       ? (stationRain24h / 50).clamp(0.0, 1.0)
@@ -153,16 +203,32 @@ final biharBulkPredictionsProvider =
             : (wxState.current != null
                 ? (wxState.rainfall7dMm / 200).clamp(0.0, 1.0)
                 : 0.3);
+
         final isBirpur = s.city.toLowerCase().contains('birpur');
+
         final currentLevel = isBirpur
             ? (birpur?.levelM   ?? s.currentLevel ?? kBirpurNormalLevel)
             : (s.currentLevel   ?? 0.0);
-        final dangerLevel  = isBirpur
+
+        // ── v1.2: resolve DL/WL from static kBiharGauges when API returns
+        //    null/0 — prevents currentLevel*1.5 fabrication for WRD stations ──
+        final _static = isBirpur
+            ? null
+            : _staticThreshold(s.city, stationId: s.id);
+
+        final dangerLevel = isBirpur
             ? (birpur?.dangerLevel  ?? kBirpurDangerLevel)
-            : (s.dangerLevel  ?? ((s.currentLevel ?? 0) * 1.5).clamp(1.0, 999.0));
+            : ((s.dangerLevel != null && s.dangerLevel! > 0)
+                ? s.dangerLevel!
+                : (_static?.dangerLevel ??
+                      ((s.currentLevel ?? 0) * 1.5).clamp(1.0, 999.0)));
+
         final warningLevel = isBirpur
             ? (birpur?.warningLevel ?? kBirpurWarningLevel)
-            : (s.warningLevel ?? (dangerLevel * 0.75));
+            : ((s.warningLevel != null && s.warningLevel! > 0)
+                ? s.warningLevel!
+                : (_static?.warningLevel ?? (dangerLevel * 0.80)));
+
         return _liveRuleEngine(
             cityName:     s.city,
             riverName:    s.river,
@@ -289,7 +355,7 @@ FloodPrediction _liveRuleEngine({
     predicted72h:  predicted72h,
     trend:         trendStr,
     confidencePct: confidencePct,
-    modelVersion:  'Live Rule Engine v1',
+    modelVersion:  'Live Rule Engine v1.2',
     outlook:       _outlookText(severity, trendStr, predicted24h, dng),
     fromBackend:   false,
     next24h:       _series(cur, predicted24h, dng, 24),
