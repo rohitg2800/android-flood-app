@@ -1,3 +1,3 @@
 // lib/screens/monitors_screen_impl.dart
-// v3 — re-exports RiverMonitorScreen (monitors_screen.dart removed).
+// Alias shim — Monitors tab delegates to RiverMonitorScreen
 export 'river_monitor_screen.dart';

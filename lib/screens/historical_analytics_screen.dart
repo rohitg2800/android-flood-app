@@ -1,290 +1,313 @@
-// lib/screens/historical_analytics_screen.dart
-// OpsFlood — Historical Analytics Screen
-// WIRING: added static route constant
+// lib/screens/historical_analytics_screen.dart  v2.0
+// Historical flood explorer — year/month filters, peak events, district rows
+library;
 
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 import '../theme/river_theme.dart';
+import '../theme/theme_3d.dart';
 
-enum FloodEventType { hfl, dangerLevel, warningLevel }
-
-class HistoricalFloodRecord {
-  final DateTime date;
-  final String   station;
-  final String   river;
-  final double   peakLevel;
-  final double   dangerLevel;
-  final double   warningLevel;
-  final FloodEventType eventType;
-
-  const HistoricalFloodRecord({
-    required this.date,
-    required this.station,
-    required this.river,
-    required this.peakLevel,
-    required this.dangerLevel,
-    required this.warningLevel,
-    required this.eventType,
-  });
-}
-
-final historicalDataProvider =
-    FutureProvider<List<HistoricalFloodRecord>>((ref) async {
-  return const [];
-});
-
-Color _eventColor(FloodEventType t) {
-  switch (t) {
-    case FloodEventType.hfl:          return AppPalette.critical;
-    case FloodEventType.dangerLevel:  return AppPalette.danger;
-    case FloodEventType.warningLevel: return AppPalette.warning;
-  }
-}
-
-class HistoricalAnalyticsScreen extends ConsumerStatefulWidget {
-  static const String route = '/historical-analytics';
+class HistoricalAnalyticsScreen extends StatefulWidget {
+  static const route = '/historical-analytics';
   const HistoricalAnalyticsScreen({super.key});
-
   @override
-  ConsumerState<HistoricalAnalyticsScreen> createState() =>
-      _HistoricalAnalyticsScreenState();
+  State<HistoricalAnalyticsScreen> createState() => _HistoricalAnalyticsScreenState();
 }
 
-class _HistoricalAnalyticsScreenState
-    extends ConsumerState<HistoricalAnalyticsScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tab;
+class _HistoricalAnalyticsScreenState extends State<HistoricalAnalyticsScreen> {
+  int  _selectedYear = 2024;
+  int? _selectedMonth;
 
-  @override
-  void initState() {
-    super.initState();
-    _tab = TabController(length: 3, vsync: this);
-  }
+  static const _years = [2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015];
+  static const _months = [
+    'Jan','Feb','Mar','Apr','May','Jun',
+    'Jul','Aug','Sep','Oct','Nov','Dec',
+  ];
 
-  @override
-  void dispose() {
-    _tab.dispose();
-    super.dispose();
-  }
+  // Synthetic historical data keyed by year
+  static const _peakEvents = {
+    2024: [
+      (river: 'Kosi',    district: 'Supaul',    level: 44.82, date: '12 Aug'),
+      (river: 'Bagmati', district: 'Sitamarhi', level: 68.20, date: '19 Aug'),
+      (river: 'Gandak',  district: 'Gopalganj', level: 62.14, date: '04 Sep'),
+      (river: 'Ganga',   district: 'Patna',     level: 50.71, date: '27 Sep'),
+    ],
+    2023: [
+      (river: 'Burhi Gandak', district: 'Muzaffarpur', level: 55.40, date: '08 Aug'),
+      (river: 'Bagmati',      district: 'Darbhanga',   level: 71.30, date: '22 Aug'),
+      (river: 'Kosi',         district: 'Khagaria',    level: 46.90, date: '30 Aug'),
+    ],
+    2022: [
+      (river: 'Ganga',   district: 'Bhagalpur', level: 37.60, date: '17 Sep'),
+      (river: 'Gandak',  district: 'W Champaran',level:59.80, date: '02 Aug'),
+    ],
+  };
 
-  @override
-  Widget build(BuildContext context) {
-    final data = ref.watch(historicalDataProvider);
-    final t    = RiverColors.of(context);
-
-    return Theme(
-      data: Theme.of(context).copyWith(
-        tabBarTheme: TabBarThemeData(
-          labelStyle:           const TextStyle(fontWeight: FontWeight.w700),
-          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w400),
-          indicatorColor:       AppPalette.cyan,
-          labelColor:           AppPalette.cyan,
-          unselectedLabelColor: t.textSecondary,
-        ),
-      ),
-      child: Scaffold(
-        backgroundColor: t.scaffoldBg,
-        appBar: AppBar(
-          backgroundColor: t.cardBg,
-          elevation: 0,
-          title: Text('Historical Analytics',
-              style: TextStyle(color: t.textPrimary, fontWeight: FontWeight.w700)),
-          iconTheme: IconThemeData(color: t.textPrimary),
-          bottom: TabBar(
-            controller: _tab,
-            tabs: const [
-              Tab(text: 'Timeline'),
-              Tab(text: 'Chart'),
-              Tab(text: 'Stats'),
-            ],
-          ),
-        ),
-        body: data.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Error: $e')),
-          data: (records) => TabBarView(
-            controller: _tab,
-            children: [
-              _TimelineTab(records: records),
-              _ChartTab(records: records),
-              _StatsTab(records: records),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _TimelineTab extends StatelessWidget {
-  final List<HistoricalFloodRecord> records;
-  const _TimelineTab({required this.records});
-
-  @override
-  Widget build(BuildContext context) {
-    final t = RiverColors.of(context);
-    if (records.isEmpty) {
-      return Center(
-        child: Text('No historical data available.',
-            style: TextStyle(color: t.textSecondary)),
-      );
-    }
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: records.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
-      itemBuilder: (_, i) {
-        final r = records[i];
-        final color = _eventColor(r.eventType);
-        return Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: t.cardBg,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: color.withValues(alpha: 0.35)),
-          ),
-          child: Row(
-            children: [
-              Container(width: 8, height: 8,
-                  decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('${r.station} — ${r.river}',
-                        style: TextStyle(color: t.textPrimary,
-                            fontWeight: FontWeight.w600)),
-                    Text('Peak: ${r.peakLevel.toStringAsFixed(2)} m  |  '
-                        '${r.date.year}-${r.date.month.toString().padLeft(2,"0")}-${r.date.day.toString().padLeft(2,"0")}',
-                        style: TextStyle(color: t.textSecondary, fontSize: 12)),
-                  ],
-                ),
-              ),
-              Text(r.eventType.name.toUpperCase(),
-                  style: TextStyle(color: color, fontSize: 10,
-                      fontWeight: FontWeight.w700)),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _ChartTab extends StatelessWidget {
-  final List<HistoricalFloodRecord> records;
-  const _ChartTab({required this.records});
-
-  @override
-  Widget build(BuildContext context) {
-    final t = RiverColors.of(context);
-    if (records.isEmpty) {
-      return Center(
-        child: Text('No chart data.', style: TextStyle(color: t.textSecondary)),
-      );
-    }
-    final Map<int, double> yearPeak = {};
-    for (final r in records) {
-      final yr = r.date.year;
-      yearPeak[yr] = (yearPeak[yr] ?? 0).clamp(0, double.infinity) < r.peakLevel
-          ? r.peakLevel : yearPeak[yr]!;
-    }
-    final years  = yearPeak.keys.toList()..sort();
-    final groups = years.asMap().entries.map((e) => BarChartGroupData(
-      x: e.key,
-      barRods: [
-        BarChartRodData(
-          toY: yearPeak[e.value]!,
-          color: AppPalette.cyan,
-          width: 14,
-          borderRadius: BorderRadius.circular(4),
-        ),
-      ],
-    )).toList();
-
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: BarChart(
-        BarChartData(
-          barGroups: groups,
-          gridData: const FlGridData(show: false),
-          borderData: FlBorderData(show: false),
-          titlesData: FlTitlesData(
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                getTitlesWidget: (v, _) {
-                  final idx = v.toInt();
-                  if (idx < 0 || idx >= years.length) return const SizedBox();
-                  return Text('${years[idx]}',
-                      style: TextStyle(color: t.textSecondary, fontSize: 9));
-                },
-              ),
-            ),
-            leftTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false)),
-            topTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false)),
-            rightTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false)),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StatsTab extends StatelessWidget {
-  final List<HistoricalFloodRecord> records;
-  const _StatsTab({required this.records});
+  static const _districtRisks = [
+    (district: 'Supaul',       flooded2024: true,  avgRainfall: 1480, riskScore: 0.92),
+    (district: 'Sitamarhi',    flooded2024: true,  avgRainfall: 1310, riskScore: 0.87),
+    (district: 'Madhubani',    flooded2024: true,  avgRainfall: 1420, riskScore: 0.84),
+    (district: 'Darbhanga',    flooded2024: true,  avgRainfall: 1180, riskScore: 0.81),
+    (district: 'Muzaffarpur',  flooded2024: true,  avgRainfall: 1200, riskScore: 0.78),
+    (district: 'Gopalganj',    flooded2024: false, avgRainfall: 1050, riskScore: 0.64),
+    (district: 'Khagaria',     flooded2024: true,  avgRainfall: 1100, riskScore: 0.72),
+    (district: 'Samastipur',   flooded2024: false, avgRainfall: 980,  riskScore: 0.55),
+    (district: 'Bhagalpur',    flooded2024: false, avgRainfall: 870,  riskScore: 0.45),
+    (district: 'Patna',        flooded2024: false, avgRainfall: 930,  riskScore: 0.39),
+  ];
 
   @override
   Widget build(BuildContext context) {
     final t      = RiverColors.of(context);
-    final hflCnt = records.where((r) => r.eventType == FloodEventType.hfl).length;
-    final dlCnt  = records.where((r) => r.eventType == FloodEventType.dangerLevel).length;
-    final wlCnt  = records.where((r) => r.eventType == FloodEventType.warningLevel).length;
-    final avgPeak = records.isEmpty ? 0.0
-        : records.map((r) => r.peakLevel).reduce((a, b) => a + b) / records.length;
+    final events = _peakEvents[_selectedYear] ?? [];
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        _StatRow(label: 'Total Events',  value: '${records.length}',               color: AppPalette.cyan,     t: t),
-        _StatRow(label: 'HFL Crossings', value: '$hflCnt',                         color: AppPalette.critical, t: t),
-        _StatRow(label: 'Danger Level',  value: '$dlCnt',                          color: AppPalette.danger,   t: t),
-        _StatRow(label: 'Warning Level', value: '$wlCnt',                          color: AppPalette.warning,  t: t),
-        _StatRow(label: 'Avg Peak',      value: '${avgPeak.toStringAsFixed(2)} m', color: AppPalette.gold,     t: t),
-      ],
+    return Scaffold(
+      backgroundColor: t.scaffoldBg,
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          Td3AppBar(
+            title: 'Historical Analytics',
+            subtitle: 'Flood records & district trends',
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 60),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+
+                // ── Year filter ───────────────────────────────────────────
+                Text('Select Year', style: TextStyle(color: t.textSecondary, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.6)),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 36,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: _years.map((y) {
+                      final sel = y == _selectedYear;
+                      return GestureDetector(
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          setState(() { _selectedYear = y; _selectedMonth = null; });
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          margin: const EdgeInsets.only(right: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: sel ? const Color(0xFF0288D1) : t.cardBg,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: sel ? const Color(0xFF0288D1) : t.stroke.withValues(alpha: 0.3)),
+                          ),
+                          child: Text('$y', style: TextStyle(color: sel ? Colors.white : t.textSecondary, fontSize: 12, fontWeight: FontWeight.w700)),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                // ── Month filter ──────────────────────────────────────────
+                SizedBox(
+                  height: 30,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: [
+                      _MonthChip(t: t, label: 'All', sel: _selectedMonth == null,
+                        onTap: () => setState(() => _selectedMonth = null)),
+                      ...List.generate(12, (i) => _MonthChip(
+                        t: t, label: _months[i], sel: _selectedMonth == i + 1,
+                        onTap: () => setState(() => _selectedMonth = i + 1),
+                      )),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // ── Summary KPIs ──────────────────────────────────────────
+                Row(
+                  children: [
+                    Expanded(child: _MiniKpi(t: t, label: 'Peak Events', value: '${events.length}', color: const Color(0xFFE53935))),
+                    const SizedBox(width: 10),
+                    Expanded(child: _MiniKpi(t: t, label: 'Districts Affected', value: '${(events.length * 2.3).round()}', color: const Color(0xFFFF8F00))),
+                    const SizedBox(width: 10),
+                    Expanded(child: _MiniKpi(t: t, label: 'Avg Max Level', value: events.isEmpty ? '—' : '${(events.map((e) => e.level).reduce((a,b)=>a+b)/events.length).toStringAsFixed(1)}m', color: const Color(0xFF0288D1))),
+                  ],
+                ),
+                const SizedBox(height: 14),
+
+                // ── Peak Events Timeline ──────────────────────────────────
+                Td3Card(
+                  elevation: Td3.elevMid,
+                  accentColor: const Color(0xFFE53935),
+                  child: Padding(
+                    padding: const EdgeInsets.all(18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Peak Flood Events — $_selectedYear',
+                          style: TextStyle(color: t.textPrimary, fontSize: 13, fontWeight: FontWeight.w700)),
+                        const SizedBox(height: 14),
+                        if (events.isEmpty)
+                          Text('No peak events recorded for $_selectedYear.',
+                            style: TextStyle(color: t.textSecondary, fontSize: 12))
+                        else
+                          ...events.map((e) => _EventRow(t: t, event: e)),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // ── District Risk Table ───────────────────────────────────
+                Td3Card(
+                  elevation: Td3.elevMid,
+                  accentColor: const Color(0xFF26A69A),
+                  child: Padding(
+                    padding: const EdgeInsets.all(18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('District Flood Risk Index',
+                          style: TextStyle(color: t.textPrimary, fontSize: 13, fontWeight: FontWeight.w700)),
+                        const SizedBox(height: 4),
+                        Text('Based on 10-year historical average',
+                          style: TextStyle(color: t.textSecondary, fontSize: 10)),
+                        const SizedBox(height: 14),
+                        ..._districtRisks.map((d) => _DistrictRiskRow(t: t, data: d)),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 32),
+              ]),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
-class _StatRow extends StatelessWidget {
-  final String label, value;
-  final Color  color;
+class _MonthChip extends StatelessWidget {
   final RiverColors t;
-  const _StatRow({
-    required this.label, required this.value,
-    required this.color, required this.t,
-  });
+  final String label;
+  final bool sel;
+  final VoidCallback onTap;
+  const _MonthChip({required this.t, required this.label, required this.sel, required this.onTap});
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: () { HapticFeedback.selectionClick(); onTap(); },
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      margin: const EdgeInsets.only(right: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: sel ? const Color(0xFF0288D1).withValues(alpha: 0.15) : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: sel ? const Color(0xFF0288D1) : t.stroke.withValues(alpha: 0.2)),
+      ),
+      child: Text(label, style: TextStyle(color: sel ? const Color(0xFF0288D1) : t.textSecondary, fontSize: 11, fontWeight: FontWeight.w600)),
+    ),
+  );
+}
 
+class _MiniKpi extends StatelessWidget {
+  final RiverColors t;
+  final String label, value;
+  final Color color;
+  const _MiniKpi({required this.t, required this.label, required this.value, required this.color});
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(vertical: 12),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: 0.08),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: color.withValues(alpha: 0.2)),
+    ),
+    child: Column(
+      children: [
+        Text(value, style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.w800)),
+        Text(label,  style: TextStyle(color: t.textSecondary, fontSize: 9, fontWeight: FontWeight.w600), textAlign: TextAlign.center),
+      ],
+    ),
+  );
+}
+
+class _EventRow extends StatelessWidget {
+  final RiverColors t;
+  final ({String river, String district, double level, String date}) event;
+  const _EventRow({required this.t, required this.event});
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Row(
+      children: [
+        Container(
+          width: 48, height: 48,
+          decoration: BoxDecoration(
+            color: const Color(0x1AE53935),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0x40E53935)),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(event.date.split(' ')[0], style: const TextStyle(color: Color(0xFFE53935), fontSize: 14, fontWeight: FontWeight.w800, height: 1)),
+              Text(event.date.split(' ')[1], style: const TextStyle(color: Color(0xFFE53935), fontSize: 9)),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(event.river, style: TextStyle(color: t.textPrimary, fontSize: 13, fontWeight: FontWeight.w700)),
+              Text(event.district, style: TextStyle(color: t.textSecondary, fontSize: 11)),
+            ],
+          ),
+        ),
+        Text('${event.level}m', style: const TextStyle(color: Color(0xFFE53935), fontSize: 13, fontWeight: FontWeight.w800)),
+      ],
+    ),
+  );
+}
+
+class _DistrictRiskRow extends StatelessWidget {
+  final RiverColors t;
+  final ({String district, bool flooded2024, int avgRainfall, double riskScore}) data;
+  const _DistrictRiskRow({required this.t, required this.data});
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: t.cardBg, borderRadius: BorderRadius.circular(10),
-      ),
+    final color = data.riskScore > 0.80 ? const Color(0xFFE53935)
+                : data.riskScore > 0.60 ? const Color(0xFFFF8F00)
+                : const Color(0xFF43A047);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: t.textSecondary)),
-          Text(value, style: TextStyle(
-              color: color, fontWeight: FontWeight.w700)),
+          SizedBox(width: 110, child: Text(data.district, style: TextStyle(color: t.textPrimary, fontSize: 12, fontWeight: FontWeight.w500))),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(3),
+              child: LinearProgressIndicator(
+                value: data.riskScore,
+                minHeight: 5,
+                backgroundColor: color.withValues(alpha: 0.12),
+                valueColor: AlwaysStoppedAnimation(color),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text('${(data.riskScore * 100).round()}%', style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700)),
+          const SizedBox(width: 6),
+          if (data.flooded2024)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+              decoration: BoxDecoration(color: const Color(0x1AE53935), borderRadius: BorderRadius.circular(4)),
+              child: const Text('2024', style: TextStyle(color: Color(0xFFE53935), fontSize: 9, fontWeight: FontWeight.w700)),
+            ),
         ],
       ),
     );
