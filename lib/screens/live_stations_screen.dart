@@ -1,4 +1,8 @@
-// lib/screens/live_stations_screen.dart  v3.4
+// lib/screens/live_stations_screen.dart  v3.4.1  (18 Jun 2026)
+//
+// v3.4.1: fix — add missing import for pre_monsoon_baseline_provider.dart
+//         (kPreMonsoonBaselineRiskThreshold, preMonsoonBaselineProvider).
+//         No logic changes.
 //
 // v3.4 (18 Jun 2026)
 //   • Baseline filter: when preMonsoonBaselineProvider is enabled, stations
@@ -19,6 +23,8 @@ import 'package:intl/intl.dart';
 
 import '../providers/bihar_live_provider.dart';
 import '../providers/bihar_prediction_provider.dart';
+// ✅ v3.4.1 fix — required for preMonsoonBaselineProvider & kPreMonsoonBaselineRiskThreshold
+import '../providers/pre_monsoon_baseline_provider.dart';
 import '../theme/river_theme.dart';
 import '../models/river_station.dart';
 import '../providers/prediction_provider.dart';
@@ -150,7 +156,7 @@ class LiveStationsScreen extends ConsumerWidget {
                   actions: [_refreshAction(context, ref, t)],
                 ),
 
-                // ── Summary chips ────────────────────────────────────────────────
+                // ── Summary chips ──────────────────────────────────────────────
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
@@ -235,7 +241,7 @@ class LiveStationsScreen extends ConsumerWidget {
                     ),
                   ),
 
-                // ── Station cards ────────────────────────────────────────────────
+                // ── Station cards ──────────────────────────────────────────────
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                   sliver: SliverList(
