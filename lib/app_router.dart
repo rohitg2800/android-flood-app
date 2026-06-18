@@ -1,9 +1,14 @@
-// lib/app_router.dart  nav-v2
+// lib/app_router.dart  nav-v3
 // OpsFlood — Central App Router
 //
 // Single source of truth for ALL named routes.
 // Every screen in lib/screens/ is registered here.
 // Use Routes.xxx constants everywhere — never hard-code strings.
+//
+// v3 changes (18 Jun 2026):
+//   • Added missing case Routes.modelInfo  → ModelInfoScreen
+//   • MainShell now receives optional tabIndex argument (int) via RouteSettings.arguments
+//     so AppRouter.goToTab(n) correctly opens the shell on the right tab
 
 import 'package:flutter/material.dart';
 
@@ -128,8 +133,12 @@ class AppRouter {
         page = const SplashScreen(); break;
       case Routes.onboarding:
         page = const OnboardingScreen(); break;
+
+      // MainShell accepts an optional int argument as the initial tab index.
+      // Pass it via AppRouter.goToTab(n) or push(Routes.shell, arguments: n).
       case Routes.shell:
-        page = const MainShell(); break;
+        page = MainShell(initialIndex: settings.arguments is int ? settings.arguments as int : 0);
+        break;
 
       // ── Bottom-nav tabs (also reachable as standalone pushes)
       case Routes.dashboard:
@@ -158,6 +167,8 @@ class AppRouter {
         page = const StateMatrixScreen(); break;
       case Routes.riverMonitor:
         page = const RiverMonitorScreen(); break;
+
+      // ── Model Info (was missing — caused fallback to SplashScreen)
       case Routes.modelInfo:
         page = const ModelInfoScreen(); break;
 
@@ -255,9 +266,8 @@ class AppRouter {
   static void popUntilRoot() =>
       navigatorKey.currentState?.popUntil((r) => r.isFirst);
 
-  // Go to a bottom-nav tab inside MainShell by pushing shell with a tabIndex
-  // argument. MainShell reads this in initState if needed, or call
-  // AppRouter.push(Routes.shell) and rely on IndexedStack keepAlive.
+  /// Navigate to a bottom-nav tab inside MainShell.
+  /// Pushes a fresh MainShell with [index] as the starting tab.
   static void goToTab(int index) {
     push(Routes.shell, arguments: index);
   }
