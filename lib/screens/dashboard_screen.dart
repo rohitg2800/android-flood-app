@@ -1,11 +1,10 @@
-// lib/screens/dashboard_screen.dart  v10.2  (15 Jun 2026)
+// lib/screens/dashboard_screen.dart  v10.3  (18 Jun 2026)
 //
-// v10.2 visual overhaul:
-//   • _LauncherTile: icon ALWAYS in Center inside fixed badge; label centered
-//   • _sectionHeader: icon badge vertically centers with Row crossAxisAlignment.center
-//   • Every tile gets its own bespoke icon + mid-tone custom color (not too dark/light)
-//   • Stat tiles: Td3StatTile already fixed in theme_3d v2.3
-//   • Section colours refreshed to match icon personality
+// v10.3:
+//   • _riskForecastStrip now reads filteredBulkPredictionsProvider
+//     so the Risk Forecast Strip respects the pre-monsoon baseline filter.
+//     Previously it used biharBulkPredictionsProvider directly and would
+//     show sub-threshold noise during pre-monsoon / low-water periods.
 library;
 
 import 'package:flutter/material.dart';
@@ -538,8 +537,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   }
 
   // ── Risk forecast strip ─────────────────────────────────────────────────
+  // v10.3: reads filteredBulkPredictionsProvider (honours baseline toggle)
+  //        instead of biharBulkPredictionsProvider.
   Widget _riskForecastStrip(BuildContext ctx, RiverColors t) {
-    final preds = ref.watch(biharBulkPredictionsProvider).take(5).toList();
+    final preds = ref.watch(filteredBulkPredictionsProvider).take(5).toList();
     if (preds.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
     return SliverToBoxAdapter(
       child: Column(
