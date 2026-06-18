@@ -709,4 +709,367 @@ class _RiverCardState extends State<_RiverCard>
                 begin: Alignment.topLeft, end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: rc.withValu
+              border: Border.all(color: rc.withValues(alpha: 0.35), width: 1.2),
+              boxShadow: [
+                BoxShadow(
+                    color: rc.withValues(alpha: 0.12),
+                    blurRadius: 18,
+                    offset: const Offset(0, 6)),
+                BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2)),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Stack(
+                children: [
+                  Positioned(
+                    bottom: 0, left: 0, right: 0,
+                    child: Container(
+                      height: 120 * _fillTween.value,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [rc.withValues(alpha: 0.0), rc.withValues(alpha: 0.08)],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: math.max(0, (120 * _fillTween.value) - 8),
+                    left: 0, right: 0,
+                    child: CustomPaint(
+                      size: const Size(double.infinity, 16),
+                      painter: _WavePainter(color: rc, opacity: 0.30),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (willBreach)
+                          _BreachBanner(peak: peak),
+                        Row(
+                          children: [
+                            _Cylinder3D(fill: _fillTween.value, color: rc, width: 18, height: 52),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(d.city, style: TextStyle(color: t.textPrimary, fontWeight: FontWeight.w800, fontSize: 16, letterSpacing: -0.3)),
+                                  if ((d.riverName ?? '').isNotEmpty)
+                                    Text(d.riverName!, style: TextStyle(color: t.textSecondary, fontSize: 12)),
+                                  Text(d.district, style: TextStyle(color: t.textSecondary, fontSize: 11)),
+                                ],
+                              ),
+                            ),
+                            if (mlSev != null) ...[
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: mlColor.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: mlColor.withValues(alpha: 0.5)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.auto_graph, color: Color(0xFF7B2FF7), size: 10),
+                                    const SizedBox(width: 3),
+                                    Text(mlSev.toUpperCase(), style: TextStyle(color: mlColor, fontSize: 9, fontWeight: FontWeight.w900)),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                            ],
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: rc.withValues(alpha: 0.16),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: rc.withValues(alpha: 0.5), width: 1),
+                              ),
+                              child: Text(d.riskLevel.toUpperCase(), style: TextStyle(color: rc, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            if (d.currentLevel != null)
+                              _Chip(t: t, icon: Icons.water_drop_outlined, label: 'Level', value: '${d.currentLevel!.toStringAsFixed(2)} m', color: rc),
+                            if (d.dangerLevel != null) ...[
+                              const SizedBox(width: 12),
+                              _Chip(t: t, icon: Icons.emergency_outlined, label: 'Danger', value: '${d.dangerLevel!.toStringAsFixed(2)} m', color: t.textSecondary),
+                            ],
+                            if (peak != null) ...[
+                              const SizedBox(width: 12),
+                              _Chip(t: t, icon: Icons.trending_up_rounded, label: 'Peak 72h', value: '${peak.toStringAsFixed(2)} m', color: const Color(0xFFFF1744)),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        _FillBar(fillPct: fillPct, fillValue: _fillTween.value, rc: rc, t: t),
+                        if (riskScore != null) ...[
+                          const SizedBox(height: 8),
+                          _MlScoreBar(riskScore: riskScore, confidence: confidence, t: t),
+                        ],
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text('Tap for details', style: TextStyle(color: rc.withValues(alpha: 0.7), fontSize: 10, fontWeight: FontWeight.w600)),
+                            const SizedBox(width: 3),
+                            Icon(Icons.chevron_right_rounded, color: rc.withValues(alpha: 0.7), size: 14),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BreachBanner extends StatelessWidget {
+  final double? peak;
+  const _BreachBanner({this.peak});
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFF1744).withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFFF1744).withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.crisis_alert_rounded, color: Color(0xFFFF1744), size: 13),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              peak != null
+                  ? 'BREACH PREDICTED within 72h  ·  Peak ${peak!.toStringAsFixed(2)} m'
+                  : 'DANGER LEVEL BREACH PREDICTED within 72h',
+              style: const TextStyle(color: Color(0xFFFF1744), fontSize: 10, fontWeight: FontWeight.w800),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FillBar extends StatelessWidget {
+  final double fillPct, fillValue;
+  final Color rc;
+  final RiverColors t;
+  const _FillBar({required this.fillPct, required this.fillValue, required this.rc, required this.t});
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text('Fill', style: TextStyle(color: t.textSecondary, fontSize: 10, fontWeight: FontWeight.w600)),
+            const Spacer(),
+            Text('${fillPct.toStringAsFixed(1)}%', style: TextStyle(color: rc, fontSize: 11, fontWeight: FontWeight.w800)),
+          ],
+        ),
+        const SizedBox(height: 5),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: Stack(
+            children: [
+              Container(height: 7, color: t.divider.withValues(alpha: 0.3)),
+              FractionallySizedBox(
+                widthFactor: fillValue,
+                child: Container(
+                  height: 7,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(colors: [rc, rc.withValues(alpha: 0.6)]),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MlScoreBar extends StatelessWidget {
+  final num riskScore;
+  final double? confidence;
+  final RiverColors t;
+  const _MlScoreBar({required this.riskScore, this.confidence, required this.t});
+  @override
+  Widget build(BuildContext context) {
+    final score = riskScore.toDouble();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.query_stats_rounded, color: Color(0xFF7B2FF7), size: 11),
+            const SizedBox(width: 4),
+            Text('ML Risk: ${riskScore.toStringAsFixed(0)} / 100',
+                style: const TextStyle(color: Color(0xFF7B2FF7), fontSize: 10, fontWeight: FontWeight.w700)),
+            const Spacer(),
+            if (confidence != null)
+              Text('Conf ${confidence!.toStringAsFixed(0)}%', style: TextStyle(color: t.textSecondary, fontSize: 9)),
+          ],
+        ),
+        const SizedBox(height: 4),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: (score / 100.0).clamp(0.0, 1.0),
+            minHeight: 4,
+            backgroundColor: const Color(0xFF7B2FF7).withValues(alpha: 0.12),
+            valueColor: AlwaysStoppedAnimation(
+              score >= 80 ? const Color(0xFFFF1744) : score >= 60 ? const Color(0xFFFF6D00) : const Color(0xFF7B2FF7),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _Cylinder3D extends StatelessWidget {
+  final double fill, width, height;
+  final Color color;
+  const _Cylinder3D({required this.fill, required this.color, required this.width, required this.height});
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: width, height: height,
+        child: CustomPaint(painter: _CylinderPainter(fill: fill, color: color)),
+      );
+}
+
+class _CylinderPainter extends CustomPainter {
+  final double fill;
+  final Color color;
+  const _CylinderPainter({required this.fill, required this.color});
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width; final h = size.height;
+    final rx = w / 2; final ry = rx * 0.35;
+    final bodyPath = Path()
+      ..moveTo(0, ry)..lineTo(0, h - ry)
+      ..addArc(Rect.fromLTWH(0, h - ry * 2, w, ry * 2), 0, math.pi)
+      ..lineTo(w, ry)
+      ..addArc(Rect.fromLTWH(0, 0, w, ry * 2), 0, -math.pi)..close();
+    canvas.drawPath(bodyPath, Paint()..color = color.withValues(alpha: 0.12)..style = PaintingStyle.fill);
+    if (fill > 0) {
+      final fillTop = h - ry - (h - ry * 2) * fill.clamp(0.0, 1.0);
+      final fillPath = Path()
+        ..moveTo(0, fillTop + ry)..lineTo(0, h - ry)
+        ..addArc(Rect.fromLTWH(0, h - ry * 2, w, ry * 2), 0, math.pi)
+        ..lineTo(w, fillTop + ry)
+        ..addArc(Rect.fromLTWH(0, fillTop, w, ry * 2), 0, -math.pi)..close();
+      canvas.drawPath(fillPath, Paint()
+        ..shader = LinearGradient(colors: [color, color.withValues(alpha: 0.6)], begin: Alignment.topCenter, end: Alignment.bottomCenter)
+            .createShader(Rect.fromLTWH(0, fillTop, w, h - fillTop))
+        ..style = PaintingStyle.fill);
+      canvas.drawOval(Rect.fromLTWH(0, fillTop, w, ry * 2),
+          Paint()..color = color.withValues(alpha: 0.85)..style = PaintingStyle.fill);
+    }
+    canvas.drawPath(bodyPath, Paint()..color = color.withValues(alpha: 0.55)..style = PaintingStyle.stroke..strokeWidth = 1.2);
+    canvas.drawOval(Rect.fromLTWH(0, 0, w, ry * 2), Paint()..color = color.withValues(alpha: 0.4)..style = PaintingStyle.stroke..strokeWidth = 0.8);
+  }
+  @override
+  bool shouldRepaint(_CylinderPainter old) => old.fill != fill || old.color != color;
+}
+
+class _WavePainter extends CustomPainter {
+  final Color color;
+  final double opacity;
+  const _WavePainter({required this.color, required this.opacity});
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = color.withValues(alpha: opacity)..style = PaintingStyle.fill;
+    final path = Path();
+    path.moveTo(0, size.height);
+    for (double x = 0; x <= size.width; x += 20) {
+      path.quadraticBezierTo(x + 10, 0, x + 20, size.height);
+    }
+    path.lineTo(size.width, size.height);
+    path.close();
+    canvas.drawPath(path, paint);
+  }
+  @override
+  bool shouldRepaint(_WavePainter old) => old.color != color || old.opacity != opacity;
+}
+
+class _Chip extends StatelessWidget {
+  final RiverColors t;
+  final IconData icon;
+  final String label, value;
+  final Color color;
+  const _Chip({required this.t, required this.icon, required this.label, required this.value, required this.color});
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 10, color: color),
+            const SizedBox(width: 3),
+            Text(label, style: TextStyle(color: t.textSecondary, fontSize: 9, letterSpacing: 0.4)),
+          ],
+        ),
+        Text(value, style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w800)),
+      ],
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  final RiverColors t;
+  final String query;
+  const _EmptyState({required this.t, required this.query});
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.water_outlined, size: 64, color: t.accent.withValues(alpha: 0.4)),
+            const SizedBox(height: 16),
+            Text(
+              query.isNotEmpty ? 'No results for "$query"' : 'No river data available',
+              style: TextStyle(color: t.textPrimary, fontSize: 16, fontWeight: FontWeight.w700),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              query.isNotEmpty ? 'Try a different search term' : 'Pull down to refresh',
+              style: TextStyle(color: t.textSecondary, fontSize: 13),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
