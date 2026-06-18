@@ -1,4 +1,11 @@
-// lib/screens/live_stations_screen.dart  v3.3
+// lib/screens/live_stations_screen.dart  v3.4
+//
+// v3.4 (18 Jun 2026)
+//   • Baseline filter: when preMonsoonBaselineProvider is enabled, stations
+//     whose fill % (currentLevel / dangerLevel * 100) is below
+//     kPreMonsoonBaselineRiskThreshold are hidden.
+//     Stations with no dangerLevel data are always shown.
+//   • Dismissible info chip shows how many stations are currently filtered.
 //
 // v3.3:
 //   • onTap now passes liveLevel: s.currentLevel and liveRisk: s.riskLabel
@@ -11,6 +18,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../providers/bihar_live_provider.dart';
+import '../providers/bihar_prediction_provider.dart';
 import '../theme/river_theme.dart';
 import '../models/river_station.dart';
 import '../providers/prediction_provider.dart';
@@ -22,17 +30,29 @@ class LiveStationsScreen extends ConsumerWidget {
   static const String route = '/live-stations';
   const LiveStationsScreen({super.key});
 
+  /// Returns true if a station passes the pre-monsoon baseline filter.
+  /// A station is suppressed only when dangerLevel is known AND
+  /// fill % is strictly below the threshold.
+  static bool _passesBaseline(BiharStationData s) {
+    final dl = s.dangerLevel;
+    final cl = s.currentLevel;
+    if (dl == null || dl <= 0 || cl == null) return true; // no data → always show
+    final fillPct = (cl / dl) * 100.0;
+    return fillPct >= kPreMonsoonBaselineRiskThreshold;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(biharLiveProvider);
-    final t     = RiverColors.of(context);
+    final async      = ref.watch(biharLiveProvider);
+    final baselineOn = ref.watch(preMonsoonBaselineProvider);
+    final t          = RiverColors.of(context);
 
     return Scaffold(
       backgroundColor: t.scaffoldBg,
       body: async.when(
         loading: () => CustomScrollView(
           slivers: [
-            const Td3AppBar(title: 'Live Stations', subtitle: 'Loading\u2026'),
+            const Td3AppBar(title: 'Live Stations', subtitle: 'Loading…'),
             const SliverFillRemaining(
               child: Center(child: CircularProgressIndicator()),
             ),
@@ -108,6 +128,13 @@ class LiveStationsScreen extends ConsumerWidget {
             );
           }
 
+          // Apply baseline filter
+          final allStations = state.stations;
+          final visibleStations = baselineOn
+              ? allStations.where(_passesBaseline).toList()
+              : allStations;
+          final hiddenCount = allStations.length - visibleStations.length;
+
           final lastFetch = state.lastFetched;
 
           return RefreshIndicator(
@@ -116,14 +143,14 @@ class LiveStationsScreen extends ConsumerWidget {
             child: CustomScrollView(
               slivers: [
                 Td3AppBar(
-                  title: 'All Stations (${state.stations.length})',
+                  title: 'All Stations (${allStations.length})',
                   subtitle: lastFetch != null
                       ? 'Updated ${DateFormat('HH:mm:ss').format(lastFetch)}'
                       : null,
                   actions: [_refreshAction(context, ref, t)],
                 ),
 
-                // ── Summary chips ────────────────────────────────────────────
+                // ── Summary chips ────────────────────────────────────────────────
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
@@ -132,7 +159,7 @@ class LiveStationsScreen extends ConsumerWidget {
                       runSpacing: 8,
                       children: [
                         Td3Chip(
-                          label: '${state.stations.length} Total',
+                          label: '${visibleStations.length} Showing',
                           color: t.accent,
                           icon: Icons.sensors,
                         ),
@@ -171,13 +198,50 @@ class LiveStationsScreen extends ConsumerWidget {
                   ),
                 ),
 
-                // ── Station cards ────────────────────────────────────────────
+                // Baseline filter info chip
+                if (baselineOn && hiddenCount > 0)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF7B2FF7).withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                              color: const Color(0xFF7B2FF7)
+                                  .withValues(alpha: 0.35)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.filter_list_rounded,
+                                color: Color(0xFF7B2FF7), size: 14),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Baseline filter active — $hiddenCount '
+                                'low-fill station'
+                                '${hiddenCount == 1 ? '' : 's'} hidden',
+                                style: const TextStyle(
+                                    color: Color(0xFF7B2FF7),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // ── Station cards ────────────────────────────────────────────────
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (ctx, i) {
-                        final s = state.stations[i];
+                        final s = visibleStations[i];
                         final rs = RiverStation(
                           city:        s.city,
                           state:       s.state,
@@ -204,9 +268,6 @@ class LiveStationsScreen extends ConsumerWidget {
                           station:           rs,
                           index:             i,
                           confidencePercent: conf,
-                          // ✅ Pass live values so CityDetailScreen shows same
-                          //    number as the card. riskLabel is the correct
-                          //    field name on BiharStationData (not riskLevel).
                           onTap: () => Navigator.of(ctx).push(
                             MaterialPageRoute<void>(
                               builder: (_) => CityDetailScreen(
@@ -218,7 +279,7 @@ class LiveStationsScreen extends ConsumerWidget {
                           ),
                         );
                       },
-                      childCount: state.stations.length,
+                      childCount: visibleStations.length,
                     ),
                   ),
                 ),
