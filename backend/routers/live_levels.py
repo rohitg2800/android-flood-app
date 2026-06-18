@@ -196,7 +196,8 @@ def _build_levels_from_matrix(exclude_state_keys: set[str]) -> List[Dict[str, An
 
         result.append(
             {
-                "city": city,
+                "station_name": city,
+                    "city": city,
                 "state": _STATE_DISPLAY.get(state_key, state_key.replace("_", " ").title()),
                 "river_name": river,
                 "station": city,
@@ -244,10 +245,31 @@ def _get_wrd_bihar_stations() -> List[Dict[str, Any]]:
         for mod_name in ("backend.routers.wrd_bihar", "routers.wrd_bihar"):
             mod = sys.modules.get(mod_name)
             if mod is not None:
+                # 1. Try live scrape cache first
                 cache = getattr(mod, "_CACHE", None)
                 cache_key = getattr(mod, "_CACHE_KEY", None)
                 if cache is not None and cache_key and cache_key in cache:
-                    return cache[cache_key].get("stations", [])
+                    stations = cache[cache_key].get("stations", [])
+                    if stations:
+                        return stations
+                # 2. Fall back to full 169-station registry (always present)
+                registry = getattr(mod, "_STATION_REGISTRY", None)
+                if registry:
+                    return [
+                        {
+                            "station":         s["station"],
+                            "river":           s.get("river", ""),
+                            "district":        s.get("district", ""),
+                            "danger_level_m":  s.get("danger_level_m", 0.0),
+                            "warning_level_m": s.get("warning_level_m", 0.0),
+                            "current_level_m": None,
+                            "lat":             s.get("lat"),
+                            "lon":             s.get("lon"),
+                            "last_update":     None,
+                            "trend":           None,
+                        }
+                        for s in registry
+                    ]
     except Exception:
         pass
     return []
@@ -266,9 +288,10 @@ def _build_all_levels() -> List[Dict[str, Any]]:
             if not city:
                 continue
             danger_m = s.get("danger_level_m") or 0.0
-            warning_m = s.get("danger_level_m") or 0.0
+            warning_m = s.get("warning_level_m") or 0.0
             levels.append(
                 {
+                    "station_name": city,
                     "city": city,
                     "state": "Bihar",
                     "river_name": str(s.get("river") or ""),
@@ -337,7 +360,7 @@ async def _build_all_levels_with_severity() -> List[Dict[str, Any]]:
 @router.get("/api/live-levels")
 async def get_live_levels(
     state: Optional[str] = None,
-    limit: int = 200,
+    limit: int = 500,
     river: Optional[str] = None,
     district: Optional[str] = None,
     with_severity: bool = True,
