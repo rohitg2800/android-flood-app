@@ -1,0 +1,1288 @@
+{
+  "headers": [
+    "(1)",
+    "(2)",
+    "(3)",
+    "(4)",
+    "(5)",
+    "(6)",
+    "(7)",
+    "SL",
+    "River",
+    "Station",
+    "HFL(Mts)",
+    "DL(Mts)",
+    "WL(Mts)",
+    "District / Block"
+  ],
+  "rows": [
+    [
+      "1",
+      "Adhawara",
+      "Sundarpur",
+      "64.10",
+      "61.70",
+      "58.30",
+      "Sitamarhi/\n                                                        Sursand"
+    ],
+    [
+      "2",
+      "Adhawara",
+      "Pupri",
+      "56.95",
+      "55.79",
+      "50.71",
+      "Sitamarhi/\n                                                        Pupri"
+    ],
+    [
+      "3",
+      "Adhawara",
+      "Mubbi",
+      "52.30",
+      "48.00",
+      "45.69",
+      "Darbhanga/\n                                                        Darbhanga Sadar"
+    ],
+    [
+      "4",
+      "Awsane",
+      "Akbarpur",
+      "104.80",
+      "103.85",
+      "BGL",
+      "Rohtas/\n                                                        Rohtas"
+    ],
+    [
+      "5",
+      "Bagmati",
+      "Sakhwaghat",
+      "41.90",
+      "40.00",
+      "NA",
+      "Samastipur/\n                                                        Hasanpur"
+    ],
+    [
+      "6",
+      "Bagmati",
+      "Phuhiya Gram",
+      "41.58",
+      "39.40",
+      "34.85",
+      "Samastipur/\n                                                        Bithan"
+    ],
+    [
+      "7",
+      "Bagmati",
+      "Phultora Bridge",
+      "40.05",
+      "39.00",
+      "35.15",
+      "Samastipur/\n                                                        Bithan"
+    ],
+    [
+      "8",
+      "Bagmati",
+      "Badlaghat South",
+      "38.65",
+      "37.64",
+      "NA",
+      "Khagaria/\n                                                        Chautham"
+    ],
+    [
+      "9",
+      "Bagmati",
+      "Badlaghat North",
+      "37.50",
+      "37.50",
+      "NA",
+      "Khagaria/\n                                                        Chautham"
+    ],
+    [
+      "10",
+      "Bagmati",
+      "Kataunjha",
+      "58.36",
+      "56.00",
+      "52.81",
+      "Muzaffarpur/\n                                                        Aurai"
+    ],
+    [
+      "11",
+      "Bagmati",
+      "Kansar/Chandauli",
+      "60.86",
+      "59.06",
+      "56.18",
+      "Sitamarhi/\n                                                        Belsand"
+    ],
+    [
+      "12",
+      "Bagmati",
+      "Dubbadhar",
+      "63.75",
+      "61.28",
+      "59.11",
+      "Sheohar/\n                                                        Piprarhi"
+    ],
+    [
+      "13",
+      "Bagmati",
+      "Dheng Bridge",
+      "73.47",
+      "71.00",
+      "68.71",
+      "Sitamarhi/\n                                                        Suppi"
+    ],
+    [
+      "14",
+      "Bagmati",
+      "Sonakhan",
+      "72.05",
+      "68.80",
+      "67.03",
+      "Sitamarhi/\n                                                        Suppi"
+    ],
+    [
+      "15",
+      "Bakra",
+      "Taran",
+      "49.11",
+      "48.60",
+      "45.40",
+      "Araria/\n                                                        Jokihat"
+    ],
+    [
+      "16",
+      "Balan",
+      "Chulhai Ghat",
+      "40.95",
+      "38.00",
+      "BGL",
+      "Begusarai/\n                                                        Bhagwanpur"
+    ],
+    [
+      "17",
+      "Balan",
+      "Dalsingsarai",
+      "41.70",
+      "41.11",
+      "BGL",
+      "Samastipur/\n                                                        Dalsingsarai"
+    ],
+    [
+      "18",
+      "Banas",
+      "Asani",
+      "58.24",
+      "57.00",
+      "DRY",
+      "Bhojpur/\n                                                        Arrah"
+    ],
+    [
+      "19",
+      "Barnar",
+      "Kathara tand",
+      "156.83",
+      "156.83",
+      "DRY",
+      "Jamui/\n                                                        Sono"
+    ],
+    [
+      "20",
+      "Batane",
+      "Santhua",
+      "106.65",
+      "105.95",
+      "DRY",
+      "Aurangabad/\n                                                        Aurangabad"
+    ],
+    [
+      "21",
+      "Baya",
+      "Wazitpur",
+      "47.80",
+      "43.30",
+      "BGL",
+      "Samastipur/\n                                                        Vidyapati Nagar"
+    ],
+    [
+      "22",
+      "Baya",
+      "Godia",
+      "51.60",
+      "49.00",
+      "DRY",
+      "Vaishali/\n                                                        Goraul"
+    ],
+    [
+      "23",
+      "Baya",
+      "Baya Tatbandh Chain 620",
+      "44.46",
+      "44.00",
+      "38.52",
+      "Samastipur/\n                                                        Mohiuddinagar"
+    ],
+    [
+      "24",
+      "Bhutahi",
+      "Diripar",
+      "49.94",
+      "48.75",
+      "DRY",
+      "Nalanda/\n                                                        Karai Parsurai"
+    ],
+    [
+      "25",
+      "Bhutahi",
+      "Mandakhsa",
+      "57.60",
+      "56.16",
+      "DRY",
+      "Nalanda/\n                                                        Ekangarsarai"
+    ],
+    [
+      "26",
+      "Brandi",
+      "Dumar",
+      "38.50",
+      "30.61",
+      "BGL",
+      "Katihar/\n                                                        Korha"
+    ],
+    [
+      "27",
+      "Burhi Gandak",
+      "Ekma Syphon",
+      "46.56",
+      "42.63",
+      "68.59",
+      "Madhubani/\n                                                        Khutauna"
+    ],
+    [
+      "28",
+      "Burhi Gandak",
+      "Samastipur road bridge",
+      "49.38",
+      "46.02",
+      "NA",
+      "Samastipur/\n                                                        Samastipur"
+    ],
+    [
+      "29",
+      "Burhi Gandak",
+      "Samastipur Railpul-1",
+      "49.38",
+      "45.73",
+      "39.35",
+      "Samastipur/\n                                                        Samastipur"
+    ],
+    [
+      "30",
+      "Burhi Gandak",
+      "Dadaulghat",
+      "51.86",
+      "48.25",
+      "42.54",
+      "Muzaffarpur/\n                                                        Goraul"
+    ],
+    [
+      "31",
+      "Burhi Gandak",
+      "Rosera Rail pul",
+      "46.56",
+      "42.63",
+      "36.32",
+      "Samastipur/\n                                                        Rosera"
+    ],
+    [
+      "32",
+      "Chandan",
+      "Banka Rail Crosssing (Lakshmipur)",
+      "82.95",
+      "84.01",
+      "80.46",
+      "Banka/\n                                                        Banka"
+    ],
+    [
+      "33",
+      "Cheergerua",
+      "Panjwara",
+      "77.90",
+      "78.32",
+      "DRY",
+      "Banka/\n                                                        Barahat"
+    ],
+    [
+      "34",
+      "Chirayn",
+      "Kariyawa",
+      "53.66",
+      "52.67",
+      "DRY",
+      "Nalanda/\n                                                        Tharthari"
+    ],
+    [
+      "35",
+      "Daha",
+      "Siwan",
+      "65.65",
+      "63.53",
+      "60.32",
+      "Siwan/\n                                                        Siwan"
+    ],
+    [
+      "36",
+      "Daha",
+      "Matiyar",
+      "56.59",
+      "56.00",
+      "51.18",
+      "Saran/\n                                                        Manjhi"
+    ],
+    [
+      "37",
+      "Dardha",
+      "Bari bigha",
+      "57.33",
+      "55.02",
+      "DRY",
+      "Patna/\n                                                        Dhanarua"
+    ],
+    [
+      "38",
+      "Dharmawati",
+      "Nimej",
+      "59.97",
+      "58.20",
+      "53.77",
+      "Buxar/\n                                                        Brahampur"
+    ],
+    [
+      "39",
+      "Dhoba",
+      "Kharuara (Harnaut)",
+      "50.04",
+      "49.86",
+      "DRY",
+      "Nalanda/\n                                                        Harnaut"
+    ],
+    [
+      "40",
+      "Durgawati",
+      "Durgawati Rail Crossing",
+      "70.18",
+      "69.50",
+      "BGL",
+      "Kaimur (Bhabua)/\n                                                        Durgawati"
+    ],
+    [
+      "41",
+      "Durgawati",
+      "Chenari",
+      "89.70",
+      "88.20",
+      "85.10",
+      "Rohtas/\n                                                        Chenari"
+    ],
+    [
+      "42",
+      "Falgu",
+      "Mandai",
+      "63.89",
+      "61.86",
+      "BGL",
+      "Jahanabad/\n                                                        Modanganj"
+    ],
+    [
+      "43",
+      "Fariyani",
+      "Kushaha",
+      "43.28",
+      "42.82",
+      "40.48",
+      "Purnia/\n                                                        Banmankhi"
+    ],
+    [
+      "44",
+      "Gandak",
+      "Dumariya Ghat",
+      "63.70",
+      "62.22",
+      "60.38",
+      "Gopalganj/\n                                                        Sidhwalia"
+    ],
+    [
+      "45",
+      "Gandak",
+      "Hajipur",
+      "51.93",
+      "50.32",
+      "44.42",
+      "Vaishali/\n                                                        Hajipur"
+    ],
+    [
+      "46",
+      "Gandaki",
+      "Rahimapur",
+      "53.01",
+      "50.95",
+      "BGL",
+      "Saran/\n                                                        Dariapur"
+    ],
+    [
+      "47",
+      "Gandaki",
+      "Chintamanpur",
+      "55.55",
+      "53.00",
+      "BGL",
+      "Saran/\n                                                        Garkha"
+    ],
+    [
+      "48",
+      "Ganga",
+      "Ramayanpur",
+      "28.26",
+      "27.56",
+      "22.75",
+      "Katihar/\n                                                        Amdabad"
+    ],
+    [
+      "49",
+      "Ganga",
+      "Karhagola ghat",
+      "35.57",
+      "29.87",
+      "24.90",
+      "Katihar/\n                                                        Barari"
+    ],
+    [
+      "50",
+      "Ganga",
+      "Buxar",
+      "61.43",
+      "60.32",
+      "48.88",
+      "Buxar/\n                                                        Buxar"
+    ],
+    [
+      "51",
+      "Ganga",
+      "BKG Embankment 90.52 Km",
+      "54.70",
+      "53.13",
+      "45.26",
+      "Bhojpur/\n                                                        Barhara"
+    ],
+    [
+      "52",
+      "Ganga",
+      "Sultanganj",
+      "35.10",
+      "32.50",
+      "28.09",
+      "Bhagalpur/\n                                                        Sultanganj"
+    ],
+    [
+      "53",
+      "Ganga",
+      "Dakranala",
+      "39.12",
+      "37.58",
+      "31.26",
+      "Munger/\n                                                        Sadar Munger"
+    ],
+    [
+      "54",
+      "Ganga",
+      "Kashtharnighat",
+      "38.90",
+      "39.33",
+      "30.65",
+      "Munger/\n                                                        Sadar Munger"
+    ],
+    [
+      "55",
+      "Ganga",
+      "Raghopur",
+      "34.31",
+      "32.80",
+      "25.82",
+      "Bhagalpur/\n                                                        Kharik"
+    ],
+    [
+      "56",
+      "Ganga",
+      "Ismailpur Bindtoli",
+      "34.30",
+      "31.60",
+      "25.13",
+      "Bhagalpur/\n                                                        Gopalpur"
+    ],
+    [
+      "57",
+      "Ghagra",
+      "Jai Chhapra",
+      "56.84",
+      "56.50",
+      "BGL",
+      "Saran/\n                                                        Manjhi"
+    ],
+    [
+      "58",
+      "Ghagra",
+      "Manjhi Bridge",
+      "56.52",
+      "52.40",
+      "NA",
+      "Saran/\n                                                        Manjhi"
+    ],
+    [
+      "59",
+      "Ghogha  (Sundar)",
+      "Ghogha Kahalgaon Road Crossing",
+      "33.90",
+      "28.52",
+      "25.51",
+      "Bhagalpur/\n                                                        Kahalgaon"
+    ],
+    [
+      "60",
+      "Goithawa",
+      "Bakrachausua",
+      "63.75",
+      "65.86",
+      "DRY",
+      "Nalanda/\n                                                        Giriyak"
+    ],
+    [
+      "61",
+      "Harohar",
+      "Balgudar",
+      "40.73",
+      "40.00",
+      "32.71",
+      "Lakhisarai/\n                                                        Lakhisarai"
+    ],
+    [
+      "62",
+      "Jamune",
+      "Jamune Bajar",
+      "96.93",
+      "94.41",
+      "DRY",
+      "Gaya/\n                                                        Gaya"
+    ],
+    [
+      "63",
+      "Jeewachh/ Kamla",
+      "Konighat",
+      "39.75",
+      "38.21",
+      "BGL",
+      "Darbhanga/\n                                                        Biraul"
+    ],
+    [
+      "64",
+      "Jharahi",
+      "Derwa",
+      "70.88",
+      "70.40",
+      "67.85",
+      "Gopalganj/\n                                                        Kuchaikot"
+    ],
+    [
+      "65",
+      "Jhim",
+      "Kachahripur",
+      "75.52",
+      "74.50",
+      "Sitamarhi/\n                                                        Sonbarsha"
+    ],
+    [
+      "66",
+      "Kamala Balan",
+      "Darjia",
+      "48.60",
+      "46.80",
+      "45.80",
+      "Darbhanga/\n                                                        Ghanshyampur"
+    ],
+    [
+      "67",
+      "Kamala Balan",
+      "Rasiyari Pul",
+      "47.00",
+      "45.50",
+      "42.84",
+      "Darbhanga/\n                                                        Ghanshyampur"
+    ],
+    [
+      "68",
+      "Kamla",
+      "Kothram",
+      "45.45",
+      "44.00",
+      "NA",
+      "Darbhanga/\n                                                        Gaura Bauram"
+    ],
+    [
+      "69",
+      "Kamla",
+      "Jhanjharpur Rail pul-88",
+      "54.50",
+      "50.00",
+      "48.93",
+      "Madhubani/\n                                                        Jhanjharpur"
+    ],
+    [
+      "70",
+      "Kamla",
+      "Jainagar Weir site (Manual)",
+      "71.35",
+      "65.75",
+      "67.00",
+      "Madhubani/\n                                                        Jainagar"
+    ],
+    [
+      "71",
+      "Kamla Dhar",
+      "Gausaghat",
+      "50.30",
+      "49.00",
+      "46.18",
+      "Darbhanga/\n                                                        Darbhanga Sadar"
+    ],
+    [
+      "72",
+      "Kankai",
+      "Tarabari",
+      "50.70",
+      "48.20",
+      "47.30",
+      "Kishanganj/\n                                                        Thakurganj"
+    ],
+    [
+      "73",
+      "Kao",
+      "Vikramganj Rail Crossing",
+      "86.14",
+      "86.20",
+      "83.34",
+      "Rohtas/\n                                                        Bikramganj"
+    ],
+    [
+      "74",
+      "Kao",
+      "Karbandia",
+      "106.78",
+      "106.80",
+      "DRY",
+      "Rohtas/\n                                                        Sasaram"
+    ],
+    [
+      "75",
+      "Kararua",
+      "Pabheri",
+      "53.65",
+      "52.67",
+      "DRY",
+      "Patna/\n                                                        Dhanarua"
+    ],
+    [
+      "76",
+      "Kareh Bagmati",
+      "Kolhuaghat",
+      "44.26",
+      "42.20",
+      "37.00",
+      "Samastipur/\n                                                        Shivaji Nagar"
+    ],
+    [
+      "77",
+      "Kareh Bagmati",
+      "Sonmankhi",
+      "38.30",
+      "36.50",
+      "32.74",
+      "Khagaria/\n                                                        Khagaria"
+    ],
+    [
+      "78",
+      "Kari Kosi",
+      "Kari Kosi Chain 389",
+      "29.64",
+      "28.52",
+      "DRY",
+      "Katihar/\n                                                        Mansahi"
+    ],
+    [
+      "79",
+      "Karmnasha",
+      "Kakrait Ghat",
+      "65.70",
+      "62.30",
+      "DRY",
+      "Kaimur (Bhabua)/\n                                                        Durgawati"
+    ],
+    [
+      "80",
+      "Khalkhalia",
+      "Phulwaria",
+      "35.72",
+      "35.60",
+      "BGL",
+      "Bhagalpur/\n                                                        Jagdishpur"
+    ],
+    [
+      "81",
+      "Khiroi",
+      "Mohani",
+      "48.50",
+      "46.00",
+      "BGL",
+      "Darbhanga/\n                                                        Bahadurpur"
+    ],
+    [
+      "82",
+      "Khiroi",
+      "Agropatti",
+      "57.83",
+      "52.75",
+      "48.93",
+      "Sitamarhi/\n                                                        Pupri"
+    ],
+    [
+      "83",
+      "Kiul",
+      "Lakhisarai",
+      "43.38",
+      "41.10",
+      "35.70",
+      "Lakhisarai/\n                                                        Lakhisarai"
+    ],
+    [
+      "84",
+      "Kosi",
+      "Sahora",
+      "32.03",
+      "31.48",
+      "26.26",
+      "Bhagalpur/\n                                                        Rangra Chowk"
+    ],
+    [
+      "85",
+      "Kosi",
+      "Dhamaraghat",
+      "38.55",
+      "38.55",
+      "NA",
+      "Khagaria/\n                                                        Chautham"
+    ],
+    [
+      "86",
+      "Kosi",
+      "Dumri Bridge",
+      "36.40",
+      "33.85",
+      "NA",
+      "Khagaria/\n                                                        Beldaur"
+    ],
+    [
+      "87",
+      "Kosi",
+      "Ghoghepur",
+      "45.46",
+      "42.28",
+      "NA",
+      "Saharsa/\n                                                        Mahishi"
+    ],
+    [
+      "88",
+      "Kosi",
+      "Kursela",
+      "32.00",
+      "30.00",
+      "24.60",
+      "Katihar/\n                                                        Kursela"
+    ],
+    [
+      "89",
+      "Kudra",
+      "Khurmabad",
+      "83.46",
+      "84.00",
+      "DRY",
+      "Kaimur (Bhabua)/\n                                                        Kudra"
+    ],
+    [
+      "90",
+      "Kudra",
+      "Bahuara",
+      "73.26",
+      "72.70",
+      "68.90",
+      "Kaimur (Bhabua)/\n                                                        Kudra"
+    ],
+    [
+      "91",
+      "Lakhandei",
+      "Borabari",
+      "43.57",
+      "42.00",
+      "BGL",
+      "Muzaffarpur/\n                                                        Gaighat"
+    ],
+    [
+      "92",
+      "Lakhandei",
+      "Sitamarhi",
+      "62.50",
+      "61.00",
+      "BGL",
+      "Sitamarhi/\n                                                        Dumra"
+    ],
+    [
+      "93",
+      "Lal Bakeya",
+      "Gowabari",
+      "73.86",
+      "71.15",
+      "69.00",
+      "Purvi Champaran/\n                                                        Dhaka"
+    ],
+    [
+      "94",
+      "Lokayin",
+      "Sohrapur",
+      "59.13",
+      "58.10",
+      "DRY",
+      "Nalanda/\n                                                        Hilsa"
+    ],
+    [
+      "95",
+      "Mahananda",
+      "Kursail",
+      "33.03",
+      "31.40",
+      "28.65",
+      "Katihar/\n                                                        Kadwa"
+    ],
+    [
+      "96",
+      "Mahananda",
+      "Baharkhal",
+      "32.65",
+      "31.09",
+      "28.00",
+      "Katihar/\n                                                        Azamnagar"
+    ],
+    [
+      "97",
+      "Mahananda",
+      "Azamnagar",
+      "31.72",
+      "29.87",
+      "26.83",
+      "Katihar/\n                                                        Azamnagar"
+    ],
+    [
+      "98",
+      "Mahananda",
+      "Dhabol",
+      "31.00",
+      "29.26",
+      "26.09",
+      "Katihar/\n                                                        Azamnagar"
+    ],
+    [
+      "99",
+      "Mahananda",
+      "Durgapur",
+      "29.78",
+      "28.05",
+      "25.63",
+      "Katihar/\n                                                        Pranpur"
+    ],
+    [
+      "100",
+      "Mahananda",
+      "Govindpur",
+      "28.78",
+      "27.18",
+      "23.18",
+      "Katihar/\n                                                        Amdabad"
+    ],
+    [
+      "101",
+      "Mahi",
+      "Sheetalpur",
+      "52.90",
+      "49.87",
+      "BGL",
+      "Saran/\n                                                        Dariapur"
+    ],
+    [
+      "102",
+      "Maraha",
+      "Pirokhar",
+      "53.70",
+      "51.20",
+      "BGL",
+      "Sitamarhi/\n                                                        Pupri"
+    ],
+    [
+      "103",
+      "Mechi East",
+      "Gardankatta East",
+      "61.01",
+      "59.60",
+      "58.18",
+      "Kishanganj/\n                                                        Thakurganj"
+    ],
+    [
+      "104",
+      "Mechi West/ Jamuna",
+      "Gardankatta West",
+      "62.03",
+      "58.40",
+      "55.80",
+      "Kishanganj/\n                                                        Thakurganj"
+    ],
+    [
+      "105",
+      "Mohane",
+      "Sirnama",
+      "47.75",
+      "45.09",
+      "DRY",
+      "Nalanda/\n                                                        Harnaut"
+    ],
+    [
+      "106",
+      "Mohane",
+      "Chandi",
+      "53.73",
+      "52.15",
+      "DRY",
+      "Nalanda/\n                                                        Chandi"
+    ],
+    [
+      "107",
+      "Mohane",
+      "Belchhi",
+      "47.45",
+      "45.83",
+      "DRY",
+      "Nalanda/\n                                                        Chandi"
+    ],
+    [
+      "108",
+      "Mohane",
+      "Chhoti Chhariyari",
+      "50.87",
+      "50.31",
+      "DRY",
+      "Nalanda/\n                                                        Tharthari"
+    ],
+    [
+      "109",
+      "Morahar",
+      "Panchanpur",
+      "95.14",
+      "94.40",
+      "DRY",
+      "Gaya/\n                                                        Tekari"
+    ],
+    [
+      "110",
+      "Muhani",
+      "Mahakola (Basa)",
+      "49.05",
+      "51.10",
+      "DRY",
+      "Munger/\n                                                        Haveli Kharagpur"
+    ],
+    [
+      "111",
+      "Nonai",
+      "Babhandeeha",
+      "52.99",
+      "53.98",
+      "DRY",
+      "Nalanda/\n                                                        Hilsa"
+    ],
+    [
+      "112",
+      "Noon",
+      "Gangmohan Gram",
+      "41.42",
+      "40.20",
+      "39.92",
+      "Samastipur/\n                                                        Sarairanjan"
+    ],
+    [
+      "113",
+      "Noon Kathane",
+      "Pothiya Pul",
+      "44.55",
+      "44.00",
+      "BGL",
+      "Samastipur/\n                                                        Tajpur"
+    ],
+    [
+      "114",
+      "Noona",
+      "Shahpur-Maricha",
+      "50.60",
+      "50.25",
+      "DRY",
+      "Muzaffarpur/\n                                                        Kurhani"
+    ],
+    [
+      "115",
+      "Noona",
+      "Saidabad",
+      "60.50",
+      "58.74",
+      "BGL",
+      "Araria/\n                                                        Sikti"
+    ],
+    [
+      "116",
+      "Noona",
+      "Pariyari",
+      "58.90",
+      "57.26",
+      "BGL",
+      "Araria/\n                                                        Sikti"
+    ],
+    [
+      "117",
+      "Paimar",
+      "Malisadha/ Chhabilapur",
+      "65.93",
+      "65.86",
+      "DRY",
+      "Nalanda/\n                                                        Rajgir"
+    ],
+    [
+      "118",
+      "Panchane",
+      "Giriyak",
+      "62.70",
+      "60.50",
+      "DRY",
+      "Nalanda/\n                                                        Giriyak"
+    ],
+    [
+      "119",
+      "Panchane",
+      "Rahimpurganj",
+      "51.90",
+      "51.54",
+      "BGL",
+      "Nalanda/\n                                                        Rahui"
+    ],
+    [
+      "120",
+      "Panchane",
+      "Rajgir Biharsharif Road Crossing",
+      "55.45",
+      "53.90",
+      "DRY",
+      "Nalanda/\n                                                        Biharsharif"
+    ],
+    [
+      "121",
+      "Pandai Nadi",
+      "Shikarpur",
+      "83.07",
+      "81.70",
+      "BGL",
+      "Paschim Champaran/\n                                                        Narkatiyaganj"
+    ],
+    [
+      "122",
+      "Parman",
+      "Baisi",
+      "39.80",
+      "36.45",
+      "34.35",
+      "Purnia/\n                                                        Baisi"
+    ],
+    [
+      "123",
+      "Parman",
+      "Araria",
+      "49.14",
+      "47.68",
+      "45.14",
+      "Araria/\n                                                        Araria"
+    ],
+    [
+      "124",
+      "Punpun",
+      "Hamidnagar",
+      "77.96",
+      "74.17",
+      "BGL",
+      "Aurangabad/\n                                                        Goh"
+    ],
+    [
+      "125",
+      "Sakri",
+      "Kadirganj",
+      "84.41",
+      "85.80",
+      "DRY",
+      "Nawada/\n                                                        Nawada"
+    ],
+    [
+      "126",
+      "Sakri",
+      "Puara",
+      "75.28",
+      "75.98",
+      "BGL",
+      "Nawada/\n                                                        Nawada"
+    ],
+    [
+      "127",
+      "Sakri",
+      "Baksoti (Kutarichak)",
+      "108.95",
+      "109.49",
+      "DRY",
+      "Nawada/\n                                                        Gobindpur"
+    ],
+    [
+      "128",
+      "Sakri",
+      "Jiyarkulti",
+      "59.65",
+      "56.45",
+      "BGL",
+      "Nalanda/\n                                                        Asthawan"
+    ],
+    [
+      "129",
+      "Sikrahna",
+      "Shivaghat",
+      "78.93",
+      "73.33",
+      "BGL",
+      "Paschim Champaran/\n                                                        Chanpatiya"
+    ],
+    [
+      "130",
+      "Sone",
+      "Arwal Sahar Pul",
+      "74.92",
+      "75.87",
+      "65.77",
+      "Bhojpur/\n                                                        Sahar"
+    ],
+    [
+      "131",
+      "Sone",
+      "Kadwan/ Matianwa",
+      "139.62",
+      "140.85",
+      "137.00",
+      "Rohtas/\n                                                        Nauhatta"
+    ],
+    [
+      "132",
+      "Suawara",
+      "Bhagwanpur",
+      "88.91",
+      "89.30",
+      "85.60",
+      "Kaimur (Bhabua)/\n                                                        Bhagwanpur"
+    ],
+    [
+      "133",
+      "Sursar Dhar",
+      "Sursar",
+      "67.91",
+      "67.40",
+      "65.35",
+      "Araria/\n                                                        Narpatganj"
+    ],
+    [
+      "134",
+      "Thomane",
+      "Uchait",
+      "50.72",
+      "49.00",
+      "DRY",
+      "Madhubani/\n                                                        Benipatti"
+    ],
+    [
+      "135",
+      "Tilaiya",
+      "Tilaiya",
+      "91.38",
+      "91.50",
+      "DRY",
+      "Nawada/\n                                                        Hisua"
+    ],
+    [
+      "136",
+      "Tilawe",
+      "Litiahi",
+      "67.35",
+      "52.45",
+      "48.75",
+      "Supaul/\n                                                        Pipra"
+    ],
+    [
+      "137",
+      "Tisbhawra/ Kamla",
+      "Tisbhawra Pul",
+      "48.80",
+      "47.00",
+      "BGL",
+      "Darbhanga/\n                                                        Darbhanga Sadar"
+    ],
+    [
+      "138",
+      "Upper Kiul",
+      "Garhi",
+      "166.30",
+      "167.56",
+      "164.02",
+      "Jamui/\n                                                        Khaira"
+    ],
+    [
+      "139",
+      "Upperbadua",
+      "Thelwa",
+      "102.60",
+      "103.00",
+      "100.20",
+      "Jamui/\n                                                        Jhajha"
+    ],
+    [
+      "140",
+      "West Kankai",
+      "Bibiganj",
+      "49.59",
+      "48.80",
+      "47.42",
+      "Kishanganj/\n                                                        Terhagachh"
+    ],
+    [
+      "141",
+      "West Kankai",
+      "Gosaipur",
+      "49.59",
+      "46.94",
+      "44.25",
+      "Kishanganj/\n                                                        Kochadhaman"
+    ]
+  ]
+}
