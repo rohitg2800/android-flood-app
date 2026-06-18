@@ -181,6 +181,7 @@ class IndiaStationsService {
     if (city.isEmpty || state.isEmpty || !_isBihar(state)) return null;
 
     final current = _d(raw['current_level'] ?? raw['river_level']) ?? 0.0;
+    if (current == 0.0) return null; // hide UNKNOWN stations
     final danger  = _d(raw['danger_level'])  ?? 0.0;
     final warning = _d(raw['warning_level']) ?? 0.0;
     final flow    = _d(raw['flow_rate'] ?? raw['river_discharge'])
