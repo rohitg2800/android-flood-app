@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/river_theme.dart';
 import '../theme/theme_3d.dart';
 import '../providers/data_fetch_provider.dart';
+import '../providers/merged_stations_provider.dart';
+import '../providers/wrd_data_bridge.dart';
 import '../services/alert_engine.dart';
 import '../app_router.dart';
 
@@ -18,7 +20,9 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t       = RiverColors.of(context);
     final alerts  = ref.watch(alertsProvider);
-    final dataAsync = ref.watch(floodDataProvider);
+    final stations = ref.watch(mergedStationsProvider);
+    final isLoading = ref.watch(wrdIsLoadingProvider);
+    final error = ref.watch(wrdErrorProvider);
 
     final total     = alerts.length;
     final critical  = alerts.where((a) => a.severity == AlertSeverity.critical || a.severity == AlertSeverity.emergency).length;
@@ -38,7 +42,7 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
                 icon: Icon(Icons.refresh_rounded, color: t.textSecondary, size: 20),
                 tooltip: 'Refresh',
                 onPressed: () {
-                  ref.invalidate(floodDataProvider);
+                  ref.invalidate(mergedStationsProvider);
                   ref.invalidate(alertsProvider);
                 },
               ),
@@ -94,10 +98,11 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
                 const SizedBox(height: 12),
 
                 // ── River data table ───────────────────────────────────────
-                dataAsync.when(
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error:   (e, _) => _ErrorCard(t: t, msg: e.toString()),
-                  data:    (rivers) => Td3Card(
+                isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : error != null
+                      ? _ErrorCard(t: t, msg: error!)
+                      : Td3Card(
                     elevation: Td3.elevMid,
                     accentColor: const Color(0xFF26A69A),
                     child: Padding(
@@ -105,22 +110,22 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Live River Status  (${rivers.length} stations)',
+                          Text('Live River Status  (${stations.length} stations)',
                             style: TextStyle(color: t.textPrimary, fontSize: 13, fontWeight: FontWeight.w700)),
                           const SizedBox(height: 14),
-                          ...rivers.take(20).map((r) => _RiverRow(
+                          ...stations.take(20).map((r) => _RiverRow(
                             t: t,
-                            name:   r.riverName,
-                            level:  r.currentLevel,
-                            danger: r.dangerLevel,
+                            name:   r.river,
+                            level:  r.current,
+                            danger: r.danger,
                             onTap:  () => Navigator.of(context).pushNamed(Routes.riverDetail, arguments: r),
                           )),
-                          if (rivers.length > 20)
+                          if (stations.length > 20)
                             Padding(
                               padding: const EdgeInsets.only(top: 8),
                               child: TextButton(
                                 onPressed: () => Navigator.of(context).pushNamed(Routes.liveStations),
-                                child: Text('View all ${rivers.length} stations →',
+                                child: Text('View all ${stations.length} stations →',
                                   style: const TextStyle(color: Color(0xFF26A69A), fontSize: 12)),
                               ),
                             ),
@@ -128,7 +133,6 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                ),
 
                 const SizedBox(height: 32),
               ]),

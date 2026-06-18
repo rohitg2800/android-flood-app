@@ -58,7 +58,8 @@ const _navItems = [
 ];
 
 class MainShell extends ConsumerStatefulWidget {
-  const MainShell({super.key});
+  final int initialIndex;
+  const MainShell({super.key, this.initialIndex = 0});
   static const String route = Routes.shell;
 
   @override
@@ -68,6 +69,12 @@ class MainShell extends ConsumerStatefulWidget {
 class _MainShellState extends ConsumerState<MainShell>
     with TickerProviderStateMixin {
   int _index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _index = widget.initialIndex;
+  }
   final Set<String> _shownAlertIds = {};
 
   late final AnimationController _pulseCtrl = AnimationController(
