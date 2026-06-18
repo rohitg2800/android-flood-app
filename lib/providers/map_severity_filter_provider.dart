@@ -1,4 +1,4 @@
-// lib/providers/map_severity_filter_provider.dart  v2.0
+// lib/providers/map_severity_filter_provider.dart  v2.1
 //
 // Severity + baseline filter state for BiharRiverMapScreen and Dashboard.
 //
@@ -91,7 +91,7 @@ final hideNormalProvider =
 /// [isPreMonsoonPeriod()] returns true.
 class PreMonsoonBaselineNotifier extends StateNotifier<bool> {
   PreMonsoonBaselineNotifier() : super(false);
-  void toggle() => state = !state;
+  void toggle()  => state = !state;
   void enable()  => state = true;
   void disable() => state = false;
 }
@@ -109,8 +109,7 @@ final preMonsoonBaselineProvider =
 /// - non-null → restricted set
 ///
 /// Note: the pre-monsoon baseline filter operates on riskScore, not DangerClass,
-/// so it is NOT reflected here — apply it separately via
-/// [filteredBulkPredictionsProvider] or inline riskScore checks.
+/// so it is NOT reflected here — apply it via [filteredBulkPredictionsProvider].
 final effectiveVisibleClassesProvider = Provider<Set<DangerClass>?>((ref) {
   final active     = ref.watch(activeFiltersProvider);
   final hideNormal = ref.watch(hideNormalProvider);
@@ -149,7 +148,7 @@ final filteredBulkPredictionsProvider = Provider<List<FloodPrediction>>((ref) {
       if (!active.contains(dc)) return false;
     }
 
-    // ── 2. Hide NORMAL ──────────────────────────────────────────────────────
+    // ── 2. Hide NORMAL ─────────────────────────────────────────────────────
     if (hideNormal && pred.severity == 'LOW') return false;
 
     // ── 3. Pre-monsoon baseline: suppress sub-threshold noise ───────────────
@@ -163,11 +162,12 @@ final filteredBulkPredictionsProvider = Provider<List<FloodPrediction>>((ref) {
 });
 
 // ── Severity string → DangerClass mapping ────────────────────────────────────
+// Matches the DangerClass enum: { normal, aboveNormal, severe, extreme }
 DangerClass _severityToDangerClass(String severity) {
   return switch (severity.toUpperCase()) {
-    'CRITICAL' => DangerClass.critical,
+    'CRITICAL' => DangerClass.extreme,
     'SEVERE'   => DangerClass.severe,
-    'MODERATE' => DangerClass.warning,
+    'MODERATE' => DangerClass.aboveNormal,
     _          => DangerClass.normal,
   };
 }
