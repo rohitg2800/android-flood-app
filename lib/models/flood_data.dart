@@ -1,5 +1,25 @@
 import 'package:flutter/material.dart';
 
+// ── EmergencyContact ─────────────────────────────────────────────────────────
+/// Simple value class used by RealTimeService and CollapsibleContacts.
+class EmergencyContact {
+  final String name;
+  final String phone;
+  final String role;
+  const EmergencyContact({
+    required this.name,
+    required this.phone,
+    required this.role,
+  });
+  factory EmergencyContact.fromJson(Map<String, dynamic> j) => EmergencyContact(
+    name:  (j['name']  as String? ?? '').trim(),
+    phone: (j['phone'] as String? ?? '').trim(),
+    role:  (j['role']  as String? ?? '').trim(),
+  );
+  Map<String, dynamic> toJson() => {'name': name, 'phone': phone, 'role': role};
+}
+
+// ── FloodData ────────────────────────────────────────────────────────────────
 class FloodData {
   final String  stationId;
   final String  stationName;
@@ -82,9 +102,6 @@ class FloodData {
   // Timestamp alias
   DateTime get fetchedAt => lastUpdated ?? observedAt;
 
-  // HFL getter: stored value or dangerLevel + 0.5 fallback
-  // NOTE: field and getter share the name 'hfl' — the field IS the getter.
-
   // Reservoir fill percentage (0–100)
   double get fillPercent {
     if (dangerLevel <= 0) return 0;
@@ -105,9 +122,6 @@ class FloodData {
 
   // Flow rate alias
   double? get flowRateCumecs => discharge ?? flowRate;
-
-  // forecast alias (kept for external callers that read the getter)
-  // field forecastLevel24h is already the canonical name
 
   String get riskLevel {
     if (currentLevel >= dangerLevel)         return 'CRITICAL';
@@ -135,7 +149,7 @@ class FloodData {
     }
   }
 
-  // ── copyWith ─────────────────────────────────────────────────────────────────
+  // ── copyWith ───────────────────────────────────────────────────────────────
   FloodData copyWith({
     String?   stationId,
     String?   stationName,
@@ -225,15 +239,15 @@ class FloodData {
     lastUpdated:  json['lastUpdated'] != null
                     ? DateTime.parse(json['lastUpdated'] as String)
                     : null,
-    trend:              json['trend']               as String?,
-    predictedSeverity:  json['predictedSeverity']   as String?,
-    riskScore:          (json['riskScore'] as num?)?.toInt(),
-    confidencePercent:  _dOpt(json['confidencePercent']),
-    willBreachDanger:   json['willBreachDanger']    as bool?,
-    peakLevel72h:       _dOpt(json['peakLevel72h']),
-    hfl:           _dOpt(json['hfl']),
-    source:        json['source']            as String?,
-    rainfall24hMm: _dOpt(json['rainfall24hMm'] ?? json['rainfall24h']),
+    trend:             json['trend']              as String?,
+    predictedSeverity: json['predictedSeverity']  as String?,
+    riskScore:         (json['riskScore'] as num?)?.toInt(),
+    confidencePercent: _dOpt(json['confidencePercent']),
+    willBreachDanger:  json['willBreachDanger']   as bool?,
+    peakLevel72h:      _dOpt(json['peakLevel72h']),
+    hfl:              _dOpt(json['hfl']),
+    source:           json['source']           as String?,
+    rainfall24hMm:    _dOpt(json['rainfall24hMm'] ?? json['rainfall24h']),
     forecastLevel24h: _dOpt(json['forecastLevel24h']),
     rateOfRiseMph:    _dOpt(json['rateOfRiseMph']),
   );
