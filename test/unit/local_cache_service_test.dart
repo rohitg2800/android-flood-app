@@ -1,11 +1,9 @@
 // test/unit/local_cache_service_test.dart
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flood_watch/services/local_cache_service.dart';
+import 'package:equinox_flood/services/local_cache_service.dart';
 
 void main() {
-  // Reset the singleton's cached SharedPreferences instance before each test
-  // so that setMockInitialValues() takes effect cleanly.
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     LocalCacheService.instance.resetForTesting();
