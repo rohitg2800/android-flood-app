@@ -1,4 +1,23 @@
-// lib/services/bihar_live_engine.dart  v3.1.2
+// lib/services/bihar_live_engine.dart  v3.1.3
+//
+// v3.1.3: River-scoped gauge lookup — fixes Kamtaul×3 and Dhengraghat×2
+//         station-name collisions.
+//
+//   Root cause: _gaugeKeys() stripped parenthetical suffixes and inserted the
+//   bare name into the shared index via putIfAbsent.  For stations that share
+//   a bare name on different rivers (Kamtaul: Bagmati / Adhwara / Kamla;
+//   Dhengraghat: Bagmati / Mahananda) only the first-inserted gauge ever
+//   matched — the others silently returned wrong thresholds.
+//
+//   Fix:
+//   - _registry is now keyed as 'bare_name|river' for every gauge, plus the
+//     plain 'bare_name' key (putIfAbsent — first-writer wins, safe for
+//     unambiguous stations).
+//   - _gaugeFromRegistry(stationName, {river}) accepts an optional river hint
+//     and tries 'bare_name|river' first, then falls back to 'bare_name'.
+//   - All call-sites that know the river (wrd, wrd_scrape, rt, cwc, kosi)
+//     pass the river hint so the correct gauge is always selected.
+//   - _maxItemAge raised 3 h → 6 h to match WRD Bihar update cadence.
 //
 // v3.1.2: Null-safety — fd.city/fd.state are String? so _floodDataToItem
 //         now uses (fd.city ?? '') and (fd.state ?? '') throughout.
@@ -8,19 +27,6 @@
 //
 // v3.1: Registry-locked DL/WL/HFL for all Bihar gauge items
 //       + staleness-gated severity recompute for all 193 stations.
-//
-// Changes vs v3.0:
-//   - _gaugeFromRegistry()  fuzzy-matches kBiharGauges by station name.
-//   - _registryThresholds() returns canonical WL/DL/HFL (or zeros if unknown).
-//   - _dangerToSeverityFromLevels() recomputes severity via gaugeRiskFromLevels()
-//     instead of trusting the external source's label string.
-//   - _staleness guard: items with fetchedAt > _maxItemAge (3 h) are clamped
-//     to NewsSeverity.info — fixes "alerts from old data".
-//   - _wrdStationToItem, _biharStationToItem, _kosiReadingToItem, and the
-//     CWC block in _fetchIndiaStations all overlay registry thresholds.
-//   - _liveResultToItem: fields accessed via r.station.* (RiverStation);
-//     fetchedAt parsed from r.station.lastUpdated ISO string.
-//   - _floodDataToItem retains source thresholds but gains staleness guard.
 //
 // Slot priority (unchanged): rt > rtdas > wrd > wrd_scrape > kosi > wris
 //   > india > news
@@ -148,7 +154,7 @@ class BiharLiveFeed {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Engine v3.1.2
+// Engine v3.1.3
 // ─────────────────────────────────────────────────────────────────────────────
 
 class BiharLiveEngine {
@@ -161,9 +167,8 @@ class BiharLiveEngine {
   static const _rtdasInterval = Duration(hours: 6);
   static const _timeout       = Duration(seconds: 20);
 
-  // v3.1: items older than this are clamped to severity=info regardless of
-  //       water level — prevents stale cache entries from showing as alerts.
-  static const _maxItemAge = Duration(hours: 3);
+  // v3.1.3: raised 3 h → 6 h to match WRD Bihar update cadence.
+  static const _maxItemAge = Duration(hours: 6);
 
   final _wrd         = WrdBiharService.instance;
   final _befiqr      = BefiqrCwcService();
@@ -182,37 +187,82 @@ class BiharLiveEngine {
   Timer?            _rtdasTimer;
   bool              _running = false;
 
-  // ── v3.1: pre-built fuzzy lookup index over kBiharGauges ─────────────────
+  // ── v3.1.3: river-scoped registry index ───────────────────────────────────
+  //
+  // Keys in this map:
+  //   (a) 'bare_station_name|river_lowercase'  — scoped key, always inserted.
+  //   (b) 'bare_station_name'                  — unscoped key, putIfAbsent
+  //       (first writer wins; safe for stations with unique bare names).
+  //
+  // Lookup order in _gaugeFromRegistry:
+  //   1. Try 'bare_name|river' if river hint is provided.
+  //   2. Fall back to 'bare_name' (handles all unambiguous stations and
+  //      sources that don't provide a river name).
   Map<String, BiharGauge>? _registryIndex;
 
   Map<String, BiharGauge> get _registry {
     if (_registryIndex != null) return _registryIndex!;
     final idx = <String, BiharGauge>{};
     for (final g in kBiharGauges) {
-      for (final key in _gaugeKeys(g.station)) {
-        idx.putIfAbsent(key, () => g);
+      final riverKey = g.river.toLowerCase().trim();
+      for (final bare in _gaugeBareKeys(g.station)) {
+        // (a) scoped key — always wins for this river
+        idx['$bare|$riverKey'] = g;
+        // (b) unscoped key — first-writer wins (safe for unique bare names)
+        idx.putIfAbsent(bare, () => g);
       }
     }
     _registryIndex = idx;
     return idx;
   }
 
-  static List<String> _gaugeKeys(String name) {
+  /// Returns all bare (un-disambiguated) key variants for a station name.
+  /// Does NOT include the original name with parenthetical suffixes as a
+  /// separate key — those would re-introduce the collision for the
+  /// unscoped slot.
+  static List<String> _gaugeBareKeys(String name) {
     final base = name.toLowerCase().trim();
     final keys = <String>{base};
+
+    // Strip parenthetical qualifier: 'Kamtaul (Bagmati)' → 'kamtaul'
     final paren = base.replaceAll(RegExp(r'\s*\([^)]*\)'), '').trim();
-    if (paren.isNotEmpty) keys.add(paren);
+    if (paren.isNotEmpty && paren != base) keys.add(paren);
+
+    // Strip leading segment before ' - '
     final dash = base.split(' - ').first.trim();
-    if (dash.isNotEmpty) keys.add(dash);
+    if (dash.isNotEmpty && dash != base) keys.add(dash);
+
+    // Strip known trailing suffixes
     for (final sfx in [' barrage', ' bridge', ' (cwc)', ' (wrd)', ' ghat']) {
-      if (base.endsWith(sfx)) keys.add(base.substring(0, base.length - sfx.length).trim());
+      if (base.endsWith(sfx)) {
+        keys.add(base.substring(0, base.length - sfx.length).trim());
+      }
     }
     return keys.toList();
   }
 
-  BiharGauge? _gaugeFromRegistry(String stationName) {
-    for (final key in _gaugeKeys(stationName)) {
-      final g = _registry[key];
+  /// Looks up a gauge by station name, optionally scoped to a river.
+  ///
+  /// [river] should be the river name exactly as it appears in the data
+  /// source (e.g. 'Bagmati', 'Kamla').  When provided, a river-scoped
+  /// key is tried first so ambiguous bare names (Kamtaul, Dhengraghat)
+  /// resolve correctly.  Falls back to the unscoped key for sources that
+  /// don't carry a river name.
+  BiharGauge? _gaugeFromRegistry(String stationName, {String? river}) {
+    final bares = _gaugeBareKeys(stationName);
+
+    // 1. River-scoped lookup (precise)
+    if (river != null && river.isNotEmpty) {
+      final rk = river.toLowerCase().trim();
+      for (final bare in bares) {
+        final g = _registry['$bare|$rk'];
+        if (g != null) return g;
+      }
+    }
+
+    // 2. Unscoped fallback
+    for (final bare in bares) {
+      final g = _registry[bare];
       if (g != null) return g;
     }
     return null;
@@ -220,11 +270,12 @@ class BiharLiveEngine {
 
   ({double wl, double dl, double hfl}) _registryThresholds(
     String stationName, {
+    String? river,
     double fallbackWl = 0,
     double fallbackDl = 0,
     double fallbackHfl = 0,
   }) {
-    final g = _gaugeFromRegistry(stationName);
+    final g = _gaugeFromRegistry(stationName, river: river);
     return g != null
         ? (wl: g.warningLevel, dl: g.dangerLevel, hfl: g.hfl)
         : (wl: fallbackWl,     dl: fallbackDl,    hfl: fallbackHfl);
@@ -251,7 +302,7 @@ class BiharLiveEngine {
   Future<void> start() async {
     if (_running) return;
     _running = true;
-    debugPrint('[BiharLiveEngine] starting v3.1.2 …');
+    debugPrint('[BiharLiveEngine] starting v3.1.3 …');
 
     unawaited(RtdasThresholdSyncService.instance.start());
 
@@ -376,6 +427,7 @@ class BiharLiveEngine {
         befiqrItems = cwcStations.map((s) {
           final th = _registryThresholds(
             s.site,
+            river:       s.river,          // v3.1.3: pass river for scoped lookup
             fallbackWl:  s.warningLevel ?? (s.dangerLevel - 1),
             fallbackDl:  s.dangerLevel,
             fallbackHfl: s.dangerLevel + 2,
@@ -536,6 +588,7 @@ class BiharLiveEngine {
     final cur   = s.currentLevel ?? 0.0;
     final th    = _registryThresholds(
       s.site,
+      river:       s.river,          // v3.1.3: pass river for scoped lookup
       fallbackDl:  s.dangerLevel ?? 0,
       fallbackWl:  (s.dangerLevel != null) ? s.dangerLevel! - 1.0 : 0,
       fallbackHfl: (s.dangerLevel != null) ? s.dangerLevel! + 2.0 : 0,
@@ -567,6 +620,7 @@ class BiharLiveEngine {
     final cur   = r.currentLevel;
     final th    = _registryThresholds(
       r.stationName,
+      river:       r.river,          // v3.1.3: pass river for scoped lookup
       fallbackDl:  r.dangerLevel ?? 0,
       fallbackWl:  (r.dangerLevel != null) ? r.dangerLevel! - 1.0 : 0,
       fallbackHfl: r.hfl ?? ((r.dangerLevel != null) ? r.dangerLevel! + 2.0 : 0),
@@ -632,6 +686,7 @@ class BiharLiveEngine {
   BiharFeedItem _kosiReadingToItem(KosiBirpurReading r) {
     final th = _registryThresholds(
       'Birpur (CWC)',
+      river:       'Kosi',           // v3.1.3: pass river for scoped lookup
       fallbackDl:  r.dangerLevel,
       fallbackWl:  r.warningLevel,
       fallbackHfl: r.dangerLevel + 1.5,
@@ -670,10 +725,17 @@ class BiharLiveEngine {
     // Stale if either the isStale flag is set OR the timestamp is too old
     final isStale   = r.isStale ||
         DateTime.now().difference(fetchedAt) > _maxItemAge;
+    final th        = _registryThresholds(
+      st.station,
+      river:       st.river,         // v3.1.3: pass river for scoped lookup
+      fallbackWl:  st.warning,
+      fallbackDl:  st.danger,
+      fallbackHfl: st.hfl,
+    );
     final baseSev   = _dangerToSeverityFromLevels(
-        st.current, st.warning, st.danger, st.hfl);
+        st.current, th.wl, th.dl, th.hfl);
     final sev       = isStale ? NewsSeverity.info : baseSev;
-    final status    = _riskLabelFromLevels(st.current, st.warning, st.danger, st.hfl);
+    final status    = _riskLabelFromLevels(st.current, th.wl, th.dl, th.hfl);
     return BiharFeedItem(
       id:          'rt|${st.station.toLowerCase().trim()}',
       kind:        FeedItemKind.riverGauge,
@@ -687,8 +749,8 @@ class BiharLiveEngine {
       raw: {
         'river':   st.river,    'station': st.station,
         'city':    st.city,     'state':   st.state,
-        'level':   st.current,  'danger':  st.danger,
-        'warning': st.warning,  'hfl':     st.hfl,
+        'level':   st.current,  'danger':  th.dl,
+        'warning': th.wl,       'hfl':     th.hfl,
         'source':  r.source,    'stale':   r.isStale,
       },
     );
