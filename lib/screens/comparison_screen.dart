@@ -1,6 +1,6 @@
-// lib/screens/comparison_screen.dart  v2.1
-// Fixed: floodDataProvider → dataFetchProvider, Expanded center param removed,
-//        String? → String with ?? '' fallback
+// lib/screens/comparison_screen.dart  v2.2
+// Fixed: dataFetchProvider (undefined) → liveLevelsProvider (synchronous List<FloodData>)
+//        Import updated: data_fetch_provider → flood_providers
 library;
 
 import 'package:flutter/material.dart';
@@ -8,7 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/river_theme.dart';
 import '../theme/theme_3d.dart';
-import '../providers/data_fetch_provider.dart';
+import '../providers/flood_providers.dart';
 import '../models/flood_data.dart';
 
 class ComparisonScreen extends ConsumerStatefulWidget {
@@ -24,8 +24,8 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final t         = RiverColors.of(context);
-    final dataAsync = ref.watch(dataFetchProvider);
+    final t      = RiverColors.of(context);
+    final rivers = ref.watch(liveLevelsProvider);
 
     return Scaffold(
       backgroundColor: t.scaffoldBg,
@@ -38,67 +38,63 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
           ),
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 60),
-            sliver: dataAsync.when(
-              loading: () => const SliverFillRemaining(child: Center(child: CircularProgressIndicator())),
-              error:   (e, _) => SliverFillRemaining(child: Center(child: Text('Error: $e'))),
-              data:    (rivers) {
-                final names = rivers.map((r) => r.riverName ?? r.stationName).toSet().toList()..sort();
-                final dataA = _stationA != null
-                    ? rivers.firstWhere(
-                        (r) => (r.riverName ?? r.stationName) == _stationA,
-                        orElse: () => rivers.first)
-                    : null;
-                final dataB = _stationB != null
-                    ? rivers.firstWhere(
-                        (r) => (r.riverName ?? r.stationName) == _stationB,
-                        orElse: () => rivers.first)
-                    : null;
+            sliver: () {
+              final names = rivers.map((r) => r.riverName ?? r.stationName).toSet().toList()..sort();
+              final dataA = _stationA != null
+                  ? rivers.firstWhere(
+                      (r) => (r.riverName ?? r.stationName) == _stationA,
+                      orElse: () => rivers.first)
+                  : null;
+              final dataB = _stationB != null
+                  ? rivers.firstWhere(
+                      (r) => (r.riverName ?? r.stationName) == _stationB,
+                      orElse: () => rivers.first)
+                  : null;
 
-                return SliverList(
-                  delegate: SliverChildListDelegate([
+              return SliverList(
+                delegate: SliverChildListDelegate([
 
-                    // ── Station selectors ──────────────────────────────────
-                    Row(
-                      children: [
-                        Expanded(child: _StationDropdown(
-                          t: t, label: 'Station A', color: const Color(0xFF1976D2),
-                          value: _stationA, items: names,
-                          onChanged: (v) => setState(() => _stationA = v),
-                        )),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Icon(Icons.compare_arrows_rounded, color: t.textSecondary, size: 22),
-                        ),
-                        Expanded(child: _StationDropdown(
-                          t: t, label: 'Station B', color: const Color(0xFF26A69A),
-                          value: _stationB, items: names,
-                          onChanged: (v) => setState(() => _stationB = v),
-                        )),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
+                  // ── Station selectors ──────────────────────────────────
+                  Row(
+                    children: [
+                      Expanded(child: _StationDropdown(
+                        t: t, label: 'Station A', color: const Color(0xFF1976D2),
+                        value: _stationA, items: names,
+                        onChanged: (v) => setState(() => _stationA = v),
+                      )),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Icon(Icons.compare_arrows_rounded, color: t.textSecondary, size: 22),
+                      ),
+                      Expanded(child: _StationDropdown(
+                        t: t, label: 'Station B', color: const Color(0xFF26A69A),
+                        value: _stationB, items: names,
+                        onChanged: (v) => setState(() => _stationB = v),
+                      )),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
 
-                    if (dataA != null && dataB != null) ..._buildComparison(t, dataA, dataB)
-                    else
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(40),
-                          child: Column(
-                            children: [
-                              Icon(Icons.compare_arrows_rounded,
-                                  color: t.textSecondary.withValues(alpha: 0.3), size: 48),
-                              const SizedBox(height: 12),
-                              Text('Select two stations to compare',
-                                  style: TextStyle(color: t.textSecondary, fontSize: 13),
-                                  textAlign: TextAlign.center),
-                            ],
-                          ),
+                  if (dataA != null && dataB != null) ..._buildComparison(t, dataA, dataB)
+                  else
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(40),
+                        child: Column(
+                          children: [
+                            Icon(Icons.compare_arrows_rounded,
+                                color: t.textSecondary.withValues(alpha: 0.3), size: 48),
+                            const SizedBox(height: 12),
+                            Text('Select two stations to compare',
+                                style: TextStyle(color: t.textSecondary, fontSize: 13),
+                                textAlign: TextAlign.center),
+                          ],
                         ),
                       ),
-                  ]),
-                );
-              },
-            ),
+                    ),
+                ]),
+              );
+            }(),
           ),
         ],
       ),

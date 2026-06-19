@@ -1,4 +1,7 @@
-// lib/services/bihar_live_engine.dart  v3.1.1
+// lib/services/bihar_live_engine.dart  v3.1.2
+//
+// v3.1.2: Null-safety — fd.city/fd.state are String? so _floodDataToItem
+//         now uses (fd.city ?? '') and (fd.state ?? '') throughout.
 //
 // v3.1.1: Fix LiveRiverResult field access in _liveResultToItem.
 //         All other logic identical to v3.1.
@@ -145,7 +148,7 @@ class BiharLiveFeed {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Engine v3.1.1
+// Engine v3.1.2
 // ─────────────────────────────────────────────────────────────────────────────
 
 class BiharLiveEngine {
@@ -248,7 +251,7 @@ class BiharLiveEngine {
   Future<void> start() async {
     if (_running) return;
     _running = true;
-    debugPrint('[BiharLiveEngine] starting v3.1.1 …');
+    debugPrint('[BiharLiveEngine] starting v3.1.2 …');
 
     unawaited(RtdasThresholdSyncService.instance.start());
 
@@ -597,27 +600,30 @@ class BiharLiveEngine {
     );
   }
 
+  // v3.1.2: fd.city and fd.state are String? — use ?? '' throughout.
   BiharFeedItem _floodDataToItem(FloodData fd) {
+    final city      = fd.city ?? '';
+    final state     = fd.state ?? '';
     final level     = fd.currentLevel.toStringAsFixed(2);
     final status    = fd.riskLevel;
     final fetchedAt = fd.lastUpdated;
     final sev       = _severityGated(_riskToSeverity(status), fetchedAt ?? DateTime.now());
     return BiharFeedItem(
-      id:          'india|${fd.city.toLowerCase().trim()}',
+      id:          'india|${city.toLowerCase().trim()}',
       kind:        FeedItemKind.riverGauge,
       source:      SourceId.indiaStations,
-      title:       fd.city,
+      title:       city,
       subtitle:    fd.riverName != null && fd.riverName!.isNotEmpty
                        ? 'River: ${fd.riverName}'
-                       : fd.state,
+                       : state,
       value:       '$level m',
       dangerLevel: status,
       fetchedAt:   fetchedAt ?? DateTime.now(),
       severity:    sev,
       raw: {
-        'city':    fd.city,        'state':   fd.state,
-        'river':   fd.riverName,   'level':   fd.currentLevel,
-        'danger':  fd.dangerLevel, 'warning': fd.warningLevel,
+        'city':    city,          'state':   state,
+        'river':   fd.riverName,  'level':   fd.currentLevel,
+        'danger':  fd.dangerLevel,'warning': fd.warningLevel,
         'risk':    fd.riskLevel,
       },
     );
