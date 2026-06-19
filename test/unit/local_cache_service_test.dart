@@ -3,7 +3,7 @@
 // Unit tests for LocalCacheService.
 // Uses hive_test to spin up an in-memory Hive environment — no real files.
 
-import 'package:flood_watch/services/local_cache_service.dart';
+import 'package:equinox_flood/services/local_cache_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
