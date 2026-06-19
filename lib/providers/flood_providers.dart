@@ -1,6 +1,7 @@
 // lib/providers/flood_providers.dart
-// v10.4 — cityLookupMapProvider: O(1) city lookup; Bihar-only refresh gate
+// v10.5 — null-safety: _normCityKey(d.city ?? '') everywhere
 //
+// v10.4 — cityLookupMapProvider: O(1) city lookup; Bihar-only refresh gate
 // v10.3: pre-warm LiveFetchEngine on first realTimeProvider access
 // v10.2: _normCityKey() collapses qualifier variants so Birpur x3 → Birpur x1
 // v10.1: deduplicate liveLevelsProvider by city key.
@@ -52,12 +53,12 @@ final isWakingUpProvider = Provider<bool>((ref) {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────────
-// cityLookupMapProvider  (v10.4)
+// cityLookupMapProvider  (v10.5 — d.city ?? '')
 // ─────────────────────────────────────────────────────────────────────────────────
 
 final cityLookupMapProvider = Provider<Map<String, FloodData>>((ref) {
   final levels = ref.watch(liveLevelsProvider);
-  return { for (final d in levels) _normCityKey(d.city): d };
+  return { for (final d in levels) _normCityKey(d.city ?? ''): d };
 });
 
 // ─────────────────────────────────────────────────────────────────────────────────
@@ -228,13 +229,13 @@ String _normCityKey(String name) => name
     .trim();
 
 // ─────────────────────────────────────────────────────────────────────────────────
-// _deduplicateByCity  (v10.2)
+// _deduplicateByCity  (v10.5 — fd.city ?? '')
 // ─────────────────────────────────────────────────────────────────────────────────
 
 List<FloodData> _deduplicateByCity(List<FloodData> raw) {
   final map = <String, FloodData>{};
   for (final fd in raw) {
-    final key = _normCityKey(fd.city);
+    final key = _normCityKey(fd.city ?? '');
     if (!map.containsKey(key)) {
       map[key] = fd;
     } else {
