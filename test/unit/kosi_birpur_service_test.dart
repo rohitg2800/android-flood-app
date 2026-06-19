@@ -2,7 +2,7 @@
 // I-15: Unit tests for Birpur level constants and classification
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flood_watch/services/kosi_birpur_service.dart';
+import 'package:equinox_flood/services/kosi_birpur_service.dart';
 
 void main() {
   group('Birpur constants sanity', () {

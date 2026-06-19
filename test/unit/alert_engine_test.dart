@@ -1,10 +1,9 @@
-// lib/services/alert_engine.dart  v5.0
-//
-// test(I-15): Unit tests for safety-critical alert threshold logic
+// test/unit/alert_engine_test.dart
+// I-15: Unit tests for safety-critical alert threshold logic
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flood_watch/services/alert_engine.dart';
-import 'package:flood_watch/services/kosi_birpur_service.dart';
+import 'package:equinox_flood/services/alert_engine.dart';
+import 'package:equinox_flood/services/kosi_birpur_service.dart';
 
 void main() {
   group('AlertSeverity', () {
@@ -25,7 +24,7 @@ void main() {
     test('all types have displayName', () {
       for (final t in AlertType.values) {
         expect(t.displayName, isNotEmpty,
-            reason: 'AlertType.\${t.name} has empty displayName');
+            reason: 'AlertType.${t.name} has empty displayName');
       }
     });
 

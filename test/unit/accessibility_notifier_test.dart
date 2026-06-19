@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:flood_watch/providers/accessibility_provider.dart';
+import 'package:equinox_flood/providers/accessibility_provider.dart';
 
 // Helper: container that injects a live prefs instance directly,
 // bypassing the singleton entirely — no races, no stale cache.
@@ -15,8 +15,6 @@ Future<ProviderContainer> _container({SharedPreferences? prefs}) async {
         accessibilityProvider.overrideWith(() => AccessibilityNotifier(prefs: p)),
     ],
   );
-  // Trigger the notifier and let _load() complete synchronously
-  // (prefs is already resolved — no async gap).
   c.read(accessibilityProvider);
   await Future.microtask(() {});
   return c;
@@ -99,15 +97,12 @@ void main() {
 
   // ── 8. Persistence across container recreation
   test('prefs are reloaded into new container', () async {
-    // Seed values and get a live prefs instance — inject it directly
-    // so _load() never touches the singleton at all.
     SharedPreferences.setMockInitialValues({
       'a11y_high_contrast': true,
       'a11y_text_scale':    1.4,
       'a11y_locale':        'bn',
     });
     final prefs = await SharedPreferences.getInstance();
-
     final c = await _container(prefs: prefs);
     addTearDown(c.dispose);
     final s = c.read(accessibilityProvider);

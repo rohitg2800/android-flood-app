@@ -2,7 +2,7 @@
 // I-15: fromJson null safety and round-trip serialisation
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flood_watch/models/flood_data.dart';
+import 'package:equinox_flood/models/flood_data.dart';
 
 void main() {
   final validJson = <String, dynamic>{
