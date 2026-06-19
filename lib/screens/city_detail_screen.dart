@@ -1,8 +1,10 @@
-// lib/screens/city_detail_screen.dart  v6.2
-// Changes from v6.1:
-//   • Step 5.2 — ML card now uses biharPredictionProvider((stationId, city))
-//     instead of predictionProvider so predictions are calibrated to live data.
-
+// lib/screens/city_detail_screen.dart  v6.3
+// Fixed: d.city/district/state (String?) null guards throughout
+//   — d.city?.toLowerCase()  →  used with ?. operator
+//   — data.district ?? '' / data.state ?? '' passed to widgets expecting String
+//   — _HeroBackground district param is now String? (rendered with null-guard)
+//   — _MetaCard rows guard district/state with ?? ''
+//   — WatchButton cityName uses data.city ?? data.stationName
 library;
 
 import 'dart:math' as math;
@@ -10,7 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/flood_data.dart';
 import '../providers/flood_providers.dart';
-import '../providers/bihar_prediction_provider.dart';  // Step 5.2
+import '../providers/bihar_prediction_provider.dart';
 import '../models/flood_prediction.dart';
 import '../theme/river_theme.dart';
 
@@ -84,11 +86,11 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
     FloodData? data;
     try {
       data = all.firstWhere(
-          (d) => d.city.toLowerCase() == city.toLowerCase());
+          (d) => (d.city?.toLowerCase() ?? '') == city.toLowerCase());
     } catch (_) {
       try {
         data = all.firstWhere(
-            (d) => d.city.toLowerCase().contains(city.toLowerCase()));
+            (d) => (d.city?.toLowerCase() ?? '').contains(city.toLowerCase()));
       } catch (_) {
         data = null;
       }
@@ -98,7 +100,6 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
       return _NotFoundScaffold(cityName: city, t: t);
     }
 
-    // Use live overrides if passed from biharLiveProvider.
     final double currentLevel = widget.liveLevel ?? data.currentLevel;
     final String riskLevel    = widget.liveRisk  ?? data.riskLevel;
     final double fillPct      = data.dangerLevel > 0
@@ -108,7 +109,6 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
 
     final rc = _riskColor(riskLevel, t);
 
-    // Step 5.2: use biharPredictionProvider (live-calibrated)
     final predAsync = ref.watch(
         biharPredictionProvider((data.stationId, city)));
 
@@ -117,7 +117,6 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
-          // ── Hero SliverAppBar
           SliverAppBar(
             expandedHeight: 260,
             pinned: true,
@@ -133,7 +132,7 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
                     fillPct:   fillPct,
                     cityName:  city,
                     river:     data!.riverName ?? '',
-                    district:  data.district,
+                    district:  data.district   ?? '',
                     riskLabel: riskLevel.toUpperCase(),
                     t:         t,
                     scaleAnim: _heroScale,
@@ -145,7 +144,7 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
             actions: [
               WatchButton(
                 stationId: data.stationId,
-                cityName:  data.city,
+                cityName:  data.city ?? data.stationName,
                 riverName: data.riverName ?? '',
               ),
               IconButton(
@@ -164,14 +163,12 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
 
           const SliverToBoxAdapter(child: SyncStatusBanner()),
 
-          // ── Threshold warning banner
           if (riskLevel.toUpperCase() != 'SAFE' &&
               riskLevel.toUpperCase() != 'NORMAL')
             SliverToBoxAdapter(
               child: _ThresholdBanner(risk: riskLevel, rc: rc, t: t),
             ),
 
-          // ── Stats grid
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
@@ -181,7 +178,6 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
             ),
           ),
 
-          // ── Animated fill gauge card
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
@@ -190,7 +186,6 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
             ),
           ),
 
-          // ── Sparkline 7-day history
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
@@ -202,7 +197,6 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
             ),
           ),
 
-          // ── ML prediction card (Step 5.2: live-calibrated)
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
@@ -214,7 +208,6 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
             ),
           ),
 
-          // ── Quick actions
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
@@ -223,7 +216,6 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen>
             ),
           ),
 
-          // ── Metadata card
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
@@ -366,7 +358,6 @@ class _MlCard extends StatelessWidget {
               ),
             ],
           ),
-          // Source badge
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -581,8 +572,9 @@ class _HeroBackground extends StatelessWidget {
                   if (river.isNotEmpty)
                     Text('$river River',
                         style: TextStyle(color: t.textSecondary, fontSize: 14)),
-                  Text(district,
-                      style: TextStyle(color: t.textSecondary, fontSize: 13)),
+                  if (district.isNotEmpty)
+                    Text(district,
+                        style: TextStyle(color: t.textSecondary, fontSize: 13)),
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
@@ -720,10 +712,10 @@ class _StatsGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final stats = [
-      _S('Current Level', '${currentLevel.toStringAsFixed(2)} m', Icons.water_drop_outlined, rc),
-      _S('Danger Level',  '${data.dangerLevel.toStringAsFixed(2)} m', Icons.emergency_outlined, AppPalette.danger),
-      _S('Fill %',        '${fillPct.toStringAsFixed(1)}%',           Icons.show_chart_rounded, t.accent),
-      _S('State',          data.state,                                 Icons.location_on_outlined, t.textSecondary),
+      _S('Current Level', '${currentLevel.toStringAsFixed(2)} m',       Icons.water_drop_outlined,   rc),
+      _S('Danger Level',  '${data.dangerLevel.toStringAsFixed(2)} m',   Icons.emergency_outlined,    AppPalette.danger),
+      _S('Fill %',        '${fillPct.toStringAsFixed(1)}%',             Icons.show_chart_rounded,    t.accent),
+      _S('State',          data.state ?? '—',                           Icons.location_on_outlined,  t.textSecondary),
     ];
     return GridView.count(
       crossAxisCount: 2,
@@ -941,12 +933,14 @@ class _MetaCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final rows = [
       if ((data.riverName ?? '').isNotEmpty)
-        _MR('River',       data.riverName!,           Icons.water_outlined),
-      _MR('District',      data.district,             Icons.location_city_outlined),
-      _MR('State',         data.state,                Icons.map_outlined),
-      _MR('Station ID',    data.stationId,            Icons.badge_outlined),
+        _MR('River',         data.riverName!,              Icons.water_outlined),
+      if ((data.district ?? '').isNotEmpty)
+        _MR('District',      data.district!,               Icons.location_city_outlined),
+      if ((data.state ?? '').isNotEmpty)
+        _MR('State',         data.state!,                  Icons.map_outlined),
+      _MR('Station ID',    data.stationId,                 Icons.badge_outlined),
       if (data.lastUpdated != null)
-        _MR('Last Updated', _fmt(data.lastUpdated!),  Icons.access_time_rounded),
+        _MR('Last Updated', _fmt(data.lastUpdated!),       Icons.access_time_rounded),
     ];
     return Container(
       padding: const EdgeInsets.all(18),

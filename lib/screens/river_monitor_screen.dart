@@ -1,10 +1,8 @@
-// lib/screens/river_monitor_screen.dart  v2.2.1  (18 Jun 2026)
-//
-// v2.2.1: fix — add missing import for preMonsoonBaselineProvider &
-//         kPreMonsoonBaselineRiskThreshold.
-//
-// v2.2.0: baseline filter: when preMonsoonBaselineProvider is enabled,
-//         stations with riskScore < kPreMonsoonBaselineRiskThreshold hidden.
+// lib/screens/river_monitor_screen.dart  v2.2.2
+// Fixed: fd.city/state/district (String?) — toLowerCase() calls guarded with ?. and ?? ''
+//        d.city/d.district in _RiverCard Text() — guarded with ?? stationName / ?? ''
+library;
+
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../widgets/app_icon_box.dart';
@@ -13,7 +11,6 @@ import 'package:intl/intl.dart';
 import '../models/flood_data.dart';
 import '../providers/flood_providers.dart';
 import '../providers/bihar_prediction_provider.dart';
-// ✅ v2.2.1 fix — required for preMonsoonBaselineProvider & kPreMonsoonBaselineRiskThreshold
 import '../providers/pre_monsoon_baseline_provider.dart';
 import '../theme/river_theme.dart';
 import '../theme/theme_3d.dart';
@@ -88,9 +85,9 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
     if (_query.isEmpty) return all;
     final q = _query.toLowerCase();
     return all.where((fd) =>
-        fd.city.toLowerCase().contains(q) ||
-        fd.state.toLowerCase().contains(q) ||
-        fd.district.toLowerCase().contains(q) ||
+        (fd.city?.toLowerCase().contains(q)     ?? false) ||
+        (fd.state?.toLowerCase().contains(q)    ?? false) ||
+        (fd.district?.toLowerCase().contains(q) ?? false) ||
         (fd.riverName?.toLowerCase().contains(q) ?? false)).toList();
   }
 
@@ -122,7 +119,6 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
         return sb.compareTo(sa);
       });
 
-    // Baseline filter: null riskScore → always show
     final all = baselineOn
         ? sorted.where((d) =>
             d.riskScore == null ||
@@ -179,7 +175,6 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
             ),
           ),
 
-          // Baseline info chip
           if (baselineOn && hiddenCount > 0)
             SliverToBoxAdapter(
               child: Padding(
@@ -263,7 +258,7 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
                       t: t,
                       onTap: () => Navigator.of(ctx).pushNamed(
                         Routes.cityDetail,
-                        arguments: levels[i].city,
+                        arguments: levels[i].city ?? levels[i].stationName,
                       ),
                     ),
                   ),
@@ -762,10 +757,16 @@ class _RiverCardState extends State<_RiverCard>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(d.city, style: TextStyle(color: t.textPrimary, fontWeight: FontWeight.w800, fontSize: 16, letterSpacing: -0.3)),
+                                  // city is String? — fall back to stationName
+                                  Text(
+                                    d.city ?? d.stationName,
+                                    style: TextStyle(color: t.textPrimary, fontWeight: FontWeight.w800, fontSize: 16, letterSpacing: -0.3),
+                                  ),
                                   if ((d.riverName ?? '').isNotEmpty)
                                     Text(d.riverName!, style: TextStyle(color: t.textSecondary, fontSize: 12)),
-                                  Text(d.district, style: TextStyle(color: t.textSecondary, fontSize: 11)),
+                                  // district is String? — guard with ?? ''
+                                  if ((d.district ?? '').isNotEmpty)
+                                    Text(d.district!, style: TextStyle(color: t.textSecondary, fontSize: 11)),
                                 ],
                               ),
                             ),
