@@ -278,15 +278,15 @@ Future<void> main() async {
           .expand((snapshot) {
             final List<RiverStation> stations = snapshot.stations.map((d) => RiverStation(
               city:    d.stationName,
-              state:   d.state,
-              river:   d.river,
+              state:   d.state ?? '',
+              river:   d.riverName ?? '',
               station: d.stationId,
               current: d.currentLevel,
               warning: d.warningLevel,
               danger:  d.dangerLevel,
-              hfl:     d.hfl,
-              lat:     d.latitude,
-              lon:     d.longitude,
+              hfl:     d.hfl ?? 0.0,
+              lat:     d.latitude ?? 0.0,
+              lon:     d.longitude ?? 0.0,
               isLive:  d.isLive,
             )).toList();
             return AlertEngine.instance.evaluateMerged(stations);

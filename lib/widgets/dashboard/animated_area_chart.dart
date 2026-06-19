@@ -92,7 +92,7 @@ class _AnimatedAreaChartState extends State<AnimatedAreaChart> {
                               children: [
                                 Expanded(
                                   child: Text(
-                                    d.river,
+                                    d.riverName ?? '',
                                     style: TextStyle(
                                         color: t.textPrimary,
                                         fontSize: 11,
