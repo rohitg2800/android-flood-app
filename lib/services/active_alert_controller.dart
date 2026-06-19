@@ -1,20 +1,13 @@
-// lib/services/active_alert_controller.dart  v2.2
-// Fix:
-//   1. Import StationReading ONLY from models/station_reading.dart
-//      (data_fetch_engine.dart re-exports it, causing ambiguity —
-//       import models directly to be unambiguous).
-//   2. .map<FloodData>() explicit type so toList() returns List<FloodData>.
-//   3. fetchedAt: is not a FloodData constructor param; use lastUpdated: instead.
-//   4. fd.hfl and fd.source are non-nullable in v5 — remove dead null-checks.
+// lib/services/active_alert_controller.dart  v2.3
+// Fixed: fd.hfl/source/river/district/state (nullable) — added ?? '' / ?? 0.0 guards
 library;
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/flood_data.dart';
-import '../models/station_reading.dart';   // canonical — only import from here
-import 'data_fetch_engine.dart';           // DataFetchSnapshot only
+import '../models/station_reading.dart';
+import 'data_fetch_engine.dart';
 
-// ── Severity enum ────────────────────────────────────────────────────────────
 enum AlertSeverity { normal, rising, danger, critical, extreme }
 
 extension AlertSeverityX on AlertSeverity {
@@ -22,7 +15,6 @@ extension AlertSeverityX on AlertSeverity {
   bool operator >=(AlertSeverity other) => index >= other.index;
 }
 
-// ── AlertItem ─────────────────────────────────────────────────────────────────
 class AlertItem {
   final String        stationKey;
   final String        stationName;
@@ -80,7 +72,6 @@ class AlertItem {
   );
 }
 
-// ── ActiveAlertController ────────────────────────────────────────────────────
 class ActiveAlertController {
   ActiveAlertController._();
   static final instance = ActiveAlertController._();
@@ -88,8 +79,8 @@ class ActiveAlertController {
   static const _kMaxAlerts      = 8;
   static const _kSuppressWindow = Duration(minutes: 30);
   static const _kClearWindow    = Duration(minutes: 15);
-  static const _kRorThreshold   = 0.3;   // m/h
-  static const _kRainThreshold  = 10.0;  // mm/24h
+  static const _kRorThreshold   = 0.3;
+  static const _kRainThreshold  = 10.0;
 
   final _activeMap   = <String, AlertItem>{};
   final _normalSince = <String, DateTime>{};
@@ -103,18 +94,16 @@ class ActiveAlertController {
   void start() {
     if (_started) return;
     _started = true;
-    debugPrint('[AlertCtrl v2.2] started');
+    debugPrint('[AlertCtrl v2.3] started');
   }
 
   void stop() {
     _started = false;
-    debugPrint('[AlertCtrl v2.2] stopped');
+    debugPrint('[AlertCtrl v2.3] stopped');
   }
 
-  // ── push() — entry-point (fed by alerts_parent_bridge_provider) ───────────
   void push(List<StationReading> stations) {
     if (stations.isEmpty) return;
-    // Explicit <FloodData> type param so toList() is List<FloodData>, not List<dynamic>
     final asFloodData = stations.map<FloodData>(_toFloodData).toList();
     final snap = DataFetchSnapshot(
       stations:  asFloodData,
@@ -124,7 +113,6 @@ class ActiveAlertController {
     _onSnapshot(snap);
   }
 
-  // ── StationReading → FloodData shim ────────────────────────────────────────
   static FloodData _toFloodData(StationReading s) => FloodData(
     stationId:        s.stationName,
     stationName:      s.stationName,
@@ -141,25 +129,23 @@ class ActiveAlertController {
     rainfall24hMm:    s.rainfall24hMm,
     forecastLevel24h: s.forecastLevel24h,
     rateOfRiseMph:    s.rateOfRiseMph,
-    // fetchedAt is not a FloodData ctor param — use lastUpdated instead
     lastUpdated:      s.isLive ? DateTime.now() : s.fetchedAt,
   );
 
-  // ── FloodData → StationReading shim (for _deriveSeverity / _buildAlert) ────
   static StationReading _fromFloodData(FloodData fd) => StationReading(
     stationName:      fd.stationName,
-    river:            fd.river,
-    district:         fd.district,
-    state:            fd.state,
+    river:            fd.river     ?? '',
+    district:         fd.district  ?? '',
+    state:            fd.state     ?? '',
     lat:              fd.latitude  ?? 0.0,
     lon:              fd.longitude ?? 0.0,
     currentLevel:     fd.currentLevel,
     warningLevel:     fd.warningLevel,
     dangerLevel:      fd.dangerLevel,
-    hfl:              fd.hfl,          // non-nullable double in FloodData v5
+    hfl:              fd.hfl       ?? 0.0,
     progressPct:      fd.progressPct,
     riskLabel:        fd.riskLabel,
-    source:           fd.source,       // non-nullable in FloodData v5
+    source:           fd.source    ?? '',
     isLive:           fd.status == 'LIVE',
     fetchedAt:        fd.fetchedAt,
     rateOfRiseMph:    fd.rateOfRiseMph,
@@ -167,13 +153,12 @@ class ActiveAlertController {
     forecastLevel24h: fd.forecastLevel24h,
   );
 
-  // ── core processing ─────────────────────────────────────────────────────────
   void _onSnapshot(DataFetchSnapshot snap) {
     if (snap.isLoading || snap.stations.isEmpty) return;
     final now = DateTime.now();
 
     for (final fd in snap.stations) {
-      if (fd.source == 'SEED') continue;
+      if ((fd.source ?? '') == 'SEED') continue;
 
       final key      = _norm(fd.stationName);
       final s        = _fromFloodData(fd);
