@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:equinox_flood/providers/accessibility_provider.dart';
+import 'package:flood_watch/providers/accessibility_provider.dart';
 
 // Helper: container that injects a live prefs instance directly,
 // bypassing the singleton entirely — no races, no stale cache.
@@ -11,7 +11,8 @@ Future<ProviderContainer> _container({SharedPreferences? prefs}) async {
   final p = prefs ?? await SharedPreferences.getInstance();
   final c = ProviderContainer(
     overrides: [
-      accessibilityProvider.overrideWith((_) => AccessibilityNotifier(prefs: p)),
+      sharedPreferencesProvider.overrideWithValue(p),
+        accessibilityProvider.overrideWith(() => AccessibilityNotifier(prefs: p)),
     ],
   );
   // Trigger the notifier and let _load() complete synchronously

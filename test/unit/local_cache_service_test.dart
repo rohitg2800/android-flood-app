@@ -1,19 +1,18 @@
+import 'package:shared_preferences/shared_preferences.dart';
 // test/unit/local_cache_service_test.dart
-// I-15: Unit tests for cache freshness and TTL logic
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flood_watch/services/local_cache_service.dart';
 
 void main() {
-  setUpAll(() async {
-    TestWidgetsFlutterBinding.ensureInitialized();
-    await Hive.initFlutter();
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
   });
 
   group('LocalCacheService.isFresh()', () {
-    test('returns false when key has never been set', () {
+    test('returns false when key has never been set', () async {
       final svc = LocalCacheService();
+      await svc.init();
       expect(svc.isFresh('never_set_key', const Duration(minutes: 5)), isFalse);
     });
 
@@ -39,8 +38,9 @@ void main() {
   });
 
   group('LocalCacheService.lastSavedAt', () {
-    test('returns null when nothing cached', () {
+    test('returns null when nothing cached', () async {
       final svc = LocalCacheService();
+      await svc.init();
       expect(svc.lastSavedAt, isNull);
     });
   });
