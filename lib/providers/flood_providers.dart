@@ -205,9 +205,9 @@ FloodData _riverStationToFloodData(RiverStation s) {
     stationId:    s.station,
     stationName:  s.station,
     river:        s.river ?? '',
-    city:         s.city,
+    city:         s.city ?? '',
     district:     '',
-    state:        s.state,
+    state:        s.state ?? '',
     riverName:    s.river,
     currentLevel: s.current,
     warningLevel: s.warning,
@@ -234,10 +234,7 @@ String _normCityKey(String name) => name
 List<FloodData> _deduplicateByCity(List<FloodData> raw) {
   final map = <String, FloodData>{};
   for (final fd in raw) {
-    // v10.5: always normalise the key so 'Birpur', 'Birpur (CWC)', 'birpur cwc'
-    // all collapse to the same key instead of producing 3 separate cards.
-    final key = _normCityKey(
-        fd.city);
+    final key = _normCityKey(fd.city);
     if (!map.containsKey(key)) {
       map[key] = fd;
     } else {
