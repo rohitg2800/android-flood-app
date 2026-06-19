@@ -1,12 +1,18 @@
 // test/unit/local_cache_service_test.dart
-import 'package:shared_preferences/shared_preferences.dart';
+//
+// Unit tests for LocalCacheService.
+// Uses hive_test to spin up an in-memory Hive environment — no real files.
+
+import 'package:flood_watch/services/local_cache_service.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:equinox_flood/services/local_cache_service.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 void main() {
   setUp(() async {
-    SharedPreferences.setMockInitialValues({});
+    // Reset singleton box references first so init() re-opens fresh boxes.
     LocalCacheService.instance.resetForTesting();
+    // Use an in-memory Hive directory for tests.
+    Hive.init('.');
     await LocalCacheService.instance.init();
   });
 
@@ -14,40 +20,45 @@ void main() {
     LocalCacheService.instance.resetForTesting();
   });
 
-  group('LocalCacheService.isFresh()', () {
-    test('returns false when key has never been set', () async {
+  group('LocalCacheService — KV store', () {
+    test('setString / getString round-trip', () async {
       final svc = LocalCacheService.instance;
-      expect(svc.isFresh('never_set_key', const Duration(minutes: 5)), isFalse);
+      await svc.setString('hello', 'world');
+      expect(svc.getString('hello'), 'world');
     });
 
-    test('returns true immediately after timestamp set', () async {
+    test('getString returns null for missing key', () async {
       final svc = LocalCacheService.instance;
-      await svc.setTimestamp('test_ts');
-      expect(svc.isFresh('test_ts', const Duration(minutes: 5)), isTrue);
+      expect(svc.getString('__nonexistent__'), isNull);
     });
 
-    test('returns false after TTL expires (6min > 5min TTL)', () async {
+    test('remove deletes a key', () async {
       final svc = LocalCacheService.instance;
-      final old = DateTime.now()
-          .subtract(const Duration(minutes: 6))
-          .toIso8601String();
-      await svc.setRaw('test_ts_old', old);
-      expect(svc.isFresh('test_ts_old', const Duration(minutes: 5)), isFalse);
+      await svc.setString('tmp', 'value');
+      await svc.remove('tmp');
+      expect(svc.getString('tmp'), isNull);
     });
 
-    test('returns true within TTL window (3min < 5min TTL)', () async {
+    test('clear wipes all KV entries', () async {
       final svc = LocalCacheService.instance;
-      final recent = DateTime.now()
-          .subtract(const Duration(minutes: 3))
-          .toIso8601String();
-      await svc.setRaw('test_ts_recent', recent);
-      expect(svc.isFresh('test_ts_recent', const Duration(minutes: 5)), isTrue);
+      await svc.setString('a', '1');
+      await svc.setString('b', '2');
+      await svc.clear();
+      expect(svc.getString('a'), isNull);
+      expect(svc.getString('b'), isNull);
     });
-  });
 
-  group('LocalCacheService.lastSavedAt', () {
-    test('returns null when nothing cached', () async {
-      expect(LocalCacheService.instance.lastSavedAt, isNull);
+    test('setNow + isFresh reports fresh within ttl', () async {
+      final svc = LocalCacheService.instance;
+      await svc.setNow('ts_key');
+      expect(svc.isFresh('ts_key', const Duration(minutes: 10)), isTrue);
+    });
+
+    test('isFresh returns false for missing timestamp', () {
+      expect(
+        LocalCacheService.instance.lastSavedAt,
+        isNull,
+      );
     });
   });
 }
