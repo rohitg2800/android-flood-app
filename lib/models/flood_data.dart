@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class FloodData {
   final String  stationId;
   final String  stationName;
@@ -25,6 +27,13 @@ class FloodData {
   final bool?   willBreachDanger;
   final double? peakLevel72h;
 
+  // Extended fields (v4.3 — stored directly or passed through copyWith)
+  final double? hflValue;          // Historical Flood Level
+  final String? sourceLabel;       // data source identifier
+  final double? rainfall24hMmVal;  // 24-hour rainfall accumulation (mm)
+  final double? forecastLevel24hVal; // 24-hour forecast water level
+  final double? rateOfRiseMphVal;  // rate of rise (m/h)
+
   FloodData({
     required this.stationId,
     required this.stationName,
@@ -49,11 +58,69 @@ class FloodData {
     this.confidencePercent,
     this.willBreachDanger,
     this.peakLevel72h,
+    this.hflValue,
+    this.sourceLabel,
+    this.rainfall24hMmVal,
+    this.forecastLevel24hVal,
+    this.rateOfRiseMphVal,
   }) : observedAt = observedAt ?? lastUpdated ?? DateTime(1970);
-
 
   // ── Convenience getters ────────────────────────────────────────────────────
   String get station => stationName;
+
+  /// Deprecated alias — use stationId
+  String get id => stationId;
+
+  // Coordinate aliases used by backend_sync_service
+  double? get lat => latitude;
+  double? get lon => longitude;
+
+  // Data source identifier
+  String get source => sourceLabel ?? 'cwc';
+
+  // Live-data flag: true if data is fresher than 2 hours
+  bool get isLive {
+    final age = DateTime.now().difference(observedAt);
+    return age.inHours < 2;
+  }
+
+  // Timestamp alias used across providers / services
+  DateTime get fetchedAt => lastUpdated ?? observedAt;
+
+  // Historical Flood Level (metres) — falls back to dangerLevel + 0.5
+  double get hfl => hflValue ?? (dangerLevel + 0.5);
+
+  // Reservoir fill percentage (0–100)
+  double get fillPercent {
+    if (dangerLevel <= 0) return 0;
+    return ((currentLevel / dangerLevel) * 100).clamp(0, 100);
+  }
+
+  /// Alias used by river_detail_screen / stations_unified_bridge
+  double get capacityPercent => fillPercent;
+
+  // Progress toward danger (0.0–1.0)
+  double get progressPct {
+    if (dangerLevel <= warningLevel) return 0;
+    return ((currentLevel - warningLevel) / (dangerLevel - warningLevel))
+        .clamp(0.0, 1.0);
+  }
+
+  // Effective rainfall combining IMD field and rainfall24h
+  double get effectiveRainfallMm =>
+      rainfall24hMm ?? imdRainfallMm ?? 0.0;
+
+  // 24-hour rainfall accumulation
+  double? get rainfall24hMm => rainfall24hMmVal ?? imdRainfallMm;
+
+  // 24-hour forecast water level
+  double? get forecastLevel24h => forecastLevel24hVal ?? peakLevel72h;
+
+  // Rate of rise in m/h
+  double? get rateOfRiseMph => rateOfRiseMphVal;
+
+  // Flow rate alias used by kosi_birpur_provider
+  double? get flowRateCumecs => discharge ?? flowRate;
 
   String get riskLevel {
     if (currentLevel >= dangerLevel)              return 'CRITICAL';
@@ -62,8 +129,88 @@ class FloodData {
     return 'NORMAL';
   }
 
+  /// Human-readable risk label (alias for riskLevel, lowercase-friendly)
+  String get riskLabel => riskLevel;
+
+  /// Flood status string used in providers / services
+  String get status {
+    if (currentLevel >= dangerLevel)  return 'danger';
+    if (currentLevel >= warningLevel) return 'warning';
+    return 'normal';
+  }
+
   bool get isAtWarning => currentLevel >= warningLevel;
   bool get isAtDanger  => currentLevel >= dangerLevel;
+
+  /// Priority colour for map markers and river detail screen
+  Color get priorityColor {
+    switch (status) {
+      case 'danger':  return const Color(0xFFD32F2F);
+      case 'warning': return const Color(0xFFF57C00);
+      default:        return const Color(0xFF388E3C);
+    }
+  }
+
+  // ── copyWith ───────────────────────────────────────────────────────────────
+  FloodData copyWith({
+    String?  stationId,
+    String?  stationName,
+    String?  city,
+    String?  district,
+    String?  state,
+    String?  river,
+    String?  riverName,
+    double?  currentLevel,
+    double?  warningLevel,
+    double?  dangerLevel,
+    double?  discharge,
+    double?  flowRate,
+    double?  imdRainfallMm,
+    double?  latitude,
+    double?  longitude,
+    DateTime? observedAt,
+    DateTime? lastUpdated,
+    String?  trend,
+    String?  predictedSeverity,
+    int?     riskScore,
+    double?  confidencePercent,
+    bool?    willBreachDanger,
+    double?  peakLevel72h,
+    double?  hflValue,
+    String?  sourceLabel,
+    double?  rainfall24hMmVal,
+    double?  forecastLevel24hVal,
+    double?  rateOfRiseMphVal,
+  }) => FloodData(
+    stationId:          stationId          ?? this.stationId,
+    stationName:        stationName        ?? this.stationName,
+    city:               city               ?? this.city,
+    district:           district           ?? this.district,
+    state:              state              ?? this.state,
+    river:              river              ?? this.river,
+    riverName:          riverName          ?? this.riverName,
+    currentLevel:       currentLevel       ?? this.currentLevel,
+    warningLevel:       warningLevel       ?? this.warningLevel,
+    dangerLevel:        dangerLevel        ?? this.dangerLevel,
+    discharge:          discharge          ?? this.discharge,
+    flowRate:           flowRate           ?? this.flowRate,
+    imdRainfallMm:      imdRainfallMm      ?? this.imdRainfallMm,
+    latitude:           latitude           ?? this.latitude,
+    longitude:          longitude          ?? this.longitude,
+    observedAt:         observedAt         ?? this.observedAt,
+    lastUpdated:        lastUpdated        ?? this.lastUpdated,
+    trend:              trend              ?? this.trend,
+    predictedSeverity:  predictedSeverity  ?? this.predictedSeverity,
+    riskScore:          riskScore          ?? this.riskScore,
+    confidencePercent:  confidencePercent  ?? this.confidencePercent,
+    willBreachDanger:   willBreachDanger   ?? this.willBreachDanger,
+    peakLevel72h:       peakLevel72h       ?? this.peakLevel72h,
+    hflValue:           hflValue           ?? this.hflValue,
+    sourceLabel:        sourceLabel        ?? this.sourceLabel,
+    rainfall24hMmVal:   rainfall24hMmVal   ?? this.rainfall24hMmVal,
+    forecastLevel24hVal: forecastLevel24hVal ?? this.forecastLevel24hVal,
+    rateOfRiseMphVal:   rateOfRiseMphVal   ?? this.rateOfRiseMphVal,
+  );
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   static double  _d(dynamic v)    => v == null ? 0.0 : (v as num).toDouble();
@@ -100,6 +247,11 @@ class FloodData {
     confidencePercent:  _dOpt(json['confidencePercent']),
     willBreachDanger:   json['willBreachDanger']    as bool?,
     peakLevel72h:       _dOpt(json['peakLevel72h']),
+    hflValue:           _dOpt(json['hfl'] ?? json['hflValue']),
+    sourceLabel:        json['source']   as String?,
+    rainfall24hMmVal:   _dOpt(json['rainfall24hMm'] ?? json['rainfall24h']),
+    forecastLevel24hVal: _dOpt(json['forecastLevel24h']),
+    rateOfRiseMphVal:   _dOpt(json['rateOfRiseMph']),
   );
 
   // ── toJson ─────────────────────────────────────────────────────────────────
@@ -128,5 +280,10 @@ class FloodData {
     if (confidencePercent != null) 'confidencePercent': confidencePercent,
     if (willBreachDanger  != null) 'willBreachDanger':  willBreachDanger,
     if (peakLevel72h   != null) 'peakLevel72h':   peakLevel72h,
+    if (hflValue       != null) 'hfl':            hflValue,
+    if (sourceLabel    != null) 'source':         sourceLabel,
+    if (rainfall24hMmVal != null) 'rainfall24hMm': rainfall24hMmVal,
+    if (forecastLevel24hVal != null) 'forecastLevel24h': forecastLevel24hVal,
+    if (rateOfRiseMphVal != null) 'rateOfRiseMph': rateOfRiseMphVal,
   };
 }
