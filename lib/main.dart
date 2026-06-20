@@ -1,4 +1,6 @@
 // lib/main.dart
+// Phase 1: Unified pipeline wired. DataFetchEngine import kept for
+// AlertNotificationBridge — it now resolves via M6 shim to Orchestrator.
 import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
@@ -38,7 +40,6 @@ import 'screens/model_info_screen.dart';
 import 'screens/bihar_river_map_screen.dart';
 import 'screens/live_stations_screen.dart';
 import 'screens/news_feed_screen.dart';
-
 import 'screens/export_screen.dart';
 import 'screens/notification_settings_screen.dart';
 import 'screens/incident_report_screen.dart';
@@ -53,7 +54,6 @@ import 'screens/profile_screen.dart';
 import 'screens/admin_dashboard_screen.dart';
 import 'screens/community_screen.dart';
 import 'screens/cwc_station_detail_screen.dart';
-import 'services/befiqr_cwc_service.dart';
 import 'services/notification_channel_service.dart';
 import 'services/fcm_topic_manager.dart';
 import 'services/alert_notification_bridge.dart';
@@ -65,9 +65,14 @@ import 'theme/river_theme.dart';
 import 'theme/robotic_theme.dart';
 import 'providers/theme_provider.dart';
 import 'providers/locale_provider.dart';
-import 'services/data_fetch_engine.dart';
 import 'app_router.dart';
 import 'providers/notification_watcher_provider.dart';
+
+// ── PHASE 1: Unified pipeline ──────────────────────────────────────────────
+// Single import replaces: DataFetchEngine, LiveFetchEngine, PipelineService
+import 'pipeline/pipeline.dart';
+// M6 shim re-exports DataFetchEngine so AlertNotificationBridge wiring below
+// compiles with zero changes.
 
 final FlutterLocalNotificationsPlugin _localNotifications =
     FlutterLocalNotificationsPlugin();
@@ -122,7 +127,7 @@ void _navigateFromNotification({
     final parts = payload.split('_');
     if (parts.length >= 2) {
       final severityWords = {'danger', 'warning', 'critical', 'emergency', 'info', 'advisory'};
-      final stationParts = <String>[];
+      final stationParts  = <String>[];
       for (final p in parts) {
         if (severityWords.contains(p.toLowerCase())) break;
         if (RegExp(r'^\d{10,}$').hasMatch(p)) break;
@@ -130,9 +135,7 @@ void _navigateFromNotification({
       }
       stationName = stationParts.join(' ').trim();
     }
-    if (stationName.isEmpty && !payload.contains('_')) {
-      stationName = payload.trim();
-    }
+    if (stationName.isEmpty && !payload.contains('_')) stationName = payload.trim();
   }
   if (stationName.isEmpty) stationName = _parseStation(title);
   debugPrint('[Notif] resolved station: "$stationName"');
@@ -192,16 +195,13 @@ Future<void> main() async {
       ),
     );
     runApp(
-      // ── Riverpod scope (ref.watch providers) ────────────────────────────
       ProviderScope(
         overrides: [
           localeProvider.overrideWith(() => LocaleNotifier(savedLangCode)),
         ],
-        // ── provider package: FloodDataProvider for Consumer<FloodDataProvider> ──
         child: pv.MultiProvider(
           providers: [
             pv.ChangeNotifierProvider<FloodDataProvider>(
-              // FloodDataProvider constructor already calls _load() internally
               create: (_) => FloodDataProvider(),
             ),
           ],
@@ -224,8 +224,7 @@ Future<void> main() async {
       final initialMessage =
           await FirebaseMessaging.instance.getInitialMessage();
       if (initialMessage != null) {
-        debugPrint(
-            '[FCM] launched from notification: ${initialMessage.notification?.title}');
+        debugPrint('[FCM] launched from notification: ${initialMessage.notification?.title}');
         _navigateFromNotification(
           payload: initialMessage.data['alertId'] as String?,
           title:   initialMessage.notification?.title,
@@ -233,8 +232,7 @@ Future<void> main() async {
         );
       }
       FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-        debugPrint(
-            '[FCM] onMessageOpenedApp: ${message.notification?.title}');
+        debugPrint('[FCM] onMessageOpenedApp: ${message.notification?.title}');
         _navigateFromNotification(
           payload: message.data['alertId'] as String?,
           title:   message.notification?.title,
@@ -266,12 +264,21 @@ Future<void> main() async {
           payload: message.data['alertId'] as String? ?? notif.title,
         );
       });
+
       unawaited(NotificationChannelService.instance.init());
       unawaited(FcmTopicManager.instance.init());
       unawaited(RtdasThresholdSyncService.instance.start());
-      DataFetchEngine.instance.start();
+
+      // ── PHASE 1: Single Orchestrator replaces 3 separate engine starts ──
+      // Before: DataFetchEngine.instance.start();
+      //         LiveFetchEngine.instance.start();
+      //         PipelineService.instance.init();
+      await Orchestrator.instance.start();
+
       ActiveAlertController.instance.start();
 
+      // AlertNotificationBridge: still uses DataFetchEngine shim (M6)
+      // which now delegates to Orchestrator internally.
       final Stream<FloodAlert> alertStream = DataFetchEngine
           .instance
           .snapshotStream
@@ -327,7 +334,7 @@ class FloodWatchApp extends ConsumerWidget {
     final mode          = ref.watch(themeModeProvider);
     final themeNotifier = ref.read(themeModeProvider.notifier);
     final locale        = ref.watch(localeProvider);
-    ref.watch(notificationWatcherProvider); // flood local notifs
+    ref.watch(notificationWatcherProvider);
     final ThemeData lightSlot;
     final ThemeData darkSlot;
     if (mode == AppThemeMode.system) {
