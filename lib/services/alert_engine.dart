@@ -1,4 +1,15 @@
-// lib/services/alert_engine.dart  v5.0
+// lib/services/alert_engine.dart  v5.1
+//
+// v5.1 (20 Jun 2026)
+//   Fix #5 — evaluateMerged(): populate the five previously-null optional
+//     fields on every FloodAlert it creates:
+//       • rateOfRise / rateOfRiseMph  — computed from StationHistoryStore when
+//         available; falls back to null only if truly no history exists.
+//       • rainfall24h / rainfall24hMm — read from RiverStation.rainfall24hMm
+//         (field added to the model in #211iq batch).
+//       • action                      — derived from severity tier.
+//     This ensures Excel export and any UI that reads these fields gets real
+//     values instead of blanks for merged-station alerts.
 //
 // v5.0 (16 Jun 2026)
 //   • FloodAlert gains optional: state, body, rateOfRiseMph, rainfall24hMm,
@@ -15,6 +26,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/flood_data.dart';
 import '../models/river_station.dart';
 import '../models/alert_subscription.dart';
+import 'station_history_store.dart';
 
 // ─ AlertSeverity ─────────────────────────────────────────────────────────
 enum AlertSeverity { info, warning, critical, emergency }
@@ -32,6 +44,18 @@ extension AlertSeverityExt on AlertSeverity {
     AlertSeverity.critical  => 'CRITICAL',
     AlertSeverity.warning   => 'WARNING',
     AlertSeverity.info      => 'INFO',
+  };
+
+  /// Recommended action text for each severity tier.
+  String get defaultAction => switch (this) {
+    AlertSeverity.emergency =>
+        'EVACUATE IMMEDIATELY — move to higher ground, contact NDRF/SDRF',
+    AlertSeverity.critical  =>
+        'Prepare to evacuate — follow district authority instructions',
+    AlertSeverity.warning   =>
+        'Stay alert — avoid flood-prone areas and low-lying roads',
+    AlertSeverity.info      =>
+        'Monitor river levels — keep emergency kit ready',
   };
 }
 
@@ -107,15 +131,15 @@ class FloodAlert {
   final String        message;
 
   // Optional / extended fields
-  final String?   station;        // alias for stationName
-  final String?   state;          // Indian state name
-  final String?   body;           // long description (used by offline engine)
-  final double?   rateOfRise;     // m/h
-  final double?   rateOfRiseMph;  // m/h (same thing, alternate name)
-  final double?   rainfall24h;    // mm
-  final double?   rainfall24hMm;  // mm (alternate name)
-  final String?   action;         // recommended action text
-  final DateTime? expiresAt;      // alert expiry
+  final String?   station;
+  final String?   state;
+  final String?   body;
+  final double?   rateOfRise;
+  final double?   rateOfRiseMph;
+  final double?   rainfall24h;
+  final double?   rainfall24hMm;
+  final String?   action;
+  final DateTime? expiresAt;
 
   const FloodAlert({
     required this.id,
@@ -167,6 +191,13 @@ class AlertEngine {
       FlutterLocalNotificationsPlugin();
   bool _initialised = false;
 
+  /// Evaluate a list of normalised [RiverStation]s and return sorted
+  /// [FloodAlert]s ready for the UI.
+  ///
+  /// Fix #5: every alert now carries:
+  ///   • rateOfRise / rateOfRiseMph  (m/h, from StationHistoryStore)
+  ///   • rainfall24h / rainfall24hMm (mm, from RiverStation.rainfall24hMm)
+  ///   • action                      (tier-specific recommended action text)
   List<FloodAlert> evaluateMerged(List<RiverStation> stations) {
     final now    = DateTime.now();
     final alerts = <FloodAlert>[];
@@ -201,12 +232,31 @@ class AlertEngine {
           '${sev == AlertSeverity.info ? "WL" : "DL"} '
           '${dl > 0 ? dl.toStringAsFixed(2) : "—"} m)';
 
+      // Fix #5a: rate of rise — read from StationHistoryStore
+      final double? ror = StationHistoryStore.instance
+          .rateOfRiseMph(s.station);
+
+      // Fix #5b: 24-hour rainfall — read from the station model field
+      // RiverStation.rainfall24hMm is nullable; use it directly.
+      final double? rain24 = s.rainfall24hMm;
+
+      // Fix #5c: action text — derived from severity tier
+      final String actionText = sev.defaultAction;
+
       alerts.add(FloodAlert(
         id: id, stationName: s.station, station: s.station,
         title: '${s.city} — ${sev.label}', river: s.river,
         district: s.city, currentLevel: cl, dangerLevel: dl,
         warningLevel: wl, hfl: hfl, thresholdLevel: threshold,
         severity: sev, type: aType, issuedAt: now, message: msg,
+        // Populated fields (Fix #5)
+        rateOfRise:    ror,
+        rateOfRiseMph: ror,
+        rainfall24h:   rain24,
+        rainfall24hMm: rain24,
+        action:        actionText,
+        // expiresAt: alerts issued by this path are valid until end of day
+        expiresAt: DateTime(now.year, now.month, now.day, 23, 59, 59),
       ));
     }
 
