@@ -518,6 +518,23 @@ const List<BiharGauge> kBiharGauges = [
     lat: 25.9500, lon: 85.9200,
     warningLevel: 38.50, dangerLevel: 40.00, hfl: 41.90, hflYear: '2007',
   ),
+
+  // ──────────── SONE (3 stations) ───────────────────────────────────────────
+  BiharGauge(
+    river: 'Sone', station: 'Koilwar', district: 'Bhojpur',
+    lat: 25.5700, lon: 84.7900,
+    warningLevel: 58.80, dangerLevel: 59.90, hfl: 61.27, hflYear: '1975',
+  ),
+  BiharGauge(
+    river: 'Sone', station: 'Dehri', district: 'Rohtas',
+    lat: 24.9100, lon: 84.1900,
+    warningLevel: 92.00, dangerLevel: 93.00, hfl: 95.45, hflYear: '1978',
+  ),
+  BiharGauge(
+    river: 'Sone', station: 'Arwal', district: 'Arwal',
+    lat: 25.2500, lon: 84.6800,
+    warningLevel: 56.50, dangerLevel: 57.60, hfl: 59.80, hflYear: '1975',
+  ),
 ];
 
 // ══════════════════════════════════════════════════════════════════════════════
