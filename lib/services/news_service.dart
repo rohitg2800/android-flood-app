@@ -332,6 +332,26 @@ class NewsService {
   }
 
   // ── G: NewsOnAir RSS (All India Radio) ───────────────────────────────────
+  Future<List<NewsItem>> _tryNewsOnAir() async {
+    const url = 'https://www.newsonair.gov.in/feed/';
+    try {
+      final resp = await http.get(Uri.parse(url), headers: {
+        'User-Agent': 'OpsFlood/4.0',
+        'Accept': 'text/xml,application/rss+xml,*/*',
+      }).timeout(_timeout);
+      if (resp.statusCode == 200) {
+        final all = _parseRss(resp.body, 'AIR');
+        return all.where((item) {
+          final t = (item.title + item.summary).toLowerCase();
+          return _isBihar(t) && _kFloodWords.any(t.contains);
+        }).toList();
+      }
+    } catch (e) { debugPrint('[NewsService] NewsOnAir: $e'); }
+    return [];
+  }
+
+  static List<NewsItem> _parseRss(String xml, String source) {
+    final items = <NewsItem>[];
     try {
       // Use regex to handle <item xmlns:...> attributes and CDATA
       final rx = RegExp(r'<item[^>]*>(.*?)</item>', dotAll: true);
