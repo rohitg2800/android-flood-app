@@ -91,7 +91,7 @@ class NewDashboardScreen extends ConsumerWidget {
           SectionSliver(
             label: context.l10n.tabMonitors,
             icon: Icons.pin_drop_outlined,
-            tiles: monitoringTiles,
+            tiles: monitoringTiles(context),
             columns: 2,
           ),
 
@@ -99,14 +99,14 @@ class NewDashboardScreen extends ConsumerWidget {
           SectionSliver(
             label: context.l10n.alerts,
             icon: Icons.crisis_alert_rounded,
-            tiles: alertsTiles,
+            tiles: alertsTiles(context),
           ),
 
           // ── Forecast & AI ────────────────────────────────────────────
           SectionSliver(
             label: context.l10n.forecast,
             icon: Icons.psychology_rounded,
-            tiles: forecastTiles,
+            tiles: forecastTiles(context),
           ),
 
           const SliverToBoxAdapter(child: SizedBox(height: 100)),

@@ -402,4 +402,121 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get onboardingSubtitle4 =>
       'One-tap SOS gives fast access to helplines, evacuation guidance and emergency help.';
+
+  @override
+  String get liveOnly => 'Live only';
+
+  @override
+  String get showAll => 'Show all';
+
+  @override
+  String get riverMonitor => 'River Monitor';
+
+  @override
+  String get close => 'Close';
+
+  @override
+  String get viewDetails => 'View Details';
+
+  @override
+  String get biharRiverMap => 'Bihar River Map';
+
+  @override
+  String get searchStation => 'Search station or river…';
+
+  @override
+  String get monitoringMaps => 'Monitoring & Maps';
+
+  @override
+  String get alertsSafety => 'Alerts & Safety';
+
+  @override
+  String get forecastAI => 'Forecast & AI';
+
+  @override
+  String get biharFloodWatch => 'Bihar Flood Watch';
+
+  @override
+  String get updatedJustNow => 'Updated just now';
+
+  @override
+  String get criticalNow => 'Critical Now';
+
+  @override
+  String get elevated => 'Elevated';
+
+  @override
+  String get noActiveAlerts => 'No active alerts';
+
+  @override
+  String get tapToViewAlerts => 'Tap to view alerts';
+
+  @override
+  String get aiFloodPrediction => 'AI Flood Prediction';
+
+  @override
+  String get hours24 => '24 Hours';
+
+  @override
+  String get hours48 => '48 Hours';
+
+  @override
+  String get hours72 => '72 Hours';
+
+  @override
+  String get criticalRisk => 'Critical Risk';
+
+  @override
+  String get severeRisk => 'Severe Risk';
+
+  @override
+  String get moderateRisk => 'Moderate Risk';
+
+  @override
+  String get allClear => 'All Clear';
+
+  @override
+  String get riskForecast => 'Risk Forecast';
+
+  @override
+  String get community => 'Community';
+
+  @override
+  String get reportIncident => 'Report Incident';
+
+  @override
+  String get crowdReports => 'Crowd Reports';
+
+  @override
+  String get newsFeed => 'News Feed';
+
+  @override
+  String get floodNews => 'Flood News';
+
+  @override
+  String get dataAndSources => 'Data & Sources';
+
+  @override
+  String get privacy => 'Privacy';
+
+  @override
+  String get whatWeStore => 'What we store';
+
+  @override
+  String get appearance => 'Appearance';
+
+  @override
+  String get accessibility => 'Accessibility';
+
+  @override
+  String get notifications => 'Notifications';
+
+  @override
+  String get highContrast => 'High Contrast';
+
+  @override
+  String get textSize => 'Text Size';
+
+  @override
+  String get reducedMotion => 'Reduced Motion';
 }

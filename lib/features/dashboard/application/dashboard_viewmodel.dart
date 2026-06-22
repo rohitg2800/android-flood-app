@@ -1,4 +1,6 @@
 import "package:flutter/material.dart";
+import "../../../l10n/context_l10n.dart";
+import "../../../l10n/context_l10n.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "../domain/dashboard_tile.dart";
 import "../domain/dashboard_stats.dart";
@@ -19,22 +21,22 @@ class _P {
   static const sunAmber     = Color(0xFFFBBF24);
 }
 
-const monitoringTiles = [
-  DashboardTile(label: "River Monitor",  icon: Icons.monitor_heart_outlined,        color: _P.riverBlue,    route: "/monitors"),
+monitoringTiles(BuildContext context) => [
+  DashboardTile(label: context.l10n.riverMonitor,  icon: Icons.monitor_heart_outlined,        color: _P.riverBlue,    route: "/monitors"),
   DashboardTile(label: "Live Stations",  icon: Icons.broadcast_on_personal_rounded, color: _P.signalGreen,  route: "/live-stations"),
-  DashboardTile(label: "Bihar Map",      icon: Icons.map_rounded,                   color: _P.mapTeal,      route: "/bihar-river-map"),
+  DashboardTile(label: context.l10n.biharRiverMap,      icon: Icons.map_rounded,                   color: _P.mapTeal,      route: "/bihar-river-map"),
   DashboardTile(label: "India Explorer", icon: Icons.travel_explore_rounded,        color: _P.explorerCyan, route: "/india-river-explorer"),
 ];
 
-const alertsTiles = [
+alertsTiles(BuildContext context) => [
   DashboardTile(label: "Alerts",     icon: Icons.notifications_active_rounded, color: _P.alertRed,  route: "/alerts"),
   DashboardTile(label: "SOS",        icon: Icons.health_and_safety_rounded,    color: _P.sosRed,    route: "/sos"),
   DashboardTile(label: "Evacuation", icon: Icons.directions_run_rounded,       color: _P.evacAmber, route: "/evacuation"),
 ];
 
-const forecastTiles = [
-  DashboardTile(label: "AI Prediction", icon: Icons.psychology_rounded, color: _P.aiViolet,     route: "/ai-predictor"),
-  DashboardTile(label: "Rainfall",      icon: Icons.grain_rounded,      color: _P.rainfallBlue, route: "/rainfall-forecast"),
+forecastTiles(BuildContext context) => [
+  DashboardTile(label: context.l10n.aiFloodPrediction, icon: Icons.psychology_rounded, color: _P.aiViolet,     route: "/ai-predictor"),
+  DashboardTile(label: context.l10n.rainfall,      icon: Icons.grain_rounded,      color: _P.rainfallBlue, route: "/rainfall-forecast"),
   DashboardTile(label: "Weather",       icon: Icons.wb_sunny_rounded,   color: _P.sunAmber,     route: "/weather"),
 ];
 
