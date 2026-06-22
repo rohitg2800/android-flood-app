@@ -117,6 +117,8 @@ class _OnboardingScreenState
   Widget build(BuildContext context) {
     final page = _pages[_current];
     return Scaffold(
+      extendBodyBehindAppBar: true,
+      extendBody: true,
       backgroundColor: page.color,
       body: SafeArea(
         child: Column(

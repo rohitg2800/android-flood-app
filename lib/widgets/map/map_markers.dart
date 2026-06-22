@@ -63,14 +63,14 @@ class _MapMarkersState extends State<MapMarkers>
     switch (riskLevel.toUpperCase().trim()) {
       case 'EXTREME':            return const Color(0xFFE040FB); // magenta — above HFL
       case 'CRITICAL':
-      case 'HIGH':               return const Color(0xFFD32F2F); // deep red — above DL
+      case 'HIGH':               return const Color(0xFFFF4D5A); // core danger red
       case 'DANGER':
-      case 'SEVERE':             return const Color(0xFFFF6D00); // orange — above WL
+      case 'SEVERE':             return const Color(0xFFFF8C42); // core severe orange
       case 'WARNING':
-      case 'MODERATE':           return const Color(0xFFFBC02D); // amber — near WL
+      case 'MODERATE':           return const Color(0xFFFFC857); // core warning amber
       case 'LOW':
-      case 'NORMAL':             return const Color(0xFF388E3C); // green — safe
-      default:                   return const Color(0xFF757575); // grey — unknown
+      case 'NORMAL':             return const Color(0xFF3ACC8A); // core success green
+      default:                   return const Color(0xFF7A8290); // core textMuted grey
     }
   }
 
@@ -126,6 +126,52 @@ class _MapMarkersState extends State<MapMarkers>
           height: wh,
           child: GestureDetector(
             onTap: () => widget.onStationTap(station),
+            onLongPress: () {
+              final cur  = station.currentLevel?.toStringAsFixed(2) ?? '--';
+              final dng  = station.dangerLevel?.toStringAsFixed(2)  ?? '--';
+              final wrn  = station.warningLevel?.toStringAsFixed(2) ?? '--';
+              final name = station.city;
+              showDialog(
+                context: context,
+                barrierColor: Colors.black.withOpacity(0.5),
+                builder: (_) => AlertDialog(
+                  backgroundColor: const Color(0xFF0F141B),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  title: Text(name,
+                    style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _LevelRow(label: 'Current', value: cur, color: color),
+                      const SizedBox(height: 6),
+                      _LevelRow(label: 'Danger',  value: dng, color: const Color(0xFFFF4D5A)),
+                      const SizedBox(height: 6),
+                      _LevelRow(label: 'Warning', value: wrn, color: const Color(0xFFFFC857)),
+                      const SizedBox(height: 12),
+                      LinearProgressIndicator(
+                        value: station.dangerLevel != null && station.dangerLevel! > 0
+                            ? ((station.currentLevel ?? 0) / station.dangerLevel!).clamp(0.0, 1.0)
+                            : 0,
+                        backgroundColor: color.withOpacity(0.15),
+                        valueColor: AlwaysStoppedAnimation<Color>(color),
+                        minHeight: 6,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(station.riskLevel,
+                        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Close', style: TextStyle(color: Color(0xFF4CB3FF))),
+                    ),
+                  ],
+                ),
+              );
+            },
             child: RepaintBoundary(
               child: AnimatedBuilder(
                 animation: _animation,
@@ -203,4 +249,22 @@ class _PulseMarkerPainter extends CustomPainter {
       old.animValue != animValue ||
       old.color     != color     ||
       old.radius    != radius;
+}
+
+class _LevelRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color  color;
+  const _LevelRow({required this.label, required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(color: Color(0xFF7A8290), fontSize: 12)),
+        Text(value, style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w700)),
+      ],
+    );
+  }
 }

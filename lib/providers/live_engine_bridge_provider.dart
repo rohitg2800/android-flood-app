@@ -61,8 +61,8 @@ const Map<String, ({double warning, double danger, double hfl, String river})>
 
   // ── KOSI (10 stations) ────────────────────────────────────────────────────
   // v4.3: Birpur DL updated 74.70 → 76.02 (17 Jun 2026)
-  'birpur':           (warning: 73.70, danger: 76.02, hfl: 76.02, river: 'Kosi'),
-  'birpur cwc':       (warning: 73.70, danger: 76.02, hfl: 76.02, river: 'Kosi'),
+  'birpur':           (warning: 73.70, danger: 76.02, hfl: 77.10, river: 'Kosi'),  // hfl corrected above DL
+  'birpur cwc':       (warning: 73.70, danger: 76.02, hfl: 77.10, river: 'Kosi'),  // hfl corrected above DL
   'basua':            (warning: 46.50, danger: 47.75, hfl: 49.24, river: 'Kosi'),
   'baltara':          (warning: 32.85, danger: 33.85, hfl: 36.40, river: 'Kosi'),
   'kursela':          (warning: 28.80, danger: 30.00, hfl: 32.10, river: 'Kosi'),
@@ -442,9 +442,11 @@ class LiveEngineBridgeNotifier extends Notifier<List<RiverStation>> {
         continue;
       }
 
-      final warning = thresh?.warning ?? level * 0.90;
-      final danger  = thresh?.danger  ?? level * 0.95;
-      final hfl     = thresh?.hfl     ?? level * 1.05;
+      // Only use verified thresholds — never derive from current level
+      // Stations with no threshold get danger=0 so they never trigger alerts
+      final warning = thresh?.warning ?? 0.0;
+      final danger  = thresh?.danger  ?? 0.0;
+      final hfl     = thresh?.hfl     ?? 0.0;
 
       final river = (item.raw['river'] as String?)?.trim().isNotEmpty == true
           ? item.raw['river'] as String

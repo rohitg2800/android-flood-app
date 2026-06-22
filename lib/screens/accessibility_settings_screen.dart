@@ -230,10 +230,13 @@ class _SettingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return Material(
+      color: t.cardBg,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: t.cardBg,
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: t.divider.withOpacity(0.3)),
         boxShadow: [
@@ -244,6 +247,7 @@ class _SettingCard extends StatelessWidget {
         ],
       ),
       child: child,
+    ),
     );
   }
 }

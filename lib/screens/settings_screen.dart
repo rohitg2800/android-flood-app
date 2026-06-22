@@ -144,6 +144,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   accentColor: _sc('data'),
                   open: _isOpen('data'), onToggle: () => _toggle('data'),
                   child: _tiles(t, _sc('data'), [
+                    (Icons.storage_rounded,      const Color(0xFF3ACC8A), 'Data & Sources',        '/data-sources'),
                     (Icons.area_chart_rounded,  const Color(0xFF0288D1), 'Analytics Dashboard',  Routes.analytics),
                     (Icons.timeline_rounded,    const Color(0xFF6D4C41), 'Historical Analytics', Routes.historicalAnalytics),
                     (Icons.upload_file_rounded, const Color(0xFF455A64), 'Export Data',          Routes.export_),

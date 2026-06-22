@@ -50,17 +50,20 @@ class NewsItem {
 }
 
 class NewsFilter {
+  final String            language;
   final int               days;
   final Set<String>       sources;
   final Set<NewsSeverity> severities;
 
   const NewsFilter({
+    this.language   = "en",
     this.days       = 7,
     this.sources    = const {},
     this.severities = const {},
   });
 
   NewsFilter copyWith({
+    String? language,
     int? days,
     Set<String>? sources,
     Set<NewsSeverity>? severities,

@@ -25,11 +25,14 @@ import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/main_shell.dart';
 import 'screens/dashboard_screen.dart';
+import 'features/dashboard/presentation/new_dashboard_screen.dart';
+import 'features/settings/application/settings_viewmodel.dart';
 import 'screens/alerts_screen.dart';
 import 'screens/river_monitor_screen.dart';
 import 'screens/predict_screen.dart';
 import 'screens/city_detail_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/data_sources_screen.dart';
 import 'screens/sos_screen.dart';
 import 'screens/weather_screen.dart';
 import 'screens/river_detail_screen.dart';
@@ -62,9 +65,12 @@ import 'services/offline_cache_manager.dart';
 import 'services/rtdas_threshold_sync_service.dart';
 import 'services/active_alert_controller.dart';
 import 'theme/river_theme.dart';
+import 'core/theme/river_theme.dart' as core_theme;
+import 'core/theme/app_theme.dart' as core_app;
 import 'theme/robotic_theme.dart';
 import 'providers/theme_provider.dart';
 import 'providers/locale_provider.dart';
+import 'providers/accessibility_provider.dart';
 import 'services/data_fetch_engine.dart';
 import 'app_router.dart';
 import 'providers/notification_watcher_provider.dart';
@@ -196,6 +202,9 @@ Future<void> main() async {
       ProviderScope(
         overrides: [
           localeProvider.overrideWith(() => LocaleNotifier(savedLangCode)),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          accessibilityProvider.overrideWith(
+              () => AccessibilityNotifier(prefs: prefs)),
         ],
         // ── provider package: FloodDataProvider for Consumer<FloodDataProvider> ──
         child: pv.MultiProvider(
@@ -327,10 +336,14 @@ class FloodWatchApp extends ConsumerWidget {
     final mode          = ref.watch(themeModeProvider);
     final themeNotifier = ref.read(themeModeProvider.notifier);
     final locale        = ref.watch(localeProvider);
+    final a11y          = ref.watch(accessibilityProvider);
     ref.watch(notificationWatcherProvider); // flood local notifs
     final ThemeData lightSlot;
     final ThemeData darkSlot;
-    if (mode == AppThemeMode.system) {
+    if (a11y.highContrast) {
+      lightSlot = RiverColors.highContrastTheme();
+      darkSlot  = RiverColors.highContrastTheme();
+    } else if (mode == AppThemeMode.system) {
       lightSlot = RiverColors.lightTheme();
       darkSlot  = RiverColors.darkTheme();
     } else {
@@ -338,14 +351,17 @@ class FloodWatchApp extends ConsumerWidget {
       lightSlot = t;
       darkSlot  = t;
     }
-    return MaterialApp(
+    final _coreTheme = core_app.AppTheme.dark(highContrast: a11y.highContrast);
+    return core_theme.RiverTheme(
+      appTheme: _coreTheme,
+      child: MaterialApp(
       title:                      'FloodWatch',
       debugShowCheckedModeBanner: false,
       navigatorKey:               navigatorKey,
       theme:                      lightSlot,
       darkTheme:                  darkSlot,
       themeMode:                  themeNotifier.flutterMode,
-      locale:                     locale,
+      locale: Locale(a11y.locale),
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
@@ -355,14 +371,15 @@ class FloodWatchApp extends ConsumerWidget {
       supportedLocales: const [
         Locale('en'),
         Locale('hi'),
+        Locale('bn'),
+        Locale('or'),
       ],
-      localeResolutionCallback: (deviceLocale, supportedLocales) {
-        if (deviceLocale == null) return const Locale('en');
-        for (final sl in supportedLocales) {
-          if (sl.languageCode == deviceLocale.languageCode) return sl;
-        }
-        return const Locale('en');
-      },
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(
+          textScaler: TextScaler.linear(a11y.textScaleFactor),
+        ),
+        child: child!,
+      ),
       initialRoute: SplashScreen.route,
       onGenerateRoute: (settings) {
         switch (settings.name) {
@@ -373,7 +390,9 @@ class FloodWatchApp extends ConsumerWidget {
           case Routes.shell:
             return _fade(const MainShell());
           case Routes.dashboard:
-            return _fade(const DashboardScreen());
+            return _fade(const NewDashboardScreen());
+          case '/new-dashboard':
+            return _fade(const NewDashboardScreen());
           case Routes.alerts: {
             final stationFilter = settings.arguments as String?;
             return _fade(AlertsScreen(stationFilter: stationFilter));
@@ -384,6 +403,8 @@ class FloodWatchApp extends ConsumerWidget {
             return _fade(const PredictScreen());
           case Routes.settings:
             return _fade(const SettingsScreen());
+          case '/data-sources':
+            return _fade(const DataSourcesScreen());
           case Routes.sos:
             return _fade(const SosScreen());
           case Routes.evacuation:
@@ -446,6 +467,7 @@ class FloodWatchApp extends ConsumerWidget {
             return _fade(const SplashScreen());
         }
       },
+    ),
     );
   }
 

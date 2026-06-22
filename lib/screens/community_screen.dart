@@ -3,6 +3,7 @@
 
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:equinox_flood/core/theme/river_theme.dart' as core_theme;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/river_theme.dart';
 import '../theme/theme_3d.dart';
@@ -34,25 +35,34 @@ class _CommunityScreenState extends State<CommunityScreen>
 
   @override
   Widget build(BuildContext context) {
-    final t = RiverColors.of(context);
+    final t  = RiverColors.of(context);
+    final ct = core_theme.RiverTheme.maybeOf(context)?.colors ?? core_theme.RiverTheme.of(context).colors;
     return Scaffold(
-      backgroundColor: t.scaffoldBg,
+      backgroundColor: ct.scaffoldBg,
       appBar: AppBar(
-        backgroundColor: t.navBg,
-        foregroundColor: t.textPrimary,
+        backgroundColor: ct.scaffoldBg,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: ct.textPrimary,
         title: Row(
           children: [
-            const Icon(Icons.people_outline,
-                color: Colors.teal, size: 20),
-            const SizedBox(width: 8),
-            const Text('Community'),
+            Container(
+              width: 30, height: 30,
+              decoration: BoxDecoration(
+                color: const Color(0xFF2DD4BF).withOpacity(0.14),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.people_outline, color: Color(0xFF2DD4BF), size: 16),
+            ),
+            const SizedBox(width: 10),
+            Text('Community', style: TextStyle(color: ct.textPrimary, fontSize: 17, fontWeight: FontWeight.w700)),
           ],
         ),
         bottom: TabBar(
           controller: _tabs,
-          indicatorColor: t.accent,
-          labelColor: t.accent,
-          unselectedLabelColor: t.textSecondary,
+          indicatorColor: ct.accent,
+          labelColor: ct.accent,
+          unselectedLabelColor: ct.textSecondary,
           labelStyle: const TextStyle(
               fontSize: 12, fontWeight: FontWeight.w700),
           tabs: const [
@@ -83,12 +93,29 @@ class _CommunityScreenState extends State<CommunityScreen>
           ),
         ],
       ),
-      body: TabBarView(
-        controller: _tabs,
+      body: Column(
         children: [
-          _ThreadsTab(
-              selectedDistrict: _selectedDistrict),
-          const _SafetyTipsTab(),
+          // ── Quick action strip ──────────────────────────────────
+          Container(
+            color: ct.scaffoldBg,
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: Row(children: [
+              _QuickTile(icon: Icons.report_problem_rounded, label: 'Report Incident', color: const Color(0xFFFF8C42), onTap: () => Navigator.pushNamed(context, '/incident-report')),
+              const SizedBox(width: 10),
+              _QuickTile(icon: Icons.group_rounded, label: 'Crowd Reports', color: const Color(0xFF4CB3FF), onTap: () => Navigator.pushNamed(context, '/crowd-reports')),
+              const SizedBox(width: 10),
+              _QuickTile(icon: Icons.newspaper_rounded, label: 'News Feed', color: const Color(0xFF3ACC8A), onTap: () => Navigator.pushNamed(context, '/news')),
+            ]),
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabs,
+              children: [
+                _ThreadsTab(selectedDistrict: _selectedDistrict),
+                const _SafetyTipsTab(),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -679,3 +706,38 @@ const List<String> _biharDistricts = [
   'Sheikhpura', 'Sheohar', 'Sitamarhi', 'Siwan', 'Supaul', 'Vaishali',
   'West Champaran',
 ];
+
+class _QuickTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+  const _QuickTile({required this.icon, required this.label, required this.color, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.10),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color.withOpacity(0.25)),
+          ),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(height: 4),
+            Text(label,
+              style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w600),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+}

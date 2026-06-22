@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -51,6 +52,7 @@ class AccessibilityNotifier extends Notifier<AccessibilityState> {
   Future<void> setLocale(String locale) async {
     await prefs.setString('a11y_locale', locale);
     state = state.copyWith(locale: locale);
+    debugPrint('[A11Y] locale set to: ' + locale);
   }
 }
 

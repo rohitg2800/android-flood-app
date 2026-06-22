@@ -27,6 +27,7 @@ class RiverMonitorScreen extends ConsumerStatefulWidget {
 class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   String _query = '';
+  bool _hideNoData = true;
   final _searchCtrl = TextEditingController();
   late final AnimationController _headerAnim;
   late final AnimationController _rippleAnim;
@@ -82,9 +83,12 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
   }
 
   List<FloodData> _filtered(List<FloodData> all) {
-    if (_query.isEmpty) return all;
+    var list = _hideNoData
+        ? all.where((fd) => (fd.currentLevel) > 0).toList()
+        : all;
+    if (_query.isEmpty) return list;
     final q = _query.toLowerCase();
-    return all.where((fd) =>
+    return list.where((fd) =>
         (fd.city?.toLowerCase().contains(q)     ?? false) ||
         (fd.state?.toLowerCase().contains(q)    ?? false) ||
         (fd.district?.toLowerCase().contains(q) ?? false) ||
@@ -171,6 +175,67 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
                 t: t,
                 onChanged: (v) => setState(() => _query = v),
                 onClear: () { _searchCtrl.clear(); setState(() => _query = ''); },
+              ),
+            ),
+          ),
+
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => setState(() => _hideNoData = !_hideNoData),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: _hideNoData
+                            ? t.accent.withValues(alpha: 0.14)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: _hideNoData
+                              ? t.accent.withValues(alpha: 0.45)
+                              : t.stroke.withValues(alpha: 0.35))),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(Icons.sensors_rounded,
+                          color: _hideNoData ? t.accent : t.textSecondary, size: 13),
+                        const SizedBox(width: 5),
+                        Text('Live only',
+                          style: TextStyle(
+                            color: _hideNoData ? t.accent : t.textSecondary,
+                            fontSize: 11, fontWeight: FontWeight.w600)),
+                      ]),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () => setState(() => _hideNoData = !_hideNoData),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: !_hideNoData
+                            ? t.textSecondary.withValues(alpha: 0.10)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: !_hideNoData
+                              ? t.textSecondary.withValues(alpha: 0.35)
+                              : t.stroke.withValues(alpha: 0.35))),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(Icons.wifi_off_rounded,
+                          color: !_hideNoData ? t.textSecondary : t.textSecondary, size: 13),
+                        const SizedBox(width: 5),
+                        Text('Show all',
+                          style: TextStyle(
+                            color: !_hideNoData ? t.textSecondary : t.textSecondary,
+                            fontSize: 11, fontWeight: FontWeight.w600)),
+                      ]),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

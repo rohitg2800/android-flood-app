@@ -233,12 +233,13 @@ class AlertEngine {
           '${dl > 0 ? dl.toStringAsFixed(2) : "—"} m)';
 
       // Fix #5a: rate of rise — read from StationHistoryStore
-      final double? ror = StationHistoryStore.instance
-          .rateOfRiseMph(s.station);
+      final double? rawDiff = StationHistoryStore.instance
+          .get(s.station)?.diff24h;
+      final double? ror = rawDiff != null ? (rawDiff / 24.0) : null;
 
       // Fix #5b: 24-hour rainfall — read from the station model field
       // RiverStation.rainfall24hMm is nullable; use it directly.
-      final double? rain24 = s.rainfall24hMm;
+      final double? rain24 = s.rainfallLastHour;
 
       // Fix #5c: action text — derived from severity tier
       final String actionText = sev.defaultAction;

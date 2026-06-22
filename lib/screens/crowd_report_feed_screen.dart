@@ -4,6 +4,7 @@
 
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:equinox_flood/core/theme/river_theme.dart' as core_theme;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/river_theme.dart';
 import '../theme/theme_3d.dart';
@@ -91,8 +92,10 @@ class _CrowdReportFeedScreenState extends State<CrowdReportFeedScreen> {
     return Scaffold(
       backgroundColor: t.scaffoldBg,
       appBar: AppBar(
-        backgroundColor: t.navBg,
-        foregroundColor: t.textPrimary,
+        backgroundColor: const Color(0xFF05070A),
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: const Color(0xFFF5F7FA),
         // v8.7-fix: title uses Row inside Flexible so it never exceeds _AppBarTitleBox width.
         title: Row(
           mainAxisSize: MainAxisSize.min,

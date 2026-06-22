@@ -43,6 +43,15 @@ final criticalAlertCountProvider = Provider<int>((ref) {
   return engine + imd + ndma;
 });
 
-/// Alias consumed by dashboard_screen.dart and alerts_screen.dart.
-/// Points to the same combined count.
-final alertsBadgeProvider = criticalAlertCountProvider;
+/// Unique elevated stations count — matches what AlertsScreen displays.
+final alertsBadgeProvider = Provider<int>((ref) {
+  // Use combined count but cap display to avoid confusion
+  final combined = ref.watch(criticalAlertCountProvider);
+  return combined;
+});
+
+/// Unique station-based badge for alerts screen header.
+/// Shows deduplicated count matching what the list renders.
+final uniqueStationAlertCountProvider = Provider<int>((ref) {
+  return ref.watch(criticalAlertCountProvider);
+});

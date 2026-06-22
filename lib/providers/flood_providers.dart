@@ -8,6 +8,7 @@
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'live_engine_bridge_provider.dart';
 import '../models/flood_data.dart';
 import '../models/river_monitoring.dart';
 import '../models/river_station.dart';
@@ -259,9 +260,13 @@ List<FloodData> _deduplicateByCity(List<FloodData> raw) {
 // ─────────────────────────────────────────────────────────────────────────────────
 
 final liveLevelsProvider = Provider<List<FloodData>>((ref) {
-  final raw = ref.watch(mergedStationsProvider)
-      .map(_riverStationToFloodData)
-      .toList();
+  // Use liveEngineStationsProvider as single source of truth
+  // Falls back to mergedStationsProvider if engine is empty
+  final engineStations = ref.watch(liveEngineStationsProvider);
+  final source = engineStations.isNotEmpty
+      ? engineStations
+      : ref.watch(mergedStationsProvider);
+  final raw = source.map(_riverStationToFloodData).toList();
   return _deduplicateByCity(raw);
 });
 

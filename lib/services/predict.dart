@@ -314,7 +314,7 @@ class PredictionService {
       }
 
       // Pull the full 7-day daily rainfall history from the pipeline
-      final history = features.dailyRainfallHistoryMm; // List<double>? length 7, index 0=today
+      final List<double>? history = null; // rainfall7dMm is a Map threshold, not history list
       final fallback = features.bestDailyRainfallMm;
 
       final double rt1 = (history != null && history.length > 0 && history[0] > 0)

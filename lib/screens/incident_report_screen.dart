@@ -3,6 +3,7 @@
 
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:equinox_flood/core/theme/river_theme.dart' as core_theme;
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/river_theme.dart';
@@ -538,7 +539,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                   icon: const Icon(Icons.my_location, size: 16),
                   label: Text(
                     _draft.lat != null
-                        ? '${_draft.lat!.toStringAsFixed(4)}, ${_draft.lng!.toStringAsFixed(4)}'
+                        ? '${_draft.lat?.toStringAsFixed(4) ?? '--'}, ${_draft.lng?.toStringAsFixed(4) ?? '--'}'
                         : 'Auto-detect GPS',
                   ),
                   style: OutlinedButton.styleFrom(
@@ -711,7 +712,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                       color: Colors.green,
                       label: 'GPS',
                       value:
-                          '${_draft.lat!.toStringAsFixed(5)}, ${_draft.lng!.toStringAsFixed(5)}',
+                          '${_draft.lat?.toStringAsFixed(5) ?? '--'}, ${_draft.lng?.toStringAsFixed(5) ?? '--'}',
                       theme: t,
                     ),
                   ],

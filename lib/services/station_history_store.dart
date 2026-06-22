@@ -126,6 +126,8 @@ class StationHistoryStore {
   }
 
   /// Batch-record all live stations in a fetch result.
+  HistoricalReading? get(String stationId) => _cache[_key(stationId)];
+
   Future<void> recordAll(List<WrdStation> stations) async {
     for (final s in stations) {
       await record(s);

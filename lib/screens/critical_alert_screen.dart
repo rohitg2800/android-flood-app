@@ -465,9 +465,12 @@ class _GlassCard extends StatelessWidget {
                         onTap: onEvacuate,
                       ),
                       const Spacer(),
-                      const Text(
-                        'Swipe ↓ to dismiss',
-                        style: TextStyle(color: Colors.white30, fontSize: 9),
+                      const Flexible(
+                        child: Text(
+                          'Swipe ↓ to dismiss',
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: Colors.white30, fontSize: 9),
+                        ),
                       ),
                     ],
                   ),
