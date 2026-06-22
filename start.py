@@ -10,5 +10,5 @@ subprocess.run([
     "backend.app:app",
     "--host", "0.0.0.0",
     "--port", port,
-    "--workers", "2",
+    "--workers", "1",
 ], check=True)

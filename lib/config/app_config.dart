@@ -22,7 +22,7 @@ class AppConfig {
   /// Override at build time: --dart-define=EQUINOX_BH_BASE_URL=https://...
   static const String baseUrl = String.fromEnvironment(
     'EQUINOX_BH_BASE_URL',
-    defaultValue: 'https://android-flood-app-production.up.railway.app',
+    defaultValue: 'https://opsflood-bihar-v2.onrender.com',
   );
 
   static const String backupUrl = String.fromEnvironment(
