@@ -50,7 +50,7 @@ class FloodPredictionInput(BaseModel):
     T5d: float = 12.0
     T6d: float = 8.0
     T7d: float = 7.0
-    state: str = "Maharashtra"
+    state: str = "Bihar"
     station: str | None = None
 
 
@@ -254,7 +254,7 @@ def persist_prediction_record(input_data, result):
     try:
         input_payload = model_to_dict(input_data)
         station_name = str(input_payload.get("station") or "").strip() or None
-        state_name = str(input_payload.get("state") or "Maharashtra").strip()
+        state_name = str(input_payload.get("state") or "Bihar").strip()
         rainfall_total = calculate_rainfall_total(input_payload)
 
         prediction_id = operational_store.save_prediction(
