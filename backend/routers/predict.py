@@ -248,6 +248,81 @@ def _severity_from_live_record(record: Dict[str, Any]) -> Dict[str, Any]:
         }
 
 
+# ── Bihar RandomForest Model (trained on real station data) ───────────────────
+import os as _os
+import joblib as _joblib
+import numpy as _np
+
+_BIHAR_RF_MODEL  = None
+_BIHAR_RF_SCALER = None
+_BIHAR_RF_COLS   = None
+_BIHAR_DANGER    = {
+    'patna':       {'w': 47.50, 'd': 48.60, 'h': 50.52},
+    'gandhighat':  {'w': 47.50, 'd': 48.60, 'h': 50.52},
+    'dighaghat':   {'w': 49.30, 'd': 50.45, 'h': 52.52},
+    'birpur':      {'w': 73.70, 'd': 76.02, 'h': 77.10},
+    'munger':      {'w': 38.20, 'd': 39.33, 'h': 40.99},
+    'bhagalpur':   {'w': 32.50, 'd': 33.68, 'h': 34.86},
+    'hajipur':     {'w': 49.40, 'd': 50.32, 'h': 50.93},
+    'basua':       {'w': 47.00, 'd': 48.00, 'h': 49.50},
+    'baltara':     {'w': 32.50, 'd': 33.85, 'h': 36.40},
+    'kursela':     {'w': 28.00, 'd': 30.00, 'h': 32.10},
+    'jhanjharpur': {'w': 48.00, 'd': 50.00, 'h': 53.11},
+    'benibad':     {'w': 47.00, 'd': 48.68, 'h': 50.12},
+    'samastipur':  {'w': 44.80, 'd': 46.00, 'h': 49.40},
+    'khagaria':    {'w': 34.65, 'd': 35.65, 'h': 47.30},
+    'buxar':       {'w': 59.20, 'd': 60.30, 'h': 62.10},
+    'darauli':     {'w': 60.50, 'd': 60.82, 'h': 61.82},
+    'dumariaghat': {'w': 61.10, 'd': 62.22, 'h': 64.36},
+    'dhengraghat': {'w': 35.00, 'd': 35.65, 'h': 38.20},
+}
+
+def _load_bihar_rf():
+    global _BIHAR_RF_MODEL, _BIHAR_RF_SCALER, _BIHAR_RF_COLS
+    if _BIHAR_RF_MODEL is not None:
+        return True
+    try:
+        base = _os.path.join(_os.path.dirname(__file__), '..', '..', 'artifacts', 'dvc', 'models')
+        _BIHAR_RF_MODEL  = _joblib.load(_os.path.join(base, 'flood_model.pkl'))
+        _BIHAR_RF_SCALER = _joblib.load(_os.path.join(base, 'flood_scaler.pkl'))
+        _BIHAR_RF_COLS   = _joblib.load(_os.path.join(base, 'feature_columns.pkl'))
+        print('[BiharRF] model loaded successfully')
+        return True
+    except Exception as e:
+        print(f'[BiharRF] load failed: {e}')
+        return False
+
+def _bihar_rf_predict(station: str, level_m: float, rain_1h: float = 2.0,
+                      rain_3d: float = 10.0, rain_7d: float = 25.0,
+                      upstream: float = None, day_sin: float = 0.5,
+                      day_cos: float = 0.866, hour_sin: float = 0.0):
+    if not _load_bihar_rf():
+        return None
+    key = station.lower().strip()
+    t   = _BIHAR_DANGER.get(key)
+    if t is None:
+        return None
+    upstream = upstream or level_m * 1.01
+    feat = {
+        'level_pct_danger':    level_m / t['d'],
+        'level_pct_warning':   level_m / t['w'],
+        'rain_1h':             rain_1h,
+        'rain_3d':             rain_3d,
+        'rain_7d':             rain_7d,
+        'rain_intensity':      rain_1h / max(rain_7d, 0.1),
+        'upstream_level_norm': upstream / t['d'],
+        'day_sin':             day_sin,
+        'day_cos':             day_cos,
+        'hour_sin':            hour_sin,
+    }
+    X = _np.array([[feat.get(c, 0.0) for c in _BIHAR_RF_COLS]])
+    Xs = _BIHAR_RF_SCALER.transform(X)
+    sev = _BIHAR_RF_MODEL.predict(Xs)[0]
+    prob = _BIHAR_RF_MODEL.predict_proba(Xs)[0]
+    conf = dict(zip(_BIHAR_RF_MODEL.classes_, [round(float(p)*100, 1) for p in prob]))
+    return {'severity': sev, 'confidence': conf, 'danger': t['d'], 'warning': t['w']}
+
+
 # ── Helpers ─────────────────────────────────────────────────────────────────
 
 def persist_prediction_record(input_data, result):
@@ -646,6 +721,18 @@ async def predict_flood_v2(
         except Exception:
             pass
 
+        # ── Bihar RF override ────────────────────────────────────────────
+        bihar_rf = None
+        if str(input_data.state or '').lower() == 'bihar' and input_data.station:
+            _rl = river_level_m or float(input_data.Peak_Flood_Level_m or 0)
+            bihar_rf = _bihar_rf_predict(
+                station   = input_data.station,
+                level_m   = _rl,
+                rain_1h   = float(input_data.T1d or 2.0),
+                rain_3d   = float(input_data.T3d or 10.0),
+                rain_7d   = float(input_data.T7d or 25.0),
+            )
+
         _best_node = select_best_station_node(
             state_name=input_data.state,
             station_name=input_data.station,
@@ -682,6 +769,17 @@ async def predict_flood_v2(
                     "risk_score": 50,
                     "state": input_data.state,
                 }
+
+        # ── Override with Bihar RF if available ─────────────────────────
+        if bihar_rf is not None:
+            result["severity"]           = bihar_rf["severity"]
+            result["algorithm"]          = "Bihar-RF-v2"
+            result["confidence_percent"] = max(bihar_rf["confidence"].values())
+            result["probabilities"]      = bihar_rf["confidence"]
+            result["danger_level_m"]     = bihar_rf["danger"]
+            result["warning_level_m"]    = bihar_rf["warning"]
+            risk_map = {"LOW": 15, "MODERATE": 45, "SEVERE": 70, "CRITICAL": 90}
+            result["risk_score"]         = risk_map.get(bihar_rf["severity"], 50)
 
         result["source_policy"] = source_policy
         result["autofill_applied"] = autofill_applied
