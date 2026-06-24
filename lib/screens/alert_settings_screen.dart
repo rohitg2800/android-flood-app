@@ -126,10 +126,10 @@ class _SubCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: t.cardBg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: t.accent.withOpacity(0.25)),
+        border: Border.all(color: t.accent.withValues(alpha: 0.25)),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 8,
               offset: const Offset(0, 3)),
         ],
@@ -140,7 +140,7 @@ class _SubCard extends StatelessWidget {
           Container(
             width: 40, height: 40,
             decoration: BoxDecoration(
-              color: t.accent.withOpacity(0.12),
+              color: t.accent.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
             child: Icon(Icons.notifications_active_rounded,

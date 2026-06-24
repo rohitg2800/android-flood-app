@@ -610,12 +610,12 @@ class _LangToggle extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
           color: isHindi
-              ? const Color(0xFFFFC857).withOpacity(0.15)
+              ? const Color(0xFFFFC857).withValues(alpha: 0.15)
               : t.accent.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isHindi
-                ? const Color(0xFFFFC857).withOpacity(0.40)
+                ? const Color(0xFFFFC857).withValues(alpha: 0.40)
                 : t.accent.withValues(alpha: 0.30))),
         child: Text(
           isHindi ? 'हिं' : 'EN',

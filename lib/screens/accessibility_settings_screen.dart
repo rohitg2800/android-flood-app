@@ -167,9 +167,9 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: t.accent.withOpacity(0.08),
+              color: t.accent.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: t.accent.withOpacity(0.2)),
+              border: Border.all(color: t.accent.withValues(alpha: 0.2)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -238,10 +238,10 @@ class _SettingCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: t.divider.withOpacity(0.3)),
+        border: Border.all(color: t.divider.withValues(alpha: 0.3)),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 8,
               offset: const Offset(0, 3)),
         ],
@@ -292,5 +292,5 @@ class _Divider extends StatelessWidget {
   const _Divider(this.t);
   @override
   Widget build(BuildContext context) =>
-      Divider(height: 1, color: t.divider.withOpacity(0.3));
+      Divider(height: 1, color: t.divider.withValues(alpha: 0.3));
 }

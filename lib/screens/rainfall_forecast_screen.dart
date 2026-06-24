@@ -57,9 +57,9 @@ class RainfallForecastScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: const Color(0xFFFF4D5A).withOpacity(0.15),
+                color: const Color(0xFFFF4D5A).withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFFF4D5A).withOpacity(0.35))),
+                border: Border.all(color: const Color(0xFFFF4D5A).withValues(alpha: 0.35))),
               child: Text('$critical critical',
                 style: const TextStyle(color: Color(0xFFFF4D5A), fontSize: 10, fontWeight: FontWeight.w700))),
         ]),
@@ -140,9 +140,9 @@ class _HorizonTab extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: active ? color.withOpacity(0.15) : Colors.transparent,
+          color: active ? color.withValues(alpha: 0.15) : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: active ? color.withOpacity(0.40) : const Color(0xFF232934))),
+          border: Border.all(color: active ? color.withValues(alpha: 0.40) : const Color(0xFF232934))),
         child: Text(label,
           style: TextStyle(
             color: active ? color : const Color(0xFF7A8290),
@@ -201,13 +201,13 @@ class _StationCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: c.cardBg,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.25))),
+          border: Border.all(color: color.withValues(alpha: 0.25))),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             Container(
               width: 38, height: 38,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10)),
               child: Icon(Icons.water_rounded, color: color, size: 20)),
             const SizedBox(width: 10),
@@ -219,9 +219,9 @@ class _StationCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.15),
+                  color: color.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: color.withOpacity(0.35))),
+                  border: Border.all(color: color.withValues(alpha: 0.35))),
                 child: Text(pred.severity,
                   style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5))),
               const SizedBox(height: 3),
@@ -251,7 +251,7 @@ class _StationCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: bar,
               minHeight: 5,
-              backgroundColor: color.withOpacity(0.12),
+              backgroundColor: color.withValues(alpha: 0.12),
               valueColor: AlwaysStoppedAnimation<Color>(color))),
           const SizedBox(height: 4),
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -278,9 +278,9 @@ class _MiniLevel extends StatelessWidget {
       duration: const Duration(milliseconds: 180),
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
-        color: active ? color.withOpacity(0.15) : Colors.transparent,
+        color: active ? color.withValues(alpha: 0.15) : Colors.transparent,
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: active ? color.withOpacity(0.40) : c.surfaceOutline)),
+        border: Border.all(color: active ? color.withValues(alpha: 0.40) : c.surfaceOutline)),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Text(label, style: TextStyle(color: active ? color : c.textMuted, fontSize: 8, fontWeight: FontWeight.w600)),
         Text(value.toStringAsFixed(1) + 'm',

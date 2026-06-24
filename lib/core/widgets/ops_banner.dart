@@ -42,9 +42,9 @@ class OpsBanner extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: base.withOpacity(0.10),
+          color: base.withValues(alpha: 0.10),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: base.withOpacity(0.30)),
+          border: Border.all(color: base.withValues(alpha: 0.30)),
         ),
         child: Row(
           children: [

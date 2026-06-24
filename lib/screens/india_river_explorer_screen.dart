@@ -80,7 +80,7 @@ class _IndiaRiverExplorerScreenState
             Container(
               width: 32, height: 32,
               decoration: BoxDecoration(
-                color: const Color(0xFF06B6D4).withOpacity(0.14),
+                color: const Color(0xFF06B6D4).withValues(alpha: 0.14),
                 borderRadius: BorderRadius.circular(9)),
               child: const Icon(Icons.travel_explore_rounded, color: Color(0xFF06B6D4), size: 17)),
             const SizedBox(width: 10),
@@ -340,7 +340,7 @@ class _RiverCard extends StatelessWidget {
           color: const Color(0xFF0F141B),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: r.isBiharRiver
-              ? r.color.withOpacity(0.30)
+              ? r.color.withValues(alpha: 0.30)
               : const Color(0xFF232934))),
         child: Row(
             children: [
@@ -348,10 +348,10 @@ class _RiverCard extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: r.color.withOpacity(0.15),
+                  color: r.color.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                   border: Border.all(
-                      color: r.color.withOpacity(0.5)),
+                      color: r.color.withValues(alpha: 0.5)),
                 ),
                 child: Icon(r.icon, color: r.color, size: 20),
               ),
@@ -374,12 +374,12 @@ class _RiverCard extends StatelessWidget {
                                 horizontal: 5, vertical: 1),
                             decoration: BoxDecoration(
                               color: Colors.blue
-                                  .withOpacity(0.15),
+                                  .withValues(alpha: 0.15),
                               borderRadius:
                                   BorderRadius.circular(4),
                               border: Border.all(
                                   color: Colors.blue
-                                      .withOpacity(0.5)),
+                                      .withValues(alpha: 0.5)),
                             ),
                             child: const Text('LIVE',
                                 style: TextStyle(
@@ -400,7 +400,7 @@ class _RiverCard extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                            color: t.textPrimary.withOpacity(0.75),
+                            color: t.textPrimary.withValues(alpha: 0.75),
                             fontSize: 11,
                             height: 1.4)),
                   ],
@@ -437,9 +437,9 @@ class _StatPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.4)),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Column(
         children: [
@@ -478,13 +478,13 @@ class _SystemChip extends StatelessWidget {
             horizontal: 12, vertical: 5),
         decoration: BoxDecoration(
           color: selected
-              ? t.accent.withOpacity(0.18)
+              ? t.accent.withValues(alpha: 0.18)
               : t.cardBg,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
               color: selected
                   ? t.accent
-                  : t.divider.withOpacity(0.5)),
+                  : t.divider.withValues(alpha: 0.5)),
         ),
         child: Text(label,
             style: TextStyle(

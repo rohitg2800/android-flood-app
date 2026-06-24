@@ -148,10 +148,10 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 14, vertical: 10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF4CB3FF).withOpacity(0.10),
+                                color: const Color(0xFF4CB3FF).withValues(alpha: 0.10),
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
-                                    color: const Color(0xFF4CB3FF).withOpacity(0.35)),
+                                    color: const Color(0xFF4CB3FF).withValues(alpha: 0.35)),
                               ),
                               child: Row(children: [
                                 const Icon(Icons.offline_bolt_rounded,
@@ -243,9 +243,9 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
             Container(
               width: 32, height: 32,
               decoration: BoxDecoration(
-                color: const Color(0xFF4CB3FF).withOpacity(0.12),
+                color: const Color(0xFF4CB3FF).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF4CB3FF).withOpacity(0.25)),
+                border: Border.all(color: const Color(0xFF4CB3FF).withValues(alpha: 0.25)),
               ),
               child: const Icon(Icons.auto_graph_rounded, color: Color(0xFF4CB3FF), size: 17),
             ),
@@ -410,7 +410,7 @@ class _StationPickerCardState extends State<_StationPickerCard> {
               color: const Color(0xFF0F141B),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: _open ? const Color(0xFF4CB3FF).withOpacity(0.5) : const Color(0xFF232934))),
+                color: _open ? const Color(0xFF4CB3FF).withValues(alpha: 0.5) : const Color(0xFF232934))),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             child: Row(children: [
               Icon(Icons.search_rounded,
@@ -478,7 +478,7 @@ class _StationPickerCardState extends State<_StationPickerCard> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
-                      color: sel ? const Color(0xFF4CB3FF).withOpacity(0.08) : Colors.transparent),
+                      color: sel ? const Color(0xFF4CB3FF).withValues(alpha: 0.08) : Colors.transparent),
                     child: Row(children: [
                       Container(width: 8, height: 8,
                         margin: const EdgeInsets.only(right: 10),
@@ -532,7 +532,7 @@ class _CurrentLevelCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF0F141B),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isAlert ? barColor.withOpacity(0.5) : const Color(0xFF232934))),
+        border: Border.all(color: isAlert ? barColor.withValues(alpha: 0.5) : const Color(0xFF232934))),
       
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -1125,7 +1125,7 @@ class _ActionAdviceCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF0F141B),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.45))
+        border: Border.all(color: color.withValues(alpha: 0.45))
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -1367,7 +1367,7 @@ class _AllCitiesForecastState extends ConsumerState<_AllCitiesForecast>
       decoration: BoxDecoration(
           color: const Color(0xFF0F141B),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFF4CB3FF).withOpacity(0.20))),
+          border: Border.all(color: const Color(0xFF4CB3FF).withValues(alpha: 0.20))),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

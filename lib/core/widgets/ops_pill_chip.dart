@@ -20,7 +20,7 @@ class OpsPillChip extends StatelessWidget {
         curve: Curves.easeOut,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
-          color: selected ? active.withOpacity(0.15) : Colors.transparent,
+          color: selected ? active.withValues(alpha: 0.15) : Colors.transparent,
           borderRadius: BorderRadius.circular(100),
           border: Border.all(color: selected ? active : c.surfaceOutline),
         ),

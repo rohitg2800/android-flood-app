@@ -243,21 +243,21 @@ class _PremiumNavBar extends StatelessWidget {
           child: Container(
             height: 56,
             decoration: BoxDecoration(
-              color: const Color(0xFF0F141B).withOpacity(0.95),
+              color: const Color(0xFF0F141B).withValues(alpha: 0.95),
               borderRadius: BorderRadius.circular(26),
               border: Border.all(
-                color: const Color(0xFF4CB3FF).withOpacity(0.12),
+                color: const Color(0xFF4CB3FF).withValues(alpha: 0.12),
                 width: 1,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF4CB3FF).withOpacity(0.08),
+                  color: const Color(0xFF4CB3FF).withValues(alpha: 0.08),
                   blurRadius: 30,
                   spreadRadius: -2,
                   offset: const Offset(0, -4),
                 ),
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.40),
+                  color: Colors.black.withValues(alpha: 0.40),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -314,10 +314,10 @@ class _NavTap extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
         decoration: active
             ? BoxDecoration(
-                color: const Color(0xFF4CB3FF).withOpacity(0.13),
+                color: const Color(0xFF4CB3FF).withValues(alpha: 0.13),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: const Color(0xFF4CB3FF).withOpacity(0.30),
+                  color: const Color(0xFF4CB3FF).withValues(alpha: 0.30),
                   width: 1,
                 ),
               )
@@ -383,7 +383,7 @@ class _MoreButton extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.apps_rounded, color: scheme.onSurface.withOpacity(0.6), size: 22),
+            Icon(Icons.apps_rounded, color: scheme.onSurface.withValues(alpha: 0.6), size: 22),
             const SizedBox(height: 2),
             Text(
               'More',
@@ -392,7 +392,7 @@ class _MoreButton extends StatelessWidget {
               style: TextStyle(
                 fontSize: 9,
                 fontWeight: FontWeight.w500,
-                color: scheme.onSurface.withOpacity(0.6),
+                color: scheme.onSurface.withValues(alpha: 0.6),
                 letterSpacing: 0.15,
                 height: 1,
               ),

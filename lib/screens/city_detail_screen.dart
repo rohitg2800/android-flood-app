@@ -251,7 +251,7 @@ class _MlLoadingCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: t.cardBg,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppPalette.gold.withOpacity(0.25)),
+        border: Border.all(color: AppPalette.gold.withValues(alpha: 0.25)),
       ),
       child: Row(
         children: [
@@ -324,10 +324,10 @@ class _MlCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: t.cardBg,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: sev.withOpacity(0.35)),
+        border: Border.all(color: sev.withValues(alpha: 0.35)),
         boxShadow: [
           BoxShadow(
-              color: sev.withOpacity(0.08),
+              color: sev.withValues(alpha: 0.08),
               blurRadius: 16,
               offset: const Offset(0, 4)),
         ],
@@ -348,9 +348,9 @@ class _MlCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: sev.withOpacity(0.15),
+                  color: sev.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: sev.withOpacity(0.5)),
+                  border: Border.all(color: sev.withValues(alpha: 0.5)),
                 ),
                 child: Text(pred.severity,
                     style: TextStyle(
@@ -366,13 +366,13 @@ class _MlCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
               color: pred.fromBackend
-                  ? AppPalette.safe.withOpacity(0.12)
-                  : AppPalette.gold.withOpacity(0.12),
+                  ? AppPalette.safe.withValues(alpha: 0.12)
+                  : AppPalette.gold.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: pred.fromBackend
-                    ? AppPalette.safe.withOpacity(0.3)
-                    : AppPalette.gold.withOpacity(0.3),
+                    ? AppPalette.safe.withValues(alpha: 0.3)
+                    : AppPalette.gold.withValues(alpha: 0.3),
               ),
             ),
             child: Row(
@@ -402,9 +402,9 @@ class _MlCard extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: AppPalette.critical.withOpacity(0.14),
+                color: AppPalette.critical.withValues(alpha: 0.14),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppPalette.critical.withOpacity(0.5)),
+                border: Border.all(color: AppPalette.critical.withValues(alpha: 0.5)),
               ),
               child: Row(
                 children: [
@@ -437,7 +437,7 @@ class _MlCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(6),
                   child: LinearProgressIndicator(
                     value: (pred.riskScore / 100).clamp(0.0, 1.0),
-                    backgroundColor: bar.withOpacity(0.15),
+                    backgroundColor: bar.withValues(alpha: 0.15),
                     valueColor: AlwaysStoppedAnimation<Color>(bar),
                     minHeight: 7,
                   ),
@@ -486,9 +486,9 @@ class _MlChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.10),
+          color: color.withValues(alpha: 0.10),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Column(
           children: [
@@ -526,7 +526,7 @@ class _HeroBackground extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [riskColor.withOpacity(0.28), t.scaffoldBg],
+          colors: [riskColor.withValues(alpha: 0.28), t.scaffoldBg],
           begin: Alignment.topCenter,
           end:   Alignment.bottomCenter,
         ),
@@ -565,7 +565,7 @@ class _HeroBackground extends StatelessWidget {
                           fontWeight: FontWeight.w900,
                           letterSpacing: -1,
                           shadows: [
-                            Shadow(color: riskColor.withOpacity(0.3), blurRadius: 12),
+                            Shadow(color: riskColor.withValues(alpha: 0.3), blurRadius: 12),
                           ],
                         ),
                       ),
@@ -582,11 +582,11 @@ class _HeroBackground extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                     decoration: BoxDecoration(
-                      color: riskColor.withOpacity(0.18),
+                      color: riskColor.withValues(alpha: 0.18),
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: riskColor.withOpacity(0.55), width: 1.5),
+                      border: Border.all(color: riskColor.withValues(alpha: 0.55), width: 1.5),
                       boxShadow: [
-                        BoxShadow(color: riskColor.withOpacity(0.25), blurRadius: 16, spreadRadius: 1),
+                        BoxShadow(color: riskColor.withValues(alpha: 0.25), blurRadius: 16, spreadRadius: 1),
                       ],
                     ),
                     child: Row(
@@ -612,7 +612,7 @@ class _HeroBackground extends StatelessWidget {
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
                       value: (fillPct / 100).clamp(0.0, 1.0),
-                      backgroundColor: riskColor.withOpacity(0.15),
+                      backgroundColor: riskColor.withValues(alpha: 0.15),
                       valueColor: AlwaysStoppedAnimation<Color>(riskColor),
                       minHeight: 5,
                     ),
@@ -641,7 +641,7 @@ class _ConcentricRingsPainter extends CustomPainter {
       canvas.drawCircle(
         Offset(cx, cy), r,
         Paint()
-          ..color = color.withOpacity((0.22 - i * 0.06).clamp(0.02, 0.22))
+          ..color = color.withValues(alpha: (0.22 - i * 0.06).clamp(0.02, 0.22))
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1.4,
       );
@@ -675,9 +675,9 @@ class _ThresholdBanner extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: rc.withOpacity(0.12),
+        color: rc.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: rc.withOpacity(0.4)),
+        border: Border.all(color: rc.withValues(alpha: 0.4)),
       ),
       child: Row(
         children: [
@@ -743,10 +743,10 @@ class _StatCell extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: s.color.withOpacity(0.09),
+        color: s.color.withValues(alpha: 0.09),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: s.color.withOpacity(0.3)),
-        boxShadow: [BoxShadow(color: s.color.withOpacity(0.07), blurRadius: 8, offset: const Offset(0, 3))],
+        border: Border.all(color: s.color.withValues(alpha: 0.3)),
+        boxShadow: [BoxShadow(color: s.color.withValues(alpha: 0.07), blurRadius: 8, offset: const Offset(0, 3))],
       ),
       child: Row(
         children: [
@@ -801,8 +801,8 @@ class _GaugeCardState extends State<_GaugeCard> with SingleTickerProviderStateMi
       decoration: BoxDecoration(
         color: t.cardBg,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: rc.withOpacity(0.3)),
-        boxShadow: [BoxShadow(color: rc.withOpacity(0.10), blurRadius: 20, offset: const Offset(0, 6))],
+        border: Border.all(color: rc.withValues(alpha: 0.3)),
+        boxShadow: [BoxShadow(color: rc.withValues(alpha: 0.10), blurRadius: 20, offset: const Offset(0, 6))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -831,13 +831,13 @@ class _GaugeCardState extends State<_GaugeCard> with SingleTickerProviderStateMi
                   borderRadius: BorderRadius.circular(10),
                   child: Stack(
                     children: [
-                      Container(height: 20, color: rc.withOpacity(0.10)),
+                      Container(height: 20, color: rc.withValues(alpha: 0.10)),
                       FractionallySizedBox(
                         widthFactor: _anim.value,
                         child: Container(
                           height: 20,
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(colors: [rc, rc.withOpacity(0.7)]),
+                            gradient: LinearGradient(colors: [rc, rc.withValues(alpha: 0.7)]),
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
@@ -909,9 +909,9 @@ class _ActionBtn extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.12),
+            color: color.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: color.withOpacity(0.35)),
+            border: Border.all(color: color.withValues(alpha: 0.35)),
           ),
           child: Column(
             children: [
@@ -950,8 +950,8 @@ class _MetaCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: t.cardBg,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: t.divider.withOpacity(0.3)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+        border: Border.all(color: t.divider.withValues(alpha: 0.3)),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

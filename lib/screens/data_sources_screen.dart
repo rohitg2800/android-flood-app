@@ -100,7 +100,7 @@ class _InfoCard extends StatelessWidget {
             Container(
               width: 38, height: 38,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.14),
+                color: color.withValues(alpha: 0.14),
                 borderRadius: BorderRadius.circular(11),
               ),
               child: Icon(icon, color: color, size: 20),
@@ -122,9 +122,9 @@ class _InfoCard extends StatelessWidget {
             children: tags.map((tag) => Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.10),
+                color: color.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: color.withOpacity(0.25)),
+                border: Border.all(color: color.withValues(alpha: 0.25)),
               ),
               child: Text(tag, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w600)),
             )).toList(),
@@ -144,9 +144,9 @@ class _PrivacyCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF3ACC8A).withOpacity(0.07),
+        color: const Color(0xFF3ACC8A).withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF3ACC8A).withOpacity(0.25)),
+        border: Border.all(color: const Color(0xFF3ACC8A).withValues(alpha: 0.25)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

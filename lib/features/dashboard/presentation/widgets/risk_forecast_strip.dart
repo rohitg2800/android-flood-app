@@ -26,9 +26,9 @@ class RiskForecastStrip extends ConsumerWidget {
               Container(
                 width: 28, height: 28,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF818CF8).withOpacity(0.15),
+                  color: const Color(0xFF818CF8).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFF818CF8).withOpacity(0.30)),
+                  border: Border.all(color: const Color(0xFF818CF8).withValues(alpha: 0.30)),
                 ),
                 child: const Icon(Icons.auto_awesome_rounded, color: Color(0xFF818CF8), size: 15),
               ),
@@ -103,9 +103,9 @@ class _RiskCard extends StatelessWidget {
         width: 155,
         padding: const EdgeInsets.all(11),
         decoration: BoxDecoration(
-          color: col.withOpacity(0.07),
+          color: col.withValues(alpha: 0.07),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: col.withOpacity(0.28)),
+          border: Border.all(color: col.withValues(alpha: 0.28)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -116,9 +116,9 @@ class _RiskCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: col.withOpacity(0.15),
+                    color: col.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: col.withOpacity(0.35)),
+                    border: Border.all(color: col.withValues(alpha: 0.35)),
                   ),
                   child: Text(
                     pred.severity,
@@ -147,7 +147,7 @@ class _RiskCard extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: bar,
                 minHeight: 4,
-                backgroundColor: col.withOpacity(0.15),
+                backgroundColor: col.withValues(alpha: 0.15),
                 valueColor: AlwaysStoppedAnimation<Color>(col),
               ),
             ),

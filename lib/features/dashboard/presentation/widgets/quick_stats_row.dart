@@ -42,7 +42,7 @@ class _StatTile extends StatelessWidget {
     return OpsCard(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       onTap: onTap,
-      borderColor: color.withOpacity(0.25),
+      borderColor: color.withValues(alpha: 0.25),
       child: FittedBox(
         fit: BoxFit.scaleDown,
         alignment: Alignment.centerLeft,

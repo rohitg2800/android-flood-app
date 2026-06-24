@@ -49,7 +49,7 @@ class _CommunityScreenState extends State<CommunityScreen>
             Container(
               width: 30, height: 30,
               decoration: BoxDecoration(
-                color: const Color(0xFF2DD4BF).withOpacity(0.14),
+                color: const Color(0xFF2DD4BF).withValues(alpha: 0.14),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(Icons.people_outline, color: Color(0xFF2DD4BF), size: 16),
@@ -357,10 +357,10 @@ class _ThreadCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: Colors.teal.withOpacity(0.15),
+                    color: Colors.teal.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(
-                        color: Colors.teal.withOpacity(0.4)),
+                        color: Colors.teal.withValues(alpha: 0.4)),
                   ),
                   child: Text(thread.district,
                       style: const TextStyle(
@@ -660,7 +660,7 @@ class _TipSectionCardState extends State<_TipSectionCard> {
               [
                 Divider(
                     height: 1,
-                    color: t.divider.withOpacity(0.4)),
+                    color: t.divider.withValues(alpha: 0.4)),
                 ...s.tips.asMap().entries.map((e) => Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 14, vertical: 7),
@@ -722,9 +722,9 @@ class _QuickTile extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.10),
+            color: color.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: color.withOpacity(0.25)),
+            border: Border.all(color: color.withValues(alpha: 0.25)),
           ),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Icon(icon, color: color, size: 20),

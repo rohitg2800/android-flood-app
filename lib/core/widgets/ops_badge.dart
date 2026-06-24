@@ -22,9 +22,9 @@ class OpsBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: base.withOpacity(0.15),
+        color: base.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: base.withOpacity(0.35)),
+        border: Border.all(color: base.withValues(alpha: 0.35)),
       ),
       child: Text(
         label.toUpperCase(),

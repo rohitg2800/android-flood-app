@@ -74,9 +74,9 @@ class _AiPredictionScreenState extends ConsumerState<AiPredictionScreen>
                 Container(
                   width: 34, height: 34,
                   decoration: BoxDecoration(
-                    color: cyan.withOpacity(0.12),
+                    color: cyan.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: cyan.withOpacity(0.25)),
+                    border: Border.all(color: cyan.withValues(alpha: 0.25)),
                   ),
                   child: Icon(Icons.psychology_rounded, color: cyan, size: 18),
                 ),
@@ -352,14 +352,14 @@ class _ForecastTab extends ConsumerWidget {
                 ? const Color(0xFFFF4D5A)
                 : highCount > 0
                     ? const Color(0xFFFFC857)
-                    : const Color(0xFF3ACC8A)).withOpacity(0.09),
+                    : const Color(0xFF3ACC8A)).withValues(alpha: 0.09),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: (critCount > 0
                   ? const Color(0xFFFF4D5A)
                   : highCount > 0
                       ? const Color(0xFFFFC857)
-                      : const Color(0xFF3ACC8A)).withOpacity(0.28),
+                      : const Color(0xFF3ACC8A)).withValues(alpha: 0.28),
             ),
           ),
           child: Row(

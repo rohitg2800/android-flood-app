@@ -133,7 +133,7 @@ class _MapMarkersState extends State<MapMarkers>
               final name = station.city;
               showDialog(
                 context: context,
-                barrierColor: Colors.black.withOpacity(0.5),
+                barrierColor: Colors.black.withValues(alpha: 0.5),
                 builder: (_) => AlertDialog(
                   backgroundColor: const Color(0xFF0F141B),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -153,7 +153,7 @@ class _MapMarkersState extends State<MapMarkers>
                         value: station.dangerLevel != null && station.dangerLevel! > 0
                             ? ((station.currentLevel ?? 0) / station.dangerLevel!).clamp(0.0, 1.0)
                             : 0,
-                        backgroundColor: color.withOpacity(0.15),
+                        backgroundColor: color.withValues(alpha: 0.15),
                         valueColor: AlwaysStoppedAnimation<Color>(color),
                         minHeight: 6,
                         borderRadius: BorderRadius.circular(3),
@@ -220,7 +220,7 @@ class _PulseMarkerPainter extends CustomPainter {
       canvas.drawCircle(
         center, pulseRadius,
         Paint()
-          ..color       = color.withOpacity(pulseOpacity)
+          ..color       = color.withValues(alpha: pulseOpacity)
           ..style       = PaintingStyle.stroke
           ..strokeWidth = 2.5,
       );

@@ -59,9 +59,9 @@ class _LauncherTileState extends State<LauncherTile> with SingleTickerProviderSt
               Container(
                 width: 40, height: 40,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
+                  color: color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: color.withOpacity(0.28)),
+                  border: Border.all(color: color.withValues(alpha: 0.28)),
                 ),
                 child: Icon(widget.tile.icon, color: color, size: 20),
               ),

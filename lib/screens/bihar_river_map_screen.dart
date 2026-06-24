@@ -72,6 +72,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
+
         ref.read(mapViewModeProvider.notifier).set(MapViewMode.bihar);
       }
     });
@@ -384,7 +385,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
                       padding: const EdgeInsets.symmetric(
                           horizontal: 14, vertical: 6),
                       decoration: BoxDecoration(
-                        color:        rc.cardBg.withOpacity(0.9),
+                        color:        rc.cardBg.withValues(alpha: 0.9),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
@@ -425,7 +426,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 6),
                         decoration: BoxDecoration(
-                          color:        rc.cardBg.withOpacity(0.9),
+                          color:        rc.cardBg.withValues(alpha: 0.9),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
@@ -466,7 +467,7 @@ class _BiharRiverMapScreenState extends ConsumerState<BiharRiverMapScreen>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 6),
                         decoration: BoxDecoration(
-                          color:        rc.accent.withOpacity(0.9),
+                          color:        rc.accent.withValues(alpha: 0.9),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
@@ -523,7 +524,7 @@ class _SeverityChipBar extends StatelessWidget {
     const baselineColor = Color(0xFFF57F17); // amber-800
 
     return Container(
-      color: rc.scaffoldBg.withOpacity(0.97),
+      color: rc.scaffoldBg.withValues(alpha: 0.97),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -545,11 +546,10 @@ class _SeverityChipBar extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: isActive
                           ? meta.color
-                          : meta.color.withOpacity(isDimmed ? 0.1 : 0.14),
+                          : meta.color.withValues(alpha: isDimmed ? 0.1 : 0.14),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: meta.color.withOpacity(
-                            isActive ? 1.0 : (isDimmed ? 0.2 : 0.45)),
+                        color: meta.color.withValues(alpha:                             isActive ? 1.0 : (isDimmed ? 0.2 : 0.45)),
                         width: isActive ? 1.5 : 1.0,
                       ),
                     ),
@@ -559,7 +559,7 @@ class _SeverityChipBar extends StatelessWidget {
                         color: isActive
                             ? Colors.white
                             : meta.color
-                                .withOpacity(isDimmed ? 0.4 : 0.9),
+                                .withValues(alpha: isDimmed ? 0.4 : 0.9),
                         fontSize:      11,
                         fontWeight:    FontWeight.w700,
                         letterSpacing: 0.4,
@@ -582,11 +582,11 @@ class _SeverityChipBar extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: baselineActive
                         ? baselineColor
-                        : baselineColor.withOpacity(0.14),
+                        : baselineColor.withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color: baselineColor
-                          .withOpacity(baselineActive ? 1.0 : 0.45),
+                          .withValues(alpha: baselineActive ? 1.0 : 0.45),
                       width: baselineActive ? 1.5 : 1.0,
                     ),
                   ),
@@ -598,7 +598,7 @@ class _SeverityChipBar extends StatelessWidget {
                         style: TextStyle(
                           color: baselineActive
                               ? Colors.white
-                              : baselineColor.withOpacity(0.9),
+                              : baselineColor.withValues(alpha: 0.9),
                           fontSize:      11,
                           fontWeight:    FontWeight.w700,
                           letterSpacing: 0.4,
@@ -635,7 +635,7 @@ class _SeverityChipBar extends StatelessWidget {
                     color:        rc.cardBg,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                        color: rc.stroke.withOpacity(0.5), width: 1),
+                        color: rc.stroke.withValues(alpha: 0.5), width: 1),
                   ),
                   child: Text(
                     'CLEAR',
@@ -710,10 +710,10 @@ class _FloodStationSheet extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: riskColor.withOpacity(0.15),
+                    color: riskColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                        color: riskColor.withOpacity(0.5)),
+                        color: riskColor.withValues(alpha: 0.5)),
                   ),
                   child: Text(s.riskLevel,
                       style: TextStyle(
@@ -836,12 +836,12 @@ class _BiharMapTopBar extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
             color: isFiltered
-                ? rc.accent.withOpacity(0.6)
-                : rc.stroke.withOpacity(0.4),
+                ? rc.accent.withValues(alpha: 0.6)
+                : rc.stroke.withValues(alpha: 0.4),
             width: isFiltered ? 1.5 : 1),
         boxShadow: [
           BoxShadow(
-            color:      Colors.black.withOpacity(0.10),
+            color:      Colors.black.withValues(alpha: 0.10),
             blurRadius: 8,
             offset:     const Offset(0, 2),
           ),
@@ -861,7 +861,7 @@ class _BiharMapTopBar extends StatelessWidget {
             child: Container(
               width: 34, height: 34,
               decoration: BoxDecoration(
-                color:        rc.accent.withOpacity(0.12),
+                color:        rc.accent.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(Icons.arrow_back_ios_new_rounded,
@@ -897,9 +897,9 @@ class _BiharMapTopBar extends StatelessWidget {
               width: 34, height: 34,
               margin: const EdgeInsets.only(right: 6),
               decoration: BoxDecoration(
-                color:        searchOpen ? rc.accent.withOpacity(0.2) : rc.cardBg,
+                color:        searchOpen ? rc.accent.withValues(alpha: 0.2) : rc.cardBg,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: rc.stroke.withOpacity(0.4)),
+                border: Border.all(color: rc.stroke.withValues(alpha: 0.4)),
               ),
               child: Icon(Icons.search_rounded,
                 color: searchOpen ? rc.accent : rc.textSecondary, size: 18),
@@ -913,7 +913,7 @@ class _BiharMapTopBar extends StatelessWidget {
                 color:        rc.cardBg,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                    color: rc.stroke.withOpacity(0.4), width: 1),
+                    color: rc.stroke.withValues(alpha: 0.4), width: 1),
               ),
               child: isLoading
                   ? Padding(
@@ -933,7 +933,7 @@ class _BiharMapTopBar extends StatelessWidget {
               decoration: BoxDecoration(
                 color:        rc.cardBg,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: rc.stroke.withOpacity(0.4)),
+                border: Border.all(color: rc.stroke.withValues(alpha: 0.4)),
               ),
               child: Icon(Icons.public_rounded,
                   color: rc.textSecondary, size: 18),
@@ -945,9 +945,9 @@ class _BiharMapTopBar extends StatelessWidget {
             child: Container(
               width: 34, height: 34,
               decoration: BoxDecoration(
-                color:        drawerOpen ? rc.accent.withOpacity(0.2) : rc.cardBg,
+                color:        drawerOpen ? rc.accent.withValues(alpha: 0.2) : rc.cardBg,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: rc.stroke.withOpacity(0.4)),
+                border: Border.all(color: rc.stroke.withValues(alpha: 0.4)),
               ),
               child: Icon(Icons.menu_rounded,
                   color: drawerOpen ? rc.accent : rc.textSecondary, size: 18),
@@ -1007,8 +1007,8 @@ class _SearchBarState extends State<_SearchBar> {
       decoration: BoxDecoration(
         color: const Color(0xFF0F141B),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: rc.accent.withOpacity(0.5)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.10), blurRadius: 8)],
+        border: Border.all(color: rc.accent.withValues(alpha: 0.5)),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.10), blurRadius: 8)],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1041,7 +1041,7 @@ class _SearchBarState extends State<_SearchBar> {
             ),
           ),
           if (_results.isNotEmpty) ...[
-            Divider(height: 1, color: rc.stroke.withOpacity(0.3)),
+            Divider(height: 1, color: rc.stroke.withValues(alpha: 0.3)),
             ..._results.map((s) => InkWell(
               onTap: () => widget.onPicked(s),
               child: Padding(
@@ -1127,7 +1127,7 @@ class _MapSearchBoxState extends State<_MapSearchBox> {
           decoration: BoxDecoration(
             color: rc.cardBg,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: rc.stroke.withOpacity(0.4)),
+            border: Border.all(color: rc.stroke.withValues(alpha: 0.4)),
           ),
           child: Row(
             children: [
@@ -1165,7 +1165,7 @@ class _MapSearchBoxState extends State<_MapSearchBox> {
             decoration: BoxDecoration(
               color: rc.cardBg,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: rc.stroke.withOpacity(0.4)),
+              border: Border.all(color: rc.stroke.withValues(alpha: 0.4)),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,

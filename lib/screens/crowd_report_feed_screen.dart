@@ -113,9 +113,9 @@ class _CrowdReportFeedScreenState extends State<CrowdReportFeedScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.deepOrange.withOpacity(0.15),
+                  color: Colors.deepOrange.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.deepOrange.withOpacity(0.5)),
+                  border: Border.all(color: Colors.deepOrange.withValues(alpha: 0.5)),
                 ),
                 child: Text(
                   '${filtered.length}',
@@ -216,10 +216,10 @@ class _CrowdReportFeedScreenState extends State<CrowdReportFeedScreen> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.12),
+                      color: Colors.red.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                          color: Colors.red.withOpacity(0.4)),
+                          color: Colors.red.withValues(alpha: 0.4)),
                     ),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
@@ -396,10 +396,10 @@ class _ReportCard extends StatelessWidget {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: (type?.color ?? Colors.grey).withOpacity(0.15),
+                    color: (type?.color ?? Colors.grey).withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                     border: Border.all(
-                        color: (type?.color ?? Colors.grey).withOpacity(0.5)),
+                        color: (type?.color ?? Colors.grey).withValues(alpha: 0.5)),
                   ),
                   child: Icon(type?.icon ?? Icons.report_problem,
                       color: type?.color ?? Colors.grey, size: 18),
@@ -428,10 +428,10 @@ class _ReportCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: sev.color.withOpacity(0.15),
+                    color: sev.color.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                        color: sev.color.withOpacity(0.5), width: 1),
+                        color: sev.color.withValues(alpha: 0.5), width: 1),
                   ),
                   child: Text(
                     sev.label,
@@ -506,7 +506,7 @@ class _ReportCard extends StatelessWidget {
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                      color: t.textPrimary.withOpacity(0.85),
+                      color: t.textPrimary.withValues(alpha: 0.85),
                       fontSize: 13,
                       height: 1.4),
                 ),
@@ -558,10 +558,10 @@ class _ReportCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.amber.withOpacity(0.15),
+                    color: Colors.amber.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(
-                        color: Colors.amber.withOpacity(0.5)),
+                        color: Colors.amber.withValues(alpha: 0.5)),
                   ),
                   child: const Text(
                     'Pending sync',
@@ -606,7 +606,7 @@ class _FilterChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: t.cardBg,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: t.divider.withOpacity(0.6)),
+          border: Border.all(color: t.divider.withValues(alpha: 0.6)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

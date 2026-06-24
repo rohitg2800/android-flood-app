@@ -28,7 +28,7 @@ class RipplePainter extends CustomPainter {
         Offset(cx, cy),
         radius,
         Paint()
-          ..color = color.withOpacity(opacity)
+          ..color = color.withValues(alpha: opacity)
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1.5,
       );
@@ -51,7 +51,7 @@ class WavePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = color.withOpacity(opacity)
+      ..color = color.withValues(alpha: opacity)
       ..style = PaintingStyle.fill;
     final path = Path();
     path.moveTo(0, size.height);
@@ -113,7 +113,7 @@ class _CylinderPainter extends CustomPainter {
       ..close();
 
     canvas.drawPath(bodyPath,
-        Paint()..color = color.withOpacity(0.12)..style = PaintingStyle.fill);
+        Paint()..color = color.withValues(alpha: 0.12)..style = PaintingStyle.fill);
 
     if (fill > 0) {
       final fillTop = h - ry - (h - ry * 2) * fill.clamp(0.0, 1.0);
@@ -129,7 +129,7 @@ class _CylinderPainter extends CustomPainter {
         fillPath,
         Paint()
           ..shader = LinearGradient(
-            colors: [color, color.withOpacity(0.6)],
+            colors: [color, color.withValues(alpha: 0.6)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ).createShader(Rect.fromLTWH(0, fillTop, w, h - fillTop))
@@ -138,14 +138,14 @@ class _CylinderPainter extends CustomPainter {
 
       canvas.drawOval(
         Rect.fromLTWH(0, fillTop, w, ry * 2),
-        Paint()..color = color.withOpacity(0.85)..style = PaintingStyle.fill,
+        Paint()..color = color.withValues(alpha: 0.85)..style = PaintingStyle.fill,
       );
     }
 
     canvas.drawPath(
       bodyPath,
       Paint()
-        ..color = color.withOpacity(0.55)
+        ..color = color.withValues(alpha: 0.55)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.2,
     );
@@ -153,7 +153,7 @@ class _CylinderPainter extends CustomPainter {
     canvas.drawOval(
       Rect.fromLTWH(0, 0, w, ry * 2),
       Paint()
-        ..color = color.withOpacity(0.4)
+        ..color = color.withValues(alpha: 0.4)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 0.8,
     );
@@ -186,12 +186,12 @@ class StatTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.12),
+          color: color.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withOpacity(0.35)),
+          border: Border.all(color: color.withValues(alpha: 0.35)),
           boxShadow: [
             BoxShadow(
-                color: color.withOpacity(0.10),
+                color: color.withValues(alpha: 0.10),
                 blurRadius: 8,
                 offset: const Offset(0, 3)),
           ],
@@ -231,9 +231,9 @@ class RmBreachBanner extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFFF1744).withOpacity(0.12),
+        color: const Color(0xFFFF1744).withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFFF1744).withOpacity(0.5)),
+        border: Border.all(color: const Color(0xFFFF1744).withValues(alpha: 0.5)),
       ),
       child: Row(
         children: [
@@ -300,14 +300,14 @@ class RmFillBar extends StatelessWidget {
           borderRadius: BorderRadius.circular(6),
           child: Stack(
             children: [
-              Container(height: 7, color: t.divider.withOpacity(0.3)),
+              Container(height: 7, color: t.divider.withValues(alpha: 0.3)),
               FractionallySizedBox(
                 widthFactor: fillValue,
                 child: Container(
                   height: 7,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [rc, rc.withOpacity(0.6)],
+                      colors: [rc, rc.withValues(alpha: 0.6)],
                     ),
                     borderRadius: BorderRadius.circular(6),
                   ),
@@ -365,7 +365,7 @@ class RmMlScoreBar extends StatelessWidget {
             value: (score / 100.0).clamp(0.0, 1.0),
             minHeight: 4,
             backgroundColor:
-                const Color(0xFF7B2FF7).withOpacity(0.12),
+                const Color(0xFF7B2FF7).withValues(alpha: 0.12),
             valueColor: AlwaysStoppedAnimation(
               score >= 80
                   ? const Color(0xFFFF1744)
@@ -441,7 +441,7 @@ class RmEmptyState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.water_outlined, size: 64,
-                color: t.accent.withOpacity(0.4)),
+                color: t.accent.withValues(alpha: 0.4)),
             const SizedBox(height: 16),
             Text(
               query.isNotEmpty
@@ -490,9 +490,9 @@ class RmStatusBanner extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.10),
+          color: color.withValues(alpha: 0.10),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [
@@ -544,9 +544,9 @@ class RmSummaryStrip extends StatelessWidget {
   Widget _chip(Color c, IconData icon, String label) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: c.withOpacity(0.12),
+          color: c.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: c.withOpacity(0.4)),
+          border: Border.all(color: c.withValues(alpha: 0.4)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

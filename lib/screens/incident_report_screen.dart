@@ -374,7 +374,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                   Expanded(
                     child: Container(
                       height: 2,
-                      color: done ? t.accent : t.divider.withOpacity(0.4),
+                      color: done ? t.accent : t.divider.withValues(alpha: 0.4),
                     ),
                   ),
               ],
@@ -407,10 +407,10 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   decoration: BoxDecoration(
-                    color: selected ? type.color.withOpacity(0.18) : t.cardBg,
+                    color: selected ? type.color.withValues(alpha: 0.18) : t.cardBg,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: selected ? type.color : t.divider.withOpacity(0.5),
+                      color: selected ? type.color : t.divider.withValues(alpha: 0.5),
                       width: selected ? 2.0 : 1.0,
                     ),
                   ),
@@ -451,10 +451,10 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                       duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       decoration: BoxDecoration(
-                        color: sel ? s.color.withOpacity(0.18) : t.cardBg,
+                        color: sel ? s.color.withValues(alpha: 0.18) : t.cardBg,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: sel ? s.color : t.divider.withOpacity(0.4),
+                          color: sel ? s.color : t.divider.withValues(alpha: 0.4),
                           width: sel ? 2.0 : 1.0,
                         ),
                       ),
@@ -503,7 +503,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                   const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide(color: t.divider.withOpacity(0.5)),
+                borderSide: BorderSide(color: t.divider.withValues(alpha: 0.5)),
               ),
               border:
                   OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
@@ -548,7 +548,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                     side: BorderSide(
                       color: _draft.lat != null
                           ? Colors.green
-                          : t.accent.withOpacity(0.6),
+                          : t.accent.withValues(alpha: 0.6),
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
@@ -586,7 +586,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
             decoration: BoxDecoration(
               color: t.cardBg,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: t.divider.withOpacity(0.5)),
+              border: Border.all(color: t.divider.withValues(alpha: 0.5)),
             ),
             child: TextField(
               controller: _descCtrl,
@@ -620,7 +620,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
               decoration: BoxDecoration(
                 color: t.cardBg,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: t.divider.withOpacity(0.5)),
+                border: Border.all(color: t.divider.withValues(alpha: 0.5)),
               ),
               child: Center(
                 child: Row(
@@ -767,7 +767,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
             style: OutlinedButton.styleFrom(
               minimumSize: const Size(double.infinity, 48),
               foregroundColor: t.accent,
-              side: BorderSide(color: t.accent.withOpacity(0.6)),
+              side: BorderSide(color: t.accent.withValues(alpha: 0.6)),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10)),
             ),
@@ -798,7 +798,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
         color: t.navBg,
         border: Border(
             top: BorderSide(
-                color: t.divider.withOpacity(0.4), width: 0.75)),
+                color: t.divider.withValues(alpha: 0.4), width: 0.75)),
       ),
       child: Row(
         children: [
@@ -862,7 +862,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.15),
+                    color: Colors.green.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.green, width: 2),
                   ),
@@ -959,7 +959,7 @@ class _StepDot extends StatelessWidget {
         color: bg,
         shape: BoxShape.circle,
         border: Border.all(
-            color: active ? Colors.deepOrange : t.divider.withOpacity(0.5),
+            color: active ? Colors.deepOrange : t.divider.withValues(alpha: 0.5),
             width: 1.5),
       ),
       child: Center(
@@ -1030,9 +1030,9 @@ class _Warning extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.red.withOpacity(0.1),
+        color: Colors.red.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.red.withOpacity(0.4)),
+        border: Border.all(color: Colors.red.withValues(alpha: 0.4)),
       ),
       child: Row(
         children: [
