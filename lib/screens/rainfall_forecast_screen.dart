@@ -39,7 +39,6 @@ class RainfallForecastScreen extends ConsumerWidget {
       ..sort((a, b) => b.riskScore.compareTo(a.riskScore));
 
     final critical = preds.where((p) => p.severity == 'CRITICAL').length;
-    final severe   = preds.where((p) => p.severity == 'SEVERE').length;
 
     return Scaffold(
       backgroundColor: c.scaffoldBg,

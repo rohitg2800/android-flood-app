@@ -131,32 +131,6 @@ class _AiPredictionScreenState extends ConsumerState<AiPredictionScreen>
 }
 
 // ── Animated header background ────────────────────────────────────────────────
-class _AnimatedAiHeader extends StatelessWidget {
-  final AnimationController pulse;
-  const _AnimatedAiHeader({required this.pulse});
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: pulse,
-      builder: (_, __) {
-        final p = pulse.value;
-        return Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF07071A),
-                Color(0xFF130A28),
-                Color(0xFF071428),
-              ],
-            ),
-          ),
-          child: Stack(
-            children: [
-              // Pulsing rings
-              for (int i = 0; i < 3; i++)
                 Positioned(
                   right: -20 + i * 8.0,
                   top: -20 + i * 6.0,

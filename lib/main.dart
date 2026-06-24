@@ -335,7 +335,6 @@ class FloodWatchApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final mode          = ref.watch(themeModeProvider);
     final themeNotifier = ref.read(themeModeProvider.notifier);
-    final locale        = ref.watch(localeProvider);
     final a11y          = ref.watch(accessibilityProvider);
     ref.watch(notificationWatcherProvider); // flood local notifs
     final ThemeData lightSlot;

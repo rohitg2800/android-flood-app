@@ -21,7 +21,6 @@ class NewsFeedScreen extends ConsumerWidget {
     final t = RiverColors.of(context);
     final newsAsync  = ref.watch(liveNewsProvider);
     final grouped    = ref.watch(filteredNewsProvider);
-    final filter     = ref.watch(newsFilterProvider);
     final countdown  = ref.watch(newsCountdownProvider).when(
       data: (v) => v, loading: () => 60, error: (_, __) => 60,
     );

@@ -207,7 +207,6 @@ FloodData _riverStationToFloodData(RiverStation s) {
   final riskScore = s.danger > 0 && s.current > 0
       ? (s.current / s.danger * 100).clamp(0.0, 150.0)
       : 0.0;
-  final fillPct = s.danger > 0 && s.current > 0
       ? (s.current / s.danger * 100).clamp(0.0, 150.0)
       : 0.0;
 

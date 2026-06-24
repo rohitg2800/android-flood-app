@@ -233,7 +233,6 @@ class AlertEngine {
 
       final dayOfYear = now.difference(DateTime(now.year)).inDays;
       final id  = '${s.station}_${sev.name}_$dayOfYear';
-      final pct = threshold > 0 ? cl / threshold * 100 : 0.0;
       // Fix #5a: rate of rise — read from StationHistoryStore
       final double? rawDiff = StationHistoryStore.instance
           .get(s.station)?.diff24h;
