@@ -203,6 +203,14 @@ final floodDataSourceProvider      = Provider<String>((ref) => ref.watch(floodSu
 // ─────────────────────────────────────────────────────────────────────────────────
 
 FloodData _riverStationToFloodData(RiverStation s) {
+  // Compute risk score from danger class
+  final riskScore = s.danger > 0 && s.current > 0
+      ? (s.current / s.danger * 100).clamp(0.0, 150.0)
+      : 0.0;
+  final fillPct = s.danger > 0 && s.current > 0
+      ? (s.current / s.danger * 100).clamp(0.0, 150.0)
+      : 0.0;
+
   return FloodData(
     stationId:    s.station,
     stationName:  s.station,
@@ -211,10 +219,14 @@ FloodData _riverStationToFloodData(RiverStation s) {
     district:     '',
     state:        s.state ?? '',
     riverName:    s.river,
-    currentLevel: s.current,
+    currentLevel: s.current > 0 ? s.current : 0.0,
     warningLevel: s.warning,
     dangerLevel:  s.danger,
+    riskScore:    riskScore.round(),
+    latitude:     s.lat,
+    longitude:    s.lon,
     lastUpdated:  DateTime.now(),
+    observedAt:   DateTime.now(),
   );
 }
 

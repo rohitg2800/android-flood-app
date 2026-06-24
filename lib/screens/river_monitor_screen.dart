@@ -1122,11 +1122,11 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.water_outlined, size: 64, color: t.accent.withValues(alpha: 0.4)),
+            Icon(Icons.water_outlined, size: 40, color: t.accent.withValues(alpha: 0.4)),
             const SizedBox(height: 16),
             Text(
               query.isNotEmpty ? 'No results for "$query"' : 'No river data available',
-              style: TextStyle(color: t.textPrimary, fontSize: 16, fontWeight: FontWeight.w700),
+              style: TextStyle(color: t.textPrimary, fontSize: 13, fontWeight: FontWeight.w700),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),

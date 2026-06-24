@@ -257,7 +257,7 @@ class _Divider extends StatelessWidget {
   const _Divider();
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context).extension<RiverColors>() ?? RiverColors.of(context);
+    final t = RiverColors.of(context);
     return Container(width: 1, height: 16, color: t.textSecondary.withValues(alpha: 0.25));
   }
 }
@@ -270,7 +270,7 @@ class _Timeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context).extension<RiverColors>() ?? RiverColors.of(context);
+    final t = RiverColors.of(context);
     final days = grouped.keys.toList(); // already sorted newest-first
 
     // Build a flat list: [dayHeader, item, item, ..., dayHeader, item, ...]
@@ -517,7 +517,7 @@ class _LoadingView extends StatelessWidget {
   const _LoadingView();
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context).extension<RiverColors>() ?? RiverColors.of(context);
+    final t = RiverColors.of(context);
     return Center(
     child: Column(
       mainAxisSize: MainAxisSize.min,
@@ -539,7 +539,7 @@ class _EmptyView extends StatelessWidget {
   const _EmptyView();
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context).extension<RiverColors>() ?? RiverColors.of(context);
+    final t = RiverColors.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -559,7 +559,7 @@ class _ErrorView extends StatelessWidget {
   const _ErrorView({required this.message, required this.onRetry});
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context).extension<RiverColors>() ?? RiverColors.of(context);
+    final t = RiverColors.of(context);
     return Center(
     child: Padding(
       padding: const EdgeInsets.all(24),

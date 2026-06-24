@@ -214,12 +214,19 @@ class AlertEngine {
       final double        threshold;
       final AlertType     aType;
 
+      // Bihar-aware thresholds — use tighter bands for verified stations
+      final bool isBiharStation = wl > 0 && dl > 0 && (dl - wl) < 5.0;
+      final double dangerBand   = isBiharStation ? 0.90 : 0.85;
+      final double warningBand  = isBiharStation ? 0.95 : 0.90;
+
       if (hfl > 0 && cl >= hfl * 0.98) {
         sev = AlertSeverity.emergency; threshold = hfl;  aType = AlertType.levelAboveHfl;
       } else if (dl > 0 && cl >= dl) {
         sev = AlertSeverity.critical;  threshold = dl;   aType = AlertType.levelAboveDanger;
-      } else if (dl > 0 && cl >= dl * 0.85) {
+      } else if (dl > 0 && cl >= dl * dangerBand) {
         sev = AlertSeverity.warning;   threshold = dl;   aType = AlertType.levelAboveWarning;
+      } else if (wl > 0 && cl >= wl * warningBand) {
+        sev = AlertSeverity.info;      threshold = wl;   aType = AlertType.approaching;
       } else {
         sev = AlertSeverity.info;      threshold = wl;   aType = AlertType.levelAboveWarning;
       }
@@ -227,15 +234,16 @@ class AlertEngine {
       final dayOfYear = now.difference(DateTime(now.year)).inDays;
       final id  = '${s.station}_${sev.name}_$dayOfYear';
       final pct = threshold > 0 ? cl / threshold * 100 : 0.0;
-      final msg = '${s.station} · ${s.river} · ${cl.toStringAsFixed(2)} m '
-          '(${pct.toStringAsFixed(0)}% of '
-          '${sev == AlertSeverity.info ? "WL" : "DL"} '
-          '${dl > 0 ? dl.toStringAsFixed(2) : "—"} m)';
-
       // Fix #5a: rate of rise — read from StationHistoryStore
       final double? rawDiff = StationHistoryStore.instance
           .get(s.station)?.diff24h;
       final double? ror = rawDiff != null ? (rawDiff / 24.0) : null;
+
+      final remaining = dl > 0 ? (dl - cl) : 0.0;
+      final trend = ror != null && ror > 0 ? ' ↑ rising' : ror != null && ror < 0 ? ' ↓ falling' : '';
+      final msg = '${s.station} · ${s.river} · ${cl.toStringAsFixed(2)} m'
+          '${remaining > 0 ? " · ${remaining.toStringAsFixed(2)}m to danger" : " · AT DANGER"}'
+          '$trend';
 
       // Fix #5b: 24-hour rainfall — read from the station model field
       // RiverStation.rainfall24hMm is nullable; use it directly.

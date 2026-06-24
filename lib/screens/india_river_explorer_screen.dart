@@ -4,6 +4,7 @@
 // or shows a detail card for non-Bihar rivers.
 
 import 'package:flutter/material.dart';
+import 'package:equinox_flood/core/theme/river_theme.dart' as core_theme;
 import '../theme/river_theme.dart';
 import '../theme/theme_3d.dart';
 import 'bihar_river_map_screen.dart';
@@ -70,19 +71,21 @@ class _IndiaRiverExplorerScreenState
     return Scaffold(
       backgroundColor: t.scaffoldBg,
       appBar: AppBar(
-        backgroundColor: t.navBg,
+        backgroundColor: t.scaffoldBg,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
         foregroundColor: t.textPrimary,
         title: Row(
           children: [
-            ShaderMask(
-              shaderCallback: (r) => const LinearGradient(
-                colors: [Color(0xFF00E5FF), Color(0xFF7B2FF7)],
-              ).createShader(r),
-              child: const Icon(Icons.water_outlined,
-                  color: Colors.white, size: 20),
-            ),
-            const SizedBox(width: 8),
-            const Text('India River Explorer'),
+            Container(
+              width: 32, height: 32,
+              decoration: BoxDecoration(
+                color: const Color(0xFF06B6D4).withOpacity(0.14),
+                borderRadius: BorderRadius.circular(9)),
+              child: const Icon(Icons.travel_explore_rounded, color: Color(0xFF06B6D4), size: 17)),
+            const SizedBox(width: 10),
+            Text('India River Explorer',
+              style: TextStyle(color: t.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
           ],
         ),
       ),
@@ -331,12 +334,15 @@ class _RiverCard extends StatelessWidget {
     final r = river;
     return GestureDetector(
       onTap: onTap,
-      child: Td3Card(
-        showGloss: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-              horizontal: 14, vertical: 10),
-          child: Row(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F141B),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: r.isBiharRiver
+              ? r.color.withOpacity(0.30)
+              : const Color(0xFF232934))),
+        child: Row(
             children: [
               Container(
                 width: 40,
@@ -411,7 +417,6 @@ class _RiverCard extends StatelessWidget {
             ],
           ),
         ),
-      ),
     );
   }
 }
