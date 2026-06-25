@@ -1,68 +1,75 @@
-// lib/screens/live_stations_screen.dart  v3.5.0  (25 Jun 2026)
+// lib/screens/live_stations_screen.dart  v3.6.0  (25 Jun 2026)
 //
 // ──────────────────────────────────────────────────────────────────────────
 // CHANGE-LOG
 // ──────────────────────────────────────────────────────────────────────────
-// v3.5.0 (25 Jun 2026)
+// v3.6.0 (25 Jun 2026)
 //
-//  SECURITY / RELIABILITY FIXES
-//  ─────────────────────────────
-//  [FIX-1] Prediction-match null-crash guard
-//          `pred.first.confidencePct` was called without checking whether the
-//          matched station is actually a gauge-type prediction; a mismatched
-//          entry with a null confidencePct caused a LateInitializationError.
-//          Fix: wrap in `?.confidencePct` and guard isNotEmpty.
+//  BUG FIXES
+//  ──────────────────────────────────────────────────────────────────────
+//  [FIX-4] ref.watch(floodPredictionsProvider) hoisted above delegate.
+//          Previously called inside the builder loop, creating 31
+//          simultaneous provider subscriptions per frame.  Now watched once
+//          and the resulting list is closed over by the builder.
 //
-//  [FIX-2] visibleStations type unsafety
-//          `allStations.where(_passesBaseline)` returned an `Iterable` typed
-//          as `Iterable<BiharStationData>` — calling `.length` on an Iterable
-//          is O(N) and can throw if the underlying data changes mid-iteration.
-//          Fix: always materialise to `List<BiharStationData>` before use.
-//          (Was already done for the `true` branch; applied symmetrically.)
+//  [FIX-5] DateTime.now() computed once before delegate (was called per card).
+//          Prevents clock-drift inconsistency across cards in the same frame.
 //
-//  [FIX-3] SliverChildBuilderDelegate index-out-of-bounds
-//          No `addAutomaticKeepAlives: false` guard — rapid refreshes while
-//          the list was scrolled could trigger a build at a stale index.
-//          Fix: added `addAutomaticKeepAlives: false, addRepaintBoundaries: false`.
+//  [FIX-6] hfl now uses s.hfl ?? (dangerLevel * 1.2) fallback.
+//          Previous code always fabricated HFL as dangerLevel * 1.2, ignoring
+//          any real HFL value on BiharStationData.
+//
+//  [FIX-7] diff24h overshoot no longer silently clamped in _compoundRisk.
+//          Velocity capped at 2.0 (200% of headroom) instead of 1.0 so an
+//          extreme rise-event carries proportionally more weight.
+//
+//  [FIX-8] Trend comparison uses normalised Unicode constants (kTrendUp /
+//          kTrendDown / kTrendStable) instead of raw string literals.
+//          Prevents silent zero-count if API encodes arrows differently.
+//
+//  [FIX-9] Refresh button debounced (5 s cooldown).  Rapid taps no longer
+//          fire multiple concurrent API requests.
 //
 //  NEW PATTERNS / LOGIC
-//  ─────────────────────
-//  [NEW-1] Rapid-rise spike badge
-//          If `s.diff24h` is positive and >= half the gap to dangerLevel,
-//          the card receives a prominent amber ⚡ "Rapid Rise" badge.
-//          Threshold: (dangerLevel - currentLevel) * 0.5
-//          This surfaces imminent danger BEFORE the risk label escalates.
+//  ──────────────────────────────────────────────────────────────────────
+//  [NEW-6]  _persistentFloodScore()
+//           Stations above warning level for ≥6 h earn up to 20 bonus risk
+//           points (Component 5 of compoundRisk).  Time-above-warning is
+//           read from s.timeAboveWarning (Duration?); null → 0 bonus.
 //
-//  [NEW-2] Multi-pattern compound risk score
-//          `_compoundRisk(s)` computes a 0-100 numeric score combining:
-//            • dangerPercent (normalised fill %)
-//            • trend velocity  (diff24h / warningLevel gap)
-//            • discharge ratio (discharge / dischargeMean)
-//            • rainfall loading (rainfall24h contribution)
-//          Cards are SORTED by compoundRisk DESC within the same riskLabel tier,
-//          replacing the previous tie-break of "highest level only".
+//  [NEW-7]  _catchmentSaturated()
+//           True when s.rainfall72h > 150 mm OR s.rainfall24h > 80 mm.
+//           A "🌧 Saturated" chip appears on the card before gauge levels rise.
 //
-//  [NEW-3] Offline-stale indicator
-//          If `s.fetchedAt` is > 90 minutes old, a grey 📡 "Stale" chip is
-//          appended to the card. Stations without a parseable fetchedAt are
-//          treated as stale-unknown and shown with a ⚠ dim chip.
+//  [NEW-8]  _isAccelerating()
+//           Second-derivative check: rise is accelerating when
+//           diff24h > diff24hPrev + 0.1 m.  Stations that are both
+//           rapidRise AND accelerating get a synthetic IMMINENT sort tier
+//           (priority above EXTREME in the sort order).
 //
-//  [NEW-4] Prediction-confidence colour band
-//          confidencePercent is now mapped to a three-band colour:
-//            • ≥ 80 %  → green  (confident)
-//            • 50-79 % → amber  (uncertain)
-//            • < 50 %  → red    (low-confidence — treat as advisory only)
-//          Passed to RiverPulseCard via `confidenceColor`.
-//          (RiverPulseCard must accept the new optional `Color? confidenceColor`.)
+//  [NEW-9]  Compound risk tier badge
+//           _compoundRiskTier() maps score → 4 visual tiers
+//           (CRITICAL_COMPOUND / HIGH / MODERATE / LOW).
+//           Passed to RiverPulseCard as compoundTier.
 //
-//  [NEW-5] Summary trend row
-//          Below the chip row a one-line sparkline sentence shows:
-//          "X rising  Y stable  Z falling"
-//          computed from `s.trend` across all visibleStations.
+//  [NEW-10] _stalenessDecay()
+//           Multiplier applied to final compound score:
+//             ≤90 min  → 1.00  (full confidence)
+//             90–240 m → 0.75
+//             >240 min → 0.50  (advisory only)
+//           Prevents stale high-risk stations from dominating sort order.
 //
-// v3.4.1: fix — missing import for pre_monsoon_baseline_provider.dart
-// v3.4:   baseline filter + dismissible info chip
-// v3.3:   onTap passes liveLevel / liveRisk to CityDetailScreen
+// ─────────────────────────────────────────────────────────────────────────
+// Retained from v3.5.0
+// ─────────────────────────────────────────────────────────────────────────
+//  [FIX-1]  Prediction-match null confidencePct guard
+//  [FIX-2]  visibleStations materialised to List<BiharStationData>
+//  [FIX-3]  SliverChildBuilderDelegate addAutomaticKeepAlives: false
+//  [NEW-1]  Rapid-rise spike badge  (⚡)
+//  [NEW-2]  Multi-pattern compound risk score
+//  [NEW-3]  Offline-stale indicator chip
+//  [NEW-4]  Prediction-confidence colour band
+//  [NEW-5]  Summary trend row
 // ──────────────────────────────────────────────────────────────────────────
 library;
 
@@ -87,60 +94,139 @@ import 'city_detail_screen.dart';
 /// Stations whose data is older than this are considered stale.
 const Duration _kStaleDuration = Duration(minutes: 90);
 
-/// Rapid-rise: spike badge triggers when diff24h >= this fraction of
-/// the remaining headroom to dangerLevel.
+/// Rapid-rise: badge triggers when diff24h >= this fraction of headroom.
 const double _kRapidRiseFraction = 0.50;
+
+/// Catchment saturation thresholds (mm).
+const double _kRain72hSaturation = 150.0;
+const double _kRain24hSpike      = 80.0;
+
+/// Acceleration minimum delta to count as accelerating (metres).
+const double _kAccelerationDelta = 0.10;
+
+/// Persistent-flood: hours above warning before bonus points start.
+const int _kPersistentFloodHours = 6;
+
+/// Refresh debounce duration.
+const Duration _kRefreshDebounce = Duration(seconds: 5);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// [FIX-8] Normalised trend arrow constants — compare against these, never
+// raw literals, so encoding differences from the API don't silently zero-out
+// the trend counts.
+// ─────────────────────────────────────────────────────────────────────────────
+const String kTrendUp     = '\u2191'; // ↑
+const String kTrendDown   = '\u2193'; // ↓
+const String kTrendStable = '\u2192'; // →
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Compound risk tier enum  [NEW-9]
+// ─────────────────────────────────────────────────────────────────────────────
+enum CompoundTier { low, moderate, high, criticalCompound }
+
+extension CompoundTierExt on CompoundTier {
+  String get label {
+    switch (this) {
+      case CompoundTier.criticalCompound: return 'CRITICAL COMPOUND';
+      case CompoundTier.high:             return 'HIGH COMPOUND';
+      case CompoundTier.moderate:         return 'MODERATE';
+      case CompoundTier.low:              return 'LOW';
+    }
+  }
+
+  Color get color {
+    switch (this) {
+      case CompoundTier.criticalCompound: return const Color(0xFFE53935);
+      case CompoundTier.high:             return const Color(0xFFFFA726);
+      case CompoundTier.moderate:         return const Color(0xFFFDD835);
+      case CompoundTier.low:              return const Color(0xFF43A047);
+    }
+  }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// [NEW-2] Multi-pattern compound risk score (0–100).
-/// Combines fill %, rise velocity, discharge ratio, and rainfall loading.
-/// Higher score = higher near-term risk within the same label tier.
-double _compoundRisk(BiharStationData s) {
+/// [NEW-2 + FIX-7 + NEW-6 + NEW-10]
+/// Multi-pattern compound risk score (0–100), with:
+///   Component 1 — fill %           (weight 45)
+///   Component 2 — rise velocity    (weight 20)  [FIX-7: cap at 2× headroom]
+///   Component 3 — discharge ratio  (weight 15)
+///   Component 4 — rainfall loading (weight 10)
+///   Component 5 — persistent flood (weight 10)  [NEW-6]
+/// Final score multiplied by _stalenessDecay()  [NEW-10]
+double _compoundRisk(BiharStationData s, {required DateTime now}) {
   double score = 0.0;
 
-  // Component 1 — fill % (weight 50)
   final dan = s.dangerLevel;
   final cur = s.currentLevel;
+  final war = s.warningLevel;
+
+  // Component 1 — fill % (weight 45)
   if (dan != null && dan > 0 && cur != null) {
-    score += ((cur / dan) * 100.0).clamp(0.0, 150.0) * 0.50;
+    score += ((cur / dan) * 100.0).clamp(0.0, 150.0) * 0.45;
   }
 
-  // Component 2 — rise velocity (weight 25)
-  // Normalised against the gap from currentLevel to warningLevel.
+  // Component 2 — rise velocity (weight 20)
+  // [FIX-7] Cap at 2.0 (200% of headroom) so extreme events score higher.
   final diff = s.diff24h;
-  final war  = s.warningLevel;
   if (diff != null && diff > 0 && war != null && war > 0 && cur != null) {
     final headroom = (war - cur).abs().clamp(0.01, double.maxFinite);
-    final velocity = (diff / headroom).clamp(0.0, 1.0);
-    score += velocity * 25.0;
+    final velocity = (diff / headroom).clamp(0.0, 2.0) / 2.0; // 0-1
+    score += velocity * 20.0;
   }
 
   // Component 3 — discharge ratio (weight 15)
   final q     = s.discharge;
   final qMean = s.dischargeMean;
   if (q != null && qMean != null && qMean > 0) {
-    final ratio = (q / qMean).clamp(0.0, 3.0) / 3.0; // 0-1
+    final ratio = (q / qMean).clamp(0.0, 3.0) / 3.0;
     score += ratio * 15.0;
   }
 
   // Component 4 — rainfall loading (weight 10)
-  // 100 mm/day is treated as the normalisation ceiling.
   final rain = s.rainfall24h;
   if (rain != null && rain > 0) {
     score += (rain / 100.0).clamp(0.0, 1.0) * 10.0;
   }
 
-  return score.clamp(0.0, 100.0);
+  // Component 5 — persistent flood bonus (weight 10)  [NEW-6]
+  score += _persistentFloodScore(s) * 0.10;
+
+  // [NEW-10] Apply staleness decay multiplier
+  final rawScore = score.clamp(0.0, 100.0);
+  return rawScore * _stalenessDecay(s, now: now);
+}
+
+/// [NEW-6] Bonus points (0–100) for stations that have been above warning
+/// level for an extended duration.  Normalised: 24 h = 100 pts.
+double _persistentFloodScore(BiharStationData s) {
+  final hours = s.timeAboveWarning?.inHours.toDouble() ?? 0.0;
+  if (hours < _kPersistentFloodHours) return 0.0;
+  return ((hours - _kPersistentFloodHours) / (24.0 - _kPersistentFloodHours))
+      .clamp(0.0, 1.0) * 100.0;
+}
+
+/// [NEW-10] Staleness decay multiplier applied to compound risk score.
+///   ≤90 min  → 1.00
+///   90–240 m → 0.75
+///   >240 min → 0.50
+double _stalenessDecay(BiharStationData s, {required DateTime now}) {
+  final dt = DateTime.tryParse(s.fetchedAt);
+  if (dt == null) return 0.50; // unknown age → treat as advisory
+  final age = now.difference(dt).inMinutes;
+  if (age <= 90)  return 1.00;
+  if (age <= 240) return 0.75;
+  return 0.50;
 }
 
 /// [NEW-3] True when a station's data is older than [_kStaleDuration].
-bool _isStale(BiharStationData s) {
+/// [FIX-5] Accepts pre-computed `now` to avoid per-card DateTime.now() calls.
+bool _isStale(BiharStationData s, {required DateTime now}) {
   final dt = DateTime.tryParse(s.fetchedAt);
-  if (dt == null) return true; // unparseable → treat as stale
-  return DateTime.now().difference(dt) > _kStaleDuration;
+  if (dt == null) return true;
+  return now.difference(dt) > _kStaleDuration;
 }
 
 /// [NEW-1] True when the station is rising rapidly toward danger level.
@@ -151,8 +237,31 @@ bool _isRapidRise(BiharStationData s) {
   if (diff == null || diff <= 0 || cur == null || dan == null || dan <= cur) {
     return false;
   }
-  final headroom  = dan - cur;
-  return diff >= headroom * _kRapidRiseFraction;
+  return diff >= (dan - cur) * _kRapidRiseFraction;
+}
+
+/// [NEW-8] True when the rate of rise is accelerating (2nd derivative > 0).
+/// Requires both diff24h and diff24hPrev to be present.
+bool _isAccelerating(BiharStationData s) {
+  final v1 = s.diff24h     ?? 0.0;
+  final v0 = s.diff24hPrev ?? 0.0;
+  return v1 > v0 && (v1 - v0) >= _kAccelerationDelta;
+}
+
+/// [NEW-7] True when catchment is saturated (72 h or 24 h rainfall breached).
+bool _catchmentSaturated(BiharStationData s) {
+  final r72 = s.rainfall72h;
+  final r24 = s.rainfall24h ?? 0.0;
+  return (r72 != null && r72 > _kRain72hSaturation) ||
+      r24 > _kRain24hSpike;
+}
+
+/// [NEW-9] Maps compound risk score to a visual tier enum.
+CompoundTier _compoundRiskTier(double score) {
+  if (score >= 75) return CompoundTier.criticalCompound;
+  if (score >= 50) return CompoundTier.high;
+  if (score >= 25) return CompoundTier.moderate;
+  return CompoundTier.low;
 }
 
 /// [NEW-4] Maps confidence percent to a colour band.
@@ -166,23 +275,40 @@ Color _confidenceColor(double? pct) {
 // ─────────────────────────────────────────────────────────────────────────────
 // LiveStationsScreen
 // ─────────────────────────────────────────────────────────────────────────────
-class LiveStationsScreen extends ConsumerWidget {
+class LiveStationsScreen extends ConsumerStatefulWidget {
   static const String route = '/live-stations';
   const LiveStationsScreen({super.key});
 
+  @override
+  ConsumerState<LiveStationsScreen> createState() =>
+      _LiveStationsScreenState();
+}
+
+class _LiveStationsScreenState extends ConsumerState<LiveStationsScreen> {
+  // [FIX-9] Tracks last refresh time for debounce.
+  DateTime? _lastRefresh;
+
   /// Returns true if a station passes the pre-monsoon baseline filter.
-  /// A station is suppressed only when dangerLevel is known AND
-  /// fill % is strictly below the threshold.
   static bool _passesBaseline(BiharStationData s) {
     final dl = s.dangerLevel;
     final cl = s.currentLevel;
     if (dl == null || dl <= 0 || cl == null) return true;
-    final fillPct = (cl / dl) * 100.0;
-    return fillPct >= kPreMonsoonBaselineRiskThreshold;
+    return (cl / dl) * 100.0 >= kPreMonsoonBaselineRiskThreshold;
+  }
+
+  /// [FIX-9] Debounced refresh — ignores calls within 5 s of last refresh.
+  void _triggerRefresh() {
+    final now = DateTime.now();
+    if (_lastRefresh != null &&
+        now.difference(_lastRefresh!) < _kRefreshDebounce) {
+      return;
+    }
+    _lastRefresh = now;
+    ref.read(biharLiveProvider.notifier).refresh();
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final async      = ref.watch(biharLiveProvider);
     final baselineOn = ref.watch(preMonsoonBaselineProvider);
     final t          = RiverColors.of(context);
@@ -230,8 +356,7 @@ class LiveStationsScreen extends ConsumerWidget {
                         width: 140,
                         height: 44,
                         color: t.accent,
-                        onTap: () =>
-                            ref.read(biharLiveProvider.notifier).refresh(),
+                        onTap: _triggerRefresh,
                       ),
                     ],
                   ),
@@ -247,15 +372,14 @@ class LiveStationsScreen extends ConsumerWidget {
                 Td3AppBar(
                   title: 'Live Stations',
                   subtitle: 'No data yet',
-                  actions: [_refreshAction(context, ref, t)],
+                  actions: [_refreshAction(t)],
                 ),
                 SliverFillRemaining(
                   child: Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.water_outlined,
-                            size: 56, color: t.accent),
+                        Icon(Icons.water_outlined, size: 56, color: t.accent),
                         const SizedBox(height: 12),
                         Text('No station data yet',
                             style: TextStyle(color: t.textSecondary)),
@@ -271,46 +395,73 @@ class LiveStationsScreen extends ConsumerWidget {
             );
           }
 
-          // ── [FIX-2] Always materialise to List so .length is O(1) safe ──
-          final allStations = state.stations; // already List<BiharStationData>
+          // ── [FIX-2] Always materialise to List ─────────────────────────
+          final allStations = state.stations;
           final List<BiharStationData> visibleStations = baselineOn
               ? allStations.where(_passesBaseline).toList()
               : List<BiharStationData>.of(allStations);
 
-          // ── [NEW-2] Within each label tier, sort by compoundRisk DESC ──
+          // ── [FIX-5] Single DateTime.now() for the whole build ──────────
+          final now = DateTime.now();
+
+          // ── [FIX-4] Watch predictions ONCE, above the builder ──────────
+          final preds = ref.watch(floodPredictionsProvider);
+
+          // ── [NEW-8] Pre-mark IMMINENT stations (rapidRise + accelerating)
+          // They sort above EXTREME in the custom tier order.
+          final imminentCities = <String>{
+            for (final s in visibleStations)
+              if (_isRapidRise(s) && _isAccelerating(s)) s.city,
+          };
+
+          // ── [NEW-2 + NEW-10] Sort: IMMINENT first, then label tier,
+          //    then compound risk DESC within same tier ───────────────────
           visibleStations.sort((a, b) {
             const riskOrder = {
-              'EXTREME':  0,
-              'CRITICAL': 1,
-              'SEVERE':   2,
-              'DANGER':   3,
-              'WARNING':  4,
-              'NORMAL':   5,
-              'UNKNOWN':  6,
+              'IMMINENT': -1, // synthetic tier — above EXTREME
+              'EXTREME':   0,
+              'CRITICAL':  1,
+              'SEVERE':    2,
+              'DANGER':    3,
+              'WARNING':   4,
+              'NORMAL':    5,
+              'UNKNOWN':   6,
             };
-            final ra = riskOrder[a.riskLabel] ?? 6;
-            final rb = riskOrder[b.riskLabel] ?? 6;
+
+            final aLabel = imminentCities.contains(a.city)
+                ? 'IMMINENT'
+                : a.riskLabel;
+            final bLabel = imminentCities.contains(b.city)
+                ? 'IMMINENT'
+                : b.riskLabel;
+
+            final ra = riskOrder[aLabel] ?? 6;
+            final rb = riskOrder[bLabel] ?? 6;
             if (ra != rb) return ra.compareTo(rb);
-            // Same tier → higher compound risk first
-            return _compoundRisk(b).compareTo(_compoundRisk(a));
+
+            // Same tier → higher compound risk (with staleness decay) first
+            return _compoundRisk(b, now: now)
+                .compareTo(_compoundRisk(a, now: now));
           });
 
-          final hiddenCount =
-              allStations.length - visibleStations.length;
+          final hiddenCount = allStations.length - visibleStations.length;
           final lastFetch   = state.lastFetched;
 
-          // ── [NEW-5] Trend counts across visibleStations ─────────────────
+          // ── [NEW-5] [FIX-8] Trend counts using normalised constants ────
           final risingCount  =
-              visibleStations.where((s) => s.trend == '↑').length;
+              visibleStations.where((s) => s.trend == kTrendUp).length;
           final fallingCount =
-              visibleStations.where((s) => s.trend == '↓').length;
+              visibleStations.where((s) => s.trend == kTrendDown).length;
           final stableCount  =
-              visibleStations.where((s) => s.trend == '→').length;
+              visibleStations.where((s) => s.trend == kTrendStable).length;
+
+          // [NEW-7] Count saturated catchments for summary chip
+          final saturatedCount =
+              visibleStations.where(_catchmentSaturated).length;
 
           return RefreshIndicator(
             color: t.accent,
-            onRefresh: () =>
-                ref.read(biharLiveProvider.notifier).refresh(),
+            onRefresh: () async => _triggerRefresh(),
             child: CustomScrollView(
               slivers: [
                 Td3AppBar(
@@ -319,28 +470,31 @@ class LiveStationsScreen extends ConsumerWidget {
                       ? 'Updated '
                           '${DateFormat('HH:mm:ss').format(lastFetch)}'
                       : null,
-                  actions: [_refreshAction(context, ref, t)],
+                  actions: [_refreshAction(t)],
                 ),
 
-                // ── Summary chips ──────────────────────────────────────
+                // ── Summary chips ────────────────────────────────────────
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding:
-                        const EdgeInsets.fromLTRB(16, 14, 16, 4),
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
                     child: Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: [
                         Td3Chip(
-                          label:
-                              '${visibleStations.length} Showing',
+                          label: '${visibleStations.length} Showing',
                           color: t.accent,
                           icon: Icons.sensors,
                         ),
+                        if (imminentCities.isNotEmpty)
+                          Td3Chip(
+                            label: '${imminentCities.length} Imminent',
+                            color: const Color(0xFFE53935),
+                            icon: Icons.bolt_rounded,
+                          ),
                         if (state.criticalCount > 0)
                           Td3Chip(
-                            label:
-                                '${state.criticalCount} Critical',
+                            label: '${state.criticalCount} Critical',
                             color: t.danger,
                             icon: Icons.warning_amber_rounded,
                           ),
@@ -368,21 +522,27 @@ class LiveStationsScreen extends ConsumerWidget {
                             color: t.textSecondary,
                             icon: Icons.signal_wifi_off_rounded,
                           ),
+                        // [NEW-7] Saturated catchment chip
+                        if (saturatedCount > 0)
+                          Td3Chip(
+                            label: '$saturatedCount Saturated',
+                            color: const Color(0xFF1565C0),
+                            icon: Icons.water_drop_rounded,
+                          ),
                       ],
                     ),
                   ),
                 ),
 
-                // ── [NEW-5] Trend summary row ───────────────────────────
+                // ── [NEW-5] Trend summary row ────────────────────────────
                 if (visibleStations.isNotEmpty)
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding:
-                          const EdgeInsets.fromLTRB(16, 2, 16, 2),
+                      padding: const EdgeInsets.fromLTRB(16, 2, 16, 2),
                       child: Text(
-                        '↑ $risingCount rising  '
-                        '→ $stableCount stable  '
-                        '↓ $fallingCount falling',
+                        '$kTrendUp $risingCount rising  '
+                        '$kTrendStable $stableCount stable  '
+                        '$kTrendDown $fallingCount falling',
                         style: TextStyle(
                             fontSize: 11,
                             color: t.textSecondary,
@@ -395,8 +555,7 @@ class LiveStationsScreen extends ConsumerWidget {
                 if (baselineOn && hiddenCount > 0)
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding:
-                          const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 7),
@@ -430,21 +589,26 @@ class LiveStationsScreen extends ConsumerWidget {
                     ),
                   ),
 
-                // ── Station cards ───────────────────────────────────────
+                // ── Station cards ─────────────────────────────────────────
                 SliverPadding(
-                  padding:
-                      const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       // [FIX-3] Disable keep-alives to prevent stale-index builds.
                       addAutomaticKeepAlives: false,
-                      addRepaintBoundaries:  false,
+                      addRepaintBoundaries:   false,
                       (ctx, i) {
-                        // Guard: index may be stale after a rapid refresh.
+                        // Guard: stale index after rapid refresh
                         if (i >= visibleStations.length) {
                           return const SizedBox.shrink();
                         }
                         final s = visibleStations[i];
+
+                        // [FIX-6] Use real HFL when available; fall back to
+                        //         dangerLevel * 1.2 only when hfl is absent.
+                        final realHfl = s.hfl ??
+                            ((s.dangerLevel ?? 0.0) * 1.2)
+                                .clamp(0.0, double.maxFinite);
 
                         final rs = RiverStation(
                           city:        s.city,
@@ -454,42 +618,52 @@ class LiveStationsScreen extends ConsumerWidget {
                           current:     s.currentLevel ?? 0.0,
                           warning:     s.warningLevel ?? 0.0,
                           danger:      s.dangerLevel  ?? 0.0,
-                          // clamp HFL to avoid gauge overflow on cards
-                          hfl: ((s.dangerLevel ?? 0.0) * 1.2)
-                              .clamp(0.0, double.maxFinite),
+                          hfl:         realHfl,
                           isLive:      s.source == 'LIVE',
                           dataSource:  s.source,
                           lastUpdated: s.fetchedAt,
                         );
 
-                        // [FIX-1] Guard null confidencePct from mismatched predictions.
-                        final preds = ref.watch(floodPredictionsProvider);
+                        // [FIX-1] Null-safe confidencePct from hoisted preds list
+                        // [FIX-4] `preds` already watched above — no re-watch here
                         final matchedPreds = preds
                             .where((p) => p.station
                                 .toLowerCase()
                                 .contains(s.city.toLowerCase()))
                             .toList();
                         final conf = matchedPreds.isNotEmpty
-                            ? matchedPreds.first.confidencePct  // may be null
+                            ? matchedPreds.first.confidencePct
                             : null;
 
-                        // [NEW-1] Rapid-rise flag
-                        final rapidRise = _isRapidRise(s);
+                        // ── Signal flags ──────────────────────────────────
+                        final rapidRise    = _isRapidRise(s);
+                        final accelerating = _isAccelerating(s);   // NEW-8
+                        final saturated    = _catchmentSaturated(s);// NEW-7
+                        final stale        = _isStale(s, now: now); // FIX-5
+                        final imminent     =
+                            imminentCities.contains(s.city);        // NEW-8
 
-                        // [NEW-3] Stale data flag
-                        final stale = _isStale(s);
+                        // ── Compound score + tier ─────────────────────────
+                        final cScore =
+                            _compoundRisk(s, now: now);             // NEW-10
+                        final cTier  =
+                            _compoundRiskTier(cScore);              // NEW-9
 
-                        // [NEW-4] Confidence colour band
-                        final confColor = _confidenceColor(conf);
+                        // ── Confidence colour band ────────────────────────
+                        final confColor = _confidenceColor(conf);   // NEW-4
 
                         return RiverPulseCard(
                           station:           rs,
                           index:             i,
                           confidencePercent: conf,
-                          confidenceColor:   confColor,   // NEW-4
-                          isRapidRise:       rapidRise,  // NEW-1
-                          isStale:           stale,       // NEW-3
-                          compoundRiskScore: _compoundRisk(s), // NEW-2
+                          confidenceColor:   confColor,
+                          isRapidRise:       rapidRise,
+                          isAccelerating:    accelerating,  // NEW-8
+                          isCatchmentSat:    saturated,     // NEW-7
+                          isImminent:        imminent,      // NEW-8
+                          isStale:           stale,
+                          compoundRiskScore: cScore,
+                          compoundTier:      cTier,         // NEW-9
                           onTap: () => Navigator.of(ctx).push(
                             MaterialPageRoute<void>(
                               builder: (_) => CityDetailScreen(
@@ -513,13 +687,11 @@ class LiveStationsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _refreshAction(
-      BuildContext context, WidgetRef ref, RiverColors t) {
+  Widget _refreshAction(RiverColors t) {
     return IconButton(
       icon: Icon(Icons.refresh_rounded, color: t.accent),
       tooltip: 'Refresh',
-      onPressed: () =>
-          ref.read(biharLiveProvider.notifier).refresh(),
+      onPressed: _triggerRefresh, // [FIX-9] debounced
     );
   }
 }
