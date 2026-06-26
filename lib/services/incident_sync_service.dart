@@ -1,3 +1,4 @@
+import 'package:equinox_flood/config/app_config.dart';
 // lib/services/incident_sync_service.dart
 // OpsFlood — Module 6: Media, Image Attachments & Export
 //
@@ -31,7 +32,7 @@ class IncidentSyncService {
 
   static String get _baseUrl =>
       dotenv.maybeGet('OPSFLOOD_API_URL') ??
-      'https://api.opsflood.app';
+      AppConfig.baseUrl;
 
   // ── Public API ──────────────────────────────────────────────────────
 
