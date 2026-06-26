@@ -1,2 +1,0 @@
-// content here
-class MyWidget {}
