@@ -68,6 +68,6 @@ class AppConstants {
   // ── Backward-compat shims ──────────────────────────────────────────────────
   static double get criticalThreshold        => FloodThresholds.critical;
   static List<String> get indianStates       => IndiaGeodata.states;
-  static String get baseUrl                  => AppConfig.baseUrl;
+  @Deprecated("Use AppConfig.baseUrl directly") static String get baseUrl => AppConfig.baseUrl;
   static List<Map<String, dynamic>> get monitoredCities => IndiaGeodata.monitoredCities;
 }
