@@ -24,19 +24,4 @@ class AppRouter {
     );
   }
 
-  static PageRoute<T> _slideUp<T>(Widget child) {
-    return PageRouteBuilder<T>(
-      pageBuilder: (_, __, ___) => child,
-      transitionDuration: const Duration(milliseconds: 280),
-      transitionsBuilder: (_, animation, __, child) {
-        final offset = Tween(begin: const Offset(0, 0.08), end: Offset.zero)
-            .chain(CurveTween(curve: Curves.easeOutCubic))
-            .animate(animation);
-        return FadeTransition(
-          opacity: CurvedAnimation(parent: animation, curve: Curves.easeIn),
-          child: SlideTransition(position: offset, child: child),
-        );
-      },
-    );
-  }
 }
