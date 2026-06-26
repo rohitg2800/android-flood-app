@@ -216,12 +216,9 @@ class _SosScreenState extends ConsumerState<SosScreen>
         ? contactsForDistrict(detectedDistrict)
         : <EmergencyContact>[];
 
-    final districtLabel = detectedDistrict != null
-        ? detectedDistrict
-            .split(' ')
+    final districtLabel = detectedDistrict?.split(' ')
             .map((w) => '${w[0].toUpperCase()}${w.substring(1)}')
-            .join(' ')
-        : null;
+            .join(' ');
 
     if (state.phase == SosPhase.idle && !_pulse.isAnimating) {
       _pulse.repeat(reverse: true);
@@ -725,12 +722,9 @@ class _StatusCard extends ConsumerWidget {
     final t = RiverColors.of(context);
 
     if (state.phase == SosPhase.sent) {
-      final distLabel = state.district != null
-          ? state.district!
-              .split(' ')
+      final distLabel = state.district?.split(' ')
               .map((w) => '${w[0].toUpperCase()}${w.substring(1)}')
-              .join(' ')
-          : null;
+              .join(' ');
       return Container(
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(18),

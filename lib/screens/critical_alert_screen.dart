@@ -395,7 +395,7 @@ class _GlassCard extends StatelessWidget {
 
                   // River · district
                   Text(
-                    '${riverName}  ·  ${district.isNotEmpty ? district : "Bihar"}',
+                    '$riverName  ·  ${district.isNotEmpty ? district : "Bihar"}',
                     style: const TextStyle(
                       color:      Colors.white70,
                       fontSize:   11,

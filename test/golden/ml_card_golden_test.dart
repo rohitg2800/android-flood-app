@@ -4,9 +4,9 @@
 //          the old aliases — use station/predicted24h/confidencePct/fromBackend)
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import '../../lib/models/flood_prediction.dart';
-import '../../lib/models/prediction_point.dart';
-import '../../lib/widgets/ml_card_test_export.dart';
+import 'package:equinox_flood/models/flood_prediction.dart';
+import 'package:equinox_flood/models/prediction_point.dart';
+import 'package:equinox_flood/widgets/ml_card_test_export.dart';
 
 void main() {
   // ─ Helper: build a fully-populated FloodPrediction ────────────────────────

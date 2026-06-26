@@ -317,7 +317,7 @@ class PredictionService {
       final List<double>? history = null; // rainfall7dMm is a Map threshold, not history list
       final fallback = features.bestDailyRainfallMm;
 
-      final double rt1 = (history != null && history.length > 0 && history[0] > 0)
+      final double rt1 = (history != null && history.isNotEmpty && history[0] > 0)
           ? history[0] : (fallback != null && fallback > 0 ? fallback : input.t1d);
       final double rt2 = (history != null && history.length > 1 && history[1] > 0)
           ? history[1] : input.t2d;

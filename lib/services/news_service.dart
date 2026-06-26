@@ -123,7 +123,7 @@ class NewsService {
     ], eagerError: false);
 
     for (int i = 0; i < results.length; i++) {
-      debugPrint('[NewsService] source[' + i.toString() + '] -> ' + results[i].length.toString() + ' items');
+      debugPrint('[NewsService] source[$i] -> ${results[i].length} items');
     }
     final merged = <String, NewsItem>{};
     for (final list in results) {
@@ -232,7 +232,7 @@ class NewsService {
           final links   = row.querySelectorAll('a');
           final href    = links.isNotEmpty ? (links.first.attributes['href'] ?? '') : '';
           final fullUrl = href.startsWith('http') ? href
-              : (href.isNotEmpty ? 'https://aff.india-water.gov.in${href}' : 'https://aff.india-water.gov.in');
+              : (href.isNotEmpty ? 'https://aff.india-water.gov.in$href' : 'https://aff.india-water.gov.in');
           final trunc = text.length > 300 ? '${text.substring(0, 297)}...' : text;
           items.add(NewsItem(
             title:       'CWC 5-Day Flood Forecast — ${text.substring(0, text.length.clamp(0, 60))}',

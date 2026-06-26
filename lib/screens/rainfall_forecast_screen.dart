@@ -224,7 +224,7 @@ class _StationCard extends StatelessWidget {
                 child: Text(pred.severity,
                   style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5))),
               const SizedBox(height: 3),
-              Text('Risk ' + pred.riskScore.toStringAsFixed(0) + '%',
+              Text('Risk ${pred.riskScore.toStringAsFixed(0)}%',
                 style: TextStyle(color: c.textMuted, fontSize: 10)),
             ]),
           ]),
@@ -282,7 +282,7 @@ class _MiniLevel extends StatelessWidget {
         border: Border.all(color: active ? color.withValues(alpha: 0.40) : c.surfaceOutline)),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Text(label, style: TextStyle(color: active ? color : c.textMuted, fontSize: 8, fontWeight: FontWeight.w600)),
-        Text(value.toStringAsFixed(1) + 'm',
+        Text('${value.toStringAsFixed(1)}m',
           style: TextStyle(color: active ? color : c.textSecondary, fontSize: 9, fontWeight: FontWeight.w700)),
       ]),
     );

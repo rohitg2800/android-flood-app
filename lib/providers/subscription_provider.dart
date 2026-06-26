@@ -31,7 +31,7 @@ class SubscriptionNotifier
   }
 
   @visibleForTesting
-  SubscriptionNotifier.forTesting(List<AlertSubscription> seed) : super(seed);
+  SubscriptionNotifier.forTesting(super.seed);
 
   Box<AlertSubscription>? _box;
 

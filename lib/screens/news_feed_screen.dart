@@ -53,7 +53,7 @@ class NewsFeedScreen extends ConsumerWidget {
                 color: t.accent.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Text('${totalItems}', style: TextStyle(color: t.accent, fontSize: 10, fontWeight: FontWeight.w700)),
+              child: Text('$totalItems', style: TextStyle(color: t.accent, fontSize: 10, fontWeight: FontWeight.w700)),
             ),
           ],
         ),

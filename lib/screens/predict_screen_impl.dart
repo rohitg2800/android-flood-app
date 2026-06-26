@@ -155,7 +155,7 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
                               ),
                               child: Row(children: [
                                 const Icon(Icons.offline_bolt_rounded,
-                                    size: 16, color: const Color(0xFF4CB3FF)),
+                                    size: 16, color: Color(0xFF4CB3FF)),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
@@ -323,7 +323,7 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
               width: 150,
               child: Text(label,
                   style: const TextStyle(
-                      color: const Color(0xFF7A8290), fontSize: 13)),
+                      color: Color(0xFF7A8290), fontSize: 13)),
             ),
             Expanded(
               child: Text(value,
@@ -553,7 +553,7 @@ class _CurrentLevelCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(station.river,
                         style: const TextStyle(
-                            color: const Color(0xFF7A8290), fontSize: 13)),
+                            color: Color(0xFF7A8290), fontSize: 13)),
                   ],
                 ),
               ),
@@ -585,7 +585,7 @@ class _CurrentLevelCard extends StatelessWidget {
                 child: Text(
                   '${pct.toStringAsFixed(1)}% of danger',
                   style: const TextStyle(
-                      color: const Color(0xFF7A8290), fontSize: 13),
+                      color: Color(0xFF7A8290), fontSize: 13),
                 ),
               ),
             ],
@@ -914,7 +914,7 @@ class _SparklineCard extends StatelessWidget {
                       getTitlesWidget: (v, _) => Text(
                         v.toStringAsFixed(1),
                         style: const TextStyle(
-                            color: const Color(0xFF7A8290), fontSize: 9),
+                            color: Color(0xFF7A8290), fontSize: 9),
                       ),
                     ),
                   ),
@@ -934,7 +934,7 @@ class _SparklineCard extends StatelessWidget {
                         final h = series[idx].time.hour;
                         return Text('${h}h',
                             style: const TextStyle(
-                                color: const Color(0xFF7A8290), fontSize: 9));
+                                color: Color(0xFF7A8290), fontSize: 9));
                       },
                     ),
                   ),
@@ -1022,7 +1022,7 @@ class _ModelMetaCard extends StatelessWidget {
           Row(
             children: [
               const Icon(Icons.analytics_outlined,
-                  color: const Color(0xFF4CB3FF), size: 16),
+                  color: Color(0xFF4CB3FF), size: 16),
               const SizedBox(width: 8),
               Text('Model Analysis',
                   style: TextStyle(
@@ -1052,7 +1052,7 @@ class _ModelMetaCard extends StatelessWidget {
               width: 100,
               child: Text(label,
                   style: const TextStyle(
-                      color: const Color(0xFF7A8290), fontSize: 12)),
+                      color: Color(0xFF7A8290), fontSize: 12)),
             ),
             Expanded(
               child: Text(value,
@@ -1096,7 +1096,7 @@ class _ActionAdviceCard extends StatelessWidget {
           'Levels rising critically. Move valuables to upper floors. '
           'Prepare go-bag: documents, medicines, 3 days of food and water. '
           'Await evacuation advisory. Avoid river banks.',
-      color: const Color(0xFFFF8C42),
+      color: Color(0xFFFF8C42),
     ),
     'MODERATE': (
       icon: '🟡',
@@ -1234,7 +1234,7 @@ class _ThresholdChip extends StatelessWidget {
             TextSpan(
                 text: '$label  ',
                 style: const TextStyle(
-                    color: const Color(0xFF7A8290), fontSize: 11)),
+                    color: Color(0xFF7A8290), fontSize: 11)),
             TextSpan(
                 text: '${value.toStringAsFixed(2)} m',
                 style: TextStyle(
@@ -1267,7 +1267,7 @@ class _LegendDot extends StatelessWidget {
         const SizedBox(width: 4),
         Text(label,
             style: const TextStyle(
-                color: const Color(0xFF7A8290), fontSize: 10)),
+                color: Color(0xFF7A8290), fontSize: 10)),
       ],
     );
   }
@@ -1375,7 +1375,7 @@ class _AllCitiesForecastState extends ConsumerState<_AllCitiesForecast>
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
             child: Row(children: [
               const Icon(Icons.auto_awesome_rounded,
-                  color: const Color(0xFF4CB3FF), size: 16),
+                  color: Color(0xFF4CB3FF), size: 16),
               const SizedBox(width: 8),
               Text('All Cities — Live Forecast',
                   style: TextStyle(color: t.textPrimary, fontSize: 14,
