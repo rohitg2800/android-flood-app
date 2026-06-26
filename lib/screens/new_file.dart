@@ -1,2 +1,2 @@
-
 // content here
+class MyWidget {}

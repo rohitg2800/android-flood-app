@@ -98,7 +98,6 @@ class DashboardScreen extends ConsumerStatefulWidget {
 class _DashboardScreenState extends ConsumerState<DashboardScreen>
     with AutoRefreshMixin {
 
-  String _query = '';
 
   List<_Tile> get _monitoringTiles => [
     _Tile(label:'River Monitor', icon:Icons.monitor_heart_outlined,       color:_P.riverBlue,     builder:(_)=>const RiverMonitorScreen()),

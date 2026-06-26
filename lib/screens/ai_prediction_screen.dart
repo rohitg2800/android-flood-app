@@ -131,95 +131,130 @@ class _AiPredictionScreenState extends ConsumerState<AiPredictionScreen>
 }
 
 // ── Animated header background ────────────────────────────────────────────────
-                Positioned(
-                  right: -20 + i * 8.0,
-                  top: -20 + i * 6.0,
-                  child: Container(
-                    width: 180 - i * 30 + p * 20,
-                    height: 180 - i * 30 + p * 20,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: const Color(0xFF00E5FF)
-                            .withValues(alpha: (0.12 - i * 0.03) * (1 - p * 0.4)),
-                        width: 1.2,
-                      ),
+class _AnimatedHeaderBg extends StatefulWidget {
+  const _AnimatedHeaderBg();
+  @override
+  State<_AnimatedHeaderBg> createState() => _AnimatedHeaderBgState();
+}
+
+class _AnimatedHeaderBgState extends State<_AnimatedHeaderBg>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (context, _) {
+        final double p = _ctrl.value;
+        return Stack(
+          children: [
+            for (int i = 0; i < 3; i++)
+              Positioned(
+                right: -20 + i * 8.0,
+                top: -20 + i * 6.0,
+                child: Container(
+                  width: 180 - i * 30 + p * 20,
+                  height: 180 - i * 30 + p * 20,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFF00E5FF)
+                          .withValues(alpha: (0.12 - i * 0.03) * (1 - p * 0.4)),
+                      width: 1.2,
                     ),
                   ),
                 ),
-              // Neural grid overlay
-              Opacity(
-                opacity: 0.04 + 0.02 * p,
-                child: GridPaper(
-                  color: const Color(0xFF00E5FF),
-                  divisions: 1,
-                  subdivisions: 1,
-                  interval: 28,
-                  child: const SizedBox.expand(),
+              ),
+            // Neural grid overlay
+            Opacity(
+              opacity: 0.04 + 0.02 * p,
+              child: GridPaper(
+                color: const Color(0xFF00E5FF),
+                divisions: 1,
+                subdivisions: 1,
+                interval: 28,
+                child: const SizedBox.expand(),
+              ),
+            ),
+            // AI icon with glow
+            Positioned(
+              right: 28,
+              top: 24,
+              child: ShaderMask(
+                shaderCallback: (r) => const LinearGradient(
+                  colors: [Color(0xFF00E5FF), Color(0xFF7B2FF7)],
+                ).createShader(r),
+                child: Icon(
+                  Icons.auto_graph_rounded,
+                  color: Colors.white,
+                  size: 52 + p * 4,
                 ),
               ),
-              // AI icon with glow
-              Positioned(
-                right: 28,
-                top: 24,
-                child: ShaderMask(
-                  shaderCallback: (r) => const LinearGradient(
-                    colors: [Color(0xFF00E5FF), Color(0xFF7B2FF7)],
-                  ).createShader(r),
-                  child: Icon(
-                    Icons.auto_graph_rounded,
-                    color: Colors.white,
-                    size: 52 + p * 4,
-                  ),
+            ),
+            // Live badge
+            Positioned(
+              left: 16,
+              bottom: 62,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.4)),
                 ),
-              ),
-              // Live badge
-              Positioned(
-                left: 16,
-                bottom: 62,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                        color: const Color(0xFF00E5FF).withValues(alpha: 0.4)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 6, height: 6,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Color.lerp(
-                            const Color(0xFF00E5FF),
-                            const Color(0xFF4CAF50),
-                            p,
-                          ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Color.lerp(
+                          const Color(0xFF00E5FF),
+                          const Color(0xFF4CAF50),
+                          p,
                         ),
                       ),
-                      const SizedBox(width: 5),
-                      const Text(
-                        'LIVE MODEL',
-                        style: TextStyle(
-                          color: Color(0xFF00E5FF),
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.2,
-                        ),
+                    ),
+                    const SizedBox(width: 5),
+                    const Text(
+                      'LIVE MODEL',
+                      style: TextStyle(
+                        color: Color(0xFF00E5FF),
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.2,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         );
       },
     );
   }
 }
+
 
 // ── Tab 1: Predict ────────────────────────────────────────────────────────────
 class _PredictTab extends StatelessWidget {
