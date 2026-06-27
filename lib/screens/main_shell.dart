@@ -18,8 +18,6 @@ import '../providers/alerts_provider.dart';
 import '../app_router.dart';
 import '../utils/haptic_service.dart';
 
-import '../main.dart' show _legacyNavigatorKey;
-
 import 'critical_alert_screen.dart';
 import 'dashboard_screen.dart';
 import 'package:equinox_flood/features/dashboard/presentation/new_dashboard_screen.dart';
@@ -76,10 +74,6 @@ class MainShell extends ConsumerStatefulWidget {
 class _MainShellState extends ConsumerState<MainShell>
     with TickerProviderStateMixin {
   int _index = 0;
-  final List<GlobalKey<NavigatorState>> _navKeys = List.generate(
-    6,
-    (_) => GlobalKey<NavigatorState>(),
-  );
 
   @override
   void initState() {
@@ -105,12 +99,6 @@ class _MainShellState extends ConsumerState<MainShell>
   ];
 
   Future<bool> _onWillPop() async {
-    final nav = _navKeys[_index].currentState;
-    if (nav != null && nav.canPop()) {
-      nav.pop();
-      return false;
-    }
-    // If not on home tab, go to home tab instead of exiting
     if (_index != 0) {
       setState(() => _index = 0);
       return false;
@@ -152,10 +140,8 @@ class _MainShellState extends ConsumerState<MainShell>
             currentLevel: alert.currentLevel,
             dangerLevel: alert.thresholdLevel,
             district: alert.district,
-            onViewMap: () =>
-                navigatorKey.currentState?.pushNamed(Routes.biharRiverMap),
-            onEvacuate: () =>
-                navigatorKey.currentState?.pushNamed(Routes.evacuation),
+            onViewMap: () => AppRouter.router.go(Routes.biharRiverMap),
+            onEvacuate: () => AppRouter.router.go(Routes.evacuation),
           );
         });
         break;
@@ -177,17 +163,7 @@ class _MainShellState extends ConsumerState<MainShell>
         extendBody: false,
         body: IndexedStack(
           index: _index,
-          children: List.generate(
-              6,
-              (i) => Navigator(
-                    key: _navKeys[i],
-                    onGenerateRoute: (settings) {
-                      if (settings.name == '/' || settings.name == null) {
-                        return MaterialPageRoute(builder: (_) => _screens[i]);
-                      }
-                      return AppRouter.onGenerateRoute(settings);
-                    },
-                  )),
+          children: _screens,
         ),
         bottomNavigationBar: MediaQuery(
           data:
@@ -555,7 +531,7 @@ class _MoreSheetV4 extends ConsumerWidget {
                             theme: t,
                             onTap: () {
                               Navigator.of(context).pop();
-                              navigatorKey.currentState?.pushNamed(item.route);
+                              AppRouter.router.go(item.route);
                             },
                           ),
                         )
