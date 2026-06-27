@@ -103,7 +103,7 @@ class AppTheme {
     switch (value) {
       case 'light':  return ThemeMode.light;
       case 'dark':   return ThemeMode.dark;
-      default:       return ThemeMode.system;
+      default:       return ThemeMode.dark;
     }
   }
 
@@ -112,7 +112,7 @@ class AppTheme {
     switch (mode) {
       case ThemeMode.light:  await prefs.setString(_themeKey, 'light');  break;
       case ThemeMode.dark:   await prefs.setString(_themeKey, 'dark');   break;
-      case ThemeMode.system: await prefs.remove(_themeKey);              break;
+      case ThemeMode.dark: await prefs.setString(_themeKey, "dark"); break;
     }
   }
 }

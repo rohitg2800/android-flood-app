@@ -24,13 +24,13 @@ class ThemeProvider extends ChangeNotifier {
   ThemeProvider._internal();
 
   static const _key = 'equinox_theme_mode';
-  AppThemeMode _appMode = AppThemeMode.system;
+  AppThemeMode _appMode = AppThemeMode.dark;
 
   AppThemeMode get appMode => _appMode;
 
   ThemeMode get mode {
     switch (_appMode) {
-      case AppThemeMode.system:       return ThemeMode.system;
+      case AppThemeMode.dark:       return ThemeMode.dark;
       case AppThemeMode.dark:         return ThemeMode.dark;
       case AppThemeMode.sunset:       return ThemeMode.dark;
       case AppThemeMode.ocean:        return ThemeMode.dark;
@@ -43,7 +43,7 @@ class ThemeProvider extends ChangeNotifier {
     final stored = prefs.getString(_key);
     _appMode = AppThemeMode.values.firstWhere(
       (e) => e.name == stored,
-      orElse: () => AppThemeMode.system,
+      orElse: () => AppThemeMode.dark,
     );
     notifyListeners();
   }
@@ -63,7 +63,7 @@ class _ThemeModeNotifier extends Notifier<AppThemeMode> {
   @override
   AppThemeMode build() {
     _loadSaved();
-    return AppThemeMode.system;
+    return AppThemeMode.dark;
   }
 
   Future<void> _loadSaved() async {
@@ -72,7 +72,7 @@ class _ThemeModeNotifier extends Notifier<AppThemeMode> {
     if (stored == null) return;
     final saved = AppThemeMode.values.firstWhere(
       (e) => e.name == stored,
-      orElse: () => AppThemeMode.system,
+      orElse: () => AppThemeMode.dark,
     );
     if (saved != state) state = saved;
   }
@@ -86,13 +86,13 @@ class _ThemeModeNotifier extends Notifier<AppThemeMode> {
 
   void cycle() {
     switch (state) {
-      case AppThemeMode.system:  setMode(AppThemeMode.dark); break;
-      default:                   setMode(AppThemeMode.system); break;
+      case AppThemeMode.dark:  setMode(AppThemeMode.dark); break;
+      default:                   setMode(AppThemeMode.dark); break;
     }
   }
 
   String get label => switch (state) {
-    AppThemeMode.system       => 'Auto',
+    AppThemeMode.dark       => 'Auto',
     AppThemeMode.dark         => 'Night River',
     AppThemeMode.sunset       => 'Sunset Warm',
     AppThemeMode.ocean        => 'Deep Ocean',
@@ -100,7 +100,7 @@ class _ThemeModeNotifier extends Notifier<AppThemeMode> {
   };
 
   IconData get icon => switch (state) {
-    AppThemeMode.system       => Icons.brightness_auto,
+    AppThemeMode.dark       => Icons.brightness_auto,
     AppThemeMode.dark         => Icons.nights_stay,
     AppThemeMode.sunset       => Icons.wb_twilight,
     AppThemeMode.ocean        => Icons.water,
@@ -111,7 +111,7 @@ class _ThemeModeNotifier extends Notifier<AppThemeMode> {
   // slot — which main.dart fills with the correct per-mode ThemeData.
   // system is the only exception where Flutter decides based on OS setting.
   ThemeMode get flutterMode => switch (state) {
-    AppThemeMode.system       => ThemeMode.system,
+    AppThemeMode.dark       => ThemeMode.dark,
     AppThemeMode.dark         => ThemeMode.dark,
     AppThemeMode.sunset       => ThemeMode.dark,
     AppThemeMode.ocean        => ThemeMode.dark,

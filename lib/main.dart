@@ -7,7 +7,6 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -196,7 +195,8 @@ Future<void> main() async {
         statusBarIconBrightness: Brightness.light,
       ),
     );
-    runApp(
+    _lockSystemUI();
+  runApp(
       // ── Riverpod scope (ref.watch providers) ────────────────────────────
       ProviderScope(
         overrides: [
@@ -326,7 +326,7 @@ class FloodWatchApp extends ConsumerWidget {
       case AppThemeMode.sunset:       return RiverColors.sunsetTheme();
       case AppThemeMode.ocean:        return RiverColors.oceanTheme();
       case AppThemeMode.roboticDark:  return const RoboticTheme(isDark: true).toThemeData();
-      case AppThemeMode.system:       return RiverColors.darkTheme();
+      case AppThemeMode.system: return RiverColors.darkTheme();
     }
   }
 
@@ -341,7 +341,6 @@ class FloodWatchApp extends ConsumerWidget {
     if (a11y.highContrast) {
       lightSlot = RiverColors.highContrastTheme();
       darkSlot  = RiverColors.highContrastTheme();
-    } else if (mode == AppThemeMode.system) {
       lightSlot = RiverColors.lightTheme();
       darkSlot  = RiverColors.darkTheme();
     } else {
@@ -357,7 +356,6 @@ class FloodWatchApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       navigatorKey:               navigatorKey,
       theme:                      lightSlot,
-      darkTheme:                  darkSlot,
       themeMode:                  themeNotifier.flutterMode,
       locale: Locale(a11y.locale),
       localizationsDelegates: const [
@@ -476,3 +474,5 @@ class FloodWatchApp extends ConsumerWidget {
         transitionDuration: const Duration(milliseconds: 220),
       );
 }
+
+
