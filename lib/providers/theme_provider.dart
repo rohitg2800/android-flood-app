@@ -30,7 +30,7 @@ class ThemeProvider extends ChangeNotifier {
 
   ThemeMode get mode {
     switch (_appMode) {
-      case AppThemeMode.dark:       return ThemeMode.dark;
+      case AppThemeMode.system:       return ThemeMode.system;
       case AppThemeMode.dark:         return ThemeMode.dark;
       case AppThemeMode.sunset:       return ThemeMode.dark;
       case AppThemeMode.ocean:        return ThemeMode.dark;
@@ -85,14 +85,13 @@ class _ThemeModeNotifier extends Notifier<AppThemeMode> {
   }
 
   void cycle() {
-    switch (state) {
-      case AppThemeMode.dark:  setMode(AppThemeMode.dark); break;
-      default:                   setMode(AppThemeMode.dark); break;
-    }
+    final modes = AppThemeMode.values;
+    final next = modes[(modes.indexOf(state) + 1) % modes.length];
+    setMode(next);
   }
 
   String get label => switch (state) {
-    AppThemeMode.dark       => 'Auto',
+    AppThemeMode.system       => 'Auto',
     AppThemeMode.dark         => 'Night River',
     AppThemeMode.sunset       => 'Sunset Warm',
     AppThemeMode.ocean        => 'Deep Ocean',
@@ -100,7 +99,7 @@ class _ThemeModeNotifier extends Notifier<AppThemeMode> {
   };
 
   IconData get icon => switch (state) {
-    AppThemeMode.dark       => Icons.brightness_auto,
+    AppThemeMode.system       => Icons.brightness_auto,
     AppThemeMode.dark         => Icons.nights_stay,
     AppThemeMode.sunset       => Icons.wb_twilight,
     AppThemeMode.ocean        => Icons.water,
@@ -111,10 +110,8 @@ class _ThemeModeNotifier extends Notifier<AppThemeMode> {
   // slot — which main.dart fills with the correct per-mode ThemeData.
   // system is the only exception where Flutter decides based on OS setting.
   ThemeMode get flutterMode => switch (state) {
-    AppThemeMode.dark => ThemeMode.dark,
-      AppThemeMode.system => ThemeMode.dark,
-    AppThemeMode.dark => ThemeMode.dark,
-      AppThemeMode.system => ThemeMode.dark,
+    AppThemeMode.system       => ThemeMode.system,
+    AppThemeMode.dark         => ThemeMode.dark,
     AppThemeMode.sunset       => ThemeMode.dark,
     AppThemeMode.ocean        => ThemeMode.dark,
     AppThemeMode.roboticDark  => ThemeMode.dark,

@@ -110,9 +110,9 @@ class AppTheme {
   static Future<void> saveThemeMode(ThemeMode mode) async {
     final prefs = await SharedPreferences.getInstance();
     switch (mode) {
-      case ThemeMode.light:  await prefs.setString(_themeKey, 'light');  break;
-      case ThemeMode.dark:   await prefs.setString(_themeKey, 'dark');   break;
-      case ThemeMode.dark: await prefs.setString(_themeKey, "dark"); break;
+      case ThemeMode.light:   await prefs.setString(_themeKey, 'light');  break;
+      case ThemeMode.dark:    await prefs.setString(_themeKey, 'dark');   break;
+      case ThemeMode.system:  await prefs.setString(_themeKey, 'system'); break;
     }
   }
 }
