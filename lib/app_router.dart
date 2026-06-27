@@ -35,7 +35,7 @@ import 'screens/export_screen.dart';
 import 'screens/incident_report_screen.dart';
 import 'screens/cwc_station_detail_screen.dart';
 import 'screens/river_detail_screen.dart';
-import 'screens/predict_screen.dart';
+import 'screens/predict_screen_impl.dart';
 import 'screens/ai_prediction_screen.dart';
 import 'screens/india_river_explorer_screen.dart';
 import 'screens/live_stations_screen.dart';

@@ -29,7 +29,7 @@ import 'features/dashboard/presentation/new_dashboard_screen.dart';
 import 'features/settings/application/settings_viewmodel.dart';
 import 'screens/alerts_screen.dart';
 import 'screens/river_monitor_screen.dart';
-import 'screens/predict_screen.dart';
+import 'screens/predict_screen_impl.dart';
 import 'screens/city_detail_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/data_sources_screen.dart';
