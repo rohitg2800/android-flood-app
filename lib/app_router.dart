@@ -1,25 +1,20 @@
-// lib/app_router.dart  nav-v3
-// OpsFlood — Central App Router
+// lib/app_router.dart
+// OpsFlood — GoRouter v4 centralized routing + auth guard redirect
 //
 // Single source of truth for ALL named routes.
-// Every screen in lib/screens/ is registered here.
-// Use Routes.xxx constants everywhere — never hard-code strings.
-//
-// v3 changes (18 Jun 2026):
-//   • Added missing case Routes.modelInfo  → ModelInfoScreen
-//   • MainShell now receives optional tabIndex argument (int) via RouteSettings.arguments
-//     so AppRouter.goToTab(n) correctly opens the shell on the right tab
+// Routes.xxx constants must match paths used across the app.
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
-import 'screens/onboarding_screen.dart';
+import 'providers/flood_data_provider.dart';
+
 import 'screens/splash_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'screens/main_shell.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/alerts_screen.dart';
 import 'screens/bihar_river_map_screen.dart';
-
-import 'screens/news_feed_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/notification_settings_screen.dart';
 import 'screens/alert_settings_screen.dart';
@@ -33,11 +28,13 @@ import 'screens/historical_analytics_screen.dart';
 import 'screens/rainfall_forecast_screen.dart';
 import 'screens/export_screen.dart';
 import 'screens/incident_report_screen.dart';
-import 'screens/cwc_station_detail_screen.dart';
 import 'screens/river_detail_screen.dart';
+import 'models/river_station.dart';
+
 import 'screens/predict_screen_impl.dart';
 import 'screens/ai_prediction_screen.dart';
 import 'screens/india_river_explorer_screen.dart';
+
 import 'screens/live_stations_screen.dart';
 import 'screens/weather_screen.dart';
 import 'screens/community_screen.dart';
@@ -46,8 +43,20 @@ import 'screens/admin_dashboard_screen.dart';
 import 'screens/state_matrix_screen.dart';
 import 'screens/model_info_screen.dart';
 import 'screens/city_detail_screen.dart';
+
 import 'models/flood_data.dart';
-import 'services/befiqr_cwc_service.dart';
+
+import 'services/route_analytics_observer.dart';
+
+class _ConsoleAnalyticsLogger implements AnalyticsLogger {
+  const _ConsoleAnalyticsLogger();
+
+  @override
+  Future<void> logScreen(String name) async {
+    // ignore: avoid_print
+    print('[Analytics] screen=$name');
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Route name constants — use these everywhere, never bare strings
@@ -55,60 +64,56 @@ import 'services/befiqr_cwc_service.dart';
 class Routes {
   Routes._();
 
-  // ── Core flow
-  static const splash               = '/';
-  static const onboarding           = '/onboarding';
-  static const shell                = '/shell';
+  // Core flow
+  static const splash = '/';
+  static const onboarding = '/onboarding';
+  static const login = '/login';
+  static const register = '/register';
+  static const shell = '/shell';
+  static const home = '/home';
 
-  // ── Bottom-nav tabs
-  static const dashboard            = '/dashboard';
-  static const monitors             = '/monitors';
-  static const alerts               = '/alerts';
-  static const map                  = '/map';         // alias → BiharRiverMapScreen (bottom-nav tab)
-  static const community            = '/community';
-  static const settings             = '/settings';
+  // Bottom-nav tabs
+  static const dashboard = '/dashboard';
+  static const monitors = '/monitors';
+  static const alerts = '/alerts';
+  static const map = '/map';
+  static const community = '/community';
+  static const settings = '/settings';
 
-  // ── Map variants
-  static const biharRiverMap        = '/bihar-river-map';      // canonical deep-link
-  static const indiaRiverExplorer   = '/india-river-explorer';
+  // Map variants
+  static const biharRiverMap = '/bihar-river-map';
+  static const indiaRiverExplorer = '/india-river-explorer';
 
-  // ── Data / detail screens
-  static const stationDetail        = '/station';       // arg: CwcStation
-  static const riverDetail          = '/river';         // arg: FloodData
-  static const cityDetail           = '/city';          // arg: String cityName
-  static const riverMonitor         = '/river-monitor';
-  static const liveStations         = '/live-stations';
-  static const stateMatrix          = '/state-matrix';
+  // Detail screens (typed args via extra)
+  static const stationDetail = '/station'; // extra: CwcStation
+  static const riverDetail = '/river'; // extra: FloodData
+  static const cityDetail = '/city'; // extra: String
 
-  // ── Prediction / AI
-  static const predict              = '/predict';
-  static const aiPredictor          = '/ai-predictor';
-  static const modelInfo            = '/model-info';
+  // Other screens
+  static const riverMonitor = '/river-monitor';
+  static const liveStations = '/live-stations';
 
-  // ── Weather / rain
-  static const weather              = '/weather';
-  static const rainfallForecast     = '/rainfall-forecast';
+  static const stateMatrix = '/state-matrix';
+  static const modelInfo = '/model-info';
+  static const predict = '/predict';
+  static const aiPredictor = '/ai-predictor';
+  static const weather = '/weather';
+  static const rainfallForecast = '/rainfall-forecast';
+  static const crowdReports = '/crowd-reports';
+  static const incidentReport = '/incident-report';
+  static const sos = '/sos';
+  static const evacuation = '/evacuation';
+  static const news = '/news';
+  static const analytics = '/analytics';
+  static const historicalAnalytics = '/historical-analytics';
+  static const export_ = '/export';
 
-  // ── Community / reporting
-  static const crowdReports         = '/crowd-reports';
-  static const incidentReport       = '/incident-report';
-  static const sos                  = '/sos';
-  static const evacuation           = '/evacuation';
-
-  // ── News / feeds
-  static const news                 = '/news';
-
-  // ── Analytics
-  static const analytics            = '/analytics';
-  static const historicalAnalytics  = '/historical-analytics';
-  static const export_              = '/export';
-
-  // ── Settings sub-screens
-  static const notificationSettings    = '/notification-settings';
-  static const alertSettings           = '/alert-settings';
-  static const accessibilitySettings   = '/settings/accessibility';
-  static const profile                 = '/profile';
-  static const adminDashboard          = '/admin';
+  // Settings sub-screens
+  static const notificationSettings = '/notification-settings';
+  static const alertSettings = '/alert-settings';
+  static const accessibilitySettings = '/settings/accessibility';
+  static const profile = '/profile';
+  static const adminDashboard = '/admin';
 }
 
 // ---------------------------------------------------------------------------
@@ -117,158 +122,239 @@ class Routes {
 class AppRouter {
   AppRouter._();
 
-  static final navigatorKey = GlobalKey<NavigatorState>();
+  // Router wiring
+  static late FloodDataProvider _floodData;
+  static String _initialLocation = Routes.splash;
 
-  static const String initial = Routes.splash;
-
-  static Route<dynamic> onGenerateRoute(RouteSettings settings) {
-    final uri  = Uri.parse(settings.name ?? '/');
-    final path = uri.path;
-
-    Widget page;
-
-    switch (path) {
-      // ── Core flow
-      case Routes.splash:
-        page = const SplashScreen(); break;
-      case Routes.onboarding:
-        page = const OnboardingScreen(); break;
-
-      // MainShell accepts an optional int argument as the initial tab index.
-      // Pass it via AppRouter.goToTab(n) or push(Routes.shell, arguments: n).
-      case Routes.shell:
-        page = MainShell(initialIndex: settings.arguments is int ? settings.arguments as int : 0);
-        break;
-
-      // ── Bottom-nav tabs (also reachable as standalone pushes)
-      case Routes.dashboard:
-        page = const DashboardScreen(); break;
-      case Routes.monitors:
-        page = const RiverMonitorScreen(); break;
-      case Routes.alerts:
-        page = const AlertsScreen(); break;
-      case Routes.map:
-        page = const BiharRiverMapScreen(); break;
-      case Routes.community:
-        page = const CommunityScreen(); break;
-      case Routes.settings:
-        page = const SettingsScreen(); break;
-
-      // ── Map variants
-      case Routes.biharRiverMap:
-        page = const BiharRiverMapScreen(); break;
-      case Routes.indiaRiverExplorer:
-        page = const IndiaRiverExplorerScreen(); break;
-
-      // ── Data / detail
-      case Routes.liveStations:
-        page = const LiveStationsScreen(); break;
-      case Routes.stateMatrix:
-        page = const StateMatrixScreen(); break;
-      case Routes.riverMonitor:
-        page = const RiverMonitorScreen(); break;
-
-      // ── Model Info (was missing — caused fallback to SplashScreen)
-      case Routes.modelInfo:
-        page = const ModelInfoScreen(); break;
-
-      case Routes.stationDetail: {
-        final station = settings.arguments as CwcStation?;
-        page = station != null
-            ? CwcStationDetailScreen(station: station)
-            : const SplashScreen();
-        break;
-      }
-      case Routes.riverDetail: {
-        final data = settings.arguments as FloodData?;
-        page = data != null
-            ? RiverDetailScreen(data: data)
-            : const SplashScreen();
-        break;
-      }
-      case Routes.cityDetail: {
-        final cityName = settings.arguments as String?;
-        page = cityName != null
-            ? CityDetailScreen(cityName: cityName)
-            : const SplashScreen();
-        break;
-      }
-
-      // ── Prediction / AI
-      case Routes.predict:
-        page = const PredictScreen(); break;
-      case Routes.aiPredictor:
-        page = const AiPredictionScreen(); break;
-
-      // ── Weather / rain
-      case Routes.weather:
-        page = const WeatherScreen(); break;
-      case Routes.rainfallForecast:
-        page = const RainfallForecastScreen(); break;
-
-      // ── Community / reporting
-      case Routes.crowdReports:
-        page = const CrowdReportFeedScreen(); break;
-      case Routes.incidentReport:
-        page = const IncidentReportScreen(); break;
-      case Routes.sos:
-        page = const SosScreen(); break;
-      case Routes.evacuation:
-        page = const EvacuationRoutesScreen(); break;
-
-      // ── News
-      case Routes.news:
-        page = const NewsFeedScreen(); break;
-
-      // ── Analytics
-      case Routes.analytics:
-        page = const AnalyticsDashboardScreen(); break;
-      case Routes.historicalAnalytics:
-        page = const HistoricalAnalyticsScreen(); break;
-      case Routes.export_:
-        page = const ExportScreen(); break;
-
-      // ── Settings sub-screens
-      case Routes.notificationSettings:
-        page = const NotificationSettingsScreen(); break;
-      case Routes.alertSettings:
-        page = const AlertSettingsScreen(); break;
-      case Routes.accessibilitySettings:
-        page = const AccessibilitySettingsScreen(); break;
-      case Routes.profile:
-        page = const ProfileScreen(); break;
-      case Routes.adminDashboard:
-        page = const AdminDashboardScreen(); break;
-
-      default:
-        page = const SplashScreen();
-    }
-
-    return MaterialPageRoute(
-      settings: settings,
-      builder: (_) => page,
-    );
+  static void init(FloodDataProvider p,
+      {String initialLocation = Routes.splash}) {
+    _floodData = p;
+    _initialLocation = initialLocation;
   }
 
-  // --------------------------------------------------
-  // Convenience helpers — usable anywhere with AppRouter.push(Routes.xxx)
-  // --------------------------------------------------
-  static Future<T?> push<T>(String route, {Object? arguments}) =>
-      navigatorKey.currentState!.pushNamed<T>(route, arguments: arguments);
+  static GoRouter get router => GoRouter(
+        initialLocation: _initialLocation,
+        observers: [
+          RouteAnalyticsObserver(
+            logger: const _ConsoleAnalyticsLogger(),
+          ),
+        ],
+        refreshListenable: _FloodDataRefreshListenable(),
+        redirect: (context, state) => null,
+        routes: [
+          GoRoute(
+            path: Routes.splash,
+            builder: (context, state) => const SplashScreen(),
+          ),
+          GoRoute(
+            path: Routes.onboarding,
+            builder: (context, state) => const OnboardingScreen(),
+          ),
+          GoRoute(
+            path: '/login',
+            builder: (context, state) => const SizedBox(),
+          ),
+          GoRoute(
+            path: '/register',
+            builder: (context, state) => const SizedBox(),
+          ),
 
-  static Future<T?> pushReplacement<T>(String route, {Object? arguments}) =>
-      navigatorKey.currentState!.pushReplacementNamed<T, dynamic>(
-          route, arguments: arguments);
+          GoRoute(
+            path: Routes.home,
+            builder: (context, state) => const MainShell(),
+          ),
 
-  static void pop<T>([T? result]) =>
-      navigatorKey.currentState?.pop(result);
+          // Typed-argument routes
+          GoRoute(
+            path: Routes.stationDetail,
+            builder: (context, state) {
+              final extra = state.extra;
+              if (extra is RiverStation) {
+                // No RiverStation detail screen in this repo besides RiverDetailScreen(FloodData).
+                // Fallback to alerts to avoid crashing on bad extras.
+                return const AlertsScreen();
+              }
 
-  static void popUntilRoot() =>
-      navigatorKey.currentState?.popUntil((r) => r.isFirst);
+              return const SplashScreen();
+            },
+          ),
+          GoRoute(
+            path: Routes.riverDetail,
+            builder: (context, state) {
+              final extra = state.extra;
+              if (extra is FloodData) {
+                return RiverDetailScreen(data: extra);
+              }
+              return const SplashScreen();
+            },
+          ),
+          GoRoute(
+            path: Routes.cityDetail,
+            builder: (context, state) {
+              final extra = state.extra;
+              if (extra is String) {
+                return CityDetailScreen(cityName: extra);
+              }
+              return const SplashScreen();
+            },
+          ),
 
-  /// Navigate to a bottom-nav tab inside MainShell.
-  /// Pushes a fresh MainShell with [index] as the starting tab.
-  static void goToTab(int index) {
-    push(Routes.shell, arguments: index);
+          // Remaining routes (zero-arg)
+          GoRoute(
+            path: Routes.dashboard,
+            builder: (context, state) => const DashboardScreen(),
+          ),
+          GoRoute(
+            path: Routes.monitors,
+            builder: (context, state) => const RiverMonitorScreen(),
+          ),
+
+          // Keep existing /alerts route (no param) as sibling.
+          GoRoute(
+            path: Routes.alerts,
+            builder: (context, state) => const AlertsScreen(),
+          ),
+          // Required deep-link route
+          GoRoute(
+            path: '/alerts/:alertId',
+            builder: (context, state) {
+              final stationFilter = state.pathParameters['alertId'];
+              return AlertsScreen(
+                stationFilter:
+                    (stationFilter?.isNotEmpty == true) ? stationFilter : null,
+              );
+            },
+          ),
+
+          GoRoute(
+            path: Routes.map,
+            builder: (context, state) => const BiharRiverMapScreen(),
+          ),
+          GoRoute(
+            path: Routes.community,
+            builder: (context, state) => const CommunityScreen(),
+          ),
+          GoRoute(
+            path: Routes.settings,
+            builder: (context, state) => const SettingsScreen(),
+          ),
+
+          GoRoute(
+            path: Routes.biharRiverMap,
+            builder: (context, state) => const BiharRiverMapScreen(),
+          ),
+          GoRoute(
+            path: Routes.indiaRiverExplorer,
+            builder: (context, state) => const IndiaRiverExplorerScreen(),
+          ),
+          GoRoute(
+            path: Routes.riverMonitor,
+            builder: (context, state) => const RiverMonitorScreen(),
+          ),
+          GoRoute(
+            path: Routes.liveStations,
+            builder: (context, state) => const LiveStationsScreen(),
+          ),
+          GoRoute(
+            path: Routes.stateMatrix,
+            builder: (context, state) => const StateMatrixScreen(),
+          ),
+          GoRoute(
+            path: Routes.modelInfo,
+            builder: (context, state) => const ModelInfoScreen(),
+          ),
+
+          GoRoute(
+            path: Routes.predict,
+            builder: (context, state) => const PredictScreen(),
+          ),
+          GoRoute(
+            path: Routes.aiPredictor,
+            builder: (context, state) => const AiPredictionScreen(),
+          ),
+
+          GoRoute(
+            path: Routes.weather,
+            builder: (context, state) => const WeatherScreen(),
+          ),
+          GoRoute(
+            path: Routes.rainfallForecast,
+            builder: (context, state) => const RainfallForecastScreen(),
+          ),
+
+          GoRoute(
+            path: Routes.crowdReports,
+            builder: (context, state) => const CrowdReportFeedScreen(),
+          ),
+          GoRoute(
+            path: Routes.incidentReport,
+            builder: (context, state) => const IncidentReportScreen(),
+          ),
+          GoRoute(
+            path: Routes.sos,
+            builder: (context, state) => const SosScreen(),
+          ),
+          GoRoute(
+            path: Routes.evacuation,
+            builder: (context, state) => const EvacuationRoutesScreen(),
+          ),
+          GoRoute(
+            path: Routes.news,
+            builder: (context, state) => const CrowdReportFeedScreen(),
+          ),
+
+          GoRoute(
+            path: Routes.analytics,
+            builder: (context, state) => const AnalyticsDashboardScreen(),
+          ),
+          GoRoute(
+            path: Routes.historicalAnalytics,
+            builder: (context, state) => const HistoricalAnalyticsScreen(),
+          ),
+          GoRoute(
+            path: Routes.export_,
+            builder: (context, state) => const ExportScreen(),
+          ),
+
+          GoRoute(
+            path: Routes.notificationSettings,
+            builder: (context, state) => const NotificationSettingsScreen(),
+          ),
+          GoRoute(
+            path: Routes.alertSettings,
+            builder: (context, state) => const AlertSettingsScreen(),
+          ),
+          GoRoute(
+            path: Routes.accessibilitySettings,
+            builder: (context, state) => const AccessibilitySettingsScreen(),
+          ),
+          GoRoute(
+            path: Routes.profile,
+            builder: (context, state) => const ProfileScreen(),
+          ),
+          GoRoute(
+            path: Routes.adminDashboard,
+            builder: (context, state) => const AdminDashboardScreen(),
+          ),
+
+          GoRoute(
+            path: '*',
+            redirect: (context, state) => Routes.splash,
+          ),
+        ],
+      );
+
+  static void go(String path, {Object? extra}) => router.go(path, extra: extra);
+  static void push(String path, {Object? extra}) =>
+      router.push(path, extra: extra);
+  static void pop() => router.pop();
+
+  static void goToTab(int index) => router.go(Routes.shell, extra: index);
+}
+
+// Internal bridge to ensure refreshListenable is always non-null.
+class _FloodDataRefreshListenable extends ChangeNotifier {
+  _FloodDataRefreshListenable() {
+    AppRouter._floodData.addListener(notifyListeners);
   }
 }

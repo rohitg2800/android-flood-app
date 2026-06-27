@@ -6,6 +6,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -76,8 +77,6 @@ import 'providers/notification_watcher_provider.dart';
 final FlutterLocalNotificationsPlugin _localNotifications =
     FlutterLocalNotificationsPlugin();
 
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   if (Firebase.apps.isEmpty) {
@@ -96,9 +95,15 @@ String _parseStation(String? raw) {
   final colonIdx = stripped.indexOf(':');
   if (colonIdx > 0) {
     final before = stripped.substring(0, colonIdx).trim().toUpperCase();
-    final after  = stripped.substring(colonIdx + 1).trim();
+    final after = stripped.substring(colonIdx + 1).trim();
     const alertKeywords = {
-      'EMERGENCY', 'CRITICAL', 'WARNING', 'ADVISORY', 'INFO', 'DANGER', 'ALERT',
+      'EMERGENCY',
+      'CRITICAL',
+      'WARNING',
+      'ADVISORY',
+      'INFO',
+      'DANGER',
+      'ALERT',
     };
     if (alertKeywords.contains(before)) return after;
     final afterUpper = after.toUpperCase();
@@ -113,37 +118,13 @@ void _navigateFromNotification({
   String? title,
   String? body,
 }) {
-  final nav = navigatorKey.currentState;
-  if (nav == null) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _navigateFromNotification(payload: payload, title: title, body: body);
-    });
-    return;
-  }
-  debugPrint('[Notif] navigate  payload=$payload  title=$title');
-  String stationName = '';
-  if (payload != null && payload.isNotEmpty) {
-    final parts = payload.split('_');
-    if (parts.length >= 2) {
-      final severityWords = {'danger', 'warning', 'critical', 'emergency', 'info', 'advisory'};
-      final stationParts = <String>[];
-      for (final p in parts) {
-        if (severityWords.contains(p.toLowerCase())) break;
-        if (RegExp(r'^\d{10,}$').hasMatch(p)) break;
-        stationParts.add(p);
-      }
-      stationName = stationParts.join(' ').trim();
-    }
-    if (stationName.isEmpty && !payload.contains('_')) {
-      stationName = payload.trim();
-    }
-  }
-  if (stationName.isEmpty) stationName = _parseStation(title);
+  final stationName =
+      _parseStation(payload?.isNotEmpty == true ? payload : title);
   debugPrint('[Notif] resolved station: "$stationName"');
   if (stationName.isNotEmpty) {
-    nav.pushNamed(Routes.alerts, arguments: stationName);
+    AppRouter.router.go('/alerts/$stationName');
   } else {
-    nav.pushNamed(Routes.alerts);
+    AppRouter.router.go(Routes.alerts);
   }
 }
 
@@ -191,26 +172,45 @@ Future<void> main() async {
     ]);
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
-        statusBarColor:          Colors.transparent,
+        statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.light,
       ),
     );
-    _lockSystemUI();
-  runApp(
+    // ── Notification deep-link initialLocation (terminated state) ──────
+    String initialLocation = Routes.splash;
+    final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+    if (initialMessage != null) {
+      final station = _parseStation(initialMessage.data['alertId'] as String?);
+      initialLocation = station.isNotEmpty ? '/alerts/$station' : Routes.alerts;
+    }
+
+    AppRouter.init(
+      // FloodDataProvider instance will be created below in ProviderScope.
+      // This init call only sets initialLocation for GoRouter.
+      // A real provider instance is set when FloodDataProvider is created.
+      FloodDataProvider(),
+      initialLocation: initialLocation,
+    );
+
+    runApp(
       // ── Riverpod scope (ref.watch providers) ────────────────────────────
       ProviderScope(
         overrides: [
           localeProvider.overrideWith(() => LocaleNotifier(savedLangCode)),
           sharedPreferencesProvider.overrideWithValue(prefs),
-          accessibilityProvider.overrideWith(
-              () => AccessibilityNotifier(prefs: prefs)),
+          accessibilityProvider
+              .overrideWith(() => AccessibilityNotifier(prefs: prefs)),
         ],
         // ── provider package: FloodDataProvider for Consumer<FloodDataProvider> ──
         child: pv.MultiProvider(
           providers: [
             pv.ChangeNotifierProvider<FloodDataProvider>(
               // FloodDataProvider constructor already calls _load() internally
-              create: (_) => FloodDataProvider(),
+              create: (_) {
+                final p = FloodDataProvider();
+                AppRouter.init(p);
+                return p;
+              },
             ),
           ],
           child: const FloodWatchApp(),
@@ -226,7 +226,8 @@ Future<void> main() async {
         requestSoundPermission: true,
       );
       await _localNotifications.initialize(
-        const InitializationSettings(android: androidSettings, iOS: iosSettings),
+        const InitializationSettings(
+            android: androidSettings, iOS: iosSettings),
         onDidReceiveNotificationResponse: _onNotificationTap,
       );
       final initialMessage =
@@ -236,17 +237,16 @@ Future<void> main() async {
             '[FCM] launched from notification: ${initialMessage.notification?.title}');
         _navigateFromNotification(
           payload: initialMessage.data['alertId'] as String?,
-          title:   initialMessage.notification?.title,
-          body:    initialMessage.notification?.body,
+          title: initialMessage.notification?.title,
+          body: initialMessage.notification?.body,
         );
       }
       FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-        debugPrint(
-            '[FCM] onMessageOpenedApp: ${message.notification?.title}');
+        debugPrint('[FCM] onMessageOpenedApp: ${message.notification?.title}');
         _navigateFromNotification(
           payload: message.data['alertId'] as String?,
-          title:   message.notification?.title,
-          body:    message.notification?.body,
+          title: message.notification?.title,
+          body: message.notification?.body,
         );
       });
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
@@ -262,8 +262,8 @@ Future<void> main() async {
               _severityChannelFromData(message.data),
               'Flood Alerts',
               importance: Importance.max,
-              priority:   Priority.high,
-              icon:       '@mipmap/ic_launcher',
+              priority: Priority.high,
+              icon: '@mipmap/ic_launcher',
             ),
             iOS: const DarwinNotificationDetails(
               presentAlert: true,
@@ -280,25 +280,25 @@ Future<void> main() async {
       DataFetchEngine.instance.start();
       ActiveAlertController.instance.start();
 
-      final Stream<FloodAlert> alertStream = DataFetchEngine
-          .instance
-          .snapshotStream
-          .expand((snapshot) {
-            final List<RiverStation> stations = snapshot.stations.map((d) => RiverStation(
-              city:    d.stationName,
-              state:   d.state ?? '',
-              river:   d.riverName ?? '',
-              station: d.stationId,
-              current: d.currentLevel,
-              warning: d.warningLevel,
-              danger:  d.dangerLevel,
-              hfl:     d.hfl ?? 0.0,
-              lat:     d.latitude ?? 0.0,
-              lon:     d.longitude ?? 0.0,
-              isLive:  d.isLive,
-            )).toList();
-            return AlertEngine.instance.evaluateMerged(stations);
-          });
+      final Stream<FloodAlert> alertStream =
+          DataFetchEngine.instance.snapshotStream.expand((snapshot) {
+        final List<RiverStation> stations = snapshot.stations
+            .map((d) => RiverStation(
+                  city: d.stationName,
+                  state: d.state ?? '',
+                  river: d.riverName ?? '',
+                  station: d.stationId,
+                  current: d.currentLevel,
+                  warning: d.warningLevel,
+                  danger: d.dangerLevel,
+                  hfl: d.hfl ?? 0.0,
+                  lat: d.latitude ?? 0.0,
+                  lon: d.longitude ?? 0.0,
+                  isLive: d.isLive,
+                ))
+            .toList();
+        return AlertEngine.instance.evaluateMerged(stations);
+      });
       AlertNotificationBridge.instance.start(alertStream);
     });
   }, (Object error, StackTrace stack) {
@@ -312,8 +312,8 @@ Future<void> main() async {
 String _severityChannelFromData(Map<String, dynamic> data) {
   final severity = (data['severity'] as String? ?? '').toLowerCase();
   if (severity == 'emergency') return 'flood_emergency';
-  if (severity == 'critical')  return 'flood_critical';
-  if (severity == 'warning')   return 'flood_warning';
+  if (severity == 'critical') return 'flood_critical';
+  if (severity == 'warning') return 'flood_warning';
   return 'flood_info';
 }
 
@@ -322,157 +322,164 @@ class FloodWatchApp extends ConsumerWidget {
 
   static ThemeData _themeFor(AppThemeMode mode) {
     switch (mode) {
-      case AppThemeMode.dark:         return RiverColors.darkTheme();
-      case AppThemeMode.sunset:       return RiverColors.sunsetTheme();
-      case AppThemeMode.ocean:        return RiverColors.oceanTheme();
-      case AppThemeMode.roboticDark:  return const RoboticTheme(isDark: true).toThemeData();
-      case AppThemeMode.system: return RiverColors.darkTheme();
+      case AppThemeMode.dark:
+        return RiverColors.darkTheme();
+      case AppThemeMode.sunset:
+        return RiverColors.sunsetTheme();
+      case AppThemeMode.ocean:
+        return RiverColors.oceanTheme();
+      case AppThemeMode.roboticDark:
+        return const RoboticTheme(isDark: true).toThemeData();
+      case AppThemeMode.system:
+        return RiverColors.darkTheme();
     }
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final mode          = ref.watch(themeModeProvider);
+    final mode = ref.watch(themeModeProvider);
     final themeNotifier = ref.read(themeModeProvider.notifier);
-    final a11y          = ref.watch(accessibilityProvider);
+    final a11y = ref.watch(accessibilityProvider);
     ref.watch(notificationWatcherProvider); // flood local notifs
-    final ThemeData lightSlot;
-    final ThemeData darkSlot;
+    ThemeData lightSlot;
+    ThemeData darkSlot;
+
     if (a11y.highContrast) {
       lightSlot = RiverColors.highContrastTheme();
-      darkSlot  = RiverColors.highContrastTheme();
+      darkSlot = RiverColors.highContrastTheme();
       lightSlot = RiverColors.lightTheme();
-      darkSlot  = RiverColors.darkTheme();
+      darkSlot = RiverColors.darkTheme();
     } else {
       final t = _themeFor(mode);
       lightSlot = t;
-      darkSlot  = t;
+      darkSlot = t;
     }
     final _coreTheme = core_app.AppTheme.dark(highContrast: a11y.highContrast);
     return core_theme.RiverTheme(
       appTheme: _coreTheme,
       child: MaterialApp(
-      title:                      'FloodWatch',
-      debugShowCheckedModeBanner: false,
-      navigatorKey:               navigatorKey,
-      theme:                      lightSlot,
-      themeMode:                  themeNotifier.flutterMode,
-      locale: Locale(a11y.locale),
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: const [
-        Locale('en'),
-        Locale('hi'),
-        Locale('bn'),
-        Locale('or'),
-      ],
-      builder: (context, child) => MediaQuery(
-        data: MediaQuery.of(context).copyWith(
-          textScaler: TextScaler.linear(a11y.textScaleFactor),
+        title: 'FloodWatch',
+        debugShowCheckedModeBanner: false,
+        theme: lightSlot,
+        themeMode: themeNotifier.flutterMode,
+        locale: Locale(a11y.locale),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [
+          Locale('en'),
+          Locale('hi'),
+          Locale('bn'),
+          Locale('or'),
+        ],
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            textScaler: TextScaler.linear(a11y.textScaleFactor),
+          ),
+          child: child!,
         ),
-        child: child!,
+        initialRoute: SplashScreen.route,
+        onGenerateRoute: (settings) {
+          switch (settings.name) {
+            case Routes.splash:
+              return _fade(const SplashScreen());
+            case Routes.onboarding:
+              return _fade(const OnboardingScreen());
+            case Routes.shell:
+              return _fade(const MainShell());
+            case Routes.dashboard:
+              return _fade(const NewDashboardScreen());
+            case '/new-dashboard':
+              return _fade(const NewDashboardScreen());
+            case Routes.alerts:
+              {
+                final stationFilter = settings.arguments as String?;
+                return _fade(AlertsScreen(stationFilter: stationFilter));
+              }
+            case Routes.monitors:
+              return _fade(const RiverMonitorScreen());
+            case Routes.predict:
+              return _fade(const PredictScreen());
+            case Routes.settings:
+              return _fade(const SettingsScreen());
+            case '/data-sources':
+              return _fade(const DataSourcesScreen());
+            case Routes.sos:
+              return _fade(const SosScreen());
+            case Routes.evacuation:
+              return _fade(const EvacuationRoutesScreen());
+            case Routes.weather:
+              return _fade(const WeatherScreen());
+            case Routes.riverMonitor:
+              return _fade(const RiverMonitorScreen());
+            case Routes.stateMatrix:
+              return _fade(const StateMatrixScreen());
+            case Routes.modelInfo:
+              return _fade(const ModelInfoScreen());
+            case Routes.biharRiverMap:
+              return _fade(const BiharRiverMapScreen());
+            case Routes.liveStations:
+              return _fade(const LiveStationsScreen());
+            case Routes.news:
+              return _fade(const NewsFeedScreen());
+            case Routes.map:
+              return _fade(const BiharRiverMapScreen());
+            case Routes.community:
+              return _fade(const CommunityScreen());
+            case Routes.export_:
+              return _fade(const ExportScreen());
+            case Routes.notificationSettings:
+              return _fade(const NotificationSettingsScreen());
+            case Routes.incidentReport:
+              return _fade(const IncidentReportScreen());
+            case Routes.crowdReports:
+              return _fade(const CrowdReportFeedScreen());
+            case Routes.aiPredictor:
+              return _fade(const AiPredictionScreen());
+            case Routes.indiaRiverExplorer:
+              return _fade(const IndiaRiverExplorerScreen());
+            case Routes.rainfallForecast:
+              return _fade(const RainfallForecastScreen());
+            case Routes.historicalAnalytics:
+              return _fade(const HistoricalAnalyticsScreen());
+            case Routes.analytics:
+              return _fade(const AnalyticsDashboardScreen());
+            case Routes.profile:
+              return _fade(const ProfileScreen());
+            case Routes.adminDashboard:
+              return _fade(const AdminDashboardScreen());
+            case Routes.cityDetail:
+              {
+                final cityName = settings.arguments as String? ?? '';
+                return _fade(CityDetailScreen(cityName: cityName));
+              }
+            case Routes.riverDetail:
+              {
+                final rdArgs = settings.arguments;
+                if (rdArgs is! FloodData) return _fade(const SplashScreen());
+                return _fade(RiverDetailScreen(data: rdArgs));
+              }
+            case Routes.stationDetail:
+              {
+                final cwcArgs = settings.arguments;
+                if (cwcArgs is! CwcStation) return _fade(const SplashScreen());
+                return _fade(CwcStationDetailScreen(station: cwcArgs));
+              }
+            default:
+              return _fade(const SplashScreen());
+          }
+        },
       ),
-      initialRoute: SplashScreen.route,
-      onGenerateRoute: (settings) {
-        switch (settings.name) {
-          case Routes.splash:
-            return _fade(const SplashScreen());
-          case Routes.onboarding:
-            return _fade(const OnboardingScreen());
-          case Routes.shell:
-            return _fade(const MainShell());
-          case Routes.dashboard:
-            return _fade(const NewDashboardScreen());
-          case '/new-dashboard':
-            return _fade(const NewDashboardScreen());
-          case Routes.alerts: {
-            final stationFilter = settings.arguments as String?;
-            return _fade(AlertsScreen(stationFilter: stationFilter));
-          }
-          case Routes.monitors:
-            return _fade(const RiverMonitorScreen());
-          case Routes.predict:
-            return _fade(const PredictScreen());
-          case Routes.settings:
-            return _fade(const SettingsScreen());
-          case '/data-sources':
-            return _fade(const DataSourcesScreen());
-          case Routes.sos:
-            return _fade(const SosScreen());
-          case Routes.evacuation:
-            return _fade(const EvacuationRoutesScreen());
-          case Routes.weather:
-            return _fade(const WeatherScreen());
-          case Routes.riverMonitor:
-            return _fade(const RiverMonitorScreen());
-          case Routes.stateMatrix:
-            return _fade(const StateMatrixScreen());
-          case Routes.modelInfo:
-            return _fade(const ModelInfoScreen());
-          case Routes.biharRiverMap:
-            return _fade(const BiharRiverMapScreen());
-          case Routes.liveStations:
-            return _fade(const LiveStationsScreen());
-          case Routes.news:
-            return _fade(const NewsFeedScreen());
-          case Routes.map:
-            return _fade(const BiharRiverMapScreen());
-          case Routes.community:
-            return _fade(const CommunityScreen());
-          case Routes.export_:
-            return _fade(const ExportScreen());
-          case Routes.notificationSettings:
-            return _fade(const NotificationSettingsScreen());
-          case Routes.incidentReport:
-            return _fade(const IncidentReportScreen());
-          case Routes.crowdReports:
-            return _fade(const CrowdReportFeedScreen());
-          case Routes.aiPredictor:
-            return _fade(const AiPredictionScreen());
-          case Routes.indiaRiverExplorer:
-            return _fade(const IndiaRiverExplorerScreen());
-          case Routes.rainfallForecast:
-            return _fade(const RainfallForecastScreen());
-          case Routes.historicalAnalytics:
-            return _fade(const HistoricalAnalyticsScreen());
-          case Routes.analytics:
-            return _fade(const AnalyticsDashboardScreen());
-          case Routes.profile:
-            return _fade(const ProfileScreen());
-          case Routes.adminDashboard:
-            return _fade(const AdminDashboardScreen());
-          case Routes.cityDetail: {
-            final cityName = settings.arguments as String? ?? '';
-            return _fade(CityDetailScreen(cityName: cityName));
-          }
-          case Routes.riverDetail: {
-            final rdArgs = settings.arguments;
-            if (rdArgs is! FloodData) return _fade(const SplashScreen());
-            return _fade(RiverDetailScreen(data: rdArgs));
-          }
-          case Routes.stationDetail: {
-            final cwcArgs = settings.arguments;
-            if (cwcArgs is! CwcStation) return _fade(const SplashScreen());
-            return _fade(CwcStationDetailScreen(station: cwcArgs));
-          }
-          default:
-            return _fade(const SplashScreen());
-        }
-      },
-    ),
     );
   }
 
   PageRoute<T> _fade<T>(Widget page) => PageRouteBuilder<T>(
-        pageBuilder:        (_, __, ___) => page,
+        pageBuilder: (_, __, ___) => page,
         transitionsBuilder: (_, anim, __, child) =>
             FadeTransition(opacity: anim, child: child),
         transitionDuration: const Duration(milliseconds: 220),
       );
 }
-
-

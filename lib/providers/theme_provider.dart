@@ -111,8 +111,10 @@ class _ThemeModeNotifier extends Notifier<AppThemeMode> {
   // slot — which main.dart fills with the correct per-mode ThemeData.
   // system is the only exception where Flutter decides based on OS setting.
   ThemeMode get flutterMode => switch (state) {
-    AppThemeMode.dark       => ThemeMode.dark,
-    AppThemeMode.dark         => ThemeMode.dark,
+    AppThemeMode.dark => ThemeMode.dark,
+      AppThemeMode.system => ThemeMode.dark,
+    AppThemeMode.dark => ThemeMode.dark,
+      AppThemeMode.system => ThemeMode.dark,
     AppThemeMode.sunset       => ThemeMode.dark,
     AppThemeMode.ocean        => ThemeMode.dark,
     AppThemeMode.roboticDark  => ThemeMode.dark,

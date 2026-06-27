@@ -17,7 +17,9 @@ import '../theme/theme_registry.dart';
 import '../providers/alerts_provider.dart';
 import '../app_router.dart';
 import '../utils/haptic_service.dart';
-import '../main.dart' show navigatorKey;
+
+import '../main.dart' show _legacyNavigatorKey;
+
 import 'critical_alert_screen.dart';
 import 'dashboard_screen.dart';
 import 'package:equinox_flood/features/dashboard/presentation/new_dashboard_screen.dart';
@@ -51,13 +53,16 @@ class _NavItem {
 }
 
 _navItems(BuildContext context) => [
-  _NavItem(Icons.home_rounded, Icons.home_outlined, context.l10n.tabHome),
-  _NavItem(Icons.water_rounded, Icons.water_outlined, context.l10n.tabMonitors),
-  _NavItem(Icons.notifications_rounded, Icons.notifications_none_rounded, context.l10n.tabAlerts),
-  _NavItem(Icons.map_rounded, Icons.map_outlined, context.l10n.tabMap),
-  _NavItem(Icons.people_rounded, Icons.people_outline, 'Community'),
-  _NavItem(Icons.settings_rounded, Icons.tune_rounded, context.l10n.tabSettings),
-];
+      _NavItem(Icons.home_rounded, Icons.home_outlined, context.l10n.tabHome),
+      _NavItem(
+          Icons.water_rounded, Icons.water_outlined, context.l10n.tabMonitors),
+      _NavItem(Icons.notifications_rounded, Icons.notifications_none_rounded,
+          context.l10n.tabAlerts),
+      _NavItem(Icons.map_rounded, Icons.map_outlined, context.l10n.tabMap),
+      _NavItem(Icons.people_rounded, Icons.people_outline, 'Community'),
+      _NavItem(
+          Icons.settings_rounded, Icons.tune_rounded, context.l10n.tabSettings),
+    ];
 
 class MainShell extends ConsumerStatefulWidget {
   final int initialIndex;
@@ -72,7 +77,8 @@ class _MainShellState extends ConsumerState<MainShell>
     with TickerProviderStateMixin {
   int _index = 0;
   final List<GlobalKey<NavigatorState>> _navKeys = List.generate(
-    6, (_) => GlobalKey<NavigatorState>(),
+    6,
+    (_) => GlobalKey<NavigatorState>(),
   );
 
   @override
@@ -84,6 +90,7 @@ class _MainShellState extends ConsumerState<MainShell>
       duration: const Duration(milliseconds: 1800),
     )..repeat(reverse: true);
   }
+
   final Set<String> _shownAlertIds = {};
 
   late final AnimationController _pulseCtrl;
@@ -124,10 +131,13 @@ class _MainShellState extends ConsumerState<MainShell>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     ref.listen<List<FloodAlert>>(alertsProvider, (prev, alerts) {
-      final criticals = alerts.where(
-        (a) => a.severity == AlertSeverity.critical ||
-            a.severity == AlertSeverity.emergency,
-      ).toList();
+      final criticals = alerts
+          .where(
+            (a) =>
+                a.severity == AlertSeverity.critical ||
+                a.severity == AlertSeverity.emergency,
+          )
+          .toList();
       for (final alert in criticals) {
         final uid = '${alert.title}_${alert.currentLevel.toStringAsFixed(1)}';
         if (_shownAlertIds.contains(uid)) continue;
@@ -142,8 +152,10 @@ class _MainShellState extends ConsumerState<MainShell>
             currentLevel: alert.currentLevel,
             dangerLevel: alert.thresholdLevel,
             district: alert.district,
-            onViewMap: () => navigatorKey.currentState?.pushNamed(Routes.biharRiverMap),
-            onEvacuate: () => navigatorKey.currentState?.pushNamed(Routes.evacuation),
+            onViewMap: () =>
+                navigatorKey.currentState?.pushNamed(Routes.biharRiverMap),
+            onEvacuate: () =>
+                navigatorKey.currentState?.pushNamed(Routes.evacuation),
           );
         });
         break;
@@ -161,32 +173,35 @@ class _MainShellState extends ConsumerState<MainShell>
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
-      backgroundColor: t.scaffoldBg,
-      extendBody: false,
-      body: IndexedStack(
-        index: _index,
-        children: List.generate(6, (i) => Navigator(
-          key: _navKeys[i],
-          onGenerateRoute: (settings) {
-            if (settings.name == '/' || settings.name == null) {
-              return MaterialPageRoute(builder: (_) => _screens[i]);
-            }
-            return AppRouter.onGenerateRoute(settings);
-          },
-        )),
-      ),
-      bottomNavigationBar: MediaQuery(
-        data: MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
-        child: _PremiumNavBar(
-        currentIndex: _index,
-        scheme: scheme,
-        onTap: (i) {
-          HapticFeedback.selectionClick();
-          setState(() => _index = i);
-        },
-        onMoreTap: () => _showMoreSheet(context, t, scheme),
-      ),
-      ),
+        backgroundColor: t.scaffoldBg,
+        extendBody: false,
+        body: IndexedStack(
+          index: _index,
+          children: List.generate(
+              6,
+              (i) => Navigator(
+                    key: _navKeys[i],
+                    onGenerateRoute: (settings) {
+                      if (settings.name == '/' || settings.name == null) {
+                        return MaterialPageRoute(builder: (_) => _screens[i]);
+                      }
+                      return AppRouter.onGenerateRoute(settings);
+                    },
+                  )),
+        ),
+        bottomNavigationBar: MediaQuery(
+          data:
+              MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
+          child: _PremiumNavBar(
+            currentIndex: _index,
+            scheme: scheme,
+            onTap: (i) {
+              HapticFeedback.selectionClick();
+              setState(() => _index = i);
+            },
+            onMoreTap: () => _showMoreSheet(context, t, scheme),
+          ),
+        ),
       ),
     );
   }
@@ -215,7 +230,6 @@ class _MainShellState extends ConsumerState<MainShell>
     );
   }
 }
-
 
 class _PremiumNavBar extends StatelessWidget {
   final int currentIndex;
@@ -324,43 +338,43 @@ class _NavTap extends StatelessWidget {
             : null,
         child: ClipRect(
           child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              transitionBuilder: (child, anim) =>
-                  ScaleTransition(scale: anim, child: child),
-              child: Icon(
-                active ? item.active : item.idle,
-                key: ValueKey('${item.label}_$active'),
-                color: active
-                    ? const Color(0xFF4CB3FF)
-                    : scheme.onSurface.withValues(alpha: 0.48),
-                size: active ? 20 : 19,
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                transitionBuilder: (child, anim) =>
+                    ScaleTransition(scale: anim, child: child),
+                child: Icon(
+                  active ? item.active : item.idle,
+                  key: ValueKey('${item.label}_$active'),
+                  color: active
+                      ? const Color(0xFF4CB3FF)
+                      : scheme.onSurface.withValues(alpha: 0.48),
+                  size: active ? 20 : 19,
+                ),
               ),
-            ),
-            const SizedBox(height: 2),
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 180),
-              child: active
-                  ? Text(
-                      item.label,
-                      key: ValueKey(item.label),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF4CB3FF),
-                        letterSpacing: 0.15,
-                        height: 1,
-                      ),
-                    )
-                  : const SizedBox(height: 9),
-            ),
-          ],
-        ),
+              const SizedBox(height: 2),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 180),
+                child: active
+                    ? Text(
+                        item.label,
+                        key: ValueKey(item.label),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF4CB3FF),
+                          letterSpacing: 0.15,
+                          height: 1,
+                        ),
+                      )
+                    : const SizedBox(height: 9),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -383,7 +397,8 @@ class _MoreButton extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.apps_rounded, color: scheme.onSurface.withValues(alpha: 0.6), size: 22),
+            Icon(Icons.apps_rounded,
+                color: scheme.onSurface.withValues(alpha: 0.6), size: 22),
             const SizedBox(height: 2),
             Text(
               'More',
@@ -410,25 +425,41 @@ class _MoreSheetV4 extends ConsumerWidget {
   const _MoreSheetV4({required this.theme, required this.scheme});
 
   static const _items = [
-    _MI('AI Predictor', Icons.psychology_rounded, Color(0xFF7E57C2), Routes.aiPredictor),
-    _MI('Predict', Icons.trending_up_rounded, Color(0xFF9C27B0), Routes.predict),
-    _MI('Model Info', Icons.info_outline_rounded, Color(0xFF7E57C2), Routes.modelInfo),
-    _MI('Bihar Map', Icons.map_rounded, Color(0xFF00897B), Routes.biharRiverMap),
-    _MI('River Explorer', Icons.travel_explore_rounded, Color(0xFF0097A7), Routes.indiaRiverExplorer),
-    _MI('Live Stations', Icons.broadcast_on_personal_rounded, Color(0xFF26A69A), Routes.liveStations),
-    _MI('River Monitor', Icons.monitor_heart_outlined, Color(0xFF2196F3), Routes.riverMonitor),
-    _MI('State Matrix', Icons.grid_view_rounded, Color(0xFF3949AB), Routes.stateMatrix),
+    _MI('AI Predictor', Icons.psychology_rounded, Color(0xFF7E57C2),
+        Routes.aiPredictor),
+    _MI('Predict', Icons.trending_up_rounded, Color(0xFF9C27B0),
+        Routes.predict),
+    _MI('Model Info', Icons.info_outline_rounded, Color(0xFF7E57C2),
+        Routes.modelInfo),
+    _MI('Bihar Map', Icons.map_rounded, Color(0xFF00897B),
+        Routes.biharRiverMap),
+    _MI('River Explorer', Icons.travel_explore_rounded, Color(0xFF0097A7),
+        Routes.indiaRiverExplorer),
+    _MI('Live Stations', Icons.broadcast_on_personal_rounded, Color(0xFF26A69A),
+        Routes.liveStations),
+    _MI('River Monitor', Icons.monitor_heart_outlined, Color(0xFF2196F3),
+        Routes.riverMonitor),
+    _MI('State Matrix', Icons.grid_view_rounded, Color(0xFF3949AB),
+        Routes.stateMatrix),
     _MI('Weather', Icons.wb_sunny_rounded, Color(0xFFFF8F00), Routes.weather),
-    _MI('Rainfall', Icons.grain_rounded, Color(0xFF1976D2), Routes.rainfallForecast),
-    _MI('Evacuation', Icons.directions_run_rounded, Color(0xFFF57F17), Routes.evacuation),
-    _MI('Emergency SOS', Icons.health_and_safety_rounded, Color(0xFFC62828), Routes.sos),
-    _MI('Report', Icons.report_problem_rounded, Color(0xFFE64A19), Routes.incidentReport),
-    _MI('Crowd Feed', Icons.forum_rounded, Color(0xFF6A1B9A), Routes.crowdReports),
+    _MI('Rainfall', Icons.grain_rounded, Color(0xFF1976D2),
+        Routes.rainfallForecast),
+    _MI('Evacuation', Icons.directions_run_rounded, Color(0xFFF57F17),
+        Routes.evacuation),
+    _MI('Emergency SOS', Icons.health_and_safety_rounded, Color(0xFFC62828),
+        Routes.sos),
+    _MI('Report', Icons.report_problem_rounded, Color(0xFFE64A19),
+        Routes.incidentReport),
+    _MI('Crowd Feed', Icons.forum_rounded, Color(0xFF6A1B9A),
+        Routes.crowdReports),
     _MI('News Feed', Icons.article_rounded, Color(0xFFF9A825), Routes.news),
-    _MI('Analytics', Icons.area_chart_rounded, Color(0xFF0288D1), Routes.analytics),
-    _MI('Historical', Icons.timeline_rounded, Color(0xFF6D4C41), Routes.historicalAnalytics),
+    _MI('Analytics', Icons.area_chart_rounded, Color(0xFF0288D1),
+        Routes.analytics),
+    _MI('Historical', Icons.timeline_rounded, Color(0xFF6D4C41),
+        Routes.historicalAnalytics),
     _MI('Export', Icons.upload_file_rounded, Color(0xFF455A64), Routes.export_),
-    _MI('Admin', Icons.admin_panel_settings_rounded, Color(0xFFB71C1C), Routes.adminDashboard),
+    _MI('Admin', Icons.admin_panel_settings_rounded, Color(0xFFB71C1C),
+        Routes.adminDashboard),
   ];
 
   @override
@@ -489,7 +520,8 @@ class _MoreSheetV4 extends ConsumerWidget {
                         shaderCallback: (r) => LinearGradient(
                           colors: [scheme.primary, scheme.secondary],
                         ).createShader(r),
-                        child: const Icon(Icons.apps_rounded, color: Colors.white, size: 22),
+                        child: const Icon(Icons.apps_rounded,
+                            color: Colors.white, size: 22),
                       ),
                       const SizedBox(width: 10),
                       Flexible(
@@ -565,10 +597,13 @@ class _SkinChips extends ConsumerWidget {
             margin: const EdgeInsets.only(left: 6),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: active ? cs.primary.withValues(alpha: 0.18) : Colors.transparent,
+              color: active
+                  ? cs.primary.withValues(alpha: 0.18)
+                  : Colors.transparent,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: active ? cs.primary : cs.onSurface.withValues(alpha: 0.20),
+                color:
+                    active ? cs.primary : cs.onSurface.withValues(alpha: 0.20),
                 width: 1,
               ),
             ),
@@ -577,7 +612,8 @@ class _SkinChips extends ConsumerWidget {
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: active ? FontWeight.w800 : FontWeight.w500,
-                color: active ? cs.primary : cs.onSurface.withValues(alpha: 0.55),
+                color:
+                    active ? cs.primary : cs.onSurface.withValues(alpha: 0.55),
               ),
             ),
           ),
@@ -591,7 +627,8 @@ class _MoreTileV4 extends StatelessWidget {
   final _MI item;
   final RiverColors theme;
   final VoidCallback onTap;
-  const _MoreTileV4({required this.item, required this.theme, required this.onTap});
+  const _MoreTileV4(
+      {required this.item, required this.theme, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
