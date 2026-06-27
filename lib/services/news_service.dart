@@ -1,4 +1,4 @@
-// lib/services/news_service.dart  v4.2
+// lib/services/news_service.dart  v4.3
 // Multi-source flood news aggregator — BIHAR ONLY — last 7 days.
 //
 // ALL URLS VERIFIED REAL/PUBLIC:
@@ -69,6 +69,7 @@ class NewsFilter {
     Set<NewsSeverity>? severities,
   }) =>
       NewsFilter(
+        language:   language   ?? this.language,
         days:       days       ?? this.days,
         sources:    sources    ?? this.sources,
         severities: severities ?? this.severities,
@@ -334,29 +335,9 @@ class NewsService {
     return [];
   }
 
-  // ── G: NewsOnAir RSS (All India Radio) ───────────────────────────────────
-  Future<List<NewsItem>> _tryNewsOnAir() async {
-    const url = 'https://www.newsonair.gov.in/feed/';
-    try {
-      final resp = await http.get(Uri.parse(url), headers: {
-        'User-Agent': 'OpsFlood/4.0',
-        'Accept': 'text/xml,application/rss+xml,*/*',
-      }).timeout(_timeout);
-      if (resp.statusCode == 200) {
-        final all = _parseRss(resp.body, 'AIR');
-        return all.where((item) {
-          final t = (item.title + item.summary).toLowerCase();
-          return _isBihar(t) && _kFloodWords.any(t.contains);
-        }).toList();
-      }
-    } catch (e) { debugPrint('[NewsService] NewsOnAir: $e'); }
-    return [];
-  }
-
   static List<NewsItem> _parseRss(String xml, String source) {
     final items = <NewsItem>[];
     try {
-      // Use regex to handle <item xmlns:...> attributes and CDATA
       final rx = RegExp(r'<item[^>]*>(.*?)</item>', dotAll: true);
       for (final m in rx.allMatches(xml)) {
         final raw     = m.group(1)!;
@@ -371,93 +352,74 @@ class NewsService {
         final expires = _rxText(raw, 'Expires');
         if (title.isEmpty) continue;
         final cleanDesc = html_parser.parse(desc).body?.text.trim() ?? desc;
-        // Build rich summary with onset/expires for IMD
         String summary = cleanDesc;
         if (onset.isNotEmpty && expires.isNotEmpty) {
           final onsetDt   = DateTime.tryParse(onset);
           final expiresDt = DateTime.tryParse(expires);
           if (onsetDt != null && expiresDt != null) {
             final fmt = DateFormat('HH:mm');
-            summary = '${cleanDesc.trimRight()}\nValid: ${fmt.format(onsetDt.toLocal())} - ${fmt.format(expiresDt.toLocal())}';
+            summary = 'Valid ${fmt.format(onsetDt.toLocal())}–${fmt.format(expiresDt.toLocal())}. $cleanDesc';
           }
         }
-        final truncated = summary.length > 400 ? '${summary.substring(0, 397)}...' : summary;
-        debugPrint('[RSS-$source] $title | ${truncated.substring(0, truncated.length.clamp(0, 80))}');
+        final pub = _parseRfc2822(pubDate) ?? DateTime.now();
         items.add(NewsItem(
           title:       title,
-          summary:     truncated,
+          summary:     summary,
           url:         link,
           source:      source,
-          publishedAt: _parseRssDate(pubDate),
-          severity:    _severity(title + cleanDesc),
+          publishedAt: pub,
+          severity:    _severity('$title $summary'),
         ));
       }
-    } catch (e) { debugPrint('[NewsService] RSS parse ($source): $e'); }
+    } catch (e) { debugPrint('[NewsService] _parseRss($source): $e'); }
     return items;
   }
 
-  static String _rxText(String xml, String tag) {
-    final m = RegExp('<$tag[^>]*>([^<]*)</$tag>', dotAll: true).firstMatch(xml);
-    return m?.group(1)?.trim() ?? '';
+  static String _rxText(String s, String tag) {
+    final m = RegExp('<$tag[^>]*>([\\s\\S]*?)</$tag>').firstMatch(s);
+    if (m == null) return '';
+    return m.group(1)!.replaceAll(RegExp(r'<!\[CDATA\[|\]\]>'), '').trim();
   }
 
-  static String _rxCdata(String xml, String tag) {
-    final cdataRx = RegExp('<' + tag + r'[^>]*><!\[CDATA\[(.*?)\]\]></' + tag + r'>', dotAll: true);
-    final cm = cdataRx.firstMatch(xml);
-    if (cm != null) return cm.group(1)?.trim() ?? '';
-    final plainRx = RegExp('<' + tag + r'[^>]*>(.*?)</' + tag + r'>', dotAll: true);
-    final pm = plainRx.firstMatch(xml);
-    return pm?.group(1)?.trim() ?? '';
+  static String _rxCdata(String s, String tag) {
+    final m = RegExp('<$tag[^>]*>([\\s\\S]*?)</$tag>').firstMatch(s);
+    if (m == null) return '';
+    final raw = m.group(1)!;
+    final cdata = RegExp(r'<!\[CDATA\[([\s\S]*?)\]\]>').firstMatch(raw);
+    return (cdata?.group(1) ?? raw).trim();
   }
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
-  static DateTime _parseRssDate(String s) {
-    if (s.isEmpty) return DateTime.now();
-    final iso = DateTime.tryParse(s);
-    if (iso != null) return iso;
-    try {
-      return DateFormat('EEE, dd MMM yyyy HH:mm:ss Z').parseUTC(s).toLocal();
-    } catch (_) {}
-    try {
-      return DateFormat('EEE, dd MMM yyyy HH:mm:ss zzz').parse(s);
-    } catch (_) {}
-    return DateTime.now();
-  }
-
-  static DateTime? _parseDateFuzzy(String s) {
+  static DateTime? _parseRfc2822(String s) {
     if (s.isEmpty) return null;
-    final iso = DateTime.tryParse(s.trim());
-    if (iso != null) return iso;
-    for (final fmt in [
-      'dd/MM/yyyy', 'dd-MM-yyyy', 'dd MMM yyyy', 'MMM dd, yyyy', 'yyyy-MM-dd',
-    ]) {
-      try { return DateFormat(fmt).parse(s.trim()); } catch (_) {}
-    }
-    final m = RegExp(r'(\d{1,2})[/-](\d{1,2})[/-](\d{4})').firstMatch(s);
-    if (m != null) {
-      return DateTime.tryParse(
-          '${m.group(3)}-${m.group(2)!.padLeft(2, '0')}-${m.group(1)!.padLeft(2, '0')}');
+    try { return DateTime.parse(s); } catch (_) {}
+    try {
+      final clean = s.replaceAll(RegExp(r'\s+\(.*?\)$'), '').trim();
+      final fmt   = DateFormat('EEE, dd MMM yyyy HH:mm:ss Z', 'en_US');
+      return fmt.parseUtc(clean);
+    } catch (_) {}
+    return null;
+  }
+
+  static DateTime? _parseDateFuzzy(String text) {
+    final patterns = [
+      RegExp(r'(\d{1,2})[\-/](\d{1,2})[\-/](\d{4})'),
+      RegExp(r'(\d{4})[\-/](\d{1,2})[\-/](\d{1,2})'),
+      RegExp(r'(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(\d{4})', caseSensitive: false),
+    ];
+    for (final p in patterns) {
+      final m = p.firstMatch(text);
+      if (m != null) {
+        try { return DateTime.parse(m.group(0)!); } catch (_) {}
+      }
     }
     return null;
   }
 
   static NewsSeverity _severity(String text) {
     final t = text.toLowerCase();
-    if (t.contains('red alert')    || t.contains('extreme')      ||
-        t.contains('catastrophic') || t.contains('danger level') ||
-        t.contains('breach')       || t.contains('evacuate')     ||
-        t.contains('red warning')  || t.contains('red'))
-      return NewsSeverity.critical;
-    if (t.contains('orange alert') || t.contains('severe')        ||
-        t.contains('above danger') || t.contains('warning level') ||
-        t.contains('flood warning')|| t.contains('orange warning') ||
-        t.contains('orange'))
-      return NewsSeverity.high;
-    if (t.contains('yellow alert') || t.contains('heavy rain')    ||
-        t.contains('moderate')     || t.contains('watch')         ||
-        t.contains('yellow warning')|| t.contains('yellow'))
-      return NewsSeverity.moderate;
+    if (t.contains('red alert') || t.contains('extreme') || t.contains('catastroph')) return NewsSeverity.critical;
+    if (t.contains('orange alert') || t.contains('severe') || t.contains('heavy rain') || t.contains('flood warning')) return NewsSeverity.high;
+    if (t.contains('yellow alert') || t.contains('moderate') || t.contains('watch')) return NewsSeverity.moderate;
     return NewsSeverity.info;
   }
-
 }
