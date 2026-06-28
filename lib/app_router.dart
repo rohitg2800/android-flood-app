@@ -1,16 +1,15 @@
-// lib/app_router.dart  nav-v3
+// lib/app_router.dart  nav-v4
 // OpsFlood — Central App Router
 //
-// Single source of truth for ALL named routes.
-// Every screen in lib/screens/ is registered here.
-// Use Routes.xxx constants everywhere — never hard-code strings.
-//
-// v3 changes (18 Jun 2026):
-//   • Added missing case Routes.modelInfo  → ModelInfoScreen
-//   • MainShell now receives optional tabIndex argument (int) via RouteSettings.arguments
-//     so AppRouter.goToTab(n) correctly opens the shell on the right tab
+// v4 changes (28 Jun 2026):
+//   • Every non-shell route is wrapped in BackAwareRoute so Android
+//     hardware back + iOS swipe-back both work and emit haptic feedback.
+//   • AppBackButton widget added (lib/widgets/app_back_button.dart) —
+//     any AppBar can use `leading: const AppBackButton()` for a styled
+//     back button that also handles edge cases (no history → Home).
 
 import 'package:flutter/material.dart';
+import 'widgets/app_back_button.dart';
 
 import 'screens/onboarding_screen.dart';
 import 'screens/splash_screen.dart';
@@ -64,18 +63,18 @@ class Routes {
   static const dashboard            = '/dashboard';
   static const monitors             = '/monitors';
   static const alerts               = '/alerts';
-  static const map                  = '/map';         // alias → BiharRiverMapScreen (bottom-nav tab)
+  static const map                  = '/map';
   static const community            = '/community';
   static const settings             = '/settings';
 
   // ── Map variants
-  static const biharRiverMap        = '/bihar-river-map';      // canonical deep-link
+  static const biharRiverMap        = '/bihar-river-map';
   static const indiaRiverExplorer   = '/india-river-explorer';
 
   // ── Data / detail screens
-  static const stationDetail        = '/station';       // arg: CwcStation
-  static const riverDetail          = '/river';         // arg: FloodData
-  static const cityDetail           = '/city';          // arg: String cityName
+  static const stationDetail        = '/station';
+  static const riverDetail          = '/river';
+  static const cityDetail           = '/city';
   static const riverMonitor         = '/river-monitor';
   static const liveStations         = '/live-stations';
   static const stateMatrix          = '/state-matrix';
@@ -121,6 +120,9 @@ class AppRouter {
 
   static const String initial = Routes.splash;
 
+  /// Wraps a non-shell page in BackAwareRoute for universal back support.
+  static Widget _wrap(Widget page) => BackAwareRoute(child: page);
+
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     final uri  = Uri.parse(settings.name ?? '/');
     final path = uri.path;
@@ -128,117 +130,122 @@ class AppRouter {
     Widget page;
 
     switch (path) {
-      // ── Core flow
+      // ── Core flow (no wrap — these manage their own back)
       case Routes.splash:
         page = const SplashScreen(); break;
       case Routes.onboarding:
         page = const OnboardingScreen(); break;
-
-      // MainShell accepts an optional int argument as the initial tab index.
-      // Pass it via AppRouter.goToTab(n) or push(Routes.shell, arguments: n).
       case Routes.shell:
-        page = MainShell(initialIndex: settings.arguments is int ? settings.arguments as int : 0);
+        page = MainShell(
+          initialIndex: settings.arguments is int
+              ? settings.arguments as int
+              : 0,
+        );
         break;
 
       // ── Bottom-nav tabs (also reachable as standalone pushes)
       case Routes.dashboard:
-        page = const DashboardScreen(); break;
+        page = _wrap(const DashboardScreen()); break;
       case Routes.monitors:
-        page = const RiverMonitorScreen(); break;
+        page = _wrap(const RiverMonitorScreen()); break;
       case Routes.alerts:
-        page = const AlertsScreen(); break;
+        page = _wrap(const AlertsScreen()); break;
       case Routes.map:
-        page = const BiharRiverMapScreen(); break;
+        page = _wrap(const BiharRiverMapScreen()); break;
       case Routes.community:
-        page = const CommunityScreen(); break;
+        page = _wrap(const CommunityScreen()); break;
       case Routes.settings:
-        page = const SettingsScreen(); break;
+        page = _wrap(const SettingsScreen()); break;
 
       // ── Map variants
       case Routes.biharRiverMap:
-        page = const BiharRiverMapScreen(); break;
+        page = _wrap(const BiharRiverMapScreen()); break;
       case Routes.indiaRiverExplorer:
-        page = const IndiaRiverExplorerScreen(); break;
+        page = _wrap(const IndiaRiverExplorerScreen()); break;
 
       // ── Data / detail
       case Routes.liveStations:
-        page = const LiveStationsScreen(); break;
+        page = _wrap(const LiveStationsScreen()); break;
       case Routes.stateMatrix:
-        page = const StateMatrixScreen(); break;
+        page = _wrap(const StateMatrixScreen()); break;
       case Routes.riverMonitor:
-        page = const RiverMonitorScreen(); break;
-
-      // ── Model Info (was missing — caused fallback to SplashScreen)
+        page = _wrap(const RiverMonitorScreen()); break;
       case Routes.modelInfo:
-        page = const ModelInfoScreen(); break;
+        page = _wrap(const ModelInfoScreen()); break;
 
       case Routes.stationDetail: {
         final station = settings.arguments as CwcStation?;
-        page = station != null
-            ? CwcStationDetailScreen(station: station)
-            : const SplashScreen();
+        page = _wrap(
+          station != null
+              ? CwcStationDetailScreen(station: station)
+              : const SplashScreen(),
+        );
         break;
       }
       case Routes.riverDetail: {
         final data = settings.arguments as FloodData?;
-        page = data != null
-            ? RiverDetailScreen(data: data)
-            : const SplashScreen();
+        page = _wrap(
+          data != null
+              ? RiverDetailScreen(data: data)
+              : const SplashScreen(),
+        );
         break;
       }
       case Routes.cityDetail: {
         final cityName = settings.arguments as String?;
-        page = cityName != null
-            ? CityDetailScreen(cityName: cityName)
-            : const SplashScreen();
+        page = _wrap(
+          cityName != null
+              ? CityDetailScreen(cityName: cityName)
+              : const SplashScreen(),
+        );
         break;
       }
 
       // ── Prediction / AI
       case Routes.predict:
-        page = const PredictScreen(); break;
+        page = _wrap(const PredictScreen()); break;
       case Routes.aiPredictor:
-        page = const AiPredictionScreen(); break;
+        page = _wrap(const AiPredictionScreen()); break;
 
       // ── Weather / rain
       case Routes.weather:
-        page = const WeatherScreen(); break;
+        page = _wrap(const WeatherScreen()); break;
       case Routes.rainfallForecast:
-        page = const RainfallForecastScreen(); break;
+        page = _wrap(const RainfallForecastScreen()); break;
 
       // ── Community / reporting
       case Routes.crowdReports:
-        page = const CrowdReportFeedScreen(); break;
+        page = _wrap(const CrowdReportFeedScreen()); break;
       case Routes.incidentReport:
-        page = const IncidentReportScreen(); break;
+        page = _wrap(const IncidentReportScreen()); break;
       case Routes.sos:
-        page = const SosScreen(); break;
+        page = _wrap(const SosScreen()); break;
       case Routes.evacuation:
-        page = const EvacuationRoutesScreen(); break;
+        page = _wrap(const EvacuationRoutesScreen()); break;
 
       // ── News
       case Routes.news:
-        page = const NewsFeedScreen(); break;
+        page = _wrap(const NewsFeedScreen()); break;
 
       // ── Analytics
       case Routes.analytics:
-        page = const AnalyticsDashboardScreen(); break;
+        page = _wrap(const AnalyticsDashboardScreen()); break;
       case Routes.historicalAnalytics:
-        page = const HistoricalAnalyticsScreen(); break;
+        page = _wrap(const HistoricalAnalyticsScreen()); break;
       case Routes.export_:
-        page = const ExportScreen(); break;
+        page = _wrap(const ExportScreen()); break;
 
       // ── Settings sub-screens
       case Routes.notificationSettings:
-        page = const NotificationSettingsScreen(); break;
+        page = _wrap(const NotificationSettingsScreen()); break;
       case Routes.alertSettings:
-        page = const AlertSettingsScreen(); break;
+        page = _wrap(const AlertSettingsScreen()); break;
       case Routes.accessibilitySettings:
-        page = const AccessibilitySettingsScreen(); break;
+        page = _wrap(const AccessibilitySettingsScreen()); break;
       case Routes.profile:
-        page = const ProfileScreen(); break;
+        page = _wrap(const ProfileScreen()); break;
       case Routes.adminDashboard:
-        page = const AdminDashboardScreen(); break;
+        page = _wrap(const AdminDashboardScreen()); break;
 
       default:
         page = const SplashScreen();
@@ -251,7 +258,7 @@ class AppRouter {
   }
 
   // --------------------------------------------------
-  // Convenience helpers — usable anywhere with AppRouter.push(Routes.xxx)
+  // Convenience helpers
   // --------------------------------------------------
   static Future<T?> push<T>(String route, {Object? arguments}) =>
       navigatorKey.currentState!.pushNamed<T>(route, arguments: arguments);
@@ -267,7 +274,6 @@ class AppRouter {
       navigatorKey.currentState?.popUntil((r) => r.isFirst);
 
   /// Navigate to a bottom-nav tab inside MainShell.
-  /// Pushes a fresh MainShell with [index] as the starting tab.
   static void goToTab(int index) {
     push(Routes.shell, arguments: index);
   }
