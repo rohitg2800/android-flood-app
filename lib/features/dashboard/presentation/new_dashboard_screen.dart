@@ -1,8 +1,10 @@
 import "package:flutter/material.dart";
 import "../../../l10n/context_l10n.dart";
 import "package:flutter_riverpod/flutter_riverpod.dart";
+import "package:go_router/go_router.dart";
 import "package:equinox_flood/core/theme/river_theme.dart" as core_theme;
 import "package:equinox_flood/core/widgets/ops_banner.dart";
+import "../../../app_router.dart";
 import "../application/dashboard_viewmodel.dart";
 import "widgets/hero_summary.dart";
 import "widgets/quick_stats_row.dart";
@@ -23,7 +25,6 @@ class NewDashboardScreen extends ConsumerWidget {
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
 
-          // ── App bar ──────────────────────────────────────────────────
           SliverAppBar(
             pinned: true,
             floating: true,
@@ -49,20 +50,18 @@ class NewDashboardScreen extends ConsumerWidget {
             actions: [
               IconButton(
                 icon: Icon(Icons.notifications_outlined, color: c.textSecondary),
-                onPressed: () => Navigator.pushNamed(context, "/alerts"),
+                onPressed: () => context.go(Routes.alerts),
               ),
               IconButton(
                 icon: Icon(Icons.tune_rounded, color: c.textSecondary),
-                onPressed: () => Navigator.pushNamed(context, "/settings"),
+                onPressed: () => context.go(Routes.settings),
               ),
               const SizedBox(width: 4),
             ],
           ),
 
-          // ── Hero summary ─────────────────────────────────────────────
           SliverToBoxAdapter(child: HeroSummary(stats: stats)),
 
-          // ── Critical banner (only when critical > 0) ─────────────────
           if (stats.critical > 0)
             SliverToBoxAdapter(
               child: Padding(
@@ -71,23 +70,21 @@ class NewDashboardScreen extends ConsumerWidget {
                   title: "${stats.critical} critical station active",
                   subtitle: "Tap to view alerts",
                   variant: OpsBannerVariant.danger,
-                  onTap: () => Navigator.pushNamed(context, "/alerts"),
+                  onTap: () => context.go(Routes.alerts),
                 ),
               ),
             ),
 
-          // ── Quick stats ──────────────────────────────────────────────
           SliverToBoxAdapter(
             child: QuickStatsRow(
               stats: stats,
-              onCriticalTap: () => Navigator.pushNamed(context, "/alerts"),
-              onElevatedTap: () => Navigator.pushNamed(context, "/alerts"),
+              onCriticalTap: () => context.go(Routes.alerts),
+              onElevatedTap: () => context.go(Routes.alerts),
             ),
           ),
 
           const SliverToBoxAdapter(child: SizedBox(height: 8)),
 
-          // ── Monitoring & Maps ────────────────────────────────────────
           SectionSliver(
             label: context.l10n.tabMonitors,
             icon: Icons.pin_drop_outlined,
@@ -95,14 +92,12 @@ class NewDashboardScreen extends ConsumerWidget {
             columns: 2,
           ),
 
-          // ── Alerts & Safety ──────────────────────────────────────────
           SectionSliver(
             label: context.l10n.alerts,
             icon: Icons.crisis_alert_rounded,
             tiles: alertsTiles(context),
           ),
 
-          // ── Forecast & AI ────────────────────────────────────────────
           SectionSliver(
             label: context.l10n.forecast,
             icon: Icons.psychology_rounded,

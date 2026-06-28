@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:equinox_flood/core/theme/river_theme.dart' as core_theme;
 import 'package:equinox_flood/core/widgets/ops_badge.dart';
 import 'package:equinox_flood/features/alerts_safety/presentation/widgets/alert_banner.dart';
 import 'package:equinox_flood/features/alerts_safety/presentation/widgets/alert_tile.dart';
+import '../app_router.dart';
 import '../mixins/auto_refresh_mixin.dart';
 import '../models/river_station.dart';
 import '../providers/live_engine_bridge_provider.dart';
@@ -29,12 +31,10 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen>
     final stations = ref.watch(liveEngineStationsProvider);
     final bridge   = ref.watch(alertsParentBridgeProvider);
 
-    // Elevated stations only
     final elevated = stations
         .where((s) => s.danger > 0 && s.current > 0 && s.current >= s.warning)
         .toList();
 
-    // Badge = unique elevated stations
     final seen0 = <String>{};
     final badgeCount = elevated
         .where((s) => seen0.add(s.city.toLowerCase().trim()))
@@ -78,7 +78,6 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen>
     AlertsParentBridgeState bridge,
     dynamic c,
   ) {
-    // Apply station filter
     var list = elevated;
     final filter = widget.stationFilter ?? bridge.pendingStationFilter;
     if (filter != null && filter.isNotEmpty) {
@@ -92,11 +91,9 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen>
       list = list.where((s) => norm(s.city) == fNorm).toList();
     }
 
-    // Deduplicate by city
     final seen = <String>{};
     list = list.where((s) => seen.add(s.city.toLowerCase().trim())).toList();
 
-    // Sort: critical first
     list.sort((a, b) {
       int rank(RiverStation s) {
         if (s.current >= s.danger)        return 0;
@@ -148,7 +145,6 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen>
   }
 }
 
-// ── Group header ───────────────────────────────────────────────────────────
 class _GroupHeader extends StatelessWidget {
   final String label;
   final Color  color;
@@ -174,7 +170,6 @@ class _GroupHeader extends StatelessWidget {
   }
 }
 
-// ── Alert tile ─────────────────────────────────────────────────────────────
 class _AlertTile extends StatelessWidget {
   final RiverStation station;
   const _AlertTile({required this.station});
@@ -215,7 +210,7 @@ class _AlertTile extends StatelessWidget {
     final danger = station.danger > 0 ? station.danger.toStringAsFixed(2) : '--';
 
     return GestureDetector(
-      onTap: () => Navigator.pushNamed(context, '/city', arguments: station.city),
+      onTap: () => context.go('${Routes.cityDetail}/${Uri.encodeComponent(station.city)}'),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(

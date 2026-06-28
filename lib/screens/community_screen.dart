@@ -3,10 +3,12 @@
 
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:equinox_flood/core/theme/river_theme.dart' as core_theme;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/river_theme.dart';
 import '../theme/theme_3d.dart';
+import '../app_router.dart';
 
 class CommunityScreen extends StatefulWidget {
   static const String route = '/community';
@@ -100,11 +102,11 @@ class _CommunityScreenState extends State<CommunityScreen>
             color: ct.scaffoldBg,
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: Row(children: [
-              _QuickTile(icon: Icons.report_problem_rounded, label: 'Report Incident', color: const Color(0xFFFF8C42), onTap: () => Navigator.pushNamed(context, '/incident-report')),
+              _QuickTile(icon: Icons.report_problem_rounded, label: 'Report Incident', color: const Color(0xFFFF8C42), onTap: () => context.go(Routes.incidentReport)),
               const SizedBox(width: 10),
-              _QuickTile(icon: Icons.group_rounded, label: 'Crowd Reports', color: const Color(0xFF4CB3FF), onTap: () => Navigator.pushNamed(context, '/crowd-reports')),
+              _QuickTile(icon: Icons.group_rounded, label: 'Crowd Reports', color: const Color(0xFF4CB3FF), onTap: () => context.go(Routes.crowdReports)),
               const SizedBox(width: 10),
-              _QuickTile(icon: Icons.newspaper_rounded, label: 'News Feed', color: const Color(0xFF3ACC8A), onTap: () => Navigator.pushNamed(context, '/news')),
+              _QuickTile(icon: Icons.newspaper_rounded, label: 'News Feed', color: const Color(0xFF3ACC8A), onTap: () => context.go(Routes.news)),
             ]),
           ),
           Expanded(
@@ -155,7 +157,6 @@ class _ThreadsTabState extends State<_ThreadsTab> {
       } catch (_) { return null; }
     }).whereType<_Thread>().toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    // Seed some sample threads on first launch
     if (loaded.isEmpty) {
       final seeded = _sampleThreads();
       final encoded = seeded.map((t) => jsonEncode(t.toJson())).toList();
@@ -262,7 +263,7 @@ class _ThreadsTabState extends State<_ThreadsTab> {
                 style: TextStyle(
                     color: t.textPrimary, fontSize: 13),
                 decoration: InputDecoration(
-                  hintText: 'Share a situation update, ask for help…',
+                  hintText: 'Share a situation update, ask for help\u2026',
                   hintStyle: TextStyle(
                       color: t.textSecondary, fontSize: 12),
                   filled: true,
@@ -442,7 +443,6 @@ class _Empty extends StatelessWidget {
   }
 }
 
-// Model
 class _Thread {
   final String id;
   final String district;
@@ -503,7 +503,7 @@ List<_Thread> _sampleThreads() => [
   _Thread(
     id: '3', district: 'Muzaffarpur',
     message: 'NH-57 flooded between Bochaha and Gaighat. '
-        'Vehicles diverted via Motipur–Ahiyapur route.',
+        'Vehicles diverted via Motipur\u2013Ahiyapur route.',
     author: 'Anonymous',
     createdAt: DateTime.now().subtract(const Duration(hours: 9)),
     upvotes: 7,
@@ -552,12 +552,12 @@ class _SafetyTipsTab extends StatelessWidget {
       icon: Icons.warning_amber_outlined,
       color: Colors.deepOrange,
       tips: [
-        'Do NOT walk or drive through flowing floodwater — 15 cm can knock you down.',
+        'Do NOT walk or drive through flowing floodwater \u2014 15 cm can knock you down.',
         'Disconnect all electrical appliances before water enters your home.',
         'Move to the highest floor; do not enter the attic without a roof escape.',
         'Signal for help using bright cloth, torch or mobile.',
-        'Avoid contact with floodwater — it may be contaminated.',
-        'Follow only official evacuation orders — avoid rumours.',
+        'Avoid contact with floodwater \u2014 it may be contaminated.',
+        'Follow only official evacuation orders \u2014 avoid rumours.',
       ],
     ),
     _TipSection(
@@ -574,7 +574,7 @@ class _SafetyTipsTab extends StatelessWidget {
       ],
     ),
     _TipSection(
-      title: 'Emergency Contacts — Bihar',
+      title: 'Emergency Contacts \u2014 Bihar',
       icon: Icons.phone_in_talk_outlined,
       color: Colors.blue,
       tips: [
@@ -656,39 +656,38 @@ class _TipSectionCardState extends State<_TipSectionCard> {
                 ),
               ),
             ),
-            if (_expanded) ...
-              [
-                Divider(
-                    height: 1,
-                    color: t.divider.withValues(alpha: 0.4)),
-                ...s.tips.asMap().entries.map((e) => Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 7),
-                      child: Row(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            margin: const EdgeInsets.only(top: 5),
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                                color: s.color,
-                                shape: BoxShape.circle),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(e.value,
-                                style: TextStyle(
-                                    color: t.textPrimary,
-                                    fontSize: 12,
-                                    height: 1.5)),
-                          ),
-                        ],
-                      ),
-                    )),
-                const SizedBox(height: 4),
-              ],
+            if (_expanded) ...[
+              Divider(
+                  height: 1,
+                  color: t.divider.withValues(alpha: 0.4)),
+              ...s.tips.asMap().entries.map((e) => Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 7),
+                    child: Row(
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          margin: const EdgeInsets.only(top: 5),
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                              color: s.color,
+                              shape: BoxShape.circle),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(e.value,
+                              style: TextStyle(
+                                  color: t.textPrimary,
+                                  fontSize: 12,
+                                  height: 1.5)),
+                        ),
+                      ],
+                    ),
+                  )),
+              const SizedBox(height: 4),
+            ],
           ],
         ),
       ),
@@ -696,7 +695,6 @@ class _TipSectionCardState extends State<_TipSectionCard> {
   }
 }
 
-// Shared district list
 const List<String> _biharDistricts = [
   'Araria', 'Arwal', 'Aurangabad', 'Banka', 'Begusarai', 'Bhagalpur',
   'Bhojpur', 'Buxar', 'Darbhanga', 'East Champaran', 'Gaya', 'Gopalganj',

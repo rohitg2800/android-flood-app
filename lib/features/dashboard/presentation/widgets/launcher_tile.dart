@@ -1,5 +1,6 @@
 import "package:flutter/material.dart";
 import "package:flutter/services.dart";
+import "package:go_router/go_router.dart";
 import "package:equinox_flood/core/theme/river_theme.dart" as core_theme;
 import "package:equinox_flood/core/widgets/ops_badge.dart";
 import "../../domain/dashboard_tile.dart";
@@ -33,7 +34,7 @@ class _LauncherTileState extends State<LauncherTile> with SingleTickerProviderSt
 
   void _onTap() {
     HapticFeedback.lightImpact();
-    Navigator.pushNamed(context, widget.tile.route);
+    context.go(widget.tile.route);
   }
 
   @override
