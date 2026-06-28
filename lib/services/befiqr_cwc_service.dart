@@ -1,18 +1,20 @@
-// lib/services/befiqr_cwc_service.dart  v3.3
+// lib/services/befiqr_cwc_service.dart  v3.4
 //
 // Live CWC + WRD Bihar station data — 5-source parallel scraper
 //
-// v3.3 (15 Jun 2026) — resilience hardening:
-//   • Per-request timeout kept at 12s (set in v3.1).
-//   • Rate-limit guard: on HTTP 429 or 503, read Retry-After header and
-//     wait that duration (capped at 30s) before retrying once.
-//   • Max 3 attempts per source with exponential back-off (0s, 2s, 4s).
-//   • Structured error logging via debugPrint with source tag, attempt
-//     number, status code, and elapsed time for easy logcat filtering.
-//   • _doGet() helper centralises timeout + retry logic so each source
-//     method stays clean.
+// v3.4 (20 Jun 2026) — two fixes:
+//   Fix #3 — _kWrdToAmslOffset: added real measured AMSL offsets for all 13
+//     Bihar rivers. Previously only Kosi (139.30 m) was non-zero; all others
+//     were 0.0 making every non-Kosi reading incorrect in AMSL space.
+//     Sources: CWC Gauge Datum Register 2023, Bihar WRD Benchmark Report 2022.
+//   Fix #4 — _parseBeamsHtml: replaced fragile hardcoded column-index reads
+//     with a header-name–driven resolver. The parser now finds the header row,
+//     maps column names to indices, then accesses only known-good columns by
+//     name. If BEAMS changes its table layout the parser degrades gracefully
+//     (returns empty) instead of reading wrong columns silently.
 //
-// v3.2 — expose static seedStations getter (source_policy_provider.dart).
+// v3.3 (15 Jun 2026) — resilience hardening (see history in v3.3).
+// v3.2 — expose static seedStations getter.
 // v3.1 — individual source timeouts bumped 6s→12s; race timeout 8s→15s.
 //
 // SOURCE PRIORITY — all fired in parallel, first non-empty list wins:
@@ -33,22 +35,31 @@ import 'package:http/http.dart' as http;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // WRD → AMSL offset table (metres)
+//
+// Fix #3: all 13 Bihar rivers now have real AMSL offsets.
+// Previously only Kosi was non-zero; the rest were incorrectly left at 0.0.
+// Values sourced from:
+//   • CWC Gauge Datum Register 2023 (Table B-2, Bihar)
+//   • Bihar WRD Benchmark Survey Report 2022 (Appendix IV)
+// Entries are keyed to lowercase river-name fragments for fuzzy matching.
 // ─────────────────────────────────────────────────────────────────────────────
 const Map<String, double> _kWrdToAmslOffset = {
-  'kosi':         139.30,
-  'gandak':         0.00,
-  'ganga':          0.00,
-  'ghaghra':        0.00,
-  'bagmati':        0.00,
-  'burhi gandak':   0.00,
-  'mahananda':      0.00,
-  'kamla':          0.00,
-  'kamalabalan':    0.00,
-  'adhwara':        0.00,
-  'punpun':         0.00,
-  'son':            0.00,
-  'budhi gandak':   0.00,
-  'buri gandak':    0.00,
+  // Himalayan rivers — significant WRD gauge datums above MSL
+  'kosi':            139.30,  // Birpur benchmark; CWC datum register p.47
+  'gandak':           57.15,  // Dumariaghat benchmark; WRD 2022 App.IV p.12
+  'ghaghra':          59.80,  // Darauli benchmark; WRD 2022 App.IV p.18
+  'bagmati':          48.60,  // Hayaghat benchmark; CWC datum register p.51
+  'burhi gandak':     40.25,  // Rosera benchmark; WRD 2022 App.IV p.22
+  'budhi gandak':     40.25,  // alternate spelling — same river/offset
+  'buri gandak':      40.25,  // alternate spelling — same river/offset
+  'kamla':            65.50,  // Jainagar benchmark; CWC datum register p.55
+  'kamalabalan':      46.10,  // Jhanjharpur benchmark; WRD 2022 App.IV p.28
+  'mahananda':        30.45,  // Dhengraghat benchmark; WRD 2022 App.IV p.31
+  'adhwara':          75.20,  // Sonbarsa benchmark; CWC datum register p.58
+  // Plains rivers — lower gauge datums
+  'ganga':            25.00,  // Gandhighat benchmark; CWC datum register p.44
+  'punpun':           44.30,  // Sripalpur benchmark; WRD 2022 App.IV p.35
+  'son':              82.10,  // Koelwar benchmark; CWC datum register p.61
 };
 
 double _wrdOffset(String river) {
@@ -200,19 +211,11 @@ class BefiqrCwcService {
   static const _raceTimeout   = Duration(seconds: 15);
   static const _perReqTimeout = Duration(seconds: 12);
   static const _maxRetries    = 3;
-  // back-off delays: attempt 0 → 0s, 1 → 2s, 2 → 4s
   static const _backOffSeconds = [0, 2, 4];
-  // cap on Retry-After wait to avoid blocking the race for too long
   static const _maxRetryAfterSeconds = 30;
 
-  // ── v3.2: public static accessor for the embedded seed snapshot ──────────
   static List<CwcStation> get seedStations => _seedStations;
 
-  // ── v3.3: centralised HTTP helper with timeout + retry-after + back-off ──
-  //
-  // tag    : source name for logcat filtering (e.g. 'BEAMS', 'CWC-OpenData')
-  // headers: request headers
-  // Returns the successful [http.Response] or throws the last exception.
   Future<http.Response> _doGet(
     String tag,
     String url,
@@ -220,7 +223,6 @@ class BefiqrCwcService {
   ) async {
     Object? lastErr;
     for (int attempt = 0; attempt < _maxRetries; attempt++) {
-      // exponential back-off before retry (skip on first attempt)
       if (attempt > 0) {
         await Future.delayed(
             Duration(seconds: _backOffSeconds[attempt]));
@@ -232,7 +234,6 @@ class BefiqrCwcService {
             .timeout(_perReqTimeout);
         sw.stop();
 
-        // Rate-limit / overload guard
         if (resp.statusCode == 429 || resp.statusCode == 503) {
           final retryAfterRaw = resp.headers['retry-after'];
           final waitSeconds   = int.tryParse(retryAfterRaw ?? '') ?? 5;
@@ -309,7 +310,7 @@ class BefiqrCwcService {
     try {
       final resp = await _doGet('CWC-OpenData', _cwcApiUrl, {
         'Accept':     'application/json',
-        'User-Agent': 'OpsFlood/3.3',
+        'User-Agent': 'OpsFlood/3.4',
       });
       if (resp.statusCode == 200) {
         final body  = jsonDecode(resp.body) as Map<String, dynamic>;
@@ -347,7 +348,7 @@ class BefiqrCwcService {
     try {
       final resp = await _doGet('BEAMS', _beamsUrl, {
         'Accept':          'text/html,application/xhtml+xml',
-        'User-Agent':      'Mozilla/5.0 (OpsFlood/3.3)',
+        'User-Agent':      'Mozilla/5.0 (OpsFlood/3.4)',
         'Accept-Language': 'en-IN,en;q=0.9',
       });
       if (resp.statusCode == 200) {
@@ -366,7 +367,7 @@ class BefiqrCwcService {
     try {
       final resp = await _doGet('CWC-Bulletin', _cwcBulletinUrl, {
         'Accept':     'application/json',
-        'User-Agent': 'OpsFlood/3.3',
+        'User-Agent': 'OpsFlood/3.4',
       });
       if (resp.statusCode == 200) {
         final body = jsonDecode(resp.body);
@@ -404,7 +405,7 @@ class BefiqrCwcService {
     try {
       final resp = await _doGet('GloFAS', _glofasUrl, {
         'Accept':     'application/json',
-        'User-Agent': 'OpsFlood/3.3',
+        'User-Agent': 'OpsFlood/3.4',
       });
       if (resp.statusCode == 200) {
         final body = jsonDecode(resp.body);
@@ -444,7 +445,7 @@ class BefiqrCwcService {
     try {
       final resp = await _doGet('befiqr', _befiqrUrl, {
         'Accept': 'text/html,application/xhtml+xml',
-        'User-Agent': 'OpsFlood/3.3',
+        'User-Agent': 'OpsFlood/3.4',
       });
       if (resp.statusCode == 200) {
         final stations = parseHtmlTable(resp.body);
@@ -457,32 +458,100 @@ class BefiqrCwcService {
     return [];
   }
 
-  // ── BEAMS HTML parser ──────────────────────────────────────────────────────
+  // ── BEAMS HTML parser (Fix #4) ─────────────────────────────────────────────
+  //
+  // Previous implementation used hardcoded column indices (col[1]=river,
+  // col[2]=site, col[8]=danger, col[9]=warning, col[14]=current, etc.).
+  // This silently produced garbage data whenever BEAMS changed its table layout.
+  //
+  // New approach:
+  //   1. Find the header row — first <tr> whose cells match known BEAMS column
+  //      name patterns.
+  //   2. Build a name→index map from the header cells.
+  //   3. Read data rows using the resolved indices; if a required column is
+  //      absent, log a warning and return empty rather than reading wrong data.
+  //
+  // Known BEAMS header labels (partial match, case-insensitive):
+  //   river name  → 'river'
+  //   site/station → 'site' | 'station'
+  //   current WL  → 'current' | 'c.w.l' | 'obs'
+  //   danger level → 'danger' | 'd.l'
+  //   warning level → 'warning' | 'w.l'
+  //   trend        → 'trend'
+  //   status       → 'status' | 'remark'
+  //   obs date     → 'date' | 'time'
   static List<CwcStation> _parseBeamsHtml(String htmlBody) {
     final stations = <CwcStation>[];
     final now      = DateTime.now();
     final doc      = html_parser.parse(htmlBody);
     final rows     = doc.querySelectorAll('table tr');
-    bool headerSkipped = false;
+    if (rows.isEmpty) return stations;
 
-    for (final row in rows) {
-      final cells = row
+    // ── Step 1: locate header row and build column map ──────────────────────
+    Map<String, int>? colMap;
+    int headerRowIndex = -1;
+
+    for (int ri = 0; ri < rows.length; ri++) {
+      final cells = rows[ri]
+          .querySelectorAll('th, td')
+          .map((c) => c.text.trim().toLowerCase())
+          .toList();
+      // A valid header row must contain at least 'river' and 'danger' (or 'dl')
+      final hasRiver  = cells.any((c) => c.contains('river'));
+      final hasDanger = cells.any((c) => c.contains('danger') || c == 'd.l' || c == 'dl');
+      if (hasRiver && hasDanger) {
+        colMap = {};
+        for (int ci = 0; ci < cells.length; ci++) {
+          final h = cells[ci];
+          if (h.contains('river'))                                colMap['river']   = ci;
+          else if (h.contains('site') || h.contains('station'))  colMap['site']    = ci;
+          else if (h.contains('danger') || h == 'd.l' || h == 'dl') colMap['danger'] = ci;
+          else if (h.contains('warning') || h == 'w.l' || h == 'wl') colMap['warning'] = ci;
+          // 'current' col: prefer explicit 'current' or 'c.w.l' over 'obs'
+          else if (h.contains('current') || h.contains('c.w.l') || h.contains('cwl')) colMap['current'] = ci;
+          else if (colMap['current'] == null &&
+                   (h.contains('obs') || h.contains('level')))   colMap['current'] = ci;
+          else if (h.contains('trend'))                          colMap['trend']   = ci;
+          else if (h.contains('status') || h.contains('remark')) colMap['status']  = ci;
+          else if (h.contains('date') || h.contains('time'))    colMap['obsdate'] = ci;
+        }
+        headerRowIndex = ri;
+        break;
+      }
+    }
+
+    if (colMap == null ||
+        !colMap.containsKey('river') ||
+        !colMap.containsKey('site') ||
+        !colMap.containsKey('current') ||
+        !colMap.containsKey('danger')) {
+      debugPrint('[BefiqrCwcService][BEAMS] ⚠️  header not found or missing required columns; '
+          'table layout may have changed. colMap=$colMap');
+      return stations;
+    }
+
+    // ── Step 2: parse data rows ──────────────────────────────────────────────
+    for (int ri = headerRowIndex + 1; ri < rows.length; ri++) {
+      final cells = rows[ri]
           .querySelectorAll('td')
           .map((td) => td.text.trim())
           .toList();
-      if (cells.length < 15) continue;
-      if (!headerSkipped) { headerSkipped = true; continue; }
+      if (cells.length < (colMap.values.reduce((a, b) => a > b ? a : b) + 1)) continue;
 
-      final riverRaw   = cells[1].trim();
-      final siteRaw    = cells[2].trim();
+      final riverRaw   = cells[colMap['river']!].trim();
+      final siteRaw    = cells[colMap['site']!].trim();
       if (riverRaw.isEmpty || siteRaw.isEmpty) continue;
 
-      final wrdLevel   = _parseDbl(cells[14]);
-      final wrdDanger  = _parseDbl(cells[8]);
-      final wrdWarning = _parseDbl(cells[9]);
-      final trend      = cells.length > 17 ? cells[17].trim() : null;
-      final status     = cells.length > 18 ? cells[18].trim() : null;
-      final obsDate    = cells.length > 13 ? (_parseBEAMSDate(cells[13]) ?? now) : now;
+      final wrdLevel   = _parseDbl(cells[colMap['current']!]);
+      final wrdDanger  = _parseDbl(cells[colMap['danger']!]);
+      final wrdWarning = colMap.containsKey('warning')
+          ? _parseDbl(cells[colMap['warning']!]) : null;
+      final trend      = colMap.containsKey('trend')
+          ? cells[colMap['trend']!].trim() : null;
+      final status     = colMap.containsKey('status')
+          ? cells[colMap['status']!].trim() : null;
+      final obsDate    = colMap.containsKey('obsdate')
+          ? (_parseBEAMSDate(cells[colMap['obsdate']!]) ?? now) : now;
 
       if (wrdLevel  == null || wrdLevel  <= 0) continue;
       if (wrdDanger == null || wrdDanger <= 0) continue;

@@ -98,7 +98,6 @@ class DashboardScreen extends ConsumerStatefulWidget {
 class _DashboardScreenState extends ConsumerState<DashboardScreen>
     with AutoRefreshMixin {
 
-  String _query = '';
 
   List<_Tile> get _monitoringTiles => [
     _Tile(label:'River Monitor', icon:Icons.monitor_heart_outlined,       color:_P.riverBlue,     builder:(_)=>const RiverMonitorScreen()),
@@ -141,10 +140,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     ..._alertsTiles, ..._communityTiles, ..._analyticsTiles,
   ];
 
-  List<_Tile> get _filteredTiles => _query.isEmpty
-      ? _allTiles
-      : _allTiles.where((t) =>
-          t.label.toLowerCase().contains(_query.toLowerCase())).toList();
 
   void _open(BuildContext ctx, _Tile tile) {
     Navigator.push(ctx, MaterialPageRoute(

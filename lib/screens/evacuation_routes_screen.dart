@@ -129,7 +129,7 @@ class _EvacuationRoutesScreenState extends State<EvacuationRoutesScreen>
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: t.textSecondary.withOpacity(0.3)),
+                  borderSide: BorderSide(color: t.textSecondary.withValues(alpha: 0.3)),
                 ),
                 border: const OutlineInputBorder(),
               ),
@@ -153,7 +153,7 @@ class _EvacuationRoutesScreenState extends State<EvacuationRoutesScreen>
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: t.textSecondary.withOpacity(0.3)),
+                  borderSide: BorderSide(color: t.textSecondary.withValues(alpha: 0.3)),
                 ),
                 border: const OutlineInputBorder(),
               ),
@@ -297,8 +297,8 @@ class _RouteDetailTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: route.isFloodProne
-              ? Colors.red.withOpacity(0.4)
-              : Colors.green.withOpacity(0.3),
+              ? Colors.red.withValues(alpha: 0.4)
+              : Colors.green.withValues(alpha: 0.3),
           width: 1.5,
         ),
       ),
@@ -472,7 +472,7 @@ class _ShelterTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: t.scaffoldBg,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.blueAccent.withOpacity(0.3), width: 1.2),
+        border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.3), width: 1.2),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -560,9 +560,9 @@ class _RiskBadge extends StatelessWidget {
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.6), width: 1.5),
+        border: Border.all(color: color.withValues(alpha: 0.6), width: 1.5),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,

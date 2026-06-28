@@ -177,7 +177,7 @@ class AppLocalizationsBn extends AppLocalizations {
   String get riskIndex => 'ঝুঁকি সূচক';
 
   @override
-  String get allStationsSafe => 'সকল স্টেশন নিরাপদ স্তরে আছে';
+  String get allStationsSafe => 'সব স্টেশন নিরাপদ';
 
   @override
   String get fetchingLiveData => 'লাইভ বন্যা ডেটা আনা হচ্ছে…';
@@ -402,4 +402,121 @@ class AppLocalizationsBn extends AppLocalizations {
   @override
   String get onboardingSubtitle4 =>
       'এক-ট্যাপ SOS হেল্পলাইন, সরিয়ে নেওয়ার নির্দেশিকা এবং জরুরি সহায়তায় দ্রুত প্রবেশ দেয়।';
+
+  @override
+  String get liveOnly => 'শুধু লাইভ';
+
+  @override
+  String get showAll => 'সব দেখান';
+
+  @override
+  String get riverMonitor => 'নদী মনিটর';
+
+  @override
+  String get close => 'বন্ধ করুন';
+
+  @override
+  String get viewDetails => 'বিস্তারিত দেখুন';
+
+  @override
+  String get biharRiverMap => 'বিহার নদী মানচিত্র';
+
+  @override
+  String get searchStation => 'স্টেশন বা নদী খুঁজুন…';
+
+  @override
+  String get monitoringMaps => 'পর্যবেক্ষণ ও মানচিত্র';
+
+  @override
+  String get alertsSafety => 'সতর্কতা ও নিরাপত্তা';
+
+  @override
+  String get forecastAI => 'পূর্বাভাস ও AI';
+
+  @override
+  String get biharFloodWatch => 'বিহার বন্যা পর্যবেক্ষণ';
+
+  @override
+  String get updatedJustNow => 'এইমাত্র আপডেট';
+
+  @override
+  String get criticalNow => 'এখন জরুরি';
+
+  @override
+  String get elevated => 'উচ্চ ঝুঁকি';
+
+  @override
+  String get noActiveAlerts => 'কোনো সক্রিয় সতর্কতা নেই';
+
+  @override
+  String get tapToViewAlerts => 'সতর্কতা দেখতে ট্যাপ করুন';
+
+  @override
+  String get aiFloodPrediction => 'AI বন্যা পূর্বাভাস';
+
+  @override
+  String get hours24 => '২৪ ঘণ্টা';
+
+  @override
+  String get hours48 => '৪৮ ঘণ্টা';
+
+  @override
+  String get hours72 => '৭২ ঘণ্টা';
+
+  @override
+  String get criticalRisk => 'জরুরি ঝুঁকি';
+
+  @override
+  String get severeRisk => 'গুরুতর ঝুঁকি';
+
+  @override
+  String get moderateRisk => 'মাঝারি ঝুঁকি';
+
+  @override
+  String get allClear => 'সব নিরাপদ';
+
+  @override
+  String get riskForecast => 'ঝুঁকি পূর্বাভাস';
+
+  @override
+  String get community => 'সম্প্রদায়';
+
+  @override
+  String get reportIncident => 'ঘটনা রিপোর্ট';
+
+  @override
+  String get crowdReports => 'গণ রিপোর্ট';
+
+  @override
+  String get newsFeed => 'সংবাদ ফিড';
+
+  @override
+  String get floodNews => 'বন্যা সংবাদ';
+
+  @override
+  String get dataAndSources => 'তথ্য ও উৎস';
+
+  @override
+  String get privacy => 'গোপনীয়তা';
+
+  @override
+  String get whatWeStore => 'আমরা কী সংরক্ষণ করি';
+
+  @override
+  String get appearance => 'চেহারা';
+
+  @override
+  String get accessibility => 'অ্যাক্সেসযোগ্যতা';
+
+  @override
+  String get notifications => 'বিজ্ঞপ্তি';
+
+  @override
+  String get highContrast => 'উচ্চ বৈসাদৃশ্য';
+
+  @override
+  String get textSize => 'লেখার আকার';
+
+  @override
+  String get reducedMotion => 'কম গতি';
 }

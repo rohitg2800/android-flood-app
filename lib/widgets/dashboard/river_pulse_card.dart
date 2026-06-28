@@ -128,7 +128,7 @@ class _RiverPulseCardState extends ConsumerState<RiverPulseCard>
               : rc.cardGlow,
           border: Border.all(
             color: isAlert
-                ? lvlColor.withOpacity(0.45)
+                ? lvlColor.withValues(alpha: 0.45)
                 : rc.stroke,
             width: isAlert ? 1.5 : 1.0,
           ),
@@ -227,9 +227,9 @@ class _TerminalHeader extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(
                     horizontal: 8, vertical: 3),
                 decoration: rc.chipBox.copyWith(
-                  color: lvlColor.withOpacity(0.12),
+                  color: lvlColor.withValues(alpha: 0.12),
                   border: Border.all(
-                      color: lvlColor.withOpacity(0.40), width: 1),
+                      color: lvlColor.withValues(alpha: 0.40), width: 1),
                 ),
                 child: Text(
                   _dcLabel(station.dangerClass),
@@ -243,7 +243,7 @@ class _TerminalHeader extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.07),
+                    color: Colors.white.withValues(alpha: 0.07),
                     borderRadius: BorderRadius.circular(4),
                     border: Border.all(color: Colors.white24),
                   ),
@@ -377,13 +377,13 @@ class _ThresholdBar extends StatelessWidget {
                 width:    (w * pct).clamp(0, w),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(colors: [
-                    lvlColor.withOpacity(0.6),
+                    lvlColor.withValues(alpha: 0.6),
                     lvlColor,
                   ]),
                   borderRadius: BorderRadius.circular(4),
                   boxShadow: [
                     BoxShadow(
-                        color: lvlColor.withOpacity(0.5),
+                        color: lvlColor.withValues(alpha: 0.5),
                         blurRadius: 6)
                   ],
                 ),
@@ -393,14 +393,14 @@ class _ThresholdBar extends StatelessWidget {
                 left: w * warnPct - 1,
                 child: Container(
                     width: 2, height: 7,
-                    color: rc.warning.withOpacity(0.7)),
+                    color: rc.warning.withValues(alpha: 0.7)),
               ),
               // Danger tick
               Positioned(
                 left: w * dangPct - 1,
                 child: Container(
                     width: 2, height: 7,
-                    color: rc.danger.withOpacity(0.7)),
+                    color: rc.danger.withValues(alpha: 0.7)),
               ),
             ],
           );
@@ -433,7 +433,7 @@ class _Tick extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
     label,
-    style: rc.labelXs.copyWith(color: color.withOpacity(0.75)),
+    style: rc.labelXs.copyWith(color: color.withValues(alpha: 0.75)),
   );
 }
 
@@ -463,7 +463,7 @@ class _MetaRow extends StatelessWidget {
           Text(
             station.dataSource!,
             style: rc.labelXs.copyWith(
-                color: rc.accentSecondary.withOpacity(0.7)),
+                color: rc.accentSecondary.withValues(alpha: 0.7)),
           ),
       ],
     );
@@ -522,10 +522,10 @@ class _LiveDotState extends State<_LiveDot>
       width: 8, height: 8,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: widget.color.withOpacity(0.6 + 0.4 * _c.value),
+        color: widget.color.withValues(alpha: 0.6 + 0.4 * _c.value),
         boxShadow: [
           BoxShadow(
-            color: widget.color.withOpacity(0.5 * _c.value),
+            color: widget.color.withValues(alpha: 0.5 * _c.value),
             blurRadius: 6,
             spreadRadius: 1,
           )

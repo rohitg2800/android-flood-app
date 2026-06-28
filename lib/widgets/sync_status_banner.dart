@@ -29,7 +29,7 @@ class SyncStatusBanner extends ConsumerWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 400),
       height:   cfg.visible ? 28 : 0,
-      color:    cfg.bgColor.withOpacity(0.92),
+      color:    cfg.bgColor.withValues(alpha: 0.92),
       child: cfg.visible
           ? Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -100,7 +100,7 @@ class _PulseDotState extends State<_PulseDot>
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                  color: widget.color.withOpacity(0.5),
+                  color: widget.color.withValues(alpha: 0.5),
                   blurRadius: 4,
                   spreadRadius: 1),
             ],
@@ -133,7 +133,7 @@ class _BannerConfig {
       case WsStatus.connected:
         return _BannerConfig(
           visible:   false,   // Live = no banner needed (data flows silently)
-          bgColor:   AppPalette.safe.withOpacity(0.15),
+          bgColor:   AppPalette.safe.withValues(alpha: 0.15),
           dotColor:  AppPalette.safe,
           textColor: AppPalette.safe,
           icon:      Icons.circle,
@@ -143,7 +143,7 @@ class _BannerConfig {
       case WsStatus.connecting:
         return _BannerConfig(
           visible:   true,
-          bgColor:   AppPalette.gold.withOpacity(0.12),
+          bgColor:   AppPalette.gold.withValues(alpha: 0.12),
           dotColor:  AppPalette.gold,
           textColor: AppPalette.gold,
           icon:      Icons.sync_rounded,
@@ -156,7 +156,7 @@ class _BannerConfig {
             : 'recently';
         return _BannerConfig(
           visible:   true,
-          bgColor:   AppPalette.warning.withOpacity(0.12),
+          bgColor:   AppPalette.warning.withValues(alpha: 0.12),
           dotColor:  AppPalette.warning,
           textColor: AppPalette.warning,
           icon:      Icons.wifi_off_rounded,
@@ -169,7 +169,7 @@ class _BannerConfig {
             : 'No data yet';
         return _BannerConfig(
           visible:   true,
-          bgColor:   AppPalette.critical.withOpacity(0.12),
+          bgColor:   AppPalette.critical.withValues(alpha: 0.12),
           dotColor:  AppPalette.critical,
           textColor: AppPalette.critical,
           icon:      Icons.cloud_off_rounded,

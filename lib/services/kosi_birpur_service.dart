@@ -96,7 +96,8 @@ double? _amslToLocal(double? amsl) {
 
 // ── HTTP client that does NOT follow redirects ─────────────────────────────
 http.Client _noRedirectClient() {
-  final inner = HttpClient()..maxConnectionsPerHost = 4;
+  final inner = HttpClient()..maxConnectionsPerHost = 4
+    ..badCertificateCallback = (cert, host, port) => true;
   inner.findProxy = null;
   return IOClient(inner);
 }

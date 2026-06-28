@@ -9,7 +9,6 @@
 //  • focusOrder()        — returns FocusTraversalOrder for a given sortKey int
 
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
 
 /// Wraps [child] with a custom accessibility label.
 class SemanticsLabel extends StatelessWidget {

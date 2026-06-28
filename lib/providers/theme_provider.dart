@@ -24,7 +24,7 @@ class ThemeProvider extends ChangeNotifier {
   ThemeProvider._internal();
 
   static const _key = 'equinox_theme_mode';
-  AppThemeMode _appMode = AppThemeMode.system;
+  AppThemeMode _appMode = AppThemeMode.dark;
 
   AppThemeMode get appMode => _appMode;
 
@@ -43,7 +43,7 @@ class ThemeProvider extends ChangeNotifier {
     final stored = prefs.getString(_key);
     _appMode = AppThemeMode.values.firstWhere(
       (e) => e.name == stored,
-      orElse: () => AppThemeMode.system,
+      orElse: () => AppThemeMode.dark,
     );
     notifyListeners();
   }
@@ -63,7 +63,7 @@ class _ThemeModeNotifier extends Notifier<AppThemeMode> {
   @override
   AppThemeMode build() {
     _loadSaved();
-    return AppThemeMode.system;
+    return AppThemeMode.dark;
   }
 
   Future<void> _loadSaved() async {
@@ -72,7 +72,7 @@ class _ThemeModeNotifier extends Notifier<AppThemeMode> {
     if (stored == null) return;
     final saved = AppThemeMode.values.firstWhere(
       (e) => e.name == stored,
-      orElse: () => AppThemeMode.system,
+      orElse: () => AppThemeMode.dark,
     );
     if (saved != state) state = saved;
   }
@@ -85,10 +85,9 @@ class _ThemeModeNotifier extends Notifier<AppThemeMode> {
   }
 
   void cycle() {
-    switch (state) {
-      case AppThemeMode.system:  setMode(AppThemeMode.dark); break;
-      default:                   setMode(AppThemeMode.system); break;
-    }
+    final modes = AppThemeMode.values;
+    final next = modes[(modes.indexOf(state) + 1) % modes.length];
+    setMode(next);
   }
 
   String get label => switch (state) {

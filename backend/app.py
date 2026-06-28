@@ -541,9 +541,17 @@ app = FastAPI(
     version="1.3.0",
 )
 
+
+import os as _os
+
+_origins = _os.environ.get("ALLOWED_ORIGINS", "").split(",")
+ALLOWED_ORIGINS = [o.strip() for o in _origins if o.strip()] or [
+    "https://android-flood-app-production.up.railway.app",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

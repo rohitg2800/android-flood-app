@@ -72,7 +72,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           TextButton(
-            onPressed: () { Navigator.pop(ctx); Navigator.of(context).pushNamedAndRemoveUntil(Routes.onboarding, (r) => false); },
+            onPressed: () { Navigator.pop(ctx); Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(Routes.onboarding, (r) => false); },
             child: const Text('Sign Out', style: TextStyle(color: Color(0xFFE53935))),
           ),
         ],

@@ -1,6 +1,4 @@
-// lib/screens/predict_screen.dart  — 3-D UI rebuild (shell)
-// The full prediction logic (ML, form, results) is preserved —
-// only the scaffold, cards, buttons, and input fields are upgraded to Td3.
-library;
-
+// lib/screens/predict_screen.dart
+// Thin re-export shim so app_router.dart can import 'predict_screen.dart'
+// and use PredictScreen — the real implementation lives in predict_screen_impl.dart
 export 'predict_screen_impl.dart';

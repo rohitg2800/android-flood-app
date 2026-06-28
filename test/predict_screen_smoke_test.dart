@@ -8,7 +8,7 @@ import 'package:equinox_flood/providers/bihar_live_provider.dart';
 import 'package:equinox_flood/providers/weather_provider.dart';
 import 'package:equinox_flood/models/flood_prediction.dart';
 import 'package:equinox_flood/models/prediction_point.dart';
-import 'package:equinox_flood/screens/predict_screen.dart';
+import 'package:equinox_flood/screens/predict_screen_impl.dart';
 
 final _t = DateTime(2026, 6, 17);
 

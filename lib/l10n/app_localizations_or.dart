@@ -177,7 +177,7 @@ class AppLocalizationsOr extends AppLocalizations {
   String get riskIndex => 'ଆଶଙ୍କା ସୂଚକ';
 
   @override
-  String get allStationsSafe => 'ସମସ୍ତ ଷ୍ଟେସନ ସୁରକ୍ଷିତ ସ୍ତରରେ ଅଛି';
+  String get allStationsSafe => 'ସମସ୍ତ ଷ୍ଟେସନ ସୁରକ୍ଷିତ';
 
   @override
   String get fetchingLiveData => 'ଲାଇଭ ବନ୍ୟା ତଥ୍ୟ ଆଣୁଛି…';
@@ -402,4 +402,121 @@ class AppLocalizationsOr extends AppLocalizations {
   @override
   String get onboardingSubtitle4 =>
       'ଏକ-ଟ୍ୟାପ SOS ହେଲ୍ପଲାଇନ, ନିଷ୍କ୍ରମଣ ମାର୍ଗଦର୍ଶନ ଓ ଜରୁରୀ ସହାୟତାକୁ ଦ୍ରୁତ ପ୍ରବେଶ ଦିଏ।';
+
+  @override
+  String get liveOnly => 'କେବଳ ଲାଇଭ';
+
+  @override
+  String get showAll => 'ସବୁ ଦେଖାନ୍ତୁ';
+
+  @override
+  String get riverMonitor => 'ନଦୀ ନଜର';
+
+  @override
+  String get close => 'ବନ୍ଦ କରନ୍ତୁ';
+
+  @override
+  String get viewDetails => 'ବିବରଣୀ ଦେଖନ୍ତୁ';
+
+  @override
+  String get biharRiverMap => 'ବିହାର ନଦୀ ନକ୍ସା';
+
+  @override
+  String get searchStation => 'ଷ୍ଟେସନ ବା ନଦୀ ଖୋଜନ୍ତୁ…';
+
+  @override
+  String get monitoringMaps => 'ନଜର ଓ ନକ୍ସା';
+
+  @override
+  String get alertsSafety => 'ସତର୍କତା ଓ ସୁରକ୍ଷା';
+
+  @override
+  String get forecastAI => 'ପୂର୍ବାନୁମାନ ଓ AI';
+
+  @override
+  String get biharFloodWatch => 'ବିହାର ବନ୍ୟା ନଜର';
+
+  @override
+  String get updatedJustNow => 'ବର୍ତ୍ତମାନ ଅଦ୍ୟତନ';
+
+  @override
+  String get criticalNow => 'ବର୍ତ୍ତମାନ ଜରୁରୀ';
+
+  @override
+  String get elevated => 'ଉଚ୍ଚ ବିପଦ';
+
+  @override
+  String get noActiveAlerts => 'କୌଣସି ସକ୍ରିୟ ସତର୍କତା ନାହିଁ';
+
+  @override
+  String get tapToViewAlerts => 'ସତର୍କତା ଦେଖିବାକୁ ଟ୍ୟାପ କରନ୍ତୁ';
+
+  @override
+  String get aiFloodPrediction => 'AI ବନ୍ୟା ପୂର୍ବାନୁମାନ';
+
+  @override
+  String get hours24 => '୨୪ ଘଣ୍ଟା';
+
+  @override
+  String get hours48 => '୪୮ ଘଣ୍ଟା';
+
+  @override
+  String get hours72 => '୭୨ ଘଣ୍ଟା';
+
+  @override
+  String get criticalRisk => 'ଜରୁରୀ ବିପଦ';
+
+  @override
+  String get severeRisk => 'ଗୁରୁତର ବିପଦ';
+
+  @override
+  String get moderateRisk => 'ମଧ୍ୟମ ବିପଦ';
+
+  @override
+  String get allClear => 'ସବୁ ସୁରକ୍ଷିତ';
+
+  @override
+  String get riskForecast => 'ବିପଦ ପୂର୍ବାନୁମାନ';
+
+  @override
+  String get community => 'ସମ୍ପ୍ରଦାୟ';
+
+  @override
+  String get reportIncident => 'ଘଟଣା ରିପୋର୍ଟ';
+
+  @override
+  String get crowdReports => 'ଜନ ରିପୋର୍ଟ';
+
+  @override
+  String get newsFeed => 'ସମ୍ବାଦ ଫିଡ';
+
+  @override
+  String get floodNews => 'ବନ୍ୟା ସମ୍ବାଦ';
+
+  @override
+  String get dataAndSources => 'ତଥ୍ୟ ଓ ଉତ୍ସ';
+
+  @override
+  String get privacy => 'ଗୋପନୀୟତା';
+
+  @override
+  String get whatWeStore => 'ଆମେ କ\'ଣ ସଂରକ୍ଷଣ କରୁ';
+
+  @override
+  String get appearance => 'ରୂପ';
+
+  @override
+  String get accessibility => 'ସୁଲଭତା';
+
+  @override
+  String get notifications => 'ବିଜ୍ଞପ୍ତି';
+
+  @override
+  String get highContrast => 'ଉଚ୍ଚ ବ୍ୟତ୍ୟୟ';
+
+  @override
+  String get textSize => 'ଲେଖା ଆକାର';
+
+  @override
+  String get reducedMotion => 'କମ ଗତି';
 }

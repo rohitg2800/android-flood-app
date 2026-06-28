@@ -43,10 +43,16 @@
 					<string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
 					<key>UISceneStoryboardFile</key>
 					<string>Main</string>
-				</dict>
+				<key>UIUserInterfaceStyle</key>
+	<string>Light</string>
+</dict>
 			</array>
-		</dict>
-	</dict>
+		<key>UIUserInterfaceStyle</key>
+	<string>Light</string>
+</dict>
+	<key>UIUserInterfaceStyle</key>
+	<string>Light</string>
+</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
@@ -66,5 +72,7 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+<key>UIUserInterfaceStyle</key>
+	<string>Light</string>
 </dict>
 </plist>

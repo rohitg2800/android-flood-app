@@ -49,13 +49,13 @@ class LiveStationsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final async      = ref.watch(biharLiveProvider);
+    final liveAsync = ref.watch(biharLiveProvider);
     final baselineOn = ref.watch(preMonsoonBaselineProvider);
     final t          = RiverColors.of(context);
 
     return Scaffold(
       backgroundColor: t.scaffoldBg,
-      body: async.when(
+      body: liveAsync.when(
         loading: () => CustomScrollView(
           slivers: [
             const Td3AppBar(title: 'Live Stations', subtitle: 'Loading…'),
@@ -64,7 +64,7 @@ class LiveStationsScreen extends ConsumerWidget {
             ),
           ],
         ),
-        error: (err, _) => CustomScrollView(
+        error: (err, stack) { debugPrint('[LiveStationsScreen] \$err\n\$stack'); return CustomScrollView(
           slivers: [
             const Td3AppBar(title: 'Live Stations'),
             SliverFillRemaining(
@@ -103,8 +103,9 @@ class LiveStationsScreen extends ConsumerWidget {
               ),
             ),
           ],
-        ),
-        data: (state) {
+        );
+      },
+      data: (state) {
           if (state.stations.isEmpty) {
             return CustomScrollView(
               slivers: [

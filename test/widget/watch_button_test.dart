@@ -14,13 +14,13 @@ class _FakeNotifier extends SubscriptionNotifier {
 
   @override
   Future<void> subscribe(AlertSubscription sub) async {
-    calls.add('subscribe:' + sub.stationId);
+    calls.add('subscribe:${sub.stationId}');
     state = [...state, sub];
   }
 
   @override
   Future<void> unsubscribe(String stationId) async {
-    calls.add('unsubscribe:' + stationId);
+    calls.add('unsubscribe:$stationId');
     state = state.where((s) => s.stationId != stationId).toList();
   }
 }

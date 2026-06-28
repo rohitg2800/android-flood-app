@@ -86,7 +86,8 @@ async def _broadcast_loop(ws: WebSocket, get_live_data_fn):
         while True:
             await asyncio.sleep(BROADCAST_INTERVAL_SEC)
             try:
-                data    = await asyncio.to_thread(get_live_data_fn)
+                raw = get_live_data_fn()
+                data = await raw if asyncio.iscoroutine(raw) else raw
                 payload = json.dumps({'data': data})
                 _last_payload = payload
                 # Broadcast to ALL connected clients, not just this one

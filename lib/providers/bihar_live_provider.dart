@@ -26,6 +26,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../services/threshold_override_store.dart';
 import '../data/bihar_station_metadata.dart';
 
 import '../services/bihar_live_engine.dart';
@@ -80,8 +81,22 @@ class BiharStationData {
         ? _safeLevel(rawLevel)
         : _parseLevelString(item.value);
 
-    final dan = _safeThreshold(item.raw['danger'],  fallback: 99.0);
-    final war = _safeThreshold(item.raw['warning'], fallback: dan * 0.85);
+    final rawDan = _safeThreshold(item.raw['danger'],  fallback: 99.0);
+    final rawWar = _safeThreshold(item.raw['warning'], fallback: rawDan * 0.85);
+
+    // Override with verified thresholds from ThresholdOverrideStore if available
+    final normTitle = item.title.toLowerCase()
+        .replaceAll(RegExp(r'\s*\(.*?\)'), '')
+        .replaceAll(RegExp(r'[^a-z0-9\s]'), ' ')
+        .replaceAll(RegExp(r' +'), ' ')
+        .trim();
+    final override = ThresholdOverrideStore.instance.get(normTitle);
+    final dan = (override?.dl != null && override!.dl! > 0)
+        ? override.dl!
+        : rawDan;
+    final war = (override?.wl != null && override!.wl! > 0)
+        ? override.wl!
+        : rawWar;
 
     double? diff;
     if (item.changeStr != null) {

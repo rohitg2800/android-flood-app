@@ -4,6 +4,7 @@
 // or shows a detail card for non-Bihar rivers.
 
 import 'package:flutter/material.dart';
+import 'package:equinox_flood/core/theme/river_theme.dart' as core_theme;
 import '../theme/river_theme.dart';
 import '../theme/theme_3d.dart';
 import 'bihar_river_map_screen.dart';
@@ -70,19 +71,21 @@ class _IndiaRiverExplorerScreenState
     return Scaffold(
       backgroundColor: t.scaffoldBg,
       appBar: AppBar(
-        backgroundColor: t.navBg,
+        backgroundColor: t.scaffoldBg,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
         foregroundColor: t.textPrimary,
         title: Row(
           children: [
-            ShaderMask(
-              shaderCallback: (r) => const LinearGradient(
-                colors: [Color(0xFF00E5FF), Color(0xFF7B2FF7)],
-              ).createShader(r),
-              child: const Icon(Icons.water_outlined,
-                  color: Colors.white, size: 20),
-            ),
-            const SizedBox(width: 8),
-            const Text('India River Explorer'),
+            Container(
+              width: 32, height: 32,
+              decoration: BoxDecoration(
+                color: const Color(0xFF06B6D4).withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(9)),
+              child: const Icon(Icons.travel_explore_rounded, color: Color(0xFF06B6D4), size: 17)),
+            const SizedBox(width: 10),
+            Text('India River Explorer',
+              style: TextStyle(color: t.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
           ],
         ),
       ),
@@ -331,21 +334,24 @@ class _RiverCard extends StatelessWidget {
     final r = river;
     return GestureDetector(
       onTap: onTap,
-      child: Td3Card(
-        showGloss: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-              horizontal: 14, vertical: 10),
-          child: Row(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F141B),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: r.isBiharRiver
+              ? r.color.withValues(alpha: 0.30)
+              : const Color(0xFF232934))),
+        child: Row(
             children: [
               Container(
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: r.color.withOpacity(0.15),
+                  color: r.color.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                   border: Border.all(
-                      color: r.color.withOpacity(0.5)),
+                      color: r.color.withValues(alpha: 0.5)),
                 ),
                 child: Icon(r.icon, color: r.color, size: 20),
               ),
@@ -368,12 +374,12 @@ class _RiverCard extends StatelessWidget {
                                 horizontal: 5, vertical: 1),
                             decoration: BoxDecoration(
                               color: Colors.blue
-                                  .withOpacity(0.15),
+                                  .withValues(alpha: 0.15),
                               borderRadius:
                                   BorderRadius.circular(4),
                               border: Border.all(
                                   color: Colors.blue
-                                      .withOpacity(0.5)),
+                                      .withValues(alpha: 0.5)),
                             ),
                             child: const Text('LIVE',
                                 style: TextStyle(
@@ -394,7 +400,7 @@ class _RiverCard extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                            color: t.textPrimary.withOpacity(0.75),
+                            color: t.textPrimary.withValues(alpha: 0.75),
                             fontSize: 11,
                             height: 1.4)),
                   ],
@@ -411,7 +417,6 @@ class _RiverCard extends StatelessWidget {
             ],
           ),
         ),
-      ),
     );
   }
 }
@@ -432,9 +437,9 @@ class _StatPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.4)),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Column(
         children: [
@@ -473,13 +478,13 @@ class _SystemChip extends StatelessWidget {
             horizontal: 12, vertical: 5),
         decoration: BoxDecoration(
           color: selected
-              ? t.accent.withOpacity(0.18)
+              ? t.accent.withValues(alpha: 0.18)
               : t.cardBg,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
               color: selected
                   ? t.accent
-                  : t.divider.withOpacity(0.5)),
+                  : t.divider.withValues(alpha: 0.5)),
         ),
         child: Text(label,
             style: TextStyle(

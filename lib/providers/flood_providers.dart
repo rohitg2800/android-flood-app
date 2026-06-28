@@ -1,12 +1,14 @@
 // lib/providers/flood_providers.dart
-// v10.4 — cityLookupMapProvider: O(1) city lookup; Bihar-only refresh gate
+// v10.5 — null-safety: _normCityKey(d.city ?? '') everywhere
 //
+// v10.4 — cityLookupMapProvider: O(1) city lookup; Bihar-only refresh gate
 // v10.3: pre-warm LiveFetchEngine on first realTimeProvider access
 // v10.2: _normCityKey() collapses qualifier variants so Birpur x3 → Birpur x1
 // v10.1: deduplicate liveLevelsProvider by city key.
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'live_engine_bridge_provider.dart';
 import '../models/flood_data.dart';
 import '../models/river_monitoring.dart';
 import '../models/river_station.dart';
@@ -52,12 +54,12 @@ final isWakingUpProvider = Provider<bool>((ref) {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────────
-// cityLookupMapProvider  (v10.4)
+// cityLookupMapProvider  (v10.5 — d.city ?? '')
 // ─────────────────────────────────────────────────────────────────────────────────
 
 final cityLookupMapProvider = Provider<Map<String, FloodData>>((ref) {
   final levels = ref.watch(liveLevelsProvider);
-  return { for (final d in levels) _normCityKey(d.city): d };
+  return { for (final d in levels) _normCityKey(d.city ?? ''): d };
 });
 
 // ─────────────────────────────────────────────────────────────────────────────────
@@ -201,18 +203,26 @@ final floodDataSourceProvider      = Provider<String>((ref) => ref.watch(floodSu
 // ─────────────────────────────────────────────────────────────────────────────────
 
 FloodData _riverStationToFloodData(RiverStation s) {
+  // Compute risk score from danger class
+  final riskScore = s.danger > 0 && s.current > 0
+      ? (s.current / s.danger * 100).clamp(0.0, 150.0)
+      : 0.0;
   return FloodData(
     stationId:    s.station,
     stationName:  s.station,
     river:        s.river ?? '',
-    city:         s.city,
+    city:         s.city ?? '',
     district:     '',
-    state:        s.state,
+    state:        s.state ?? '',
     riverName:    s.river,
-    currentLevel: s.current,
+    currentLevel: s.current > 0 ? s.current : 0.0,
     warningLevel: s.warning,
     dangerLevel:  s.danger,
+    riskScore:    riskScore.round(),
+    latitude:     s.lat,
+    longitude:    s.lon,
     lastUpdated:  DateTime.now(),
+    observedAt:   DateTime.now(),
   );
 }
 
@@ -228,16 +238,13 @@ String _normCityKey(String name) => name
     .trim();
 
 // ─────────────────────────────────────────────────────────────────────────────────
-// _deduplicateByCity  (v10.2)
+// _deduplicateByCity  (v10.5 — fd.city ?? '')
 // ─────────────────────────────────────────────────────────────────────────────────
 
 List<FloodData> _deduplicateByCity(List<FloodData> raw) {
   final map = <String, FloodData>{};
   for (final fd in raw) {
-    // v10.5: always normalise the key so 'Birpur', 'Birpur (CWC)', 'birpur cwc'
-    // all collapse to the same key instead of producing 3 separate cards.
-    final key = _normCityKey(
-        fd.city);
+    final key = _normCityKey(fd.city ?? '');
     if (!map.containsKey(key)) {
       map[key] = fd;
     } else {
@@ -261,9 +268,13 @@ List<FloodData> _deduplicateByCity(List<FloodData> raw) {
 // ─────────────────────────────────────────────────────────────────────────────────
 
 final liveLevelsProvider = Provider<List<FloodData>>((ref) {
-  final raw = ref.watch(mergedStationsProvider)
-      .map(_riverStationToFloodData)
-      .toList();
+  // Use liveEngineStationsProvider as single source of truth
+  // Falls back to mergedStationsProvider if engine is empty
+  final engineStations = ref.watch(liveEngineStationsProvider);
+  final source = engineStations.isNotEmpty
+      ? engineStations
+      : ref.watch(mergedStationsProvider);
+  final raw = source.map(_riverStationToFloodData).toList();
   return _deduplicateByCity(raw);
 });
 

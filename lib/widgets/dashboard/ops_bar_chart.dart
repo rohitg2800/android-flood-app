@@ -148,7 +148,7 @@ class _OpsBarChartState extends ConsumerState<OpsBarChart>
               begin: Alignment.bottomCenter,
               end:   Alignment.topCenter,
               colors: [
-                barColor.withOpacity(0.55),
+                barColor.withValues(alpha: 0.55),
                 barColor,
               ],
             ),
@@ -176,7 +176,7 @@ class _OpsBarChartState extends ConsumerState<OpsBarChart>
         final avgWarn = warnings.reduce((a, b) => a + b) / warnings.length;
         thresholdLines.add(HorizontalLine(
           y:         avgWarn,
-          color:     rc.warning.withOpacity(0.55),
+          color:     rc.warning.withValues(alpha: 0.55),
           strokeWidth: 1,
           dashArray: [4, 4],
           label: HorizontalLineLabel(
@@ -191,7 +191,7 @@ class _OpsBarChartState extends ConsumerState<OpsBarChart>
         final avgDang = dangers.reduce((a, b) => a + b) / dangers.length;
         thresholdLines.add(HorizontalLine(
           y:         avgDang,
-          color:     rc.danger.withOpacity(0.55),
+          color:     rc.danger.withValues(alpha: 0.55),
           strokeWidth: 1,
           dashArray: [4, 4],
           label: HorizontalLineLabel(

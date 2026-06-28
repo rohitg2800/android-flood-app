@@ -13,7 +13,7 @@ import '../providers/bihar_prediction_provider.dart';
 import '../theme/river_theme.dart';
 import '../widgets/sparkline_chart.dart';
 import 'bihar_river_map_screen.dart';
-import 'predict_screen.dart';
+import 'predict_screen_impl.dart';
 import 'sos_screen.dart';
 
 Color cityDetailRiskColor(String risk) {

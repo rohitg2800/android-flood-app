@@ -146,9 +146,9 @@ class _HeatmapPainter extends CustomPainter {
           center,
           blobRadius,
           [
-            color.withOpacity(0.85),
-            color.withOpacity(0.40),
-            color.withOpacity(0.0),
+            color.withValues(alpha: 0.85),
+            color.withValues(alpha: 0.40),
+            color.withValues(alpha: 0.0),
           ],
           [0.0, 0.5, 1.0],
         );
