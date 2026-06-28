@@ -7,6 +7,7 @@
 // • Shown only on first launch; subsequent launches route to /shell
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_palette.dart';
 
@@ -104,7 +105,7 @@ class _OnboardingScreenState
   Future<void> _finish() async {
     await markOnboardingDone();
     if (!mounted) return;
-    Navigator.pushReplacementNamed(context, '/shell');
+    context.go('/shell'); // ✅ GoRouter-aware navigation
   }
 
   @override
