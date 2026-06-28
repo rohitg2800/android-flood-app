@@ -140,8 +140,8 @@ class _MainShellState extends ConsumerState<MainShell>
             currentLevel: alert.currentLevel,
             dangerLevel: alert.thresholdLevel,
             district: alert.district,
-            onViewMap: () => AppRouter.router.go(Routes.biharRiverMap),
-            onEvacuate: () => AppRouter.router.go(Routes.evacuation),
+            onViewMap: () => AppRouter.push(Routes.biharRiverMap),
+            onEvacuate: () => AppRouter.push(Routes.evacuation),
           );
         });
         break;
@@ -531,7 +531,7 @@ class _MoreSheetV4 extends ConsumerWidget {
                             theme: t,
                             onTap: () {
                               Navigator.of(context).pop();
-                              AppRouter.router.go(item.route);
+                              AppRouter.push(item.route);
                             },
                           ),
                         )
