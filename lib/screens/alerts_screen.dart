@@ -1,9 +1,7 @@
-// lib/screens/alerts_screen.dart  (v5.2 — 15 Jun 2026)
+// lib/screens/alerts_screen.dart  (v5.3 — 28 Jun 2026)
 //
-// v5.2 — Fix two compile errors introduced in v5.1:
-//   1. `_buildAlertList` was returning void (missing Widget return type).
-//   2. `AlertsParentBridgeState` was not imported → now it is.
-//
+// v5.3 — AppBar fix: themed navBg, elevation:0, gradient divider, themed leading icon.
+// v5.2 — Fix two compile errors introduced in v5.1.
 // v5.1 — Add optional `stationFilter` param for deep-link routing.
 // v5.0 — AutoRefreshMixin + ref.watch(biharLiveProvider).
 
@@ -14,6 +12,7 @@ import '../mixins/auto_refresh_mixin.dart';
 import '../providers/bihar_live_provider.dart';
 import '../providers/alerts_badge_provider.dart';
 import '../providers/alerts_parent_bridge_provider.dart';
+import '../theme/river_colors.dart';
 
 class AlertsScreen extends ConsumerStatefulWidget {
   /// Optional station name to pre-filter the alert list (deep-link routing).
@@ -29,33 +28,68 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen>
     with AutoRefreshMixin {
   @override
   Widget build(BuildContext context) {
+    final t          = RiverColors.of(context);
     final liveAsync  = ref.watch(biharLiveProvider);
     final badgeCount = ref.watch(alertsBadgeProvider);
     final bridge     = ref.watch(alertsParentBridgeProvider);
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: t.navBg,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_rounded, color: t.textSecondary),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Row(
           children: [
-            const Text('Alerts'),
+            ShaderMask(
+              shaderCallback: (r) => LinearGradient(
+                colors: [t.textPrimary, Colors.red.shade400],
+                stops: const [0.4, 1.0],
+              ).createShader(r),
+              child: const Text(
+                'Alerts',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 18,
+                  letterSpacing: -0.3,
+                ),
+              ),
+            ),
             if (badgeCount > 0) ...[
               const SizedBox(width: 8),
               Chip(
                 label:           Text('$badgeCount new'),
                 backgroundColor: Colors.red.shade700,
-                labelStyle:      const TextStyle(color: Colors.white),
+                labelStyle:      const TextStyle(color: Colors.white, fontSize: 11),
                 padding:         EdgeInsets.zero,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
             ],
           ],
         ),
         actions: [
           IconButton(
-            icon:    const Icon(Icons.refresh),
+            icon:    Icon(Icons.refresh, color: t.textSecondary),
             tooltip: 'Refresh now',
             onPressed: onManualRefresh,
           ),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: [
+                Colors.red.withValues(alpha: 0.0),
+                Colors.red.withValues(alpha: 0.5),
+                Colors.red.withValues(alpha: 0.0),
+              ]),
+            ),
+          ),
+        ),
       ),
       body: refreshIndicator(
         child: liveAsync.when(
@@ -67,7 +101,6 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen>
     );
   }
 
-  // Return type is Widget — fixes the "expression has type void" error.
   Widget _buildAlertList(
     BuildContext context,
     BiharLiveState live,
@@ -77,14 +110,8 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen>
         .where((s) => s.isCritical || s.isSevere || s.isWarning)
         .toList();
 
-    // Apply station filter from deep-link or bridge state.
     final filter = widget.stationFilter ?? bridge.pendingStationFilter;
     if (filter != null && filter.isNotEmpty) {
-      // Bihar live provider normalizes city keys by:
-      // - lowercasing
-      // - stripping parenthetical qualifiers like "(CWC)", "(D/S)", "(U/S)"
-      // - replacing non-alphanumerics with spaces
-      // Reuse the same logic here so notification payloads match BiharStationData.
       String norm(String v) => v
           .toLowerCase()
           .replaceAll(RegExp(r'\s*\(.*?\)'), '')
