@@ -1,23 +1,23 @@
 // lib/screens/splash_screen.dart
-// OpsFlood — SplashScreen v4
+// OpsFlood — SplashScreen v5
 //
 // After the boot animation completes:
 //   • If onboarding not done  → /onboarding
 //   • Otherwise               → /shell
 //
-// v4 fixes: splash-freeze when onboardingProvider.future never resolves
-//   (AsyncError, hung SharedPreferences, or cold-boot race).  A 3-second
-//   timeout + error fallback guarantees the screen always exits.
+// v5 fixes: use context.go() (GoRouter) instead of the legacy
+//   Navigator.pushReplacementNamed API, which requires onGenerateRoute
+//   and crashes when the app is wired with MaterialApp.router.
 library;
 
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../app_router.dart';
 import '../providers/onboarding_provider.dart';
 import '../theme/river_theme.dart';
-import 'main_shell.dart';
-import 'onboarding_screen.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   static const String route = '/';
@@ -82,14 +82,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
     if (!mounted) return;
 
-    // Use addPostFrameCallback to guarantee Navigator is fully mounted
-    // (eliminates rare cold-boot "Navigator not found" assertion).
+    // Use addPostFrameCallback so the GoRouter navigation happens after the
+    // current frame is fully painted (eliminates cold-boot assertion).
+    // context.go() is the correct GoRouter API — pushReplacementNamed
+    // requires onGenerateRoute which MaterialApp.router does NOT provide.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      Navigator.pushReplacementNamed(
-        context,
-        done ? MainShell.route : OnboardingScreen.route,
-      );
+      context.go(done ? Routes.shell : Routes.onboarding);
     });
   }
 

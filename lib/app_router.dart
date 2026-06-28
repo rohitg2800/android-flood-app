@@ -69,6 +69,8 @@ class Routes {
   static const onboarding = '/onboarding';
   static const login = '/login';
   static const register = '/register';
+  // /shell is the primary post-onboarding destination used by SplashScreen.
+  // /home is kept as an alias for backwards compatibility.
   static const shell = '/shell';
   static const home = '/home';
 
@@ -159,6 +161,12 @@ class AppRouter {
             builder: (context, state) => const SizedBox(),
           ),
 
+          // /shell — primary post-onboarding destination (used by SplashScreen).
+          GoRoute(
+            path: Routes.shell,
+            builder: (context, state) => const MainShell(),
+          ),
+          // /home — alias kept for backwards compat (deep-links, etc.).
           GoRoute(
             path: Routes.home,
             builder: (context, state) => const MainShell(),
