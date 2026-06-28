@@ -88,9 +88,9 @@ void _navigateFromNotification({
       _parseStation(payload?.isNotEmpty == true ? payload : title);
   debugPrint('[Notif] resolved station: "$stationName"');
   if (stationName.isNotEmpty) {
-    AppRouter.router.go('/alerts/$stationName');
+    AppRouter.push('/alerts/$stationName');
   } else {
-    AppRouter.router.go(Routes.alerts);
+    AppRouter.push(Routes.alerts);
   }
 }
 
@@ -142,18 +142,6 @@ Future<void> main() async {
         statusBarIconBrightness: Brightness.light,
       ),
     );
-    // ── Notification deep-link initialLocation (terminated state) ──────
-    String initialLocation = Routes.splash;
-    final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
-    if (initialMessage != null) {
-      final station = _parseStation(initialMessage.data['alertId'] as String?);
-      initialLocation = station.isNotEmpty ? '/alerts/$station' : Routes.alerts;
-    }
-
-    AppRouter.init(
-      FloodDataProvider(),
-      initialLocation: initialLocation,
-    );
 
     runApp(
       ProviderScope(
@@ -166,11 +154,7 @@ Future<void> main() async {
         child: pv.MultiProvider(
           providers: [
             pv.ChangeNotifierProvider<FloodDataProvider>(
-              create: (_) {
-                final p = FloodDataProvider();
-                AppRouter.init(p);
-                return p;
-              },
+              create: (_) => FloodDataProvider(),
             ),
           ],
           child: const FloodWatchApp(),
@@ -318,7 +302,7 @@ class FloodWatchApp extends ConsumerWidget {
     final coreTheme = core_app.AppTheme.dark(highContrast: a11y.highContrast);
     return core_theme.RiverTheme(
       appTheme: coreTheme,
-      child: MaterialApp.router(
+      child: MaterialApp(
         title: 'FloodWatch',
         debugShowCheckedModeBanner: false,
         theme: lightSlot,
@@ -343,7 +327,9 @@ class FloodWatchApp extends ConsumerWidget {
           ),
           child: child!,
         ),
-        routerConfig: AppRouter.router,
+        navigatorKey: AppRouter.navigatorKey,
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        initialRoute: Routes.splash,
       ),
     );
   }
