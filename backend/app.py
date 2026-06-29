@@ -1,3 +1,5 @@
+from routes.accessibility import router as accessibility_router
+from routes.pump_stations import router as pump_stations_router
 from fastapi import FastAPI, HTTPException, Request, WebSocket, status
 from fastapi.staticfiles import StaticFiles
 import asyncio
