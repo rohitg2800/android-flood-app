@@ -329,7 +329,7 @@ class BiharStationRegistry {
       lat: 26.5167, lng: 86.90,
       coversCities: ['Birpur','Supaul','Madhepura','Araria','Forbesganj','Saharsa',
                      'Darbhanga','Khagaria','Bhagalpur'],
-      warningLevel: 73.70, dangerLevel: 74.70, hfl: 76.02,
+      warningLevel: 73.70, dangerLevel: 76.02, hfl: 77.10,  // corrected DL
     ),
 
     'kursela': BiharStationMeta(

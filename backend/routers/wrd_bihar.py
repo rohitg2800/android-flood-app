@@ -40,6 +40,10 @@ from apscheduler.triggers.interval import IntervalTrigger
 from bs4 import BeautifulSoup
 from fastapi import APIRouter
 from cachetools import TTLCache
+try:
+    from routers.dependencies import operational_store as _op_store
+except Exception:
+    _op_store = None
 
 log = logging.getLogger(__name__)
 
@@ -531,8 +535,50 @@ def _scheduled_refresh() -> None:
             log.info("[WRD Bihar] Cache was empty — populating")
         _CACHE[_CACHE_KEY] = fresh
         log.info(f"[WRD Bihar] Cache refreshed: {fresh['station_count']} stations at {fresh['timestamp']}")
+        # Save to Neon DB
+        try:
+            if _op_store and hasattr(_op_store, 'save_station_snapshot'):
+                saved = _op_store.save_station_snapshot(fresh.get('stations', []))
+                log.info(f"[WRD Bihar] Saved {saved} station snapshots to DB")
+                # Save flood alerts for elevated stations
+                for s in fresh.get('stations', []):
+                    if s.get('status') in ('WARNING', 'DANGER', 'CRITICAL'):
+                        _op_store.save_flood_alert({
+                            'station':       s.get('station'),
+                            'river':         s.get('river'),
+                            'district':      s.get('district'),
+                            'severity':      s.get('status'),
+                            'level_m':       s.get('current_level_m'),
+                            'danger_level_m': s.get('danger_level_m'),
+                            'alert_type':    'THRESHOLD',
+                            'message':       f"{s.get('station')} at {s.get('current_level_m')}m — {s.get('status')}",
+                        })
+        except Exception as db_exc:
+            log.warning(f"[WRD Bihar] DB save failed (non-fatal): {db_exc}")
     except RuntimeError as exc:
         log.warning(f"[WRD Bihar] Scheduled refresh failed: {exc}")
+
+
+@router.get("/api/wrd-bihar/history/{station}")
+async def get_station_history(station: str, limit: int = 100):
+    """GET station level history from Neon DB."""
+    try:
+        from routers.dependencies import operational_store
+        rows = operational_store.list_station_snapshots(station=station, limit=limit)
+        return {"station": station, "count": len(rows), "history": rows}
+    except Exception as e:
+        return {"error": str(e), "history": []}
+
+
+@router.get("/api/wrd-bihar/flood-alerts")
+async def get_flood_alerts(active_only: bool = True):
+    """GET flood alerts from Neon DB."""
+    try:
+        from routers.dependencies import operational_store
+        rows = operational_store.list_flood_alerts(active_only=active_only)
+        return {"count": len(rows), "alerts": rows}
+    except Exception as e:
+        return {"error": str(e), "alerts": []}
 
 
 def start_scheduler() -> None:

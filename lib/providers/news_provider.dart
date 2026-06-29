@@ -38,6 +38,7 @@ class NewsFilterNotifier extends Notifier<NewsFilter> {
     state = state.copyWith(severities: set);
   }
   void reset() => state = const NewsFilter();
+  void setLanguage(String lang) => state = state.copyWith(language: lang);
 }
 
 final newsFilterProvider =

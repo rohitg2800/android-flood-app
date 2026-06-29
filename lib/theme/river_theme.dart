@@ -441,6 +441,31 @@ class RiverColors extends ThemeExtension<RiverColors> {
   static ThemeData sunsetTheme() => _buildTheme(brightness: Brightness.dark,  ext: _sunset);
   static ThemeData oceanTheme()  => _buildTheme(brightness: Brightness.dark,  ext: _ocean);
 
+  static ThemeData highContrastTheme() {
+    return ThemeData(
+      brightness: Brightness.dark,
+      useMaterial3: true,
+      scaffoldBackgroundColor: const Color(0xFF000000),
+      cardColor: const Color(0xFF0D0D0D),
+      dividerColor: const Color(0xFF555555),
+      colorScheme: const ColorScheme.dark(
+        surface: Color(0xFF0D0D0D),
+        primary: Color(0xFF63C2FF),
+        secondary: Color(0xFF48D597),
+        error: Color(0xFFFF6B75),
+        outline: Color(0xFF555555),
+      ),
+      textTheme: const TextTheme(
+        titleLarge:  TextStyle(color: Color(0xFFFFFFFF), fontSize: 20, fontWeight: FontWeight.w700),
+        titleMedium: TextStyle(color: Color(0xFFFFFFFF), fontSize: 16, fontWeight: FontWeight.w600),
+        bodyLarge:   TextStyle(color: Color(0xFFFFFFFF), fontSize: 15),
+        bodyMedium:  TextStyle(color: Color(0xFFE0E0E0), fontSize: 13),
+        labelSmall:  TextStyle(color: Color(0xFFE0E0E0), fontSize: 11),
+      ),
+      iconTheme: const IconThemeData(color: Color(0xFFE0E0E0), size: 20),
+    );
+  }
+
   static ThemeData _buildTheme({
     required Brightness brightness,
     required RiverColors ext,

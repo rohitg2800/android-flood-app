@@ -256,8 +256,8 @@ class _GlassCard extends StatelessWidget {
         : 0.0);
 
     // Glow shadow colour driven by animation
-    final glowColor = accent.withOpacity(0.55 * glowStrength);
-    final borderColor = accent.withOpacity(0.5 + 0.5 * glowStrength);
+    final glowColor = accent.withValues(alpha: 0.55 * glowStrength);
+    final borderColor = accent.withValues(alpha: 0.5 + 0.5 * glowStrength);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -275,9 +275,9 @@ class _GlassCard extends StatelessWidget {
                   // Frosted glass base: mostly transparent white tinted by accent
                   gradient: LinearGradient(
                     colors: [
-                      Colors.white.withOpacity(0.13),
-                      accent.withOpacity(0.09),
-                      Colors.black.withOpacity(0.35),
+                      Colors.white.withValues(alpha: 0.13),
+                      accent.withValues(alpha: 0.09),
+                      Colors.black.withValues(alpha: 0.35),
                     ],
                     begin: Alignment.topLeft,
                     end:   Alignment.bottomRight,
@@ -299,7 +299,7 @@ class _GlassCard extends StatelessWidget {
                     spreadRadius: 2  * glowStrength,
                   ),
                   BoxShadow(
-                    color:        accent.withOpacity(0.12),
+                    color:        accent.withValues(alpha: 0.12),
                     blurRadius:   6,
                     offset:       const Offset(0, 3),
                   ),
@@ -323,13 +323,13 @@ class _GlassCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color:        accent.withOpacity(0.22 * glowStrength + 0.08),
+                          color:        accent.withValues(alpha: 0.22 * glowStrength + 0.08),
                           borderRadius: BorderRadius.circular(6),
                           border:       Border.all(
-                              color: accent.withOpacity(0.7), width: 1),
+                              color: accent.withValues(alpha: 0.7), width: 1),
                           boxShadow: [
                             BoxShadow(
-                              color:      accent.withOpacity(0.4 * glowStrength),
+                              color:      accent.withValues(alpha: 0.4 * glowStrength),
                               blurRadius: 8,
                             ),
                           ],
@@ -349,7 +349,7 @@ class _GlassCard extends StatelessWidget {
                                 letterSpacing: 0.9,
                                 shadows: [
                                   Shadow(
-                                    color: accent.withOpacity(0.8),
+                                    color: accent.withValues(alpha: 0.8),
                                     blurRadius: 6,
                                   ),
                                 ],
@@ -381,7 +381,7 @@ class _GlassCard extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
-                            color:        Colors.white.withOpacity(0.10),
+                            color:        Colors.white.withValues(alpha: 0.10),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: const Icon(Icons.close_rounded,
@@ -395,7 +395,7 @@ class _GlassCard extends StatelessWidget {
 
                   // River · district
                   Text(
-                    '${riverName}  ·  ${district.isNotEmpty ? district : "Bihar"}',
+                    '$riverName  ·  ${district.isNotEmpty ? district : "Bihar"}',
                     style: const TextStyle(
                       color:      Colors.white70,
                       fontSize:   11,
@@ -417,7 +417,7 @@ class _GlassCard extends StatelessWidget {
                             fontWeight: FontWeight.w800,
                             shadows: [
                               Shadow(
-                                color:      accent.withOpacity(0.7),
+                                color:      accent.withValues(alpha: 0.7),
                                 blurRadius: 6,
                               ),
                             ],
@@ -465,9 +465,12 @@ class _GlassCard extends StatelessWidget {
                         onTap: onEvacuate,
                       ),
                       const Spacer(),
-                      const Text(
-                        'Swipe ↓ to dismiss',
-                        style: TextStyle(color: Colors.white30, fontSize: 9),
+                      const Flexible(
+                        child: Text(
+                          'Swipe ↓ to dismiss',
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: Colors.white30, fontSize: 9),
+                        ),
                       ),
                     ],
                   ),
@@ -523,7 +526,7 @@ class _LevelBar extends StatelessWidget {
               // Track
               Container(
                 height:     6,
-                color:      Colors.white.withOpacity(0.12),
+                color:      Colors.white.withValues(alpha: 0.12),
               ),
               // Fill
               FractionallySizedBox(
@@ -533,13 +536,13 @@ class _LevelBar extends StatelessWidget {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        color.withOpacity(0.7),
+                        color.withValues(alpha: 0.7),
                         color,
                       ],
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color:      color.withOpacity(0.6 * glowStrength),
+                        color:      color.withValues(alpha: 0.6 * glowStrength),
                         blurRadius: 6,
                       ),
                     ],
@@ -577,10 +580,10 @@ class _GlassBtn extends StatelessWidget {
         child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             decoration: BoxDecoration(
-              color:        color.withOpacity(0.18),
+              color:        color.withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(9),
               border:       Border.all(
-                  color: color.withOpacity(0.55), width: 1.2),
+                  color: color.withValues(alpha: 0.55), width: 1.2),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -595,7 +598,7 @@ class _GlassBtn extends StatelessWidget {
                     fontWeight:  FontWeight.w700,
                     shadows: [
                       Shadow(
-                        color:      color.withOpacity(0.5),
+                        color:      color.withValues(alpha: 0.5),
                         blurRadius: 4,
                       ),
                     ],

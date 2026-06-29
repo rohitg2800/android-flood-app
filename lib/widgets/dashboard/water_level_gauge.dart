@@ -174,7 +174,7 @@ class _GaugePainter extends CustomPainter {
 
     // — Glow layer (wider, lower opacity)
     final glowPaint = Paint()
-      ..color       = glowColor.withOpacity(0.25)
+      ..color       = glowColor.withValues(alpha: 0.25)
       ..style       = PaintingStyle.stroke
       ..strokeWidth = strokeWidth * 2.0
       ..strokeCap   = StrokeCap.round
@@ -190,7 +190,7 @@ class _GaugePainter extends CustomPainter {
           startAngle: _startAngle,
           endAngle:   _startAngle + sweep,
           colors: [
-            color.withOpacity(0.55),
+            color.withValues(alpha: 0.55),
             color,
           ],
         ).createShader(rect)
@@ -210,7 +210,7 @@ class _GaugePainter extends CustomPainter {
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
     canvas.drawCircle(tipOffset, strokeWidth * 0.6, tipPaint);
     canvas.drawCircle(tipOffset, strokeWidth * 0.35,
-        Paint()..color = Colors.white.withOpacity(0.9));
+        Paint()..color = Colors.white.withValues(alpha: 0.9));
   }
 
   @override

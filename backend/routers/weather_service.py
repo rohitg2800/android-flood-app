@@ -27,7 +27,7 @@ from .dependencies import (
 WEATHER_LOCATION_HINTS = [
     {
         "name": "Kolhapur",
-        "state": "Maharashtra",
+        "state": "Bihar",
         "lat": 16.705,
         "lon": 74.2433,
         "aliases": [

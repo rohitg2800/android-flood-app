@@ -10,9 +10,9 @@
 library;
 
 import 'dart:math' as math;
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:equinox_flood/core/theme/river_theme.dart' as core_theme;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/bihar_live_provider.dart';
@@ -65,37 +65,45 @@ class _AiPredictionScreenState extends ConsumerState<AiPredictionScreen>
       body: NestedScrollView(
         headerSliverBuilder: (_, __) => [
           SliverAppBar(
-            expandedHeight: 160,
             pinned: true,
-            stretch: true,
-            backgroundColor: const Color(0xFF07071A),
-            foregroundColor: Colors.white,
             elevation: 0,
-            flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsets.only(left: 56, bottom: 56),
-              title: const Text(
-                'AI Flood Predictor',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.2,
+            surfaceTintColor: Colors.transparent,
+            backgroundColor: const Color(0xFF05070A),
+            title: Row(
+              children: [
+                Container(
+                  width: 34, height: 34,
+                  decoration: BoxDecoration(
+                    color: cyan.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: cyan.withValues(alpha: 0.25)),
+                  ),
+                  child: Icon(Icons.psychology_rounded, color: cyan, size: 18),
                 ),
-              ),
-              background: _AnimatedAiHeader(pulse: _pulse),
+                const SizedBox(width: 10),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('AI Flood Predictor',
+                      style: TextStyle(color: t.textPrimary, fontSize: 15, fontWeight: FontWeight.w700)),
+                    Text('BiLSTM · Bihar · Live',
+                      style: TextStyle(color: t.textSecondary, fontSize: 10)),
+                  ],
+                ),
+              ],
             ),
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(44),
               child: Container(
-                color: const Color(0xFF07071A),
+                color: const Color(0xFF05070A),
                 child: TabBar(
                   controller: _tabs,
                   indicatorColor: cyan,
-                  indicatorWeight: 2.5,
+                  indicatorWeight: 2,
                   labelColor: cyan,
                   unselectedLabelColor: Colors.white38,
-                  labelStyle: const TextStyle(
-                      fontSize: 11, fontWeight: FontWeight.w700),
+                  labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
                   tabs: const [
                     Tab(icon: Icon(Icons.tune_rounded, size: 14), text: 'Predict'),
                     Tab(icon: Icon(Icons.bar_chart_rounded, size: 14), text: 'Forecast'),
@@ -123,121 +131,130 @@ class _AiPredictionScreenState extends ConsumerState<AiPredictionScreen>
 }
 
 // ── Animated header background ────────────────────────────────────────────────
-class _AnimatedAiHeader extends StatelessWidget {
-  final AnimationController pulse;
-  const _AnimatedAiHeader({required this.pulse});
+class _AnimatedHeaderBg extends StatefulWidget {
+  const _AnimatedHeaderBg();
+  @override
+  State<_AnimatedHeaderBg> createState() => _AnimatedHeaderBgState();
+}
+
+class _AnimatedHeaderBgState extends State<_AnimatedHeaderBg>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: pulse,
-      builder: (_, __) {
-        final p = pulse.value;
-        return Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF07071A),
-                Color(0xFF130A28),
-                Color(0xFF071428),
-              ],
-            ),
-          ),
-          child: Stack(
-            children: [
-              // Pulsing rings
-              for (int i = 0; i < 3; i++)
-                Positioned(
-                  right: -20 + i * 8.0,
-                  top: -20 + i * 6.0,
-                  child: Container(
-                    width: 180 - i * 30 + p * 20,
-                    height: 180 - i * 30 + p * 20,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: const Color(0xFF00E5FF)
-                            .withValues(alpha: (0.12 - i * 0.03) * (1 - p * 0.4)),
-                        width: 1.2,
-                      ),
+      animation: _ctrl,
+      builder: (context, _) {
+        final double p = _ctrl.value;
+        return Stack(
+          children: [
+            for (int i = 0; i < 3; i++)
+              Positioned(
+                right: -20 + i * 8.0,
+                top: -20 + i * 6.0,
+                child: Container(
+                  width: 180 - i * 30 + p * 20,
+                  height: 180 - i * 30 + p * 20,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFF00E5FF)
+                          .withValues(alpha: (0.12 - i * 0.03) * (1 - p * 0.4)),
+                      width: 1.2,
                     ),
                   ),
                 ),
-              // Neural grid overlay
-              Opacity(
-                opacity: 0.04 + 0.02 * p,
-                child: GridPaper(
-                  color: const Color(0xFF00E5FF),
-                  divisions: 1,
-                  subdivisions: 1,
-                  interval: 28,
-                  child: const SizedBox.expand(),
+              ),
+            // Neural grid overlay
+            Opacity(
+              opacity: 0.04 + 0.02 * p,
+              child: GridPaper(
+                color: const Color(0xFF00E5FF),
+                divisions: 1,
+                subdivisions: 1,
+                interval: 28,
+                child: const SizedBox.expand(),
+              ),
+            ),
+            // AI icon with glow
+            Positioned(
+              right: 28,
+              top: 24,
+              child: ShaderMask(
+                shaderCallback: (r) => const LinearGradient(
+                  colors: [Color(0xFF00E5FF), Color(0xFF7B2FF7)],
+                ).createShader(r),
+                child: Icon(
+                  Icons.auto_graph_rounded,
+                  color: Colors.white,
+                  size: 52 + p * 4,
                 ),
               ),
-              // AI icon with glow
-              Positioned(
-                right: 28,
-                top: 24,
-                child: ShaderMask(
-                  shaderCallback: (r) => const LinearGradient(
-                    colors: [Color(0xFF00E5FF), Color(0xFF7B2FF7)],
-                  ).createShader(r),
-                  child: Icon(
-                    Icons.auto_graph_rounded,
-                    color: Colors.white,
-                    size: 52 + p * 4,
-                  ),
+            ),
+            // Live badge
+            Positioned(
+              left: 16,
+              bottom: 62,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.4)),
                 ),
-              ),
-              // Live badge
-              Positioned(
-                left: 16,
-                bottom: 62,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                        color: const Color(0xFF00E5FF).withValues(alpha: 0.4)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 6, height: 6,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Color.lerp(
-                            const Color(0xFF00E5FF),
-                            const Color(0xFF4CAF50),
-                            p,
-                          ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Color.lerp(
+                          const Color(0xFF00E5FF),
+                          const Color(0xFF4CAF50),
+                          p,
                         ),
                       ),
-                      const SizedBox(width: 5),
-                      const Text(
-                        'LIVE MODEL',
-                        style: TextStyle(
-                          color: Color(0xFF00E5FF),
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.2,
-                        ),
+                    ),
+                    const SizedBox(width: 5),
+                    const Text(
+                      'LIVE MODEL',
+                      style: TextStyle(
+                        color: Color(0xFF00E5FF),
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.2,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         );
       },
     );
   }
 }
+
 
 // ── Tab 1: Predict ────────────────────────────────────────────────────────────
 class _PredictTab extends StatelessWidget {
@@ -257,6 +274,16 @@ class _ForecastTab extends ConsumerWidget {
     final t      = RiverColors.of(context);
     final liveAs = ref.watch(biharLiveProvider);
     final bulkPreds = ref.watch(biharBulkPredictionsProvider);
+
+    // ── Risk explanation card ────────────────────────────────────────────
+    final ct = core_theme.RiverTheme.of(context).colors;
+    final critCount = bulkPreds.where((p) => p.riskScore >= 75).length;
+    final highCount = bulkPreds.where((p) => p.riskScore >= 55 && p.riskScore < 75).length;
+    final explanation = critCount > 0
+        ? '$critCount station${critCount > 1 ? "s" : ""} at critical risk based on current levels, upstream flow, and 24h rainfall forecast.'
+        : highCount > 0
+            ? '$highCount station${highCount > 1 ? "s" : ""} showing elevated risk. Monitor closely over next 24 hours.'
+            : 'All monitored stations currently within safe thresholds. Risk is low.';
 
     // Top risk stations from bulk predictions (live rule-engine)
     final topRisk = liveAs.maybeWhen(
@@ -325,6 +352,72 @@ class _ForecastTab extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 18, 16, 32),
       children: [
+        // ── Why this risk? explanation card ──────────────────────────────
+        Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: (critCount > 0
+                ? const Color(0xFFFF4D5A)
+                : highCount > 0
+                    ? const Color(0xFFFFC857)
+                    : const Color(0xFF3ACC8A)).withValues(alpha: 0.09),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: (critCount > 0
+                  ? const Color(0xFFFF4D5A)
+                  : highCount > 0
+                      ? const Color(0xFFFFC857)
+                      : const Color(0xFF3ACC8A)).withValues(alpha: 0.28),
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                critCount > 0
+                    ? Icons.crisis_alert_rounded
+                    : highCount > 0
+                        ? Icons.info_outline_rounded
+                        : Icons.check_circle_outline_rounded,
+                color: critCount > 0
+                    ? const Color(0xFFFF4D5A)
+                    : highCount > 0
+                        ? const Color(0xFFFFC857)
+                        : const Color(0xFF3ACC8A),
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      critCount > 0 ? 'Critical Risk Detected'
+                          : highCount > 0 ? 'Elevated Risk'
+                          : 'All Clear',
+                      style: TextStyle(
+                        color: ct.textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      explanation,
+                      style: TextStyle(
+                        color: ct.textSecondary,
+                        fontSize: 12,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+
         // Live badges
         Row(
           children: [

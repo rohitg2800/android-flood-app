@@ -1,4 +1,5 @@
-// lib/screens/river_detail_screen.dart  v3.2
+// lib/screens/river_detail_screen.dart  v3.3
+// Fixed: data.city/district/state (String?) null guards, data.hfl (double?) null guard
 library;
 
 import 'package:flutter/material.dart';
@@ -24,7 +25,7 @@ class RiverDetailScreen extends StatelessWidget {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(data.city, style: const TextStyle(
+            Text(data.city ?? data.stationName, style: const TextStyle(
               fontSize: 16, fontWeight: FontWeight.w800, color: AppPalette.textWhite,
             )),
             Text(_headerSub, style: const TextStyle(
@@ -44,7 +45,12 @@ class RiverDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _MetaCard(river: data.riverName ?? '—', district: data.district, state: data.state, color: col),
+            _MetaCard(
+              river:    data.riverName ?? '—',
+              district: data.district  ?? '',
+              state:    data.state     ?? '',
+              color:    col,
+            ),
             const SizedBox(height: 14),
             const _SectionTitle('Water Level'),
             _LevelGrid(data: data, col: col),
@@ -89,9 +95,8 @@ class RiverDetailScreen extends StatelessWidget {
                 xLabels: const ['T-5h', 'T-4h', 'T-3h', 'T-2h', 'T-1h', 'Now'],
                 lineColor: col,
                 minY: 0,
-                // Use hfl getter (never null — falls back to dangerLevel*1.3)
-                maxY: data.hfl > 0
-                    ? data.hfl
+                maxY: (data.hfl != null && data.hfl! > 0)
+                    ? data.hfl!
                     : data.dangerLevel * 1.1,
               ),
             ),
@@ -105,8 +110,8 @@ class RiverDetailScreen extends StatelessWidget {
   String get _headerSub {
     final parts = <String>[];
     if ((data.riverName ?? '').isNotEmpty) parts.add(data.riverName!);
-    if (data.district.isNotEmpty)          parts.add(data.district);
-    if (data.state.isNotEmpty)             parts.add(data.state);
+    if ((data.district  ?? '').isNotEmpty) parts.add(data.district!);
+    if ((data.state     ?? '').isNotEmpty) parts.add(data.state!);
     return parts.join('  ·  ');
   }
 }
@@ -114,7 +119,12 @@ class RiverDetailScreen extends StatelessWidget {
 class _MetaCard extends StatelessWidget {
   final String river, district, state;
   final Color  color;
-  const _MetaCard({required this.river, required this.district, required this.state, required this.color});
+  const _MetaCard({
+    required this.river,
+    required this.district,
+    required this.state,
+    required this.color,
+  });
   @override
   Widget build(BuildContext context) => Container(
     width: double.infinity,
@@ -129,8 +139,10 @@ class _MetaCard extends StatelessWidget {
         const Divider(color: AppPalette.abyss4, height: 14),
         _MetaRow(icon: Icons.location_city_outlined, label: 'District (Zila)', value: district, color: color),
       ],
-      const Divider(color: AppPalette.abyss4, height: 14),
-      _MetaRow(icon: Icons.map_outlined, label: 'State', value: state, color: color),
+      if (state.isNotEmpty) ...[
+        const Divider(color: AppPalette.abyss4, height: 14),
+        _MetaRow(icon: Icons.map_outlined, label: 'State', value: state, color: color),
+      ],
     ]),
   );
 }

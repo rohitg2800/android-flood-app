@@ -12,7 +12,7 @@ class AppConstants {
   ];
 
   // ── Base URL — single source of truth: delegates to AppConfig ─────────────
-  static String get baseUrl => AppConfig.baseUrl;
+  @Deprecated("Use AppConfig.baseUrl directly") static String get baseUrl => AppConfig.baseUrl;
 
   // ── HTTP client defaults ──────────────────────────────────────────────────
   static const Duration defaultTimeout = Duration(seconds: 30);

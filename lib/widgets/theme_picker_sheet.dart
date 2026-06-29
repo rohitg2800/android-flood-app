@@ -56,7 +56,7 @@ class ThemePickerSheet extends ConsumerWidget {
             children: AppThemeMode.values.map((mode) {
               final isSelected = mode == current;
               final modeLabel = switch (mode) {
-                AppThemeMode.system       => 'Auto',
+                AppThemeMode.system       => 'Dark (Auto)',
                 AppThemeMode.dark         => 'Night River',
                 AppThemeMode.sunset       => 'Sunset Warm',
                 AppThemeMode.ocean        => 'Deep Ocean',

@@ -26,7 +26,7 @@ class SkinToggleButton extends ConsumerWidget {
         decoration: BoxDecoration(
           color:        rc.accentDim,
           borderRadius: rc.chipRadius,
-          border:       Border.all(color: rc.accent.withOpacity(0.45), width: 1),
+          border:       Border.all(color: rc.accent.withValues(alpha: 0.45), width: 1),
           boxShadow:    rc.accentGlow,
         ),
         child: Row(

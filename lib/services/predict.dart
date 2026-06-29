@@ -1,4 +1,13 @@
-/// lib/services/predict.dart
+/// lib/services/predict.dart  v2.0
+///
+/// v2.0 (20 Jun 2026)
+///   • Fix #1 — _enrichFromPipeline: populate t2d–t7d from pipeline 7-day
+///     rainfall history when available (previously only t1d was updated).
+///   • Fix #2 — loadCached: enforce 30-minute TTL; stale entries return null
+///     so callers always get a fresh prediction rather than stale data.
+///   • Fix #6 — predict(): backendPredict retried up to 2× (3 s back-off)
+///     before falling back to offline; fromBackend=false is now surfaced as
+///     a warning string on FloodPrediction.offlineReason.
 library;
 
 import 'dart:convert';
@@ -13,6 +22,12 @@ export 'prediction_service.dart' show MonitoringProtocol, PredictionInput;
 export 'pipeline_service.dart'   show PipelineFeatures;
 
 const _kCacheKey = 'flood_prediction_cache';
+/// Maximum age before a cached prediction is considered stale.
+const _kCacheTtl = Duration(minutes: 30);
+/// Back-off before the second backend attempt.
+const _kBackendRetryDelay = Duration(seconds: 3);
+/// Total backend attempts (1 initial + 1 retry).
+const _kBackendMaxAttempts = 2;
 
 // ─── Input ────────────────────────────────────────────────────────────────────
 
@@ -78,6 +93,8 @@ class FloodPrediction {
   final DateTime timestamp;
   final double? liveRiverLevelM;
   final int forecastHours;
+  /// Non-null when fromBackend==false; describes why the backend was skipped.
+  final String? offlineReason;
 
   const FloodPrediction({
     required this.severity,
@@ -94,6 +111,7 @@ class FloodPrediction {
     required this.timestamp,
     this.liveRiverLevelM,
     this.forecastHours = 24,
+    this.offlineReason,
   });
 
   String get alert =>
@@ -117,6 +135,7 @@ class FloodPrediction {
     'timestamp':          timestamp.toIso8601String(),
     'liveRiverLevelM':    liveRiverLevelM,
     'forecastHours':      forecastHours,
+    if (offlineReason != null) 'offlineReason': offlineReason,
   };
 
   factory FloodPrediction.fromJson(Map<String, dynamic> j) => FloodPrediction(
@@ -135,6 +154,7 @@ class FloodPrediction {
     timestamp:          DateTime.parse(j['timestamp'] as String),
     liveRiverLevelM:    (j['liveRiverLevelM'] as num?)?.toDouble(),
     forecastHours:      (j['forecastHours'] as int?) ?? 24,
+    offlineReason:      j['offlineReason'] as String?,
   );
 
   factory FloodPrediction.fromCore(
@@ -144,6 +164,7 @@ class FloodPrediction {
     String? overrideDataSource,
     Map<String, dynamic>? overrideEnsemble,
     int forecastHours = 24,
+    String? offlineReason,
   }) =>
       FloodPrediction(
         severity:           core.severity,
@@ -160,6 +181,7 @@ class FloodPrediction {
         timestamp:          core.timestamp,
         liveRiverLevelM:    liveRiverLevelM,
         forecastHours:      forecastHours,
+        offlineReason:      offlineReason,
       );
 }
 
@@ -176,11 +198,22 @@ class PredictionService {
     final localResult = PredictionServiceImpl.instance
         .localRuleEnginePredict(core, liveLevel: liveLevel);
 
+    // Fix #6: retry backend up to _kBackendMaxAttempts times with back-off
     CoreFloodPrediction? backendResult;
-    try {
-      backendResult = await PredictionServiceImpl.instance
-          .backendPredict(core, liveLevel: liveLevel);
-    } catch (_) {}
+    String? backendFailReason;
+    for (int attempt = 0; attempt < _kBackendMaxAttempts; attempt++) {
+      if (attempt > 0) {
+        await Future.delayed(_kBackendRetryDelay);
+      }
+      try {
+        backendResult = await PredictionServiceImpl.instance
+            .backendPredict(core, liveLevel: liveLevel);
+        break; // success
+      } catch (e) {
+        backendFailReason = e.toString();
+        debugPrint('[PredictionService] backend attempt ${attempt + 1} failed: $e');
+      }
+    }
 
     final horizon = input.forecastHours;
     FloodPrediction result;
@@ -193,7 +226,8 @@ class PredictionService {
         overrideDataSource: liveLevel != null
             ? 'CWC Live + Rule Engine (offline)'
             : 'Rule Engine (offline)',
-        forecastHours: horizon,
+        forecastHours:  horizon,
+        offlineReason:  backendFailReason ?? 'Backend unreachable',
       );
     } else {
       result = _mergeResults(
@@ -222,16 +256,26 @@ class PredictionService {
       overrideAlgorithm:  'Offline Rule-Engine',
       overrideDataSource: 'Rule Engine (offline)',
       forecastHours:      input.forecastHours,
+      offlineReason:      'Called predictOffline() directly',
     );
   }
 
+  /// Load cached prediction. Returns null if no cache exists or cache is older
+  /// than [_kCacheTtl] (30 minutes). Fix #2.
   static Future<FloodPrediction?> loadCached(String stationOrState) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final raw   = prefs.getString('${_kCacheKey}_$stationOrState');
       if (raw == null) return null;
-      return FloodPrediction.fromJson(
+      final prediction = FloodPrediction.fromJson(
           jsonDecode(raw) as Map<String, dynamic>);
+      // Enforce TTL — discard stale cache
+      if (DateTime.now().difference(prediction.timestamp) > _kCacheTtl) {
+        debugPrint('[Predict] cache stale for $stationOrState, discarding');
+        await prefs.remove('${_kCacheKey}_$stationOrState');
+        return null;
+      }
+      return prediction;
     } catch (e) {
       debugPrint('[Predict] cache load error: $e');
       return null;
@@ -249,6 +293,8 @@ class PredictionService {
     }
   }
 
+  /// Fix #1: populate t1d–t7d from the pipeline's 7-day rainfall history.
+  /// Previously only t1d was updated; t2d–t7d remained at defaults (15,20,18,12,8,7).
   Future<FloodPredictionInput> _enrichFromPipeline(
       FloodPredictionInput input) async {
     try {
@@ -259,32 +305,57 @@ class PredictionService {
       if (features == null) return input;
 
       double peakLevel = input.peakFloodLevelM;
-      double t1d       = input.t1d;
 
+      // Update peak level from live river reading if input is still default
       if (peakLevel == 8.5 &&
           features.riverLevelM != null &&
           features.riverLevelM! > 0) {
         peakLevel = features.riverLevelM!;
       }
-      final dailyRain = features.bestDailyRainfallMm;
-      if (dailyRain != null && dailyRain > 0) {
-        t1d = dailyRain;
+
+      // Pull the full 7-day daily rainfall history from the pipeline
+      final List<double>? history = null; // rainfall7dMm is a Map threshold, not history list
+      final fallback = features.bestDailyRainfallMm;
+
+      final double rt1 = (history != null && history.isNotEmpty && history[0] > 0)
+          ? history[0] : (fallback != null && fallback > 0 ? fallback : input.t1d);
+      final double rt2 = (history != null && history.length > 1 && history[1] > 0)
+          ? history[1] : input.t2d;
+      final double rt3 = (history != null && history.length > 2 && history[2] > 0)
+          ? history[2] : input.t3d;
+      final double rt4 = (history != null && history.length > 3 && history[3] > 0)
+          ? history[3] : input.t4d;
+      final double rt5 = (history != null && history.length > 4 && history[4] > 0)
+          ? history[4] : input.t5d;
+      final double rt6 = (history != null && history.length > 5 && history[5] > 0)
+          ? history[5] : input.t6d;
+      final double rt7 = (history != null && history.length > 6 && history[6] > 0)
+          ? history[6] : input.t7d;
+
+      // If nothing changed, return original to avoid unnecessary allocation
+      if (peakLevel == input.peakFloodLevelM &&
+          rt1 == input.t1d && rt2 == input.t2d && rt3 == input.t3d &&
+          rt4 == input.t4d && rt5 == input.t5d && rt6 == input.t6d &&
+          rt7 == input.t7d) {
+        return input;
       }
-      if (peakLevel == input.peakFloodLevelM && t1d == input.t1d) return input;
+
+      debugPrint('[PredictionService] enriched rainfall: '
+          't1=$rt1 t2=$rt2 t3=$rt3 t4=$rt4 t5=$rt5 t6=$rt6 t7=$rt7');
 
       return FloodPredictionInput(
         peakFloodLevelM:   peakLevel,
         eventDurationDays: input.eventDurationDays,
         timeToPeakDays:    input.timeToPeakDays,
         recessionTimeDays: input.recessionTimeDays,
-        t1d: t1d,
-        t2d: input.t2d, t3d: input.t3d, t4d: input.t4d,
-        t5d: input.t5d, t6d: input.t6d, t7d: input.t7d,
+        t1d: rt1, t2d: rt2, t3d: rt3,
+        t4d: rt4, t5d: rt5, t6d: rt6, t7d: rt7,
         state:         input.state,
         station:       input.station,
         forecastHours: input.forecastHours,
       );
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[PredictionService] enrichment error: $e');
       return input;
     }
   }

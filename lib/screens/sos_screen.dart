@@ -12,6 +12,7 @@ import 'dart:math' as math;
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:equinox_flood/core/theme/river_theme.dart' as core_theme;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -215,12 +216,9 @@ class _SosScreenState extends ConsumerState<SosScreen>
         ? contactsForDistrict(detectedDistrict)
         : <EmergencyContact>[];
 
-    final districtLabel = detectedDistrict != null
-        ? detectedDistrict
-            .split(' ')
+    final districtLabel = detectedDistrict?.split(' ')
             .map((w) => '${w[0].toUpperCase()}${w.substring(1)}')
-            .join(' ')
-        : null;
+            .join(' ');
 
     if (state.phase == SosPhase.idle && !_pulse.isAnimating) {
       _pulse.repeat(reverse: true);
@@ -237,7 +235,7 @@ class _SosScreenState extends ConsumerState<SosScreen>
             expandedHeight: 244,
             pinned: true,
             stretch: true,
-            backgroundColor: const Color(0xFF1A0A0A),
+            backgroundColor: const Color(0xFF0D0608),
             foregroundColor: Colors.white,
             actions: [
               IconButton(
@@ -724,12 +722,9 @@ class _StatusCard extends ConsumerWidget {
     final t = RiverColors.of(context);
 
     if (state.phase == SosPhase.sent) {
-      final distLabel = state.district != null
-          ? state.district!
-              .split(' ')
+      final distLabel = state.district?.split(' ')
               .map((w) => '${w[0].toUpperCase()}${w.substring(1)}')
-              .join(' ')
-          : null;
+              .join(' ');
       return Container(
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(18),

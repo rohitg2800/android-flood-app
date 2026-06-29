@@ -112,14 +112,12 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
 
     final showOfflineBanner = predAsync?.hasError == true;
 
-    return Scaffold(
-      backgroundColor: t.scaffoldBg,
-      body: Container(
-        decoration: AppPalette.scaffoldDecoration(),
-        child: SafeArea(
+    return Container(
+      color: const Color(0xFF05070A),
+      child: SafeArea(
           child: RefreshIndicator(
-            color: AppPalette.gold,
-            backgroundColor: AppPalette.abyss2,
+            color: const Color(0xFF4CB3FF),
+            backgroundColor: const Color(0xFF0F141B),
             onRefresh: () async {
               ref.invalidate(mergedStationsProvider);
               await Future<void>.delayed(const Duration(milliseconds: 600));
@@ -127,7 +125,6 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
             child: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
-                _buildAppBar(t),
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                   sliver: SliverList(
@@ -151,20 +148,20 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 14, vertical: 10),
                               decoration: BoxDecoration(
-                                color: AppPalette.gold.withOpacity(0.10),
+                                color: const Color(0xFF4CB3FF).withValues(alpha: 0.10),
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
-                                    color: AppPalette.gold.withOpacity(0.35)),
+                                    color: const Color(0xFF4CB3FF).withValues(alpha: 0.35)),
                               ),
                               child: Row(children: [
                                 const Icon(Icons.offline_bolt_rounded,
-                                    size: 16, color: AppPalette.gold),
+                                    size: 16, color: Color(0xFF4CB3FF)),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
                                     'Offline — showing cached result from \$ageStr',
                                     style: TextStyle(
-                                        color: AppPalette.gold,
+                                        color: const Color(0xFF4CB3FF),
                                         fontSize: 12),
                                   ),
                                 ),
@@ -233,31 +230,40 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
             ),
           ),
         ),
-      ),
     );
   }
 
   SliverAppBar _buildAppBar(RiverColors t) => SliverAppBar(
         pinned: true,
-        backgroundColor: AppPalette.abyss1.withValues(alpha: 0.96),
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        backgroundColor: const Color(0xFF05070A),
         title: Row(
           children: [
-            const Icon(Icons.auto_graph_rounded,
-                color: AppPalette.gold, size: 22),
-            const SizedBox(width: 8),
-            Text('LSTM Flood Prediction',
-                style: TextStyle(
-                  color: t.textPrimary,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.4,
-                )),
+            Container(
+              width: 32, height: 32,
+              decoration: BoxDecoration(
+                color: const Color(0xFF4CB3FF).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFF4CB3FF).withValues(alpha: 0.25)),
+              ),
+              child: const Icon(Icons.auto_graph_rounded, color: Color(0xFF4CB3FF), size: 17),
+            ),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('LSTM Flood Prediction',
+                  style: TextStyle(color: t.textPrimary, fontSize: 15, fontWeight: FontWeight.w700, letterSpacing: 0.2)),
+                Text('BiLSTM · Bihar · Live', style: TextStyle(color: t.textSecondary, fontSize: 10)),
+              ],
+            ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.info_outline_rounded,
-                color: AppPalette.textGrey),
+            icon: const Icon(Icons.info_outline_rounded, color: Color(0xFF7A8290)),
             tooltip: 'About this model',
             onPressed: () => _showModelInfo(context, t),
           ),
@@ -267,7 +273,7 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
   void _showModelInfo(BuildContext ctx, RiverColors t) {
     showModalBottomSheet<void>(
       context: ctx,
-      backgroundColor: AppPalette.abyss2,
+      backgroundColor: const Color(0xFF0F141B),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -299,7 +305,7 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
               'Predictions are probabilistic estimates. '
               'Always follow official CWC / NDRF advisories.',
               style: TextStyle(
-                  color: AppPalette.textGrey,
+                  color: const Color(0xFF7A8290),
                   fontSize: 12,
                   height: 1.5),
             ),
@@ -317,7 +323,7 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
               width: 150,
               child: Text(label,
                   style: const TextStyle(
-                      color: AppPalette.textGrey, fontSize: 13)),
+                      color: Color(0xFF7A8290), fontSize: 13)),
             ),
             Expanded(
               child: Text(value,
@@ -335,7 +341,7 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
 //  Station Picker
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _StationPickerCard extends StatelessWidget {
+class _StationPickerCard extends StatefulWidget {
   final List<RiverStation> stations;
   final String?            selectedId;
   final ValueChanged<String?> onChanged;
@@ -349,74 +355,153 @@ class _StationPickerCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: AppPalette.glassMorph(
-        borderColor: AppPalette.abyssStroke,
-        radius: 16,
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          dropdownColor: AppPalette.abyss3,
-          isExpanded: true,
-          value: selectedId,
-          icon: const Icon(Icons.keyboard_arrow_down_rounded,
-              color: AppPalette.gold),
-          hint: Text('Select station',
-              style:
-                  TextStyle(color: theme.textSecondary, fontSize: 14)),
-          style: TextStyle(
-            color: theme.textPrimary,
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
-          items: stations.map((s) {
-            final cls = s.dangerClass;
-            final dot = _dotColor(cls);
-            return DropdownMenuItem<String>(
-              value: s.station,
-              child: Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    margin: const EdgeInsets.only(right: 10),
-                    decoration: BoxDecoration(
-                      color: dot,
-                      shape: BoxShape.circle,
-                      boxShadow: AppPalette.glowShadow(dot, blur: 6),
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      '${s.station}  •  ${s.river}',
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                          color: theme.textPrimary, fontSize: 14),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
-          onChanged: onChanged,
-        ),
-      ),
-    );
+  State<_StationPickerCard> createState() => _StationPickerCardState();
+}
+
+class _StationPickerCardState extends State<_StationPickerCard> {
+  final _ctrl    = TextEditingController();
+  final _focus   = FocusNode();
+  bool  _open    = false;
+  List<RiverStation> _results = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _results = widget.stations;
+  }
+
+  @override
+  void dispose() { _ctrl.dispose(); _focus.dispose(); super.dispose(); }
+
+  void _onChanged(String q) {
+    final query = q.toLowerCase().trim();
+    setState(() {
+      _results = query.isEmpty
+          ? widget.stations
+          : widget.stations.where((s) =>
+              s.city.toLowerCase().contains(query) ||
+              s.river.toLowerCase().contains(query)).toList();
+    });
   }
 
   Color _dotColor(DangerClass cls) {
     switch (cls) {
-      case DangerClass.extreme:
-        return AppPalette.critical;
-      case DangerClass.severe:
-        return AppPalette.danger;
-      case DangerClass.aboveNormal:
-        return AppPalette.warning;
-      default:
-        return AppPalette.safe;
+      case DangerClass.extreme:     return const Color(0xFFFF4D5A);
+      case DangerClass.severe:      return const Color(0xFFFF8C42);
+      case DangerClass.aboveNormal: return const Color(0xFFFFC857);
+      default:                      return const Color(0xFF3ACC8A);
     }
+  }
+
+  RiverStation? get _selected =>
+      widget.stations.where((s) => s.station == widget.selectedId).firstOrNull;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = widget.theme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── Search input ─────────────────────────────────────────────
+        GestureDetector(
+          onTap: () => setState(() { _open = !_open; if (_open) _focus.requestFocus(); }),
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F141B),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: _open ? const Color(0xFF4CB3FF).withValues(alpha: 0.5) : const Color(0xFF232934))),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(children: [
+              Icon(Icons.search_rounded,
+                color: _open ? const Color(0xFF4CB3FF) : const Color(0xFF7A8290), size: 18),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _open
+                    ? Material(
+                        color: Colors.transparent,
+                        child: TextField(
+                        controller: _ctrl,
+                        focusNode: _focus,
+                        onChanged: _onChanged,
+                        style: TextStyle(color: t.textPrimary, fontSize: 14),
+                        decoration: InputDecoration(
+                          hintText: 'Search station or river…',
+                          hintStyle: TextStyle(color: t.textSecondary, fontSize: 14),
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ),
+                    )
+                    : Text(
+                        _selected != null
+                            ? '${_selected!.city}  •  ${_selected!.river}'
+                            : 'Select station to predict',
+                        style: TextStyle(
+                          color: _selected != null ? t.textPrimary : t.textSecondary,
+                          fontSize: 14),
+                      ),
+              ),
+              if (_open && _ctrl.text.isNotEmpty)
+                GestureDetector(
+                  onTap: () { _ctrl.clear(); _onChanged(''); },
+                  child: Icon(Icons.close_rounded, color: const Color(0xFF7A8290), size: 16)),
+              if (!_open)
+                Icon(Icons.keyboard_arrow_down_rounded,
+                  color: const Color(0xFF4CB3FF), size: 20),
+            ]),
+          ),
+        ),
+        // ── Results dropdown ─────────────────────────────────────────
+        if (_open && _results.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.only(top: 4),
+            constraints: const BoxConstraints(maxHeight: 220),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F141B),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFF232934))),
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: _results.length,
+              itemBuilder: (_, i) {
+                final s   = _results[i];
+                final dot = _dotColor(s.dangerClass);
+                final sel = s.station == widget.selectedId;
+                return InkWell(
+                  onTap: () {
+                    widget.onChanged(s.station);
+                    _ctrl.clear();
+                    setState(() { _open = false; _results = widget.stations; });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: sel ? const Color(0xFF4CB3FF).withValues(alpha: 0.08) : Colors.transparent),
+                    child: Row(children: [
+                      Container(width: 8, height: 8,
+                        margin: const EdgeInsets.only(right: 10),
+                        decoration: BoxDecoration(color: dot, shape: BoxShape.circle)),
+                      Expanded(
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(s.city, style: TextStyle(
+                            color: sel ? const Color(0xFF4CB3FF) : t.textPrimary,
+                            fontSize: 13, fontWeight: FontWeight.w600)),
+                          Text(s.river, style: TextStyle(color: t.textSecondary, fontSize: 11)),
+                        ]),
+                      ),
+                      if (s.current > 0)
+                        Text('${s.current.toStringAsFixed(1)} m',
+                          style: const TextStyle(color: Color(0xFF4CB3FF), fontSize: 11, fontWeight: FontWeight.w600)),
+                    ]),
+                  ),
+                );
+              },
+            ),
+          ),
+      ],
+    );
   }
 }
 
@@ -444,12 +529,11 @@ class _CurrentLevelCard extends StatelessWidget {
     final isAlert  = pct >= 80;
 
     return Container(
-      decoration: AppPalette.glassMorph(
-        borderColor: isAlert
-            ? barColor.withValues(alpha: 0.5)
-            : AppPalette.abyssStroke,
-        radius: 20,
-      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F141B),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isAlert ? barColor.withValues(alpha: 0.5) : const Color(0xFF232934))),
+      
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -469,7 +553,7 @@ class _CurrentLevelCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(station.river,
                         style: const TextStyle(
-                            color: AppPalette.textGrey, fontSize: 13)),
+                            color: Color(0xFF7A8290), fontSize: 13)),
                   ],
                 ),
               ),
@@ -501,7 +585,7 @@ class _CurrentLevelCard extends StatelessWidget {
                 child: Text(
                   '${pct.toStringAsFixed(1)}% of danger',
                   style: const TextStyle(
-                      color: AppPalette.textGrey, fontSize: 13),
+                      color: Color(0xFF7A8290), fontSize: 13),
                 ),
               ),
             ],
@@ -513,7 +597,7 @@ class _CurrentLevelCard extends StatelessWidget {
               value: pct / 100,
               minHeight: 8,
               backgroundColor:
-                  AppPalette.abyss4.withValues(alpha: 0.6),
+                  const Color(0xFF1A2030).withValues(alpha: 0.6),
               valueColor: AlwaysStoppedAnimation<Color>(barColor),
             ),
           ),
@@ -523,13 +607,13 @@ class _CurrentLevelCard extends StatelessWidget {
               _ThresholdChip(
                 label: 'Warning',
                 value: station.warning,
-                color: AppPalette.warning,
+                color: const Color(0xFFFFC857),
               ),
               const SizedBox(width: 8),
               _ThresholdChip(
                 label: 'Danger',
                 value: station.danger,
-                color: AppPalette.critical,
+                color: const Color(0xFFFF4D5A),
               ),
             ],
           ),
@@ -539,10 +623,10 @@ class _CurrentLevelCard extends StatelessWidget {
   }
 
   Color _barColor(double pct) {
-    if (pct >= 100) return AppPalette.critical;
+    if (pct >= 100) return const Color(0xFFFF4D5A);
     if (pct >= 80)  return AppPalette.danger;
-    if (pct >= 60)  return AppPalette.warning;
-    return AppPalette.safe;
+    if (pct >= 60)  return const Color(0xFFFFC857);
+    return const Color(0xFF3ACC8A);
   }
 }
 
@@ -575,13 +659,13 @@ class _HorizonSelector extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 10),
               decoration: BoxDecoration(
                 color: active
-                    ? AppPalette.gold.withValues(alpha: 0.15)
-                    : AppPalette.abyss3.withValues(alpha: 0.6),
+                    ? const Color(0xFF4CB3FF).withValues(alpha: 0.15)
+                    : const Color(0xFF151C26).withValues(alpha: 0.6),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: active
-                      ? AppPalette.gold
-                      : AppPalette.abyssStroke,
+                      ? const Color(0xFF4CB3FF)
+                      : const Color(0xFF232934),
                   width: active ? 1.5 : 1,
                 ),
               ),
@@ -590,7 +674,7 @@ class _HorizonSelector extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: active
-                      ? AppPalette.gold
+                      ? const Color(0xFF4CB3FF)
                       : theme.textSecondary,
                   fontWeight: active
                       ? FontWeight.bold
@@ -657,12 +741,12 @@ class _ForecastGrid extends StatelessWidget {
             decoration: BoxDecoration(
               color: c.active
                   ? color.withValues(alpha: 0.10)
-                  : AppPalette.abyss2.withValues(alpha: 0.7),
+                  : const Color(0xFF0F141B).withValues(alpha: 0.7),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: c.active
                     ? color.withValues(alpha: 0.6)
-                    : AppPalette.abyssStroke,
+                    : const Color(0xFF232934),
                 width: c.active ? 1.5 : 1,
               ),
             ),
@@ -696,7 +780,7 @@ class _ForecastGrid extends StatelessWidget {
                     value: pct / 100,
                     minHeight: 4,
                     backgroundColor:
-                        AppPalette.abyss4.withValues(alpha: 0.5),
+                        const Color(0xFF1A2030).withValues(alpha: 0.5),
                     valueColor: AlwaysStoppedAnimation<Color>(color),
                   ),
                 ),
@@ -709,10 +793,10 @@ class _ForecastGrid extends StatelessWidget {
   }
 
   Color _pctColor(double pct) {
-    if (pct >= 100) return AppPalette.critical;
+    if (pct >= 100) return const Color(0xFFFF4D5A);
     if (pct >= 80)  return AppPalette.danger;
-    if (pct >= 60)  return AppPalette.warning;
-    return AppPalette.safe;
+    if (pct >= 60)  return const Color(0xFFFFC857);
+    return const Color(0xFF3ACC8A);
   }
 }
 
@@ -775,8 +859,10 @@ class _SparklineCard extends StatelessWidget {
         .toList();
 
     return Container(
-      decoration: AppPalette.glassMorph(
-          borderColor: AppPalette.abyssStroke, radius: 20),
+      decoration: BoxDecoration(
+          color: const Color(0xFF0F141B),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFF232934))),
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -798,9 +884,9 @@ class _SparklineCard extends StatelessWidget {
             children: [
               _LegendDot(color: AppPalette.cyan, label: 'Predicted'),
               const SizedBox(width: 12),
-              _LegendDot(color: AppPalette.critical, label: 'Danger'),
+              _LegendDot(color: const Color(0xFFFF4D5A), label: 'Danger'),
               const SizedBox(width: 12),
-              _LegendDot(color: AppPalette.warning, label: 'Warning'),
+              _LegendDot(color: const Color(0xFFFFC857), label: 'Warning'),
             ],
           ),
           const SizedBox(height: 12),
@@ -815,7 +901,7 @@ class _SparklineCard extends StatelessWidget {
                   drawHorizontalLine: true,
                   drawVerticalLine: false,
                   getDrawingHorizontalLine: (_) => FlLine(
-                    color: AppPalette.abyssStroke.withValues(alpha: 0.4),
+                    color: const Color(0xFF232934).withValues(alpha: 0.4),
                     strokeWidth: 1,
                   ),
                 ),
@@ -828,7 +914,7 @@ class _SparklineCard extends StatelessWidget {
                       getTitlesWidget: (v, _) => Text(
                         v.toStringAsFixed(1),
                         style: const TextStyle(
-                            color: AppPalette.textGrey, fontSize: 9),
+                            color: Color(0xFF7A8290), fontSize: 9),
                       ),
                     ),
                   ),
@@ -848,7 +934,7 @@ class _SparklineCard extends StatelessWidget {
                         final h = series[idx].time.hour;
                         return Text('${h}h',
                             style: const TextStyle(
-                                color: AppPalette.textGrey, fontSize: 9));
+                                color: Color(0xFF7A8290), fontSize: 9));
                       },
                     ),
                   ),
@@ -857,7 +943,7 @@ class _SparklineCard extends StatelessWidget {
                   LineChartBarData(
                     spots: dangerSpots,
                     isCurved: false,
-                    color: AppPalette.critical.withValues(alpha: 0.5),
+                    color: const Color(0xFFFF4D5A).withValues(alpha: 0.5),
                     barWidth: 1,
                     dotData: const FlDotData(show: false),
                     dashArray: [6, 4],
@@ -865,7 +951,7 @@ class _SparklineCard extends StatelessWidget {
                   LineChartBarData(
                     spots: warnSpots,
                     isCurved: false,
-                    color: AppPalette.warning.withValues(alpha: 0.5),
+                    color: const Color(0xFFFFC857).withValues(alpha: 0.5),
                     barWidth: 1,
                     dotData: const FlDotData(show: false),
                     dashArray: [4, 4],
@@ -892,7 +978,7 @@ class _SparklineCard extends StatelessWidget {
                 ],
                 lineTouchData: LineTouchData(
                   touchTooltipData: LineTouchTooltipData(
-                    getTooltipColor: (_) => AppPalette.abyss3,
+                    getTooltipColor: (_) => const Color(0xFF151C26),
                     getTooltipItems: (spots) => spots.map((s) {
                       return LineTooltipItem(
                         '${s.y.toStringAsFixed(2)} m',
@@ -925,8 +1011,10 @@ class _ModelMetaCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: AppPalette.glassMorph(
-          borderColor: AppPalette.abyssStroke, radius: 16),
+      decoration: BoxDecoration(
+          color: const Color(0xFF0F141B),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFF232934))),
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -934,7 +1022,7 @@ class _ModelMetaCard extends StatelessWidget {
           Row(
             children: [
               const Icon(Icons.analytics_outlined,
-                  color: AppPalette.gold, size: 16),
+                  color: Color(0xFF4CB3FF), size: 16),
               const SizedBox(width: 8),
               Text('Model Analysis',
                   style: TextStyle(
@@ -964,7 +1052,7 @@ class _ModelMetaCard extends StatelessWidget {
               width: 100,
               child: Text(label,
                   style: const TextStyle(
-                      color: AppPalette.textGrey, fontSize: 12)),
+                      color: Color(0xFF7A8290), fontSize: 12)),
             ),
             Expanded(
               child: Text(value,
@@ -1008,7 +1096,7 @@ class _ActionAdviceCard extends StatelessWidget {
           'Levels rising critically. Move valuables to upper floors. '
           'Prepare go-bag: documents, medicines, 3 days of food and water. '
           'Await evacuation advisory. Avoid river banks.',
-      color: AppPalette.severe,
+      color: Color(0xFFFF8C42),
     ),
     'MODERATE': (
       icon: '🟡',
@@ -1034,9 +1122,10 @@ class _ActionAdviceCard extends StatelessWidget {
     final color = entry.color;
 
     return Container(
-      decoration: AppPalette.glassMorph(
-        borderColor: color.withValues(alpha: 0.45),
-        radius: 16,
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F141B),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.45))
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -1074,7 +1163,7 @@ class _ActionAdviceCard extends StatelessWidget {
           Text(
             'Always follow official CWC / NDRF advisories.',
             style: TextStyle(
-              color: AppPalette.textGrey,
+              color: const Color(0xFF7A8290),
               fontSize: 11,
               fontStyle: FontStyle.italic,
             ),
@@ -1104,10 +1193,10 @@ class _TrendBadge extends StatelessWidget {
         color = AppPalette.danger;
       case 'falling':
         icon  = Icons.trending_down_rounded;
-        color = AppPalette.safe;
+        color = const Color(0xFF3ACC8A);
       default:
         icon  = Icons.trending_flat_rounded;
-        color = AppPalette.warning;
+        color = const Color(0xFFFFC857);
     }
     return Container(
       padding: const EdgeInsets.all(6),
@@ -1145,7 +1234,7 @@ class _ThresholdChip extends StatelessWidget {
             TextSpan(
                 text: '$label  ',
                 style: const TextStyle(
-                    color: AppPalette.textGrey, fontSize: 11)),
+                    color: Color(0xFF7A8290), fontSize: 11)),
             TextSpan(
                 text: '${value.toStringAsFixed(2)} m',
                 style: TextStyle(
@@ -1178,7 +1267,7 @@ class _LegendDot extends StatelessWidget {
         const SizedBox(width: 4),
         Text(label,
             style: const TextStyle(
-                color: AppPalette.textGrey, fontSize: 10)),
+                color: Color(0xFF7A8290), fontSize: 10)),
       ],
     );
   }
@@ -1197,7 +1286,7 @@ class _EmptyState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.water_outlined,
-                size: 56, color: AppPalette.textGrey),
+                size: 56, color: const Color(0xFF7A8290)),
             const SizedBox(height: 16),
             Text('No stations available',
                 style: TextStyle(
@@ -1275,8 +1364,10 @@ class _AllCitiesForecastState extends ConsumerState<_AllCitiesForecast>
     final preds = ref.watch(biharBulkPredictionsProvider);
 
     return Container(
-      decoration: AppPalette.glassMorph(
-          borderColor: AppPalette.gold.withValues(alpha: 0.25), radius: 20),
+      decoration: BoxDecoration(
+          color: const Color(0xFF0F141B),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFF4CB3FF).withValues(alpha: 0.20))),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1284,7 +1375,7 @@ class _AllCitiesForecastState extends ConsumerState<_AllCitiesForecast>
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
             child: Row(children: [
               const Icon(Icons.auto_awesome_rounded,
-                  color: AppPalette.gold, size: 16),
+                  color: Color(0xFF4CB3FF), size: 16),
               const SizedBox(width: 8),
               Text('All Cities — Live Forecast',
                   style: TextStyle(color: t.textPrimary, fontSize: 14,
@@ -1294,9 +1385,9 @@ class _AllCitiesForecastState extends ConsumerState<_AllCitiesForecast>
           const SizedBox(height: 10),
           TabBar(
             controller: _tabs,
-            indicatorColor: AppPalette.gold,
-            labelColor: AppPalette.gold,
-            unselectedLabelColor: AppPalette.textGrey,
+            indicatorColor: const Color(0xFF4CB3FF),
+            labelColor: const Color(0xFF4CB3FF),
+            unselectedLabelColor: const Color(0xFF7A8290),
             labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
             tabs: const [Tab(text: '24 h'), Tab(text: '48 h'), Tab(text: '72 h')],
           ),
@@ -1342,10 +1433,10 @@ class _CitySparkRow extends StatelessWidget {
 
   Color _sevColor() {
     switch (pred.severity.toUpperCase()) {
-      case 'CRITICAL': return AppPalette.critical;
-      case 'SEVERE':   return AppPalette.severe;
-      case 'MODERATE': return AppPalette.warning;
-      default:         return AppPalette.safe;
+      case 'CRITICAL': return const Color(0xFFFF4D5A);
+      case 'SEVERE':   return const Color(0xFFFF8C42);
+      case 'MODERATE': return const Color(0xFFFFC857);
+      default:         return const Color(0xFF3ACC8A);
     }
   }
 

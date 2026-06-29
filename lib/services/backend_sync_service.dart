@@ -79,7 +79,7 @@ class BackendSyncService {
     // ─ 1. Full gauge telemetry payload ───────────────────────────────────────
     final sourceCountMap = <String, int>{};
     for (final s in snapshot.stations) {
-      sourceCountMap[s.source] = (sourceCountMap[s.source] ?? 0) + 1;
+      sourceCountMap[s.source ?? 'unknown'] = (sourceCountMap[s.source ?? 'unknown'] ?? 0) + 1;
     }
 
     final gaugePaylod = <String, dynamic>{

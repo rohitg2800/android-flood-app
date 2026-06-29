@@ -66,10 +66,10 @@ class _SparklineCardState extends State<SparklineCard> {
       decoration: BoxDecoration(
         color: t.cardBg,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.25)),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4)),
         ],
@@ -136,7 +136,7 @@ class _SparklineCardState extends State<SparklineCard> {
               children: [
                 Container(
                   width: 16, height: 2,
-                  color: AppPalette.critical.withOpacity(0.7),
+                  color: AppPalette.critical.withValues(alpha: 0.7),
                 ),
                 const SizedBox(width: 6),
                 Text(
@@ -191,7 +191,7 @@ class _Chart extends StatelessWidget {
           drawVerticalLine: false,
           horizontalInterval: (chartMaxY - chartMinY) / 4,
           getDrawingHorizontalLine: (_) => FlLine(
-            color: t.divider.withOpacity(0.3),
+            color: t.divider.withValues(alpha: 0.3),
             strokeWidth: 1,
           ),
         ),
@@ -217,7 +217,7 @@ class _Chart extends StatelessWidget {
           horizontalLines: [
             HorizontalLine(
               y:          dangerLevel,
-              color:      AppPalette.critical.withOpacity(0.65),
+              color:      AppPalette.critical.withValues(alpha: 0.65),
               strokeWidth: 1.5,
               dashArray:  [4, 4],
               label: HorizontalLineLabel(
@@ -229,7 +229,7 @@ class _Chart extends StatelessWidget {
         // Touch tooltip
         lineTouchData: LineTouchData(
           touchTooltipData: LineTouchTooltipData(
-            getTooltipColor: (_) => t.cardBg.withOpacity(0.9),
+            getTooltipColor: (_) => t.cardBg.withValues(alpha: 0.9),
             getTooltipItems: (spots) => spots.map((s) {
               return LineTooltipItem(
                 '${s.y.toStringAsFixed(2)} m',
@@ -260,7 +260,7 @@ class _Chart extends StatelessWidget {
             belowBarData: BarAreaData(
               show: true,
               gradient: LinearGradient(
-                colors: [color.withOpacity(0.25), color.withOpacity(0.01)],
+                colors: [color.withValues(alpha: 0.25), color.withValues(alpha: 0.01)],
                 begin: Alignment.topCenter,
                 end:   Alignment.bottomCenter,
               ),
@@ -308,10 +308,10 @@ class _ToggleBar extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: active ? color.withOpacity(0.18) : Colors.transparent,
+          color: active ? color.withValues(alpha: 0.18) : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-              color: active ? color : t.divider.withOpacity(0.4)),
+              color: active ? color : t.divider.withValues(alpha: 0.4)),
         ),
         child: Text(
           label,

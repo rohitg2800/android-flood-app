@@ -95,7 +95,7 @@ class _ManualPredictScreenState extends State<ManualPredictScreen> {
                         _InputField(
                           t: t, label: 'River Level (m)',
                           hint: 'e.g. 42.5',
-                          icon: Icons.water_level_rounded,
+                          icon: Icons.water,
                           color: const Color(0xFF1976D2),
                           ctrl: _levelCtrl,
                         ),

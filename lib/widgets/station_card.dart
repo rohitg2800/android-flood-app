@@ -157,7 +157,7 @@ class _Header extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: Text(
-            data.city.toUpperCase(),
+            (data.city ?? "").toUpperCase(),
             style: TextStyle(
               fontFamily:     'RobotoMono',
               fontSize:       13,
@@ -393,7 +393,7 @@ class _RiverTag extends StatelessWidget {
         Icon(Icons.water, size: 11, color: accent.withValues(alpha: 0.7)),
         const SizedBox(width: 4),
         Text(
-          name.toUpperCase(),
+          (name ?? "").toUpperCase(),
           style: TextStyle(
             fontFamily:    'RobotoMono',
             fontSize:      9,

@@ -43,7 +43,7 @@ class RiskScoreGauge extends StatelessWidget {
               child: CircularProgressIndicator(
                 value: pct,
                 strokeWidth: 10,
-                backgroundColor: color.withOpacity(0.15),
+                backgroundColor: color.withValues(alpha: 0.15),
                 valueColor: AlwaysStoppedAnimation<Color>(color),
               ),
             ),

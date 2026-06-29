@@ -66,7 +66,7 @@ async def run_ingestion_now(
 
 @router.get("/api/pipeline/features")
 async def get_pipeline_feature_row(
-    state: str = Query(default="Maharashtra", description="State name (e.g. Maharashtra)"),
+    state: str = Query(default="Bihar", description="State name (e.g. Maharashtra)"),
     station: str | None = Query(default=None, description="Optional station name"),
 ):
     """

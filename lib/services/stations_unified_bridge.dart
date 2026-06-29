@@ -3,10 +3,8 @@
 // StationsUnifiedBridge — single source of truth for both MapScreen and
 // MonitoredStationsScreen.
 //
-// v1.2: Fixed FloodData constructor calls — removed computed-getter params
-//       (safeLevel, capacityPercent, riskLevel, status, effectiveRainfallMm)
-//       and added required positional params (stationId, stationName, river).
-//       Fixed DateTime? → DateTime for lastUpdated (epoch sentinel pattern).
+// v1.3: Null-safety — fd.city/state/district/riverName are String? so all
+//       usages now use ?? '' fallback.
 
 import '../constants/india_geodata.dart';
 import '../models/flood_data.dart';
@@ -62,7 +60,7 @@ class StationsUnifiedBridge {
     final liveMap = <String, FloodData>{};
     if (_engine != null) {
       for (final fd in _engine!.liveFloodData) {
-        liveMap[fd.city.toLowerCase().trim()] = fd;
+        liveMap[(fd.city ?? '').toLowerCase().trim()] = fd;
       }
     }
 
@@ -72,8 +70,8 @@ class StationsUnifiedBridge {
 
       final dl = (mc['danger_level']  as num).toDouble();
       final wl = (mc['warning_level'] as num).toDouble();
-      final cityName   = mc['city']  as String;
-      final riverName  = mc['river'] as String? ?? '';
+      final cityName    = mc['city']     as String;
+      final riverName   = mc['river']    as String? ?? '';
       final districtStr = (mc['district'] as String?) ?? '';
 
       return FloodData(
@@ -96,20 +94,21 @@ class StationsUnifiedBridge {
 
   List<StationMarker> get markersForMap {
     return allStations.map((fd) {
+      final cityKey = (fd.city ?? '').toLowerCase();
       final mc = IndiaGeodata.monitoredCities.firstWhere(
-        (c) => (c['city'] as String).toLowerCase() == fd.city.toLowerCase(),
+        (c) => (c['city'] as String).toLowerCase() == cityKey,
         orElse: () => {
-          'city': fd.city,  'state': fd.state,
-          'district': fd.district, 'river': fd.riverName,
+          'city': fd.city ?? '',  'state': fd.state ?? '',
+          'district': fd.district ?? '', 'river': fd.riverName ?? '',
           'lat': 25.0, 'lon': 85.0,
           'danger_level': fd.dangerLevel,
           'warning_level': fd.warningLevel,
         },
       );
       return StationMarker(
-        city:            fd.city,
-        state:           fd.state,
-        district:        fd.district,
+        city:            fd.city ?? '',
+        state:           fd.state ?? '',
+        district:        fd.district ?? '',
         river:           fd.riverName,
         lat:             (mc['lat'] as num).toDouble(),
         lon:             (mc['lon'] as num).toDouble(),

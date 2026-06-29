@@ -10,7 +10,6 @@
 //  • accessibleTapTarget — enforces minimum 48×48 dp tap target size
 
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

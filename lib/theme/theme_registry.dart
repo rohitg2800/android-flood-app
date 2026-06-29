@@ -125,9 +125,9 @@ class SkinTokens {
 
   // Helper: glow shadow for a semantic color
   List<BoxShadow> glowFor(Color c, {double spread = 0, double blur = 12}) => [
-    BoxShadow(color: c.withOpacity(0.35), blurRadius: blur,
+    BoxShadow(color: c.withValues(alpha: 0.35), blurRadius: blur,
         spreadRadius: spread),
-    BoxShadow(color: c.withOpacity(0.12), blurRadius: blur * 2.5,
+    BoxShadow(color: c.withValues(alpha: 0.12), blurRadius: blur * 2.5,
         spreadRadius: spread + 2),
   ];
 }
@@ -151,14 +151,14 @@ final _deepSpaceTokens = SkinTokens(
   surfaceMid:      const Color(0xFF111827),
   surfaceHigh:     const Color(0xFF1a2235),
   divider:         const Color(0xFF1e2d45),
-  stroke:          const Color(0xFF22d3ee).withOpacity(0.18),
+  stroke:          const Color(0xFF22d3ee).withValues(alpha: 0.18),
 
   textPrimary:     const Color(0xFFe2e8f0),
   textSecondary:   const Color(0xFF94a3b8),
   textMuted:       const Color(0xFF475569),
 
   accent:          _dsAccent,
-  accentDim:       _dsAccent.withOpacity(0.18),
+  accentDim:       _dsAccent.withValues(alpha: 0.18),
   accentContrast:  const Color(0xFF070b14),
   accentSecondary: _dsAccentAlt,
 
@@ -168,20 +168,20 @@ final _deepSpaceTokens = SkinTokens(
   critical: _dsCritical,
 
   cardGlow: [
-    BoxShadow(color: _dsAccent.withOpacity(0.10), blurRadius: 20,
+    BoxShadow(color: _dsAccent.withValues(alpha: 0.10), blurRadius: 20,
         spreadRadius: -4),
-    BoxShadow(color: const Color(0xFF000000).withOpacity(0.6),
+    BoxShadow(color: const Color(0xFF000000).withValues(alpha: 0.6),
         blurRadius: 8, offset: const Offset(0, 4)),
   ],
   accentGlow: [
-    BoxShadow(color: _dsAccent.withOpacity(0.45), blurRadius: 16,
+    BoxShadow(color: _dsAccent.withValues(alpha: 0.45), blurRadius: 16,
         spreadRadius: 0),
-    BoxShadow(color: _dsAccent.withOpacity(0.15), blurRadius: 32,
+    BoxShadow(color: _dsAccent.withValues(alpha: 0.15), blurRadius: 32,
         spreadRadius: 4),
   ],
   dangerGlow: [
-    BoxShadow(color: _dsDanger.withOpacity(0.45), blurRadius: 14),
-    BoxShadow(color: _dsDanger.withOpacity(0.15), blurRadius: 28,
+    BoxShadow(color: _dsDanger.withValues(alpha: 0.45), blurRadius: 14),
+    BoxShadow(color: _dsDanger.withValues(alpha: 0.15), blurRadius: 28,
         spreadRadius: 2),
   ],
 
@@ -189,9 +189,9 @@ final _deepSpaceTokens = SkinTokens(
     color:        const Color(0xFF0d1221),
     borderRadius: BorderRadius.circular(10),
     border:       Border.all(
-        color: _dsAccent.withOpacity(0.22), width: 1),
+        color: _dsAccent.withValues(alpha: 0.22), width: 1),
     boxShadow: [
-      BoxShadow(color: _dsAccent.withOpacity(0.08), blurRadius: 18,
+      BoxShadow(color: _dsAccent.withValues(alpha: 0.08), blurRadius: 18,
           spreadRadius: -2),
     ],
   ),
@@ -199,17 +199,17 @@ final _deepSpaceTokens = SkinTokens(
     color:        const Color(0xFF0d1221),
     borderRadius: BorderRadius.circular(12),
     border:       Border.all(
-        color: _dsAccent.withOpacity(0.30), width: 1),
+        color: _dsAccent.withValues(alpha: 0.30), width: 1),
     boxShadow: [
-      BoxShadow(color: _dsAccent.withOpacity(0.14), blurRadius: 24,
+      BoxShadow(color: _dsAccent.withValues(alpha: 0.14), blurRadius: 24,
           spreadRadius: 0),
     ],
   ),
   chipBox: BoxDecoration(
-    color:        _dsAccent.withOpacity(0.12),
+    color:        _dsAccent.withValues(alpha: 0.12),
     borderRadius: BorderRadius.circular(5),
     border:       Border.all(
-        color: _dsAccent.withOpacity(0.35), width: 1),
+        color: _dsAccent.withValues(alpha: 0.35), width: 1),
   ),
 
   cardRadius: BorderRadius.circular(10),
@@ -280,14 +280,14 @@ final _tacticalOpsTokens = SkinTokens(
   surfaceMid:      const Color(0xFF131920),
   surfaceHigh:     const Color(0xFF1a2130),
   divider:         const Color(0xFF1f2937),
-  stroke:          const Color(0xFFf59e0b).withOpacity(0.20),
+  stroke:          const Color(0xFFf59e0b).withValues(alpha: 0.20),
 
   textPrimary:     const Color(0xFFf1f5f9),
   textSecondary:   const Color(0xFF9ca3af),
   textMuted:       const Color(0xFF4b5563),
 
   accent:          _toAccent,
-  accentDim:       _toAccent.withOpacity(0.14),
+  accentDim:       _toAccent.withValues(alpha: 0.14),
   accentContrast:  const Color(0xFF080b0f),
   accentSecondary: _toAccentAlt,
 
@@ -297,19 +297,19 @@ final _tacticalOpsTokens = SkinTokens(
   critical: _toCritical,
 
   cardGlow: [
-    BoxShadow(color: _toAccent.withOpacity(0.08), blurRadius: 16,
+    BoxShadow(color: _toAccent.withValues(alpha: 0.08), blurRadius: 16,
         spreadRadius: -4),
-    BoxShadow(color: const Color(0xFF000000).withOpacity(0.7),
+    BoxShadow(color: const Color(0xFF000000).withValues(alpha: 0.7),
         blurRadius: 8, offset: const Offset(0, 4)),
   ],
   accentGlow: [
-    BoxShadow(color: _toAccent.withOpacity(0.50), blurRadius: 14),
-    BoxShadow(color: _toAccent.withOpacity(0.18), blurRadius: 30,
+    BoxShadow(color: _toAccent.withValues(alpha: 0.50), blurRadius: 14),
+    BoxShadow(color: _toAccent.withValues(alpha: 0.18), blurRadius: 30,
         spreadRadius: 4),
   ],
   dangerGlow: [
-    BoxShadow(color: _toDanger.withOpacity(0.50), blurRadius: 12),
-    BoxShadow(color: _toDanger.withOpacity(0.18), blurRadius: 26,
+    BoxShadow(color: _toDanger.withValues(alpha: 0.50), blurRadius: 12),
+    BoxShadow(color: _toDanger.withValues(alpha: 0.18), blurRadius: 26,
         spreadRadius: 2),
   ],
 
@@ -317,9 +317,9 @@ final _tacticalOpsTokens = SkinTokens(
     color:        const Color(0xFF0e1117),
     borderRadius: BorderRadius.circular(6),  // sharper corners
     border:       Border.all(
-        color: _toAccent.withOpacity(0.24), width: 1),
+        color: _toAccent.withValues(alpha: 0.24), width: 1),
     boxShadow: [
-      BoxShadow(color: _toAccent.withOpacity(0.06), blurRadius: 14,
+      BoxShadow(color: _toAccent.withValues(alpha: 0.06), blurRadius: 14,
           spreadRadius: -2),
     ],
   ),
@@ -327,16 +327,16 @@ final _tacticalOpsTokens = SkinTokens(
     color:        const Color(0xFF0e1117),
     borderRadius: BorderRadius.circular(6),
     border:       Border.all(
-        color: _toAccent.withOpacity(0.28), width: 1),
+        color: _toAccent.withValues(alpha: 0.28), width: 1),
     boxShadow: [
-      BoxShadow(color: _toAccent.withOpacity(0.10), blurRadius: 18),
+      BoxShadow(color: _toAccent.withValues(alpha: 0.10), blurRadius: 18),
     ],
   ),
   chipBox: BoxDecoration(
-    color:        _toAccent.withOpacity(0.10),
+    color:        _toAccent.withValues(alpha: 0.10),
     borderRadius: BorderRadius.circular(3),  // sharp
     border:       Border.all(
-        color: _toAccent.withOpacity(0.40), width: 1),
+        color: _toAccent.withValues(alpha: 0.40), width: 1),
   ),
 
   cardRadius: BorderRadius.circular(6),

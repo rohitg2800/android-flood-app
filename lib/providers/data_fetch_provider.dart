@@ -1,5 +1,6 @@
 // lib/providers/data_fetch_provider.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'live_engine_bridge_provider.dart';
 import '../services/alert_engine.dart';
 import '../models/river_station.dart';
 import 'merged_stations_provider.dart';
@@ -9,8 +10,8 @@ final activeAlertsProvider = Provider<List<FloodAlert>>((ref) => const []);
 
 // ── main alerts provider: synchronous, Riverpod-safe ─────────────────────────
 final alertsProvider = Provider<List<FloodAlert>>((ref) {
-  final merged = ref.watch(mergedStationsProvider);
-  return AlertEngine.instance.evaluateMerged(merged);
+  final stations = ref.watch(liveEngineStationsProvider);
+  return AlertEngine.instance.evaluateMerged(stations);
 });
 
 /// Total count of active alerts — watched by alertsBadgeProvider.

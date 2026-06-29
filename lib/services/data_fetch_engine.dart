@@ -57,11 +57,11 @@ class DataFetchSnapshot {
   // Used by main.dart — converts FloodData back to FloodStation list
   List<FloodStation> toRiverStations() => stations.map((d) => FloodStation(
     city:        d.stationName,
-    state:       d.state,
-    riverName:   d.river,
+    state:       d.state ?? '',
+    riverName:   d.riverName ?? '',
     riskLevel:   d.riskLevel,
     status:      d.status,
-    dataSource:  d.source,
+    dataSource:  d.source ?? '',
     currentLevel: d.currentLevel,
     warningLevel: d.warningLevel,
     dangerLevel:  d.dangerLevel,

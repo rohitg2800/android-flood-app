@@ -1,9 +1,10 @@
-// lib/screens/news_feed_screen.dart  v3.0
+// lib/screens/news_feed_screen.dart  v3.1
 // 7-day live flood-news feed.
 // Auto-refreshes every 60 s from 8 sources.
 // Filter bar: day range (1d/3d/7d) · source chips · severity chips.
 // Timeline: items grouped by calendar day, newest first.
 import 'package:flutter/material.dart';
+import 'package:equinox_flood/core/theme/river_theme.dart' as core_theme;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -20,7 +21,6 @@ class NewsFeedScreen extends ConsumerWidget {
     final t = RiverColors.of(context);
     final newsAsync  = ref.watch(liveNewsProvider);
     final grouped    = ref.watch(filteredNewsProvider);
-    final filter     = ref.watch(newsFilterProvider);
     final countdown  = ref.watch(newsCountdownProvider).when(
       data: (v) => v, loading: () => 60, error: (_, __) => 60,
     );
@@ -31,41 +31,35 @@ class NewsFeedScreen extends ConsumerWidget {
       backgroundColor: t.scaffoldBg,
       appBar: AppBar(
         backgroundColor: t.scaffoldBg,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
         title: Row(
           children: [
-            Text(
-              'FLOOD NEWS',
-              style: TextStyle(
-                color: t.accent,
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
-                letterSpacing: 0.8,
+            Container(
+              width: 30, height: 30,
+              decoration: BoxDecoration(
+                color: t.accent.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
               ),
+              child: Icon(Icons.newspaper_rounded, color: t.accent, size: 16),
             ),
+            const SizedBox(width: 10),
+            Text('Flood News',
+              style: TextStyle(color: t.textPrimary, fontSize: 17, fontWeight: FontWeight.w700)),
             const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
               decoration: BoxDecoration(
-                color: t.accent.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(10),
+                color: t.accent.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
               ),
-              child: Text(
-                '7 days',
-                style: TextStyle(
-                    color: t.accent, fontSize: 10, fontWeight: FontWeight.w700),
-              ),
+              child: Text('$totalItems', style: TextStyle(color: t.accent, fontSize: 10, fontWeight: FontWeight.w700)),
             ),
           ],
         ),
-        iconTheme: const IconThemeData(color: AppPalette.gold),
         actions: [
-          if (filter.sources.isNotEmpty || filter.severities.isNotEmpty ||
-              filter.days != 7)
-            IconButton(
-              icon: const Icon(Icons.filter_alt_off_rounded, color: AppPalette.warning, size: 20),
-              tooltip: 'Clear filters',
-              onPressed: () => ref.read(newsFilterProvider.notifier).reset(),
-            ),
+          // Language switcher
+          _LangToggle(t: t),
           IconButton(
             icon: Icon(Icons.refresh_rounded, color: t.accent),
             tooltip: 'Refresh now',
@@ -73,13 +67,8 @@ class NewsFeedScreen extends ConsumerWidget {
           ),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(104),
-          child: Column(
-            children: [
-              _RefreshBar(countdown: countdown),
-              _FilterBar(filter: filter),
-            ],
-          ),
+          preferredSize: const Size.fromHeight(36),
+          child: _RefreshBar(countdown: countdown),
         ),
       ),
       body: newsAsync.when(
@@ -131,147 +120,6 @@ class _RefreshBar extends StatelessWidget {
   }
 }
 
-// ── Filter bar ──────────────────────────────────────────────────────────────
-class _FilterBar extends ConsumerWidget {
-  final NewsFilter filter;
-  const _FilterBar({required this.filter});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final t = RiverColors.of(context);
-    final notifier = ref.read(newsFilterProvider.notifier);
-    return Container(
-      height: 78,
-      color: t.scaffoldBg,
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Row 1: day range
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                for (final d in [1, 3, 7])
-                  _FilterChip(
-                    label: '${d}d',
-                    active: filter.days == d,
-                    color: t.accent,
-                    onTap: () => notifier.setDays(d),
-                  ),
-                const SizedBox(width: 10),
-                const _Divider(),
-                const SizedBox(width: 10),
-                // Source chips
-                for (final s in _kSources(t).entries)
-                  _FilterChip(
-                    label: s.key,
-                    active: filter.sources.contains(s.key),
-                    color: s.value,
-                    onTap: () => notifier.toggleSource(s.key),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 4),
-          // Row 2: severity chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                for (final sv in NewsSeverity.values)
-                  _FilterChip(
-                    label: _severityLabel(sv),
-                    active: filter.severities.contains(sv),
-                    color: _severityColor(sv),
-                    onTap: () => notifier.toggleSeverity(sv),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  static Map<String, Color> _kSources(RiverColors t) => {
-    'IMD':   t.accent,
-    'NDMA':  AppPalette.danger,
-    'CWC':   AppPalette.safe,
-    'WRIS':  AppPalette.gold,
-    'GDACS': t.textSecondary,
-    'PIB':   t.accent,
-  };
-
-  static String _severityLabel(NewsSeverity sv) {
-    switch (sv) {
-      case NewsSeverity.critical: return 'CRITICAL';
-      case NewsSeverity.high:     return 'HIGH';
-      case NewsSeverity.moderate: return 'MODERATE';
-      case NewsSeverity.info:     return 'INFO';
-    }
-  }
-
-  static Color _severityColor(NewsSeverity sv) {
-    switch (sv) {
-      case NewsSeverity.critical: return AppPalette.critical;
-      case NewsSeverity.high:     return AppPalette.danger;
-      case NewsSeverity.moderate: return AppPalette.warning;
-      case NewsSeverity.info:     return const Color(0xFF9E9E9E);
-    }
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  final String label;
-  final bool   active;
-  final Color  color;
-  final VoidCallback onTap;
-  const _FilterChip({
-    required this.label,
-    required this.active,
-    required this.color,
-    required this.onTap,
-  });
-  @override
-  Widget build(BuildContext context) {
-    final t = RiverColors.of(context);
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        margin: const EdgeInsets.only(right: 6),
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-        decoration: BoxDecoration(
-          color:  active ? color.withValues(alpha: 0.22) : t.cardBg,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: active ? color : color.withValues(alpha: 0.25),
-            width: active ? 1.2 : 0.8,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color:      active ? color : t.textSecondary,
-            fontSize:   10,
-            fontWeight: active ? FontWeight.w800 : FontWeight.w500,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _Divider extends StatelessWidget {
-  const _Divider();
-  @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context).extension<RiverColors>()!;
-    return Container(width: 1, height: 16, color: t.textSecondary.withValues(alpha: 0.25));
-  }
-}
-
 // ── Timeline (day-grouped) ───────────────────────────────────────────────────
 class _Timeline extends StatelessWidget {
   final Map<String, List<NewsItem>> grouped;
@@ -280,7 +128,7 @@ class _Timeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context).extension<RiverColors>()!;
+    final t = RiverColors.of(context);
     final days = grouped.keys.toList(); // already sorted newest-first
 
     // Build a flat list: [dayHeader, item, item, ..., dayHeader, item, ...]
@@ -435,7 +283,6 @@ class _NewsCard extends StatelessWidget {
           color: t.cardBg,
           borderRadius: BorderRadius.circular(13),
           border: Border.all(color: sevColor.withValues(alpha: 0.20)),
-          // Left accent stripe via gradient
           gradient: LinearGradient(
             colors: [
               sevColor.withValues(alpha: 0.06),
@@ -447,10 +294,8 @@ class _NewsCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top row: source badge | severity badge | time | open-icon
             Row(
               children: [
-                // Source badge
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
@@ -466,7 +311,6 @@ class _NewsCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 5),
-                // Severity badge
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
@@ -483,11 +327,9 @@ class _NewsCard extends StatelessWidget {
                 const Spacer(),
                 Text(timeStr,
                     style: TextStyle(color: t.textSecondary, fontSize: 10)),
-
               ],
             ),
             const SizedBox(height: 7),
-            // Title
             Text(
               item.title,
               style: TextStyle(
@@ -497,7 +339,6 @@ class _NewsCard extends StatelessWidget {
                 height:     1.35,
               ),
             ),
-            // Summary
             if (item.summary.isNotEmpty) ...[
               const SizedBox(height: 5),
               Text(
@@ -527,7 +368,7 @@ class _LoadingView extends StatelessWidget {
   const _LoadingView();
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context).extension<RiverColors>()!;
+    final t = RiverColors.of(context);
     return Center(
     child: Column(
       mainAxisSize: MainAxisSize.min,
@@ -549,7 +390,7 @@ class _EmptyView extends StatelessWidget {
   const _EmptyView();
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context).extension<RiverColors>()!;
+    final t = RiverColors.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -569,7 +410,7 @@ class _ErrorView extends StatelessWidget {
   const _ErrorView({required this.message, required this.onRetry});
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context).extension<RiverColors>()!;
+    final t = RiverColors.of(context);
     return Center(
     child: Padding(
       padding: const EdgeInsets.all(24),
@@ -596,6 +437,46 @@ class _ErrorView extends StatelessWidget {
         ],
       ),
     ),
+    );
+  }
+}
+
+
+// ── Language toggle ──────────────────────────────────────────────────────────
+class _LangToggle extends ConsumerWidget {
+  final RiverColors t;
+  const _LangToggle({required this.t});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notifier = ref.read(newsFilterProvider.notifier);
+    final filter   = ref.watch(newsFilterProvider);
+    final isHindi  = filter.language == 'hi';
+
+    return GestureDetector(
+      onTap: () => notifier.setLanguage(isHindi ? 'en' : 'hi'),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: isHindi
+              ? const Color(0xFFFFC857).withValues(alpha: 0.15)
+              : t.accent.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isHindi
+                ? const Color(0xFFFFC857).withValues(alpha: 0.40)
+                : t.accent.withValues(alpha: 0.30))),
+        child: Text(
+          isHindi ? 'हिं' : 'EN',
+          style: TextStyle(
+            color: isHindi ? const Color(0xFFFFC857) : t.accent,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
     );
   }
 }

@@ -7,6 +7,7 @@
 // • Shown only on first launch; subsequent launches route to /shell
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_palette.dart';
 
@@ -104,7 +105,7 @@ class _OnboardingScreenState
   Future<void> _finish() async {
     await markOnboardingDone();
     if (!mounted) return;
-    Navigator.pushReplacementNamed(context, '/shell');
+    context.go('/shell'); // ✅ GoRouter-aware navigation
   }
 
   @override
@@ -117,6 +118,8 @@ class _OnboardingScreenState
   Widget build(BuildContext context) {
     final page = _pages[_current];
     return Scaffold(
+      extendBodyBehindAppBar: true,
+      extendBody: true,
       backgroundColor: page.color,
       body: SafeArea(
         child: Column(
@@ -218,7 +221,7 @@ class _OnboardingPage extends StatelessWidget {
             width:  120,
             height: 120,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
+              color: Colors.white.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
             child: Icon(data.icon,

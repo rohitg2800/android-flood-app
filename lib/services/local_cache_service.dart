@@ -1,35 +1,54 @@
 // lib/services/local_cache_service.dart  Step 4.3
 // Hive-backed local cache.
 //
-// v4.4 — added getString / setString / setNow / isFresh / remove / clear
-//         so cached_flood_api.dart and opsflood_db_service.dart compile.
+// v4.5 — added resetForTesting() so unit tests can fully reset singleton state
+//         between test cases without needing Hive to be initialised.
 
 import 'dart:convert';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter/foundation.dart';
 import '../models/flood_data.dart';
 
-const _kGaugeBox     = 'gauge_cache';
-const _kHistoryBox   = 'gauge_history';
-const _kKvBox        = 'kv_cache';           // generic key→value store
-const _kTimestampKey = '__saved_at';
-const _kStaleMinutes = 30;
+const _kGaugeBox      = 'gauge_cache';
+const _kHistoryBox    = 'gauge_history';
+const _kKvBox         = 'kv_cache'; // generic key→value store
+const _kTimestampKey  = '__saved_at';
+const _kStaleMinutes  = 30;
 const _kMaxHistoryDays = 7;
 
 class LocalCacheService {
   LocalCacheService._();
-  @visibleForTesting
-  // ignore: unused_element
-  // Public alias so test/ can subclass across library boundaries
+
+  /// Public constructor for sub-classing / mocking in tests across library
+  /// boundaries.  Production code always uses [instance].
   @visibleForTesting
   LocalCacheService.forTesting();
+
   static LocalCacheService _instance = LocalCacheService._();
   static LocalCacheService get instance => _instance;
 
+  // ── Test helpers ─────────────────────────────────────────────────────────
+
+  /// Replace the singleton with a custom instance (e.g. a mock subclass).
   @visibleForTesting
   static void setInstanceForTesting(LocalCacheService mock) {
     _instance = mock;
   }
+
+  /// Wipe all in-memory box references and reset the singleton back to a
+  /// fresh, uninitialised state.  Call this in [setUp] / [tearDown] of unit
+  /// tests so each test starts from a clean slate without requiring Hive to
+  /// be fully initialised via [Hive.initFlutter].
+  @visibleForTesting
+  void resetForTesting() {
+    _gaugeBox   = null;
+    _historyBox = null;
+    _kvBox      = null;
+    // Reset the singleton so the next [instance] access gets a blank service.
+    _instance = LocalCacheService._();
+  }
+
+  // ── Private state ────────────────────────────────────────────────────────
 
   Box? _gaugeBox;
   Box? _historyBox;
@@ -41,7 +60,7 @@ class LocalCacheService {
     _kvBox      ??= await Hive.openBox(_kKvBox);
   }
 
-  // ── Generic KV API (used by CachedFloodApi + OpsfloodDbService) ───────────
+  // ── Generic KV API (used by CachedFloodApi + OpsfloodDbService) ──────────
 
   /// Read a raw string value by key. Returns null if missing.
   String? getString(String key) => _kvBox?.get(key) as String?;
@@ -79,7 +98,7 @@ class LocalCacheService {
     await _kvBox!.clear();
   }
 
-  // ── Gauge list ──────────────────────────────────────────────────────────────
+  // ── Gauge list ────────────────────────────────────────────────────────────
 
   Future<void> saveGaugeList(List<FloodData> gauges) async {
     await init();
@@ -123,13 +142,13 @@ class LocalCacheService {
     return raw != null ? DateTime.tryParse(raw) : null;
   }
 
-  // ── 7-day gauge level history ────────────────────────────────────────────────
+  // ── 7-day gauge level history ─────────────────────────────────────────────
 
   Future<void> appendGaugeHistory(
       String stationId, double currentLevel) async {
     await init();
     try {
-      final raw   = _historyBox!.get(stationId) as String?;
+      final raw     = _historyBox!.get(stationId) as String?;
       final entries = raw != null
           ? (jsonDecode(raw) as List<dynamic>).cast<Map<String, dynamic>>()
           : <Map<String, dynamic>>[];
@@ -139,7 +158,8 @@ class LocalCacheService {
         'level': currentLevel,
       });
 
-      final cutoff = DateTime.now().subtract(const Duration(days: _kMaxHistoryDays));
+      final cutoff = DateTime.now()
+          .subtract(const Duration(days: _kMaxHistoryDays));
       final pruned = entries.where((e) {
         final dt = DateTime.tryParse(e['ts'] as String? ?? '');
         return dt != null && dt.isAfter(cutoff);

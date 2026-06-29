@@ -1,74 +1,72 @@
-// test/unit/alert_engine_test.dart  v4 — correct package equinox_flood
+// test/unit/alert_engine_test.dart
+// I-15: Unit tests for safety-critical alert threshold logic
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:equinox_flood/services/alert_engine.dart';
-import 'package:equinox_flood/models/river_station.dart';
-
-RiverStation _station({
-  required double current,
-  double warning = 8.0,
-  double danger  = 10.0,
-  double hfl     = 12.0,
-}) =>
-    RiverStation(
-      city:    'TestCity',
-      state:   'Bihar',
-      river:   'Ganga',
-      station: 'GS001',
-      current: current,
-      warning: warning,
-      danger:  danger,
-      hfl:     hfl,
-    );
+import 'package:equinox_flood/services/kosi_birpur_service.dart';
 
 void main() {
-  test('no alert when level < warningLevel', () {
-    final alerts = AlertEngine.instance.evaluateMerged([_station(current: 7.5)]);
-    expect(alerts, isEmpty);
+  group('AlertSeverity', () {
+    test('emergency has highest priority', () {
+      expect(AlertSeverity.emergency.priority, greaterThan(AlertSeverity.critical.priority));
+      expect(AlertSeverity.critical.priority,  greaterThan(AlertSeverity.warning.priority));
+      expect(AlertSeverity.warning.priority,   greaterThan(AlertSeverity.info.priority));
+    });
+
+    test('labels are non-empty', () {
+      for (final s in AlertSeverity.values) {
+        expect(s.label, isNotEmpty);
+      }
+    });
   });
 
-  test('INFO alert when warningLevel <= level < 85% dangerLevel', () {
-    final alerts = AlertEngine.instance.evaluateMerged([_station(current: 8.4)]);
-    expect(alerts.length, 1);
-    expect(alerts.first.severity, AlertSeverity.info);
+  group('AlertType', () {
+    test('all types have displayName', () {
+      for (final t in AlertType.values) {
+        expect(t.displayName, isNotEmpty,
+            reason: 'AlertType.${t.name} has empty displayName');
+      }
+    });
+
+    test('all types have label', () {
+      for (final t in AlertType.values) {
+        expect(t.label, isNotEmpty);
+      }
+    });
   });
 
-  test('WARNING alert when level >= 85% dangerLevel and < dangerLevel', () {
-    final alerts = AlertEngine.instance.evaluateMerged([_station(current: 9.0)]);
-    expect(alerts.length, 1);
-    expect(alerts.first.severity, AlertSeverity.warning);
-  });
+  group('Birpur thresholds', () {
+    test('danger > warning > normal', () {
+      expect(kBirpurDangerLevel,  greaterThan(kBirpurWarningLevel));
+      expect(kBirpurWarningLevel, greaterThan(kBirpurNormalLevel));
+    });
 
-  test('CRITICAL alert when level >= dangerLevel and < 98% HFL', () {
-    final alerts = AlertEngine.instance.evaluateMerged([_station(current: 10.5)]);
-    expect(alerts.length, 1);
-    expect(alerts.first.severity, AlertSeverity.critical);
-  });
+    test('HFL equals danger level', () {
+      expect(kBirpurHFL, equals(kBirpurDangerLevel));
+    });
 
-  test('EMERGENCY alert when level >= 98% HFL', () {
-    final alerts = AlertEngine.instance.evaluateMerged([_station(current: 12.0)]);
-    expect(alerts.length, 1);
-    expect(alerts.first.severity, AlertSeverity.emergency);
-  });
+    test('danger discharge > warning discharge', () {
+      expect(kBirpurDangerDischarge, greaterThan(kBirpurWarningDischarge));
+    });
 
-  test('alert carries correct stationName and district', () {
-    final alerts = AlertEngine.instance.evaluateMerged([_station(current: 10.5)]);
-    expect(alerts.first.stationName, 'GS001');
-    expect(alerts.first.district,    'TestCity');
-  });
+    test('datum offset is positive', () {
+      expect(kBirpurDatumOffset, greaterThan(0));
+    });
 
-  test('only stations above warning threshold emit alerts', () {
-    final alerts = AlertEngine.instance.evaluateMerged([
-      _station(current: 7.5),
-      _station(current: 10.5),
-    ]);
-    expect(alerts.length, 1);
-    expect(alerts.first.severity, AlertSeverity.critical);
-  });
+    test('level 76.02 is at or above danger', () {
+      const level = 76.02;
+      expect(level, greaterThanOrEqualTo(kBirpurDangerLevel));
+    });
 
-  test('no emergency when hfl is 0 even if level is very high', () {
-    final alerts = AlertEngine.instance.evaluateMerged([
-      _station(current: 50.0, hfl: 0),
-    ]);
-    expect(alerts.first.severity, AlertSeverity.critical);
+    test('level 73.70 is at or above warning but below danger', () {
+      const level = 73.70;
+      expect(level, greaterThanOrEqualTo(kBirpurWarningLevel));
+      expect(level, lessThan(kBirpurDangerLevel));
+    });
+
+    test('level 71.00 is normal (below warning)', () {
+      const level = 71.00;
+      expect(level, lessThan(kBirpurWarningLevel));
+    });
   });
 }

@@ -48,9 +48,9 @@ class RiverLevelChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: chipColor.withOpacity(0.12),
+        color: chipColor.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: chipColor.withOpacity(0.4)),
+        border: Border.all(color: chipColor.withValues(alpha: 0.4)),
       ),
       child: Text(
         text,

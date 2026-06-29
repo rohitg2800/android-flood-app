@@ -102,3 +102,4 @@ backend/ml/scalers/
 backend/ml/saved_models/
 backend/ml/scalers/
 *.bak
+*.hive

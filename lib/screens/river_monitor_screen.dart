@@ -1,10 +1,8 @@
-// lib/screens/river_monitor_screen.dart  v2.2.1  (18 Jun 2026)
-//
-// v2.2.1: fix — add missing import for preMonsoonBaselineProvider &
-//         kPreMonsoonBaselineRiskThreshold.
-//
-// v2.2.0: baseline filter: when preMonsoonBaselineProvider is enabled,
-//         stations with riskScore < kPreMonsoonBaselineRiskThreshold hidden.
+// lib/screens/river_monitor_screen.dart  v2.2.2
+// Fixed: fd.city/state/district (String?) — toLowerCase() calls guarded with ?. and ?? ''
+//        d.city/d.district in _RiverCard Text() — guarded with ?? stationName / ?? ''
+library;
+
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../widgets/app_icon_box.dart';
@@ -13,7 +11,6 @@ import 'package:intl/intl.dart';
 import '../models/flood_data.dart';
 import '../providers/flood_providers.dart';
 import '../providers/bihar_prediction_provider.dart';
-// ✅ v2.2.1 fix — required for preMonsoonBaselineProvider & kPreMonsoonBaselineRiskThreshold
 import '../providers/pre_monsoon_baseline_provider.dart';
 import '../theme/river_theme.dart';
 import '../theme/theme_3d.dart';
@@ -30,6 +27,7 @@ class RiverMonitorScreen extends ConsumerStatefulWidget {
 class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   String _query = '';
+  bool _hideNoData = true;
   final _searchCtrl = TextEditingController();
   late final AnimationController _headerAnim;
   late final AnimationController _rippleAnim;
@@ -85,12 +83,15 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
   }
 
   List<FloodData> _filtered(List<FloodData> all) {
-    if (_query.isEmpty) return all;
+    var list = _hideNoData
+        ? all.where((fd) => (fd.currentLevel) > 0).toList()
+        : all;
+    if (_query.isEmpty) return list;
     final q = _query.toLowerCase();
-    return all.where((fd) =>
-        fd.city.toLowerCase().contains(q) ||
-        fd.state.toLowerCase().contains(q) ||
-        fd.district.toLowerCase().contains(q) ||
+    return list.where((fd) =>
+        (fd.city?.toLowerCase().contains(q)     ?? false) ||
+        (fd.state?.toLowerCase().contains(q)    ?? false) ||
+        (fd.district?.toLowerCase().contains(q) ?? false) ||
         (fd.riverName?.toLowerCase().contains(q) ?? false)).toList();
   }
 
@@ -122,7 +123,6 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
         return sb.compareTo(sa);
       });
 
-    // Baseline filter: null riskScore → always show
     final all = baselineOn
         ? sorted.where((d) =>
             d.riskScore == null ||
@@ -179,7 +179,67 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
             ),
           ),
 
-          // Baseline info chip
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => setState(() => _hideNoData = !_hideNoData),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: _hideNoData
+                            ? t.accent.withValues(alpha: 0.14)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: _hideNoData
+                              ? t.accent.withValues(alpha: 0.45)
+                              : t.stroke.withValues(alpha: 0.35))),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(Icons.sensors_rounded,
+                          color: _hideNoData ? t.accent : t.textSecondary, size: 13),
+                        const SizedBox(width: 5),
+                        Text('Live only',
+                          style: TextStyle(
+                            color: _hideNoData ? t.accent : t.textSecondary,
+                            fontSize: 11, fontWeight: FontWeight.w600)),
+                      ]),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () => setState(() => _hideNoData = !_hideNoData),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: !_hideNoData
+                            ? t.textSecondary.withValues(alpha: 0.10)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: !_hideNoData
+                              ? t.textSecondary.withValues(alpha: 0.35)
+                              : t.stroke.withValues(alpha: 0.35))),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(Icons.wifi_off_rounded,
+                          color: !_hideNoData ? t.textSecondary : t.textSecondary, size: 13),
+                        const SizedBox(width: 5),
+                        Text('Show all',
+                          style: TextStyle(
+                            color: !_hideNoData ? t.textSecondary : t.textSecondary,
+                            fontSize: 11, fontWeight: FontWeight.w600)),
+                      ]),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
           if (baselineOn && hiddenCount > 0)
             SliverToBoxAdapter(
               child: Padding(
@@ -263,7 +323,7 @@ class _RiverMonitorScreenState extends ConsumerState<RiverMonitorScreen>
                       t: t,
                       onTap: () => Navigator.of(ctx).pushNamed(
                         Routes.cityDetail,
-                        arguments: levels[i].city,
+                        arguments: levels[i].city ?? levels[i].stationName,
                       ),
                     ),
                   ),
@@ -762,10 +822,16 @@ class _RiverCardState extends State<_RiverCard>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(d.city, style: TextStyle(color: t.textPrimary, fontWeight: FontWeight.w800, fontSize: 16, letterSpacing: -0.3)),
+                                  // city is String? — fall back to stationName
+                                  Text(
+                                    d.city ?? d.stationName,
+                                    style: TextStyle(color: t.textPrimary, fontWeight: FontWeight.w800, fontSize: 16, letterSpacing: -0.3),
+                                  ),
                                   if ((d.riverName ?? '').isNotEmpty)
                                     Text(d.riverName!, style: TextStyle(color: t.textSecondary, fontSize: 12)),
-                                  Text(d.district, style: TextStyle(color: t.textSecondary, fontSize: 11)),
+                                  // district is String? — guard with ?? ''
+                                  if ((d.district ?? '').isNotEmpty)
+                                    Text(d.district!, style: TextStyle(color: t.textSecondary, fontSize: 11)),
                                 ],
                               ),
                             ),
@@ -1056,11 +1122,11 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.water_outlined, size: 64, color: t.accent.withValues(alpha: 0.4)),
+            Icon(Icons.water_outlined, size: 40, color: t.accent.withValues(alpha: 0.4)),
             const SizedBox(height: 16),
             Text(
               query.isNotEmpty ? 'No results for "$query"' : 'No river data available',
-              style: TextStyle(color: t.textPrimary, fontSize: 16, fontWeight: FontWeight.w700),
+              style: TextStyle(color: t.textPrimary, fontSize: 13, fontWeight: FontWeight.w700),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
