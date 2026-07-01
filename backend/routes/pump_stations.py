@@ -4,8 +4,8 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 from uuid import UUID
 from datetime import datetime
-from ..db import get_db
-from ..auth import get_current_user
+from db import get_db
+from auth import get_current_user
 
 router = APIRouter(prefix="/pump-stations", tags=["Motor Control"])
 
