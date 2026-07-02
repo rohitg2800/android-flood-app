@@ -1,98 +1,232 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:equinox_flood/features/pump_stations/models/pump_station.dart';
-import 'package:equinox_flood/features/pump_stations/providers/pump_station_provider.dart';
+import '../providers/pump_station_provider.dart';
+import '../data/repositories/pump_station_repository.dart';
+import 'pump_station_detail_screen.dart';
 
-class PumpStationsScreen extends ConsumerWidget {
+class PumpStationsScreen extends ConsumerStatefulWidget {
   const PumpStationsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final stationsAsync = ref.watch(pumpStationsProvider);
-    final theme = Theme.of(context);
+  ConsumerState<PumpStationsScreen> createState() =>
+      _PumpStationsScreenState();
+}
+
+class _PumpStationsScreenState
+    extends ConsumerState<PumpStationsScreen> {
+  final _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'operational':
+        return Colors.green;
+      case 'maintenance':
+        return Colors.orange;
+      case 'critical':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  IconData _statusIcon(String status) {
+    switch (status) {
+      case 'operational':
+        return Icons.check_circle;
+      case 'maintenance':
+        return Icons.build;
+      case 'critical':
+        return Icons.warning;
+      default:
+        return Icons.power_off;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final searchQuery = ref.watch(pumpStationSearchQueryProvider);
+    final statusFilter = ref.watch(pumpStationStatusFilterProvider);
+    final stationsAsync = ref.watch(
+      pumpStationsProvider(
+        PumpStationFilter(
+          search: searchQuery.isEmpty ? null : searchQuery,
+          status: statusFilter,
+        ),
+      ),
+    );
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0F),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0A0A0F),
-        elevation: 0,
-        title: Text(
-          'Pump Stations',
-          style: theme.textTheme.titleLarge?.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.3,
-          ),
-        ),
+        title: const Text('Pump Stations'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: Colors.white70),
-            onPressed: () => ref.invalidate(pumpStationsProvider),
-          ),
-        ],
-      ),
-      body: stationsAsync.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: Color(0xFF00D4FF)),
-        ),
-        error: (err, _) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.error_outline, color: Color(0xFFFF4C4C), size: 48),
-              const SizedBox(height: 12),
-              Text(
-                'Failed to load stations',
-                style: theme.textTheme.bodyLarge
-                    ?.copyWith(color: Colors.white70),
+          PopupMenuButton<String?>(
+            icon: const Icon(Icons.filter_list),
+            tooltip: 'Filter by status',
+            onSelected: (value) {
+              ref.read(pumpStationStatusFilterProvider.notifier).state =
+                  value;
+            },
+            itemBuilder: (_) => [
+              const PopupMenuItem(
+                value: null,
+                child: Text('All'),
               ),
-              const SizedBox(height: 8),
-              ElevatedButton(
-                onPressed: () => ref.invalidate(pumpStationsProvider),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00D4FF),
-                  foregroundColor: Colors.black,
-                ),
-                child: const Text('Retry'),
+              const PopupMenuItem(
+                value: 'operational',
+                child: Text('Operational'),
+              ),
+              const PopupMenuItem(
+                value: 'maintenance',
+                child: Text('Maintenance'),
+              ),
+              const PopupMenuItem(
+                value: 'critical',
+                child: Text('Critical'),
+              ),
+              const PopupMenuItem(
+                value: 'offline',
+                child: Text('Offline'),
               ),
             ],
           ),
-        ),
-        data: (stations) => stations.isEmpty
-            ? _EmptyState()
-            : RefreshIndicator(
-                color: const Color(0xFF00D4FF),
-                onRefresh: () async => ref.invalidate(pumpStationsProvider),
-                child: ListView.separated(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 12),
-                  itemCount: stations.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, i) =>
-                      _PumpStationCard(station: stations[i]),
+        ],
+      ),
+      body: Column(
+        children: [
+          // ── Search Bar ──────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (value) {
+                ref.read(pumpStationSearchQueryProvider.notifier).state =
+                    value;
+              },
+              decoration: InputDecoration(
+                hintText: 'Search pump stations…',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          ref
+                              .read(pumpStationSearchQueryProvider.notifier)
+                              .state = '';
+                        },
+                      )
+                    : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
+              ),
+            ),
+          ),
+
+          // ── Active filter chip ──────────────────────────────────
+          if (statusFilter != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Chip(
+                  label: Text(
+                    statusFilter[0].toUpperCase() + statusFilter.substring(1),
+                  ),
+                  deleteIcon: const Icon(Icons.close, size: 16),
+                  onDeleted: () {
+                    ref
+                        .read(pumpStationStatusFilterProvider.notifier)
+                        .state = null;
+                  },
                 ),
               ),
-      ),
-    );
-  }
-}
+            ),
 
-class _EmptyState extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.water_damage_outlined,
-              size: 64, color: Colors.white.withOpacity(0.2)),
-          const SizedBox(height: 16),
-          Text(
-            'No pump stations found',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.5),
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
+          // ── Stations List ───────────────────────────────────────
+          Expanded(
+            child: stationsAsync.when(
+              loading: () => const Center(
+                child: CircularProgressIndicator(),
+              ),
+              error: (error, _) => Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline,
+                        size: 48, color: Colors.red),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Failed to load stations',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      error.toString(),
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: () => ref.invalidate(pumpStationsProvider),
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+              data: (stations) {
+                if (stations.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.water_damage,
+                            size: 64,
+                            color: Colors.grey.shade400),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No pump stations found',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Try adjusting your search or filters',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    ref.invalidate(pumpStationsProvider);
+                  },
+                  child: ListView.separated(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 8),
+                    itemCount: stations.length,
+                    separatorBuilder: (_, __) =>
+                        const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final station = stations[index];
+                      return _PumpStationCard(
+                        station: station,
+                        statusColor: _statusColor(station.status),
+                        statusIcon: _statusIcon(station.status),
+                      );
+                    },
+                  ),
+                );
+              },
             ),
           ),
         ],
@@ -103,186 +237,143 @@ class _EmptyState extends StatelessWidget {
 
 class _PumpStationCard extends StatelessWidget {
   final PumpStation station;
-  const _PumpStationCard({required this.station});
+  final Color statusColor;
+  final IconData statusIcon;
 
-  Color get _statusColor {
-    switch (station.status) {
-      case PumpStationStatus.operational:
-        return const Color(0xFF00E676);
-      case PumpStationStatus.faulty:
-        return const Color(0xFFFF6D00);
-      case PumpStationStatus.offline:
-        return const Color(0xFFFF4C4C);
-      case PumpStationStatus.maintenance:
-        return const Color(0xFFFFD600);
-    }
-  }
-
-  String get _statusLabel {
-    switch (station.status) {
-      case PumpStationStatus.operational:
-        return 'Operational';
-      case PumpStationStatus.faulty:
-        return 'Faulty';
-      case PumpStationStatus.offline:
-        return 'Offline';
-      case PumpStationStatus.maintenance:
-        return 'Maintenance';
-    }
-  }
+  const _PumpStationCard({
+    required this.station,
+    required this.statusColor,
+    required this.statusIcon,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF12121A),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.06),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.4),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    station.name,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.2,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) =>
+                  PumpStationDetailScreen(stationId: station.id),
+            ),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      station.name,
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w600),
                     ),
                   ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _statusColor.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                        color: _statusColor.withOpacity(0.5), width: 1),
-                  ),
-                  child: Text(
-                    _statusLabel,
-                    style: TextStyle(
-                      color: _statusColor,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.4,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: statusColor.withOpacity(0.4)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(statusIcon, size: 14, color: statusColor),
+                        const SizedBox(width: 4),
+                        Text(
+                          station.status[0].toUpperCase() +
+                              station.status.substring(1),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: statusColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Icon(Icons.location_on_outlined,
-                    size: 14, color: Color(0xFF00D4FF)),
-                const SizedBox(width: 4),
-                Text(
-                  station.location,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.6),
-                    fontSize: 13,
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.location_on,
+                      size: 14, color: Colors.grey),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      station.location,
+                      style: Theme.of(context).textTheme.bodySmall,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
-              ],
-            ),
-            if (station.districtName != null) ...
-              [
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(Icons.map_outlined,
-                        size: 14,
-                        color: Colors.white.withOpacity(0.4)),
-                    const SizedBox(width: 4),
-                    Text(
-                      station.districtName!,
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.45),
-                        fontSize: 12,
+                ],
+              ),
+              const SizedBox(height: 10),
+              // Capacity bar
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Capacity',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      Text(
+                        '${station.capacityPercent.toStringAsFixed(0)}%',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: station.capacityPercent / 100,
+                      minHeight: 6,
+                      backgroundColor: Colors.grey.shade200,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        station.capacityPercent > 80
+                            ? Colors.red
+                            : station.capacityPercent > 60
+                                ? Colors.orange
+                                : Colors.green,
                       ),
                     ),
-                  ],
-                ),
-              ],
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                _StatChip(
-                  label: 'Capacity',
-                  value: '${station.capacityLitersPerSecond.toStringAsFixed(0)} L/s',
-                  color: const Color(0xFF00D4FF),
-                ),
-                const SizedBox(width: 8),
-                _StatChip(
-                  label: 'Flow Rate',
-                  value: '${station.currentFlowRate.toStringAsFixed(1)} L/s',
-                  color: const Color(0xFF9B59B6),
-                ),
-              ],
-            ),
-          ],
+                  ),
+                ],
+              ),
+              if (station.district != null) ...
+                [
+                  const SizedBox(height: 8),
+                  Text(
+                    'District: ${station.district}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey,
+                        ),
+                  ),
+                ],
+            ],
+          ),
         ),
-      ),
-    );
-  }
-}
-
-class _StatChip extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color color;
-  const _StatChip(
-      {required this.label, required this.value, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(8),
-        border:
-            Border.all(color: color.withOpacity(0.2), width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: color.withOpacity(0.7),
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
       ),
     );
   }
