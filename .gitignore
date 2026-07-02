@@ -104,3 +104,4 @@ backend/ml/scalers/
 *.bak
 *.hive
 linux/flutter/ephemeral/
+linux/flutter/ephemeral/

@@ -12,24 +12,31 @@ part of 'pump_station.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not allowed to call it directly');
+    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
+
+PumpStation _$PumpStationFromJson(Map<String, dynamic> json) {
+  return _PumpStation.fromJson(json);
+}
 
 /// @nodoc
 mixin _$PumpStation {
   String get id => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
-  String? get district => throw _privateConstructorUsedError;
-  String get state => throw _privateConstructorUsedError;
-  double? get locationLat => throw _privateConstructorUsedError;
-  double? get locationLng => throw _privateConstructorUsedError;
-  StationStatus get status => throw _privateConstructorUsedError;
-  double? get capacityLps => throw _privateConstructorUsedError;
-  DateTime? get installedAt => throw _privateConstructorUsedError;
-  DateTime get createdAt => throw _privateConstructorUsedError;
-  DateTime get updatedAt => throw _privateConstructorUsedError;
+  double get latitude => throw _privateConstructorUsedError;
+  double get longitude => throw _privateConstructorUsedError;
+  String get status => throw _privateConstructorUsedError;
+  double get capacity => throw _privateConstructorUsedError;
+  double get currentLoad => throw _privateConstructorUsedError;
+  String? get address => throw _privateConstructorUsedError;
+  String? get zone => throw _privateConstructorUsedError;
+  DateTime? get lastUpdated => throw _privateConstructorUsedError;
 
+  /// Serializes this PumpStation to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
+
+  /// Create a copy of PumpStation
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   $PumpStationCopyWith<PumpStation> get copyWith =>
       throw _privateConstructorUsedError;
 }
@@ -43,15 +50,14 @@ abstract class $PumpStationCopyWith<$Res> {
   $Res call(
       {String id,
       String name,
-      String? district,
-      String state,
-      double? locationLat,
-      double? locationLng,
-      StationStatus status,
-      double? capacityLps,
-      DateTime? installedAt,
-      DateTime createdAt,
-      DateTime updatedAt});
+      double latitude,
+      double longitude,
+      String status,
+      double capacity,
+      double currentLoad,
+      String? address,
+      String? zone,
+      DateTime? lastUpdated});
 }
 
 /// @nodoc
@@ -59,57 +65,68 @@ class _$PumpStationCopyWithImpl<$Res, $Val extends PumpStation>
     implements $PumpStationCopyWith<$Res> {
   _$PumpStationCopyWithImpl(this._value, this._then);
 
+  // ignore: unused_field
   final $Val _value;
+  // ignore: unused_field
   final $Res Function($Val) _then;
 
+  /// Create a copy of PumpStation
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call(
-      {Object? id = null,
-      Object? name = null,
-      Object? district = freezed,
-      Object? state = null,
-      Object? locationLat = freezed,
-      Object? locationLng = freezed,
-      Object? status = null,
-      Object? capacityLps = freezed,
-      Object? installedAt = freezed,
-      Object? createdAt = null,
-      Object? updatedAt = null}) {
+  $Res call({
+    Object? id = null,
+    Object? name = null,
+    Object? latitude = null,
+    Object? longitude = null,
+    Object? status = null,
+    Object? capacity = null,
+    Object? currentLoad = null,
+    Object? address = freezed,
+    Object? zone = freezed,
+    Object? lastUpdated = freezed,
+  }) {
     return _then(_value.copyWith(
       id: null == id
           ? _value.id
-          : id as String,
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
       name: null == name
           ? _value.name
-          : name as String,
-      district: freezed == district
-          ? _value.district
-          : district as String?,
-      state: null == state
-          ? _value.state
-          : state as String,
-      locationLat: freezed == locationLat
-          ? _value.locationLat
-          : locationLat as double?,
-      locationLng: freezed == locationLng
-          ? _value.locationLng
-          : locationLng as double?,
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      latitude: null == latitude
+          ? _value.latitude
+          : latitude // ignore: cast_nullable_to_non_nullable
+              as double,
+      longitude: null == longitude
+          ? _value.longitude
+          : longitude // ignore: cast_nullable_to_non_nullable
+              as double,
       status: null == status
           ? _value.status
-          : status as StationStatus,
-      capacityLps: freezed == capacityLps
-          ? _value.capacityLps
-          : capacityLps as double?,
-      installedAt: freezed == installedAt
-          ? _value.installedAt
-          : installedAt as DateTime?,
-      createdAt: null == createdAt
-          ? _value.createdAt
-          : createdAt as DateTime,
-      updatedAt: null == updatedAt
-          ? _value.updatedAt
-          : updatedAt as DateTime,
+          : status // ignore: cast_nullable_to_non_nullable
+              as String,
+      capacity: null == capacity
+          ? _value.capacity
+          : capacity // ignore: cast_nullable_to_non_nullable
+              as double,
+      currentLoad: null == currentLoad
+          ? _value.currentLoad
+          : currentLoad // ignore: cast_nullable_to_non_nullable
+              as double,
+      address: freezed == address
+          ? _value.address
+          : address // ignore: cast_nullable_to_non_nullable
+              as String?,
+      zone: freezed == zone
+          ? _value.zone
+          : zone // ignore: cast_nullable_to_non_nullable
+              as String?,
+      lastUpdated: freezed == lastUpdated
+          ? _value.lastUpdated
+          : lastUpdated // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
     ) as $Val);
   }
 }
@@ -125,15 +142,14 @@ abstract class _$$PumpStationImplCopyWith<$Res>
   $Res call(
       {String id,
       String name,
-      String? district,
-      String state,
-      double? locationLat,
-      double? locationLng,
-      StationStatus status,
-      double? capacityLps,
-      DateTime? installedAt,
-      DateTime createdAt,
-      DateTime updatedAt});
+      double latitude,
+      double longitude,
+      String status,
+      double capacity,
+      double currentLoad,
+      String? address,
+      String? zone,
+      DateTime? lastUpdated});
 }
 
 /// @nodoc
@@ -144,32 +160,63 @@ class __$$PumpStationImplCopyWithImpl<$Res>
       _$PumpStationImpl _value, $Res Function(_$PumpStationImpl) _then)
       : super(_value, _then);
 
+  /// Create a copy of PumpStation
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call(
-      {Object? id = null,
-      Object? name = null,
-      Object? district = freezed,
-      Object? state = null,
-      Object? locationLat = freezed,
-      Object? locationLng = freezed,
-      Object? status = null,
-      Object? capacityLps = freezed,
-      Object? installedAt = freezed,
-      Object? createdAt = null,
-      Object? updatedAt = null}) {
+  $Res call({
+    Object? id = null,
+    Object? name = null,
+    Object? latitude = null,
+    Object? longitude = null,
+    Object? status = null,
+    Object? capacity = null,
+    Object? currentLoad = null,
+    Object? address = freezed,
+    Object? zone = freezed,
+    Object? lastUpdated = freezed,
+  }) {
     return _then(_$PumpStationImpl(
-      id: null == id ? _value.id : id as String,
-      name: null == name ? _value.name : name as String,
-      district: freezed == district ? _value.district : district as String?,
-      state: null == state ? _value.state : state as String,
-      locationLat: freezed == locationLat ? _value.locationLat : locationLat as double?,
-      locationLng: freezed == locationLng ? _value.locationLng : locationLng as double?,
-      status: null == status ? _value.status : status as StationStatus,
-      capacityLps: freezed == capacityLps ? _value.capacityLps : capacityLps as double?,
-      installedAt: freezed == installedAt ? _value.installedAt : installedAt as DateTime?,
-      createdAt: null == createdAt ? _value.createdAt : createdAt as DateTime,
-      updatedAt: null == updatedAt ? _value.updatedAt : updatedAt as DateTime,
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      name: null == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      latitude: null == latitude
+          ? _value.latitude
+          : latitude // ignore: cast_nullable_to_non_nullable
+              as double,
+      longitude: null == longitude
+          ? _value.longitude
+          : longitude // ignore: cast_nullable_to_non_nullable
+              as double,
+      status: null == status
+          ? _value.status
+          : status // ignore: cast_nullable_to_non_nullable
+              as String,
+      capacity: null == capacity
+          ? _value.capacity
+          : capacity // ignore: cast_nullable_to_non_nullable
+              as double,
+      currentLoad: null == currentLoad
+          ? _value.currentLoad
+          : currentLoad // ignore: cast_nullable_to_non_nullable
+              as double,
+      address: freezed == address
+          ? _value.address
+          : address // ignore: cast_nullable_to_non_nullable
+              as String?,
+      zone: freezed == zone
+          ? _value.zone
+          : zone // ignore: cast_nullable_to_non_nullable
+              as String?,
+      lastUpdated: freezed == lastUpdated
+          ? _value.lastUpdated
+          : lastUpdated // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
     ));
   }
 }
@@ -180,15 +227,14 @@ class _$PumpStationImpl implements _PumpStation {
   const _$PumpStationImpl(
       {required this.id,
       required this.name,
-      this.district,
-      this.state = 'Bihar',
-      this.locationLat,
-      this.locationLng,
-      this.status = StationStatus.inactive,
-      this.capacityLps,
-      this.installedAt,
-      required this.createdAt,
-      required this.updatedAt});
+      required this.latitude,
+      required this.longitude,
+      required this.status,
+      required this.capacity,
+      required this.currentLoad,
+      this.address,
+      this.zone,
+      this.lastUpdated});
 
   factory _$PumpStationImpl.fromJson(Map<String, dynamic> json) =>
       _$$PumpStationImplFromJson(json);
@@ -198,29 +244,25 @@ class _$PumpStationImpl implements _PumpStation {
   @override
   final String name;
   @override
-  final String? district;
+  final double latitude;
   @override
-  @JsonKey()
-  final String state;
+  final double longitude;
   @override
-  final double? locationLat;
+  final String status;
   @override
-  final double? locationLng;
+  final double capacity;
   @override
-  @JsonKey()
-  final StationStatus status;
+  final double currentLoad;
   @override
-  final double? capacityLps;
+  final String? address;
   @override
-  final DateTime? installedAt;
+  final String? zone;
   @override
-  final DateTime createdAt;
-  @override
-  final DateTime updatedAt;
+  final DateTime? lastUpdated;
 
   @override
   String toString() {
-    return 'PumpStation(id: $id, name: $name, district: $district, state: $state, locationLat: $locationLat, locationLng: $locationLng, status: $status, capacityLps: $capacityLps, installedAt: $installedAt, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'PumpStation(id: $id, name: $name, latitude: $latitude, longitude: $longitude, status: $status, capacity: $capacity, currentLoad: $currentLoad, address: $address, zone: $zone, lastUpdated: $lastUpdated)';
   }
 
   @override
@@ -230,22 +272,29 @@ class _$PumpStationImpl implements _PumpStation {
             other is _$PumpStationImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
-            (identical(other.district, district) || other.district == district) &&
-            (identical(other.state, state) || other.state == state) &&
-            (identical(other.locationLat, locationLat) || other.locationLat == locationLat) &&
-            (identical(other.locationLng, locationLng) || other.locationLng == locationLng) &&
+            (identical(other.latitude, latitude) ||
+                other.latitude == latitude) &&
+            (identical(other.longitude, longitude) ||
+                other.longitude == longitude) &&
             (identical(other.status, status) || other.status == status) &&
-            (identical(other.capacityLps, capacityLps) || other.capacityLps == capacityLps) &&
-            (identical(other.installedAt, installedAt) || other.installedAt == installedAt) &&
-            (identical(other.createdAt, createdAt) || other.createdAt == createdAt) &&
-            (identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+            (identical(other.capacity, capacity) ||
+                other.capacity == capacity) &&
+            (identical(other.currentLoad, currentLoad) ||
+                other.currentLoad == currentLoad) &&
+            (identical(other.address, address) || other.address == address) &&
+            (identical(other.zone, zone) || other.zone == zone) &&
+            (identical(other.lastUpdated, lastUpdated) ||
+                other.lastUpdated == lastUpdated));
   }
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, name, district, state, locationLat, locationLng, status, capacityLps, installedAt, createdAt, updatedAt);
+  int get hashCode => Object.hash(runtimeType, id, name, latitude, longitude,
+      status, capacity, currentLoad, address, zone, lastUpdated);
 
-  @JsonKey(ignore: true)
+  /// Create a copy of PumpStation
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
   _$$PumpStationImplCopyWith<_$PumpStationImpl> get copyWith =>
@@ -253,7 +302,9 @@ class _$PumpStationImpl implements _PumpStation {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$PumpStationImplToJson(this);
+    return _$$PumpStationImplToJson(
+      this,
+    );
   }
 }
 
@@ -261,247 +312,43 @@ abstract class _PumpStation implements PumpStation {
   const factory _PumpStation(
       {required final String id,
       required final String name,
-      final String? district,
-      final String state,
-      final double? locationLat,
-      final double? locationLng,
-      final StationStatus status,
-      final double? capacityLps,
-      final DateTime? installedAt,
-      required final DateTime createdAt,
-      required final DateTime updatedAt}) = _$PumpStationImpl;
+      required final double latitude,
+      required final double longitude,
+      required final String status,
+      required final double capacity,
+      required final double currentLoad,
+      final String? address,
+      final String? zone,
+      final DateTime? lastUpdated}) = _$PumpStationImpl;
+
+  factory _PumpStation.fromJson(Map<String, dynamic> json) =
+      _$PumpStationImpl.fromJson;
 
   @override
   String get id;
   @override
   String get name;
   @override
-  String? get district;
+  double get latitude;
   @override
-  String get state;
+  double get longitude;
   @override
-  double? get locationLat;
+  String get status;
   @override
-  double? get locationLng;
+  double get capacity;
   @override
-  StationStatus get status;
+  double get currentLoad;
   @override
-  double? get capacityLps;
+  String? get address;
   @override
-  DateTime? get installedAt;
+  String? get zone;
   @override
-  DateTime get createdAt;
+  DateTime? get lastUpdated;
+
+  /// Create a copy of PumpStation
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  DateTime get updatedAt;
-  @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   _$$PumpStationImplCopyWith<_$PumpStationImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-// ──────────────────────────────────────────
-// MotorLog
-// ──────────────────────────────────────────
-
-/// @nodoc
-mixin _$MotorLog {
-  int get id => throw _privateConstructorUsedError;
-  String get pumpStationId => throw _privateConstructorUsedError;
-  String? get triggeredBy => throw _privateConstructorUsedError;
-  MotorAction get action => throw _privateConstructorUsedError;
-  String? get reason => throw _privateConstructorUsedError;
-  int? get waterLevelRefId => throw _privateConstructorUsedError;
-  DateTime get loggedAt => throw _privateConstructorUsedError;
-
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
-  $MotorLogCopyWith<MotorLog> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $MotorLogCopyWith<$Res> {
-  factory $MotorLogCopyWith(MotorLog value, $Res Function(MotorLog) then) =
-      _$MotorLogCopyWithImpl<$Res, MotorLog>;
-  @useResult
-  $Res call(
-      {int id,
-      String pumpStationId,
-      String? triggeredBy,
-      MotorAction action,
-      String? reason,
-      int? waterLevelRefId,
-      DateTime loggedAt});
-}
-
-/// @nodoc
-class _$MotorLogCopyWithImpl<$Res, $Val extends MotorLog>
-    implements $MotorLogCopyWith<$Res> {
-  _$MotorLogCopyWithImpl(this._value, this._then);
-  final $Val _value;
-  final $Res Function($Val) _then;
-
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call(
-      {Object? id = null,
-      Object? pumpStationId = null,
-      Object? triggeredBy = freezed,
-      Object? action = null,
-      Object? reason = freezed,
-      Object? waterLevelRefId = freezed,
-      Object? loggedAt = null}) {
-    return _then(_value.copyWith(
-      id: null == id ? _value.id : id as int,
-      pumpStationId: null == pumpStationId ? _value.pumpStationId : pumpStationId as String,
-      triggeredBy: freezed == triggeredBy ? _value.triggeredBy : triggeredBy as String?,
-      action: null == action ? _value.action : action as MotorAction,
-      reason: freezed == reason ? _value.reason : reason as String?,
-      waterLevelRefId: freezed == waterLevelRefId ? _value.waterLevelRefId : waterLevelRefId as int?,
-      loggedAt: null == loggedAt ? _value.loggedAt : loggedAt as DateTime,
-    ) as $Val);
-  }
-}
-
-/// @nodoc
-abstract class _$$MotorLogImplCopyWith<$Res>
-    implements $MotorLogCopyWith<$Res> {
-  factory _$$MotorLogImplCopyWith(
-          _$MotorLogImpl value, $Res Function(_$MotorLogImpl) then) =
-      __$$MotorLogImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call(
-      {int id,
-      String pumpStationId,
-      String? triggeredBy,
-      MotorAction action,
-      String? reason,
-      int? waterLevelRefId,
-      DateTime loggedAt});
-}
-
-/// @nodoc
-class __$$MotorLogImplCopyWithImpl<$Res>
-    extends _$MotorLogCopyWithImpl<$Res, _$MotorLogImpl>
-    implements _$$MotorLogImplCopyWith<$Res> {
-  __$$MotorLogImplCopyWithImpl(
-      _$MotorLogImpl _value, $Res Function(_$MotorLogImpl) _then)
-      : super(_value, _then);
-
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call(
-      {Object? id = null,
-      Object? pumpStationId = null,
-      Object? triggeredBy = freezed,
-      Object? action = null,
-      Object? reason = freezed,
-      Object? waterLevelRefId = freezed,
-      Object? loggedAt = null}) {
-    return _then(_$MotorLogImpl(
-      id: null == id ? _value.id : id as int,
-      pumpStationId: null == pumpStationId ? _value.pumpStationId : pumpStationId as String,
-      triggeredBy: freezed == triggeredBy ? _value.triggeredBy : triggeredBy as String?,
-      action: null == action ? _value.action : action as MotorAction,
-      reason: freezed == reason ? _value.reason : reason as String?,
-      waterLevelRefId: freezed == waterLevelRefId ? _value.waterLevelRefId : waterLevelRefId as int?,
-      loggedAt: null == loggedAt ? _value.loggedAt : loggedAt as DateTime,
-    ));
-  }
-}
-
-/// @nodoc
-@JsonSerializable()
-class _$MotorLogImpl implements _MotorLog {
-  const _$MotorLogImpl(
-      {required this.id,
-      required this.pumpStationId,
-      this.triggeredBy,
-      required this.action,
-      this.reason,
-      this.waterLevelRefId,
-      required this.loggedAt});
-
-  factory _$MotorLogImpl.fromJson(Map<String, dynamic> json) =>
-      _$$MotorLogImplFromJson(json);
-
-  @override
-  final int id;
-  @override
-  final String pumpStationId;
-  @override
-  final String? triggeredBy;
-  @override
-  final MotorAction action;
-  @override
-  final String? reason;
-  @override
-  final int? waterLevelRefId;
-  @override
-  final DateTime loggedAt;
-
-  @override
-  String toString() {
-    return 'MotorLog(id: $id, pumpStationId: $pumpStationId, triggeredBy: $triggeredBy, action: $action, reason: $reason, waterLevelRefId: $waterLevelRefId, loggedAt: $loggedAt)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$MotorLogImpl &&
-            (identical(other.id, id) || other.id == id) &&
-            (identical(other.pumpStationId, pumpStationId) || other.pumpStationId == pumpStationId) &&
-            (identical(other.triggeredBy, triggeredBy) || other.triggeredBy == triggeredBy) &&
-            (identical(other.action, action) || other.action == action) &&
-            (identical(other.reason, reason) || other.reason == reason) &&
-            (identical(other.waterLevelRefId, waterLevelRefId) || other.waterLevelRefId == waterLevelRefId) &&
-            (identical(other.loggedAt, loggedAt) || other.loggedAt == loggedAt));
-  }
-
-  @JsonKey(ignore: true)
-  @override
-  int get hashCode => Object.hash(runtimeType, id, pumpStationId, triggeredBy, action, reason, waterLevelRefId, loggedAt);
-
-  @JsonKey(ignore: true)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$MotorLogImplCopyWith<_$MotorLogImpl> get copyWith =>
-      __$$MotorLogImplCopyWithImpl<_$MotorLogImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$MotorLogImplToJson(this);
-  }
-}
-
-abstract class _MotorLog implements MotorLog {
-  const factory _MotorLog(
-      {required final int id,
-      required final String pumpStationId,
-      final String? triggeredBy,
-      required final MotorAction action,
-      final String? reason,
-      final int? waterLevelRefId,
-      required final DateTime loggedAt}) = _$MotorLogImpl;
-
-  @override
-  int get id;
-  @override
-  String get pumpStationId;
-  @override
-  String? get triggeredBy;
-  @override
-  MotorAction get action;
-  @override
-  String? get reason;
-  @override
-  int? get waterLevelRefId;
-  @override
-  DateTime get loggedAt;
-  @override
-  @JsonKey(ignore: true)
-  _$$MotorLogImplCopyWith<_$MotorLogImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
