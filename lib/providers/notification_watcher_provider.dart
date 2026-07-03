@@ -9,12 +9,12 @@ import '../services/flood_notification_service.dart';
 
 class _NotificationWatcherNotifier extends Notifier<void> {
   final _firedCritical = <String>{};
-  final _firedWarning  = <String>{};
+  final _firedWarning = <String>{};
 
   @override
   void build() {
     final preds = ref.watch(biharBulkPredictionsProvider);
-    final svc   = FloodNotificationService.instance;
+    final svc = FloodNotificationService.instance;
 
     Future.microtask(() {
       for (final pred in preds) {
@@ -28,22 +28,21 @@ class _NotificationWatcherNotifier extends Notifier<void> {
 
         if (pred.severity == 'CRITICAL' && _firedCritical.add(key)) {
           svc.showCriticalAlert(
-            id:          key.hashCode.abs() % 100000,
-            city:        pred.station.split(' (').first,
-            level:       pred.currentLevel,
+            id: key.hashCode.abs() % 100000,
+            city: pred.station.split(' (').first,
+            level: pred.currentLevel,
             dangerLevel: pred.dangerLevel,
           );
         } else if (pred.severity == 'SEVERE' && _firedWarning.add(key)) {
           svc.showWarningAlert(
-            id:    (key.hashCode.abs() % 100000) + 100000,
-            city:  pred.station.split(' (').first,
+            id: (key.hashCode.abs() % 100000) + 100000,
+            city: pred.station.split(' (').first,
             level: pred.currentLevel,
           );
         }
       }
     });
   }
-
 }
 
 /// Watch this from your app root to activate flood notifications.

@@ -36,12 +36,11 @@ class CommunityReportsScreen extends ConsumerWidget {
         foregroundColor: Colors.black,
         onPressed: () => Navigator.push(
           context,
-          MaterialPageRoute(
-              builder: (_) => const SubmitReportScreen()),
+          MaterialPageRoute(builder: (_) => const SubmitReportScreen()),
         ),
         icon: const Icon(Icons.add_rounded),
-        label: const Text('Report',
-            style: TextStyle(fontWeight: FontWeight.w700)),
+        label:
+            const Text('Report', style: TextStyle(fontWeight: FontWeight.w700)),
       ),
       body: reportsAsync.when(
         loading: () => const Center(
@@ -72,11 +71,10 @@ class CommunityReportsScreen extends ConsumerWidget {
             ? _EmptyReports()
             : RefreshIndicator(
                 color: const Color(0xFF00D4FF),
-                onRefresh: () async =>
-                    ref.invalidate(communityReportsProvider),
+                onRefresh: () async => ref.invalidate(communityReportsProvider),
                 child: ListView.separated(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   itemCount: reports.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 12),
                   itemBuilder: (context, i) =>
@@ -184,13 +182,13 @@ class _ReportCard extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: sColor.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                        color: sColor.withOpacity(0.4), width: 1),
+                    border:
+                        Border.all(color: sColor.withOpacity(0.4), width: 1),
                   ),
                   child: Text(
                     report.severity.name.toUpperCase(),
@@ -208,15 +206,14 @@ class _ReportCard extends StatelessWidget {
               report.description,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                  color: Colors.white.withOpacity(0.6), fontSize: 13),
+              style:
+                  TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 13),
             ),
             const SizedBox(height: 10),
             Row(
               children: [
                 Icon(Icons.location_on_outlined,
-                    size: 13,
-                    color: const Color(0xFF00D4FF).withOpacity(0.8)),
+                    size: 13, color: const Color(0xFF00D4FF).withOpacity(0.8)),
                 const SizedBox(width: 4),
                 Text(
                   report.districtName ?? 'Bihar',

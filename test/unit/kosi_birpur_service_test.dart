@@ -8,16 +8,20 @@ void main() {
   group('Birpur constants sanity', () {
     test('all constants are positive doubles', () {
       for (final v in [
-        kBirpurDatumOffset, kBirpurDangerLevel, kBirpurWarningLevel,
-        kBirpurNormalLevel, kBirpurHFL,
-        kBirpurWarningDischarge, kBirpurDangerDischarge,
+        kBirpurDatumOffset,
+        kBirpurDangerLevel,
+        kBirpurWarningLevel,
+        kBirpurNormalLevel,
+        kBirpurHFL,
+        kBirpurWarningDischarge,
+        kBirpurDangerDischarge,
       ]) {
         expect(v, isPositive);
       }
     });
 
     test('level ordering: normal < warning < danger', () {
-      expect(kBirpurNormalLevel,  lessThan(kBirpurWarningLevel));
+      expect(kBirpurNormalLevel, lessThan(kBirpurWarningLevel));
       expect(kBirpurWarningLevel, lessThan(kBirpurDangerLevel));
     });
 
@@ -30,13 +34,13 @@ void main() {
     test('74.5m: above warning, below danger', () {
       const level = 74.5;
       expect(level >= kBirpurWarningLevel, isTrue);
-      expect(level >= kBirpurDangerLevel,  isFalse);
+      expect(level >= kBirpurDangerLevel, isFalse);
     });
 
     test('76.02m: at danger / HFL', () {
       const level = 76.02;
       expect(level >= kBirpurDangerLevel, isTrue);
-      expect(level >= kBirpurHFL,         isTrue);
+      expect(level >= kBirpurHFL, isTrue);
     });
 
     test('70.0m: normal (below warning)', () {

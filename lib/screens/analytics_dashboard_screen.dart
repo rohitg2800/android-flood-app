@@ -18,16 +18,21 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final t       = RiverColors.of(context);
-    final alerts  = ref.watch(alertsProvider);
+    final t = RiverColors.of(context);
+    final alerts = ref.watch(alertsProvider);
     final stations = ref.watch(mergedStationsProvider);
     final isLoading = ref.watch(wrdIsLoadingProvider);
     final error = ref.watch(wrdErrorProvider);
 
-    final total     = alerts.length;
-    final critical  = alerts.where((a) => a.severity == AlertSeverity.critical || a.severity == AlertSeverity.emergency).length;
-    final warning   = alerts.where((a) => a.severity == AlertSeverity.warning).length;
-    final info      = alerts.where((a) => a.severity == AlertSeverity.info).length;
+    final total = alerts.length;
+    final critical = alerts
+        .where((a) =>
+            a.severity == AlertSeverity.critical ||
+            a.severity == AlertSeverity.emergency)
+        .length;
+    final warning =
+        alerts.where((a) => a.severity == AlertSeverity.warning).length;
+    final info = alerts.where((a) => a.severity == AlertSeverity.info).length;
 
     return Scaffold(
       backgroundColor: t.scaffoldBg,
@@ -39,7 +44,8 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
             subtitle: 'Live flood intelligence overview',
             actions: [
               IconButton(
-                icon: Icon(Icons.refresh_rounded, color: t.textSecondary, size: 20),
+                icon: Icon(Icons.refresh_rounded,
+                    color: t.textSecondary, size: 20),
                 tooltip: 'Refresh',
                 onPressed: () {
                   ref.invalidate(mergedStationsProvider);
@@ -52,21 +58,44 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 60),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-
                 // ── KPI Row 1 ──────────────────────────────────────────────
                 Row(
                   children: [
-                    Expanded(child: _KpiCard(t: t, label: 'Total Alerts',   value: total.toString(),    icon: Icons.notifications_rounded,    color: const Color(0xFF1976D2))),
+                    Expanded(
+                        child: _KpiCard(
+                            t: t,
+                            label: 'Total Alerts',
+                            value: total.toString(),
+                            icon: Icons.notifications_rounded,
+                            color: const Color(0xFF1976D2))),
                     const SizedBox(width: 10),
-                    Expanded(child: _KpiCard(t: t, label: 'Critical',       value: critical.toString(), icon: Icons.warning_rounded,          color: const Color(0xFFE53935))),
+                    Expanded(
+                        child: _KpiCard(
+                            t: t,
+                            label: 'Critical',
+                            value: critical.toString(),
+                            icon: Icons.warning_rounded,
+                            color: const Color(0xFFE53935))),
                   ],
                 ),
                 const SizedBox(height: 10),
                 Row(
                   children: [
-                    Expanded(child: _KpiCard(t: t, label: 'Warning',        value: warning.toString(),  icon: Icons.report_problem_rounded,   color: const Color(0xFFFF8F00))),
+                    Expanded(
+                        child: _KpiCard(
+                            t: t,
+                            label: 'Warning',
+                            value: warning.toString(),
+                            icon: Icons.report_problem_rounded,
+                            color: const Color(0xFFFF8F00))),
                     const SizedBox(width: 10),
-                    Expanded(child: _KpiCard(t: t, label: 'Info / Safe',    value: info.toString(),     icon: Icons.info_rounded,             color: const Color(0xFF43A047))),
+                    Expanded(
+                        child: _KpiCard(
+                            t: t,
+                            label: 'Info / Safe',
+                            value: info.toString(),
+                            icon: Icons.info_rounded,
+                            color: const Color(0xFF43A047))),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -81,16 +110,33 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('Alert Severity Distribution',
-                          style: TextStyle(color: t.textPrimary, fontSize: 13, fontWeight: FontWeight.w700)),
+                            style: TextStyle(
+                                color: t.textPrimary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700)),
                         const SizedBox(height: 14),
                         if (total > 0) ...[
-                          _SeverityBar(label: 'Emergency/Critical', count: critical, total: total, color: const Color(0xFFE53935)),
+                          _SeverityBar(
+                              label: 'Emergency/Critical',
+                              count: critical,
+                              total: total,
+                              color: const Color(0xFFE53935)),
                           const SizedBox(height: 8),
-                          _SeverityBar(label: 'Warning',            count: warning,  total: total, color: const Color(0xFFFF8F00)),
+                          _SeverityBar(
+                              label: 'Warning',
+                              count: warning,
+                              total: total,
+                              color: const Color(0xFFFF8F00)),
                           const SizedBox(height: 8),
-                          _SeverityBar(label: 'Info',               count: info,     total: total, color: const Color(0xFF43A047)),
+                          _SeverityBar(
+                              label: 'Info',
+                              count: info,
+                              total: total,
+                              color: const Color(0xFF43A047)),
                         ] else
-                          Text('No alerts at this time.', style: TextStyle(color: t.textSecondary, fontSize: 12)),
+                          Text('No alerts at this time.',
+                              style: TextStyle(
+                                  color: t.textSecondary, fontSize: 12)),
                       ],
                     ),
                   ),
@@ -99,40 +145,50 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
 
                 // ── River data table ───────────────────────────────────────
                 isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : error != null
-                      ? _ErrorCard(t: t, msg: error!)
-                      : Td3Card(
-                    elevation: Td3.elevMid,
-                    accentColor: const Color(0xFF26A69A),
-                    child: Padding(
-                      padding: const EdgeInsets.all(18),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Live River Status  (${stations.length} stations)',
-                            style: TextStyle(color: t.textPrimary, fontSize: 13, fontWeight: FontWeight.w700)),
-                          const SizedBox(height: 14),
-                          ...stations.take(20).map((r) => _RiverRow(
-                            t: t,
-                            name:   r.river,
-                            level:  r.current,
-                            danger: r.danger,
-                            onTap:  () => Navigator.of(context).pushNamed(Routes.riverDetail, arguments: r),
-                          )),
-                          if (stations.length > 20)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: TextButton(
-                                onPressed: () => Navigator.of(context).pushNamed(Routes.liveStations),
-                                child: Text('View all ${stations.length} stations →',
-                                  style: const TextStyle(color: Color(0xFF26A69A), fontSize: 12)),
+                    ? const Center(child: CircularProgressIndicator())
+                    : error != null
+                        ? _ErrorCard(t: t, msg: error!)
+                        : Td3Card(
+                            elevation: Td3.elevMid,
+                            accentColor: const Color(0xFF26A69A),
+                            child: Padding(
+                              padding: const EdgeInsets.all(18),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                      'Live River Status  (${stations.length} stations)',
+                                      style: TextStyle(
+                                          color: t.textPrimary,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700)),
+                                  const SizedBox(height: 14),
+                                  ...stations.take(20).map((r) => _RiverRow(
+                                        t: t,
+                                        name: r.river,
+                                        level: r.current,
+                                        danger: r.danger,
+                                        onTap: () => Navigator.of(context)
+                                            .pushNamed(Routes.riverDetail,
+                                                arguments: r),
+                                      )),
+                                  if (stations.length > 20)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 8),
+                                      child: TextButton(
+                                        onPressed: () => Navigator.of(context)
+                                            .pushNamed(Routes.liveStations),
+                                        child: Text(
+                                            'View all ${stations.length} stations →',
+                                            style: const TextStyle(
+                                                color: Color(0xFF26A69A),
+                                                fontSize: 12)),
+                                      ),
+                                    ),
+                                ],
                               ),
                             ),
-                        ],
-                      ),
-                    ),
-                  ),
+                          ),
 
                 const SizedBox(height: 32),
               ]),
@@ -149,45 +205,61 @@ class _KpiCard extends StatelessWidget {
   final String label, value;
   final IconData icon;
   final Color color;
-  const _KpiCard({required this.t, required this.label, required this.value, required this.icon, required this.color});
+  const _KpiCard(
+      {required this.t,
+      required this.label,
+      required this.value,
+      required this.icon,
+      required this.color});
   @override
   Widget build(BuildContext context) => Td3Card(
-    elevation: Td3.elevMid,
-    accentColor: color,
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
-      child: Row(
-        children: [
-          Container(
-            width: 40, height: 40,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: color.withValues(alpha: 0.25)),
-            ),
-            child: Center(child: Icon(icon, color: color, size: 20)),
+        elevation: Td3.elevMid,
+        accentColor: color,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: color.withValues(alpha: 0.25)),
+                ),
+                child: Center(child: Icon(icon, color: color, size: 20)),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(value,
+                        style: TextStyle(
+                            color: color,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            height: 1)),
+                    Text(label,
+                        style: TextStyle(color: t.textSecondary, fontSize: 11)),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(value, style: TextStyle(color: color, fontSize: 22, fontWeight: FontWeight.w800, height: 1)),
-                Text(label, style: TextStyle(color: t.textSecondary, fontSize: 11)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
+        ),
+      );
 }
 
 class _SeverityBar extends StatelessWidget {
   final String label;
   final int count, total;
   final Color color;
-  const _SeverityBar({required this.label, required this.count, required this.total, required this.color});
+  const _SeverityBar(
+      {required this.label,
+      required this.count,
+      required this.total,
+      required this.color});
   @override
   Widget build(BuildContext context) {
     final pct = total > 0 ? count / total : 0.0;
@@ -197,8 +269,12 @@ class _SeverityBar extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
-            Text('$count', style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700)),
+            Text(label,
+                style: TextStyle(
+                    color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+            Text('$count',
+                style: TextStyle(
+                    color: color, fontSize: 11, fontWeight: FontWeight.w700)),
           ],
         ),
         const SizedBox(height: 4),
@@ -221,11 +297,20 @@ class _RiverRow extends StatelessWidget {
   final String name;
   final double level, danger;
   final VoidCallback onTap;
-  const _RiverRow({required this.t, required this.name, required this.level, required this.danger, required this.onTap});
+  const _RiverRow(
+      {required this.t,
+      required this.name,
+      required this.level,
+      required this.danger,
+      required this.onTap});
   @override
   Widget build(BuildContext context) {
-    final pct   = danger > 0 ? (level / danger).clamp(0.0, 1.2) : 0.0;
-    final color = pct > 1.0 ? const Color(0xFFE53935) : pct > 0.85 ? const Color(0xFFFF8F00) : const Color(0xFF43A047);
+    final pct = danger > 0 ? (level / danger).clamp(0.0, 1.2) : 0.0;
+    final color = pct > 1.0
+        ? const Color(0xFFE53935)
+        : pct > 0.85
+            ? const Color(0xFFFF8F00)
+            : const Color(0xFF43A047);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
@@ -233,10 +318,21 @@ class _RiverRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 7),
         child: Row(
           children: [
-            Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+            Container(
+                width: 8,
+                height: 8,
+                decoration:
+                    BoxDecoration(color: color, shape: BoxShape.circle)),
             const SizedBox(width: 10),
-            Expanded(child: Text(name, style: TextStyle(color: t.textPrimary, fontSize: 12, fontWeight: FontWeight.w500))),
-            Text('${level.toStringAsFixed(2)} m', style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700)),
+            Expanded(
+                child: Text(name,
+                    style: TextStyle(
+                        color: t.textPrimary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500))),
+            Text('${level.toStringAsFixed(2)} m',
+                style: TextStyle(
+                    color: color, fontSize: 11, fontWeight: FontWeight.w700)),
           ],
         ),
       ),
@@ -250,12 +346,13 @@ class _ErrorCard extends StatelessWidget {
   const _ErrorCard({required this.t, required this.msg});
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: const Color(0x1AE53935),
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: const Color(0x40E53935)),
-    ),
-    child: Text('Error loading data: $msg', style: const TextStyle(color: Color(0xFFE53935), fontSize: 12)),
-  );
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0x1AE53935),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0x40E53935)),
+        ),
+        child: Text('Error loading data: $msg',
+            style: const TextStyle(color: Color(0xFFE53935), fontSize: 12)),
+      );
 }

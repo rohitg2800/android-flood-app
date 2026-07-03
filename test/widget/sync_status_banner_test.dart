@@ -74,7 +74,8 @@ void main() {
     expect(find.byIcon(Icons.cloud_off_rounded), findsOneWidget);
   });
 
-  testWidgets('SyncStatusBanner shows Polling banner for fallback', (tester) async {
+  testWidgets('SyncStatusBanner shows Polling banner for fallback',
+      (tester) async {
     await tester.pumpWidget(_wrap(WsStatus.fallback));
     await tester.pumpAndSettle();
     expect(find.textContaining('Polling'), findsOneWidget);

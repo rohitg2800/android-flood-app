@@ -45,12 +45,14 @@ void main() {
   group('FloodThresholds', () {
     test('capacity thresholds are in ascending order', () {
       expect(FloodThresholds.moderate, lessThan(FloodThresholds.high));
-      expect(FloodThresholds.high,     lessThan(FloodThresholds.critical));
+      expect(FloodThresholds.high, lessThan(FloodThresholds.critical));
     });
 
     test('default levels are in ascending order', () {
-      expect(FloodThresholds.defaultSafeLevel,    lessThan(FloodThresholds.defaultWarningLevel));
-      expect(FloodThresholds.defaultWarningLevel, lessThan(FloodThresholds.defaultDangerLevel));
+      expect(FloodThresholds.defaultSafeLevel,
+          lessThan(FloodThresholds.defaultWarningLevel));
+      expect(FloodThresholds.defaultWarningLevel,
+          lessThan(FloodThresholds.defaultDangerLevel));
     });
 
     test('riskColors contains all four severity keys', () {
@@ -77,7 +79,7 @@ void main() {
   group('AlertChannels', () {
     test('channel IDs are non-empty strings', () {
       expect(AlertChannels.criticalId, isNotEmpty);
-      expect(AlertChannels.warningId,  isNotEmpty);
+      expect(AlertChannels.warningId, isNotEmpty);
     });
 
     test('channel IDs are distinct', () {
@@ -86,7 +88,7 @@ void main() {
 
     test('channel names are non-empty', () {
       expect(AlertChannels.criticalName, isNotEmpty);
-      expect(AlertChannels.warningName,  isNotEmpty);
+      expect(AlertChannels.warningName, isNotEmpty);
     });
   });
 
@@ -98,8 +100,16 @@ void main() {
 
     test('contains all 28 states', () {
       for (final s in [
-        'Maharashtra', 'Kerala', 'Assam', 'Bihar', 'Uttar Pradesh',
-        'West Bengal', 'Odisha', 'Gujarat', 'Rajasthan', 'Karnataka',
+        'Maharashtra',
+        'Kerala',
+        'Assam',
+        'Bihar',
+        'Uttar Pradesh',
+        'West Bengal',
+        'Odisha',
+        'Gujarat',
+        'Rajasthan',
+        'Karnataka',
       ]) {
         expect(IndiaGeodata.states, contains(s));
       }
@@ -107,9 +117,14 @@ void main() {
 
     test('contains 8 UTs', () {
       const uts = [
-        'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Chandigarh',
-        'Puducherry', 'Andaman and Nicobar Islands',
-        'Lakshadweep', 'Dadra and Nagar Haveli and Daman and Diu',
+        'Delhi',
+        'Jammu and Kashmir',
+        'Ladakh',
+        'Chandigarh',
+        'Puducherry',
+        'Andaman and Nicobar Islands',
+        'Lakshadweep',
+        'Dadra and Nagar Haveli and Daman and Diu',
       ];
       for (final ut in uts) {
         expect(IndiaGeodata.states, contains(ut));
@@ -129,9 +144,17 @@ void main() {
 
     test('every city has required keys', () {
       const required = [
-        'city', 'state', 'river', 'lat', 'lon',
-        'danger_level', 'warning_level', 'risk', 'flood_freq',
-        'river_type', 'zone',
+        'city',
+        'state',
+        'river',
+        'lat',
+        'lon',
+        'danger_level',
+        'warning_level',
+        'risk',
+        'flood_freq',
+        'river_type',
+        'zone',
       ];
       for (final city in IndiaGeodata.monitoredCities) {
         for (final key in required) {
@@ -143,7 +166,7 @@ void main() {
 
     test('danger_level > warning_level for all cities', () {
       for (final city in IndiaGeodata.monitoredCities) {
-        final danger  = (city['danger_level']  as num).toDouble();
+        final danger = (city['danger_level'] as num).toDouble();
         final warning = (city['warning_level'] as num).toDouble();
         expect(danger, greaterThan(warning),
             reason: '${city["city"]}: danger($danger) <= warning($warning)');
@@ -183,8 +206,8 @@ void main() {
     });
 
     test('Delhi has MSL danger_level around 200–210', () {
-      final delhi = IndiaGeodata.monitoredCities
-          .firstWhere((c) => c['city'] == 'Delhi');
+      final delhi =
+          IndiaGeodata.monitoredCities.firstWhere((c) => c['city'] == 'Delhi');
       expect(delhi['danger_level'], inInclusiveRange(200.0, 210.0));
     });
 
@@ -192,7 +215,7 @@ void main() {
       final seen = <String, Set<String>>{};
       for (final city in IndiaGeodata.monitoredCities) {
         final state = city['state'] as String;
-        final name  = city['city']  as String;
+        final name = city['city'] as String;
         seen.putIfAbsent(state, () => {});
         expect(seen[state]!, isNot(contains(name)),
             reason: 'Duplicate city $name in $state');

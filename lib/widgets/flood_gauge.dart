@@ -13,7 +13,7 @@ import 'package:flutter/material.dart';
 class FloodGauge extends StatelessWidget {
   final double value;
   final double max;
-  final Color  color;
+  final Color color;
 
   const FloodGauge({
     super.key,

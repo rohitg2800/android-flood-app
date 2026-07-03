@@ -11,5 +11,4 @@ library;
 
 export 'predict.dart'
     show FloodPrediction, FloodPredictionInput, PredictionService;
-export 'prediction_service.dart'
-    show MonitoringProtocol, PredictionInput;
+export 'prediction_service.dart' show MonitoringProtocol, PredictionInput;

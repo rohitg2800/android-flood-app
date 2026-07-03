@@ -21,25 +21,33 @@ class AlertBanner extends StatelessWidget {
 
   Color _color(dynamic c) {
     switch (severity) {
-      case AlertBannerSeverity.emergency: return c.danger;
-      case AlertBannerSeverity.critical:  return c.danger;
-      case AlertBannerSeverity.warning:   return c.warning;
-      case AlertBannerSeverity.info:      return c.info;
+      case AlertBannerSeverity.emergency:
+        return c.danger;
+      case AlertBannerSeverity.critical:
+        return c.danger;
+      case AlertBannerSeverity.warning:
+        return c.warning;
+      case AlertBannerSeverity.info:
+        return c.info;
     }
   }
 
   IconData _icon() {
     switch (severity) {
-      case AlertBannerSeverity.emergency: return Icons.crisis_alert_rounded;
-      case AlertBannerSeverity.critical:  return Icons.warning_amber_rounded;
-      case AlertBannerSeverity.warning:   return Icons.info_outline_rounded;
-      case AlertBannerSeverity.info:      return Icons.notifications_none_rounded;
+      case AlertBannerSeverity.emergency:
+        return Icons.crisis_alert_rounded;
+      case AlertBannerSeverity.critical:
+        return Icons.warning_amber_rounded;
+      case AlertBannerSeverity.warning:
+        return Icons.info_outline_rounded;
+      case AlertBannerSeverity.info:
+        return Icons.notifications_none_rounded;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final c     = core_theme.RiverTheme.of(context).colors;
+    final c = core_theme.RiverTheme.of(context).colors;
     final color = _color(c);
 
     return GestureDetector(
@@ -55,7 +63,8 @@ class AlertBanner extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 34, height: 34,
+              width: 34,
+              height: 34,
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
@@ -67,7 +76,8 @@ class AlertBanner extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title,
+                  Text(
+                    title,
                     style: TextStyle(
                       color: color,
                       fontSize: 13,
@@ -75,7 +85,8 @@ class AlertBanner extends StatelessWidget {
                     ),
                   ),
                   if (subtitle != null)
-                    Text(subtitle!,
+                    Text(
+                      subtitle!,
                       style: TextStyle(color: c.textSecondary, fontSize: 11),
                     ),
                 ],
@@ -88,7 +99,8 @@ class AlertBanner extends StatelessWidget {
                 onTap: onDismiss,
                 child: Padding(
                   padding: const EdgeInsets.only(left: 8),
-                  child: Icon(Icons.close_rounded, color: c.textSecondary, size: 16),
+                  child: Icon(Icons.close_rounded,
+                      color: c.textSecondary, size: 16),
                 ),
               ),
           ],

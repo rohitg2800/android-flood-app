@@ -5,7 +5,7 @@ import '../../models/river_station.dart';
 import '../../theme/app_palette.dart';
 
 class DistrictBottomSheet extends StatelessWidget {
-  final String             district;
+  final String district;
   final List<RiverStation> stations;
   const DistrictBottomSheet(
       {super.key, required this.district, required this.stations});
@@ -20,55 +20,63 @@ class DistrictBottomSheet extends StatelessWidget {
   }
 
   static AlertSeverity _sev(RiverStation s) {
-    if (!s.hasData)                              return AlertSeverity.info;
-    if (s.hfl > 0 && s.current >= s.hfl)        return AlertSeverity.emergency;
-    if (s.danger > 0 && s.current >= s.danger)   return AlertSeverity.emergency;
+    if (!s.hasData) return AlertSeverity.info;
+    if (s.hfl > 0 && s.current >= s.hfl) return AlertSeverity.emergency;
+    if (s.danger > 0 && s.current >= s.danger) return AlertSeverity.emergency;
     if (s.warning > 0 && s.current >= s.warning) return AlertSeverity.critical;
-    if (s.progressPct >= 0.75)                   return AlertSeverity.warning;
+    if (s.progressPct >= 0.75) return AlertSeverity.warning;
     return AlertSeverity.info;
   }
 
   static Color _sevColor(AlertSeverity s) {
     switch (s) {
-      case AlertSeverity.emergency: return AppPalette.critical;
-      case AlertSeverity.critical:  return AppPalette.danger;
-      case AlertSeverity.warning:   return AppPalette.warning;
-      case AlertSeverity.info:      return AppPalette.safe;
+      case AlertSeverity.emergency:
+        return AppPalette.critical;
+      case AlertSeverity.critical:
+        return AppPalette.danger;
+      case AlertSeverity.warning:
+        return AppPalette.warning;
+      case AlertSeverity.info:
+        return AppPalette.safe;
     }
   }
 
   static String _sevLabel(AlertSeverity s) {
     switch (s) {
-      case AlertSeverity.emergency: return 'EMERGENCY';
-      case AlertSeverity.critical:  return 'CRITICAL';
-      case AlertSeverity.warning:   return 'WARNING';
-      case AlertSeverity.info:      return 'INFO';
+      case AlertSeverity.emergency:
+        return 'EMERGENCY';
+      case AlertSeverity.critical:
+        return 'CRITICAL';
+      case AlertSeverity.warning:
+        return 'WARNING';
+      case AlertSeverity.info:
+        return 'INFO';
     }
   }
 
   @override
   Widget build(BuildContext context) {
     // Use Theme.of() — no dependency on RiverColors.surface
-    final cs    = Theme.of(context).colorScheme;
+    final cs = Theme.of(context).colorScheme;
     final worst = _worst;
     final color = _sevColor(worst);
 
     return DraggableScrollableSheet(
       initialChildSize: 0.45,
-      maxChildSize:     0.9,
-      minChildSize:     0.25,
+      maxChildSize: 0.9,
+      minChildSize: 0.25,
       expand: false,
       builder: (_, ctrl) => Container(
         decoration: BoxDecoration(
           color: cs.surface,
-          borderRadius:
-              const BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           children: [
             const SizedBox(height: 8),
             Container(
-              width: 40, height: 4,
+              width: 40,
+              height: 4,
               decoration: BoxDecoration(
                 color: cs.onSurface.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(2),
@@ -86,10 +94,10 @@ class DistrictBottomSheet extends StatelessWidget {
                             fontWeight: FontWeight.bold)),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color:  color.withValues(alpha: 0.15),
+                      color: color.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(_sevLabel(worst),
@@ -106,13 +114,13 @@ class DistrictBottomSheet extends StatelessWidget {
                 controller: ctrl,
                 itemCount: stations.length,
                 itemBuilder: (_, i) {
-                  final s   = stations[i];
+                  final s = stations[i];
                   final sev = _sev(s);
-                  final c   = _sevColor(sev);
+                  final c = _sevColor(sev);
                   return ListTile(
                     leading: Icon(Icons.water, color: c),
-                    title: Text(s.station,
-                        style: TextStyle(color: cs.onSurface)),
+                    title:
+                        Text(s.station, style: TextStyle(color: cs.onSurface)),
                     subtitle: Text(
                         '${s.river} · ${s.current.toStringAsFixed(2)} m '
                         '/ DL ${s.danger.toStringAsFixed(2)} m',

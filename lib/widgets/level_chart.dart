@@ -23,7 +23,9 @@ class LevelChart extends StatelessWidget {
         if (label.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(bottom: 4),
-            child: Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+            child: Text(label,
+                style:
+                    const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
           ),
         Container(
           height: 80,
@@ -31,7 +33,9 @@ class LevelChart extends StatelessWidget {
             color: Colors.blue.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: const Center(child: Text('Level chart', style: TextStyle(color: Colors.grey, fontSize: 12))),
+          child: const Center(
+              child: Text('Level chart',
+                  style: TextStyle(color: Colors.grey, fontSize: 12))),
         ),
       ],
     );

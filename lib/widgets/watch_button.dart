@@ -27,12 +27,12 @@ class WatchButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final watched = ref.watch(isWatchedProvider(stationId));
-    final t       = RiverColors.of(context);
+    final t = RiverColors.of(context);
 
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 300),
       child: IconButton(
-        key:     ValueKey(watched),
+        key: ValueKey(watched),
         tooltip: watched ? 'Stop watching' : 'Watch this station',
         icon: Icon(
           watched
@@ -59,7 +59,7 @@ class WatchButton extends ConsumerWidget {
     } else {
       notifier.subscribe(AlertSubscription(
         stationId: stationId,
-        cityName:  cityName,
+        cityName: cityName,
         riverName: riverName,
         createdAt: DateTime.now(),
       ));

@@ -39,8 +39,7 @@ class PredictionHistoryService {
 
   int get dangerAlerts => _records
       .where((r) =>
-          r.result.severity == 'CRITICAL' ||
-          r.result.severity == 'SEVERE')
+          r.result.severity == 'CRITICAL' || r.result.severity == 'SEVERE')
       .length;
 
   double get avgConfidence {
@@ -53,9 +52,7 @@ class PredictionHistoryService {
 
   int get avgRiskScore {
     if (_records.isEmpty) return 0;
-    return (_records
-                .map((r) => r.result.riskScore)
-                .fold(0, (a, b) => a + b) /
+    return (_records.map((r) => r.result.riskScore).fold(0, (a, b) => a + b) /
             _records.length)
         .round();
   }
@@ -68,8 +65,7 @@ class PredictionHistoryService {
     return map;
   }
 
-  List<PredictionRecord> recentN(int n) =>
-      records.take(n).toList();
+  List<PredictionRecord> recentN(int n) => records.take(n).toList();
 
   void clear() => _records.clear();
 }

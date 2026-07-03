@@ -8,9 +8,12 @@ import 'package:equinox_flood/services/kosi_birpur_service.dart';
 void main() {
   group('AlertSeverity', () {
     test('emergency has highest priority', () {
-      expect(AlertSeverity.emergency.priority, greaterThan(AlertSeverity.critical.priority));
-      expect(AlertSeverity.critical.priority,  greaterThan(AlertSeverity.warning.priority));
-      expect(AlertSeverity.warning.priority,   greaterThan(AlertSeverity.info.priority));
+      expect(AlertSeverity.emergency.priority,
+          greaterThan(AlertSeverity.critical.priority));
+      expect(AlertSeverity.critical.priority,
+          greaterThan(AlertSeverity.warning.priority));
+      expect(AlertSeverity.warning.priority,
+          greaterThan(AlertSeverity.info.priority));
     });
 
     test('labels are non-empty', () {
@@ -37,7 +40,7 @@ void main() {
 
   group('Birpur thresholds', () {
     test('danger > warning > normal', () {
-      expect(kBirpurDangerLevel,  greaterThan(kBirpurWarningLevel));
+      expect(kBirpurDangerLevel, greaterThan(kBirpurWarningLevel));
       expect(kBirpurWarningLevel, greaterThan(kBirpurNormalLevel));
     });
 

@@ -21,8 +21,8 @@ class RipplePainter extends CustomPainter {
     final cx = size.width * 0.82;
     final cy = size.height * 0.3;
     for (int i = 0; i < 3; i++) {
-      final phase   = (progress + i / 3) % 1.0;
-      final radius  = 20 + phase * 100;
+      final phase = (progress + i / 3) % 1.0;
+      final radius = 20 + phase * 100;
       final opacity = (1 - phase) * 0.18;
       canvas.drawCircle(
         Offset(cx, cy),
@@ -44,7 +44,7 @@ class RipplePainter extends CustomPainter {
 // WavePainter — water-fill wave at card bottom
 // ─────────────────────────────────────────────────────────────────────────────
 class WavePainter extends CustomPainter {
-  final Color  color;
+  final Color color;
   final double opacity;
   const WavePainter({required this.color, required this.opacity});
 
@@ -73,7 +73,7 @@ class WavePainter extends CustomPainter {
 // ─────────────────────────────────────────────────────────────────────────────
 class Cylinder3D extends StatelessWidget {
   final double fill;
-  final Color  color;
+  final Color color;
   final double width, height;
   const Cylinder3D({
     super.key,
@@ -85,7 +85,8 @@ class Cylinder3D extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-        width: width, height: height,
+        width: width,
+        height: height,
         child: CustomPaint(
           painter: _CylinderPainter(fill: fill, color: color),
         ),
@@ -99,8 +100,8 @@ class _CylinderPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final w  = size.width;
-    final h  = size.height;
+    final w = size.width;
+    final h = size.height;
     final rx = w / 2;
     final ry = rx * 0.35;
 
@@ -112,8 +113,11 @@ class _CylinderPainter extends CustomPainter {
       ..addArc(Rect.fromLTWH(0, 0, w, ry * 2), 0, -math.pi)
       ..close();
 
-    canvas.drawPath(bodyPath,
-        Paint()..color = color.withValues(alpha: 0.12)..style = PaintingStyle.fill);
+    canvas.drawPath(
+        bodyPath,
+        Paint()
+          ..color = color.withValues(alpha: 0.12)
+          ..style = PaintingStyle.fill);
 
     if (fill > 0) {
       final fillTop = h - ry - (h - ry * 2) * fill.clamp(0.0, 1.0);
@@ -138,7 +142,9 @@ class _CylinderPainter extends CustomPainter {
 
       canvas.drawOval(
         Rect.fromLTWH(0, fillTop, w, ry * 2),
-        Paint()..color = color.withValues(alpha: 0.85)..style = PaintingStyle.fill,
+        Paint()
+          ..color = color.withValues(alpha: 0.85)
+          ..style = PaintingStyle.fill,
       );
     }
 
@@ -202,9 +208,7 @@ class StatTile extends StatelessWidget {
             const SizedBox(height: 4),
             Text(value,
                 style: TextStyle(
-                    color: color,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900)),
+                    color: color, fontSize: 18, fontWeight: FontWeight.w900)),
             Text(label,
                 style: TextStyle(
                     color: t.textSecondary,
@@ -233,7 +237,8 @@ class RmBreachBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFFF1744).withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFFF1744).withValues(alpha: 0.5)),
+        border:
+            Border.all(color: const Color(0xFFFF1744).withValues(alpha: 0.5)),
       ),
       child: Row(
         children: [
@@ -289,9 +294,7 @@ class RmFillBar extends StatelessWidget {
             Text(
               '${fillPct.toStringAsFixed(1)}%',
               style: TextStyle(
-                  color: rc,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800),
+                  color: rc, fontSize: 11, fontWeight: FontWeight.w800),
             ),
           ],
         ),
@@ -354,8 +357,7 @@ class RmMlScoreBar extends StatelessWidget {
             const Spacer(),
             if (confidence != null)
               Text('Conf ${confidence!.toStringAsFixed(0)}%',
-                  style: TextStyle(
-                      color: t.textSecondary, fontSize: 9)),
+                  style: TextStyle(color: t.textSecondary, fontSize: 9)),
           ],
         ),
         const SizedBox(height: 4),
@@ -364,8 +366,7 @@ class RmMlScoreBar extends StatelessWidget {
           child: LinearProgressIndicator(
             value: (score / 100.0).clamp(0.0, 1.0),
             minHeight: 4,
-            backgroundColor:
-                const Color(0xFF7B2FF7).withValues(alpha: 0.12),
+            backgroundColor: const Color(0xFF7B2FF7).withValues(alpha: 0.12),
             valueColor: AlwaysStoppedAnimation(
               score >= 80
                   ? const Color(0xFFFF1744)
@@ -409,16 +410,12 @@ class RmChip extends StatelessWidget {
             const SizedBox(width: 3),
             Text(label,
                 style: TextStyle(
-                    color: t.textSecondary,
-                    fontSize: 9,
-                    letterSpacing: 0.4)),
+                    color: t.textSecondary, fontSize: 9, letterSpacing: 0.4)),
           ],
         ),
         Text(value,
             style: TextStyle(
-                color: color,
-                fontSize: 13,
-                fontWeight: FontWeight.w800)),
+                color: color, fontSize: 13, fontWeight: FontWeight.w800)),
       ],
     );
   }
@@ -440,8 +437,8 @@ class RmEmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.water_outlined, size: 64,
-                color: t.accent.withValues(alpha: 0.4)),
+            Icon(Icons.water_outlined,
+                size: 64, color: t.accent.withValues(alpha: 0.4)),
             const SizedBox(height: 16),
             Text(
               query.isNotEmpty
@@ -500,9 +497,7 @@ class RmStatusBanner extends StatelessWidget {
             const SizedBox(width: 8),
             Text(text,
                 style: TextStyle(
-                    color: color,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600)),
+                    color: color, fontSize: 12, fontWeight: FontWeight.w600)),
           ],
         ),
       ),
@@ -532,11 +527,17 @@ class RmSummaryStrip extends StatelessWidget {
       spacing: 8,
       runSpacing: 6,
       children: [
-        _chip(t.accent,                      Icons.water,                 '$total stations'),
-        if (crit   > 0) _chip(AppPalette.critical,  Icons.warning_amber_rounded, '$crit critical'),
-        if (sev    > 0) _chip(AppPalette.danger,     Icons.warning_rounded,       '$sev severe'),
-        if (norm   > 0) _chip(AppPalette.safe,       Icons.check_circle_outline,  '$norm normal'),
-        if (breach > 0) _chip(const Color(0xFFFF1744), Icons.crisis_alert_rounded, '$breach breach↑'),
+        _chip(t.accent, Icons.water, '$total stations'),
+        if (crit > 0)
+          _chip(AppPalette.critical, Icons.warning_amber_rounded,
+              '$crit critical'),
+        if (sev > 0)
+          _chip(AppPalette.danger, Icons.warning_rounded, '$sev severe'),
+        if (norm > 0)
+          _chip(AppPalette.safe, Icons.check_circle_outline, '$norm normal'),
+        if (breach > 0)
+          _chip(const Color(0xFFFF1744), Icons.crisis_alert_rounded,
+              '$breach breach↑'),
       ],
     );
   }
@@ -555,9 +556,7 @@ class RmSummaryStrip extends StatelessWidget {
             const SizedBox(width: 5),
             Text(label,
                 style: TextStyle(
-                    color: c,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700)),
+                    color: c, fontSize: 11, fontWeight: FontWeight.w700)),
           ],
         ),
       );

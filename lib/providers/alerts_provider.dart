@@ -11,10 +11,7 @@ export 'data_fetch_provider.dart'
         alertCountProvider,
         stationAlertsProvider;
 
-export 'stubs.dart'
-    show
-        sourceStatusProvider,
-        dataFetchStationsProvider;
+export 'stubs.dart' show sourceStatusProvider, dataFetchStationsProvider;
 
 export '../services/alert_engine.dart'
     show
@@ -26,10 +23,6 @@ export '../services/alert_engine.dart'
         AlertEngine;
 
 export '../services/data_fetch_engine.dart'
-    show
-        DataFetchEngine,
-        DataFetchSnapshot,
-
-        SourceStatus;
+    show DataFetchEngine, DataFetchSnapshot, SourceStatus;
 
 export '../models/station_reading.dart' show StationReading;

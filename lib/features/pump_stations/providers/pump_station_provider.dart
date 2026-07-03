@@ -21,8 +21,9 @@ class PumpStationFilter {
   int get hashCode => Object.hash(district, status, search);
 }
 
-final pumpStationsProvider = FutureProvider.family<List<PumpStation>,
-    PumpStationFilter>((ref, filter) async {
+final pumpStationsProvider =
+    FutureProvider.family<List<PumpStation>, PumpStationFilter>(
+        (ref, filter) async {
   final repo = ref.watch(pumpStationRepositoryProvider);
   return repo.getAllStations(
     district: filter.district,
@@ -49,13 +50,11 @@ final pumpStationStatusProvider =
 
 // ── Search query state ─────────────────────────────────────────────────────
 
-final pumpStationSearchQueryProvider =
-    StateProvider<String>((ref) => '');
+final pumpStationSearchQueryProvider = StateProvider<String>((ref) => '');
 
 // ── Active status filter ───────────────────────────────────────────────────
 
-final pumpStationStatusFilterProvider =
-    StateProvider<String?>((ref) => null);
+final pumpStationStatusFilterProvider = StateProvider<String?>((ref) => null);
 
 // ── Report issue loading state ─────────────────────────────────────────────
 

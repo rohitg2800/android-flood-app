@@ -17,13 +17,21 @@ class HeroSummary extends StatelessWidget {
         children: [
           Text("Bihar Flood Watch",
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 22)),
+                  color: c.textPrimary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 22)),
           const SizedBox(height: 4),
           Text(stats.heroSubtitle,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: c.textSecondary)),
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: c.textSecondary)),
           const SizedBox(height: 3),
           Text("Updated ${stats.lastUpdated}",
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(color: c.textMuted)),
+              style: Theme.of(context)
+                  .textTheme
+                  .labelSmall
+                  ?.copyWith(color: c.textMuted)),
         ],
       ),
     );

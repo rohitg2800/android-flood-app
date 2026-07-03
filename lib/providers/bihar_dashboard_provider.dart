@@ -14,26 +14,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 enum DashboardSort { alphabetical, riskDescending, levelDescending }
 
 class BiharDashboardState {
-  final String?       selectedDistrict;
+  final String? selectedDistrict;
   final DashboardSort sort;
-  final bool          summaryExpanded;
+  final bool summaryExpanded;
 
   const BiharDashboardState({
     this.selectedDistrict,
-    this.sort          = DashboardSort.riskDescending,
+    this.sort = DashboardSort.riskDescending,
     this.summaryExpanded = true,
   });
 
   BiharDashboardState copyWith({
-    String?       selectedDistrict,
-    bool          clearDistrict = false,
+    String? selectedDistrict,
+    bool clearDistrict = false,
     DashboardSort? sort,
-    bool?          summaryExpanded,
+    bool? summaryExpanded,
   }) =>
       BiharDashboardState(
         selectedDistrict:
             clearDistrict ? null : selectedDistrict ?? this.selectedDistrict,
-        sort:            sort            ?? this.sort,
+        sort: sort ?? this.sort,
         summaryExpanded: summaryExpanded ?? this.summaryExpanded,
       );
 }
@@ -44,8 +44,7 @@ class BiharDashboardNotifier extends Notifier<BiharDashboardState> {
   @override
   BiharDashboardState build() => const BiharDashboardState();
 
-  void selectDistrict(String? district) =>
-      state = state.copyWith(
+  void selectDistrict(String? district) => state = state.copyWith(
         selectedDistrict: district,
         clearDistrict: district == null,
       );

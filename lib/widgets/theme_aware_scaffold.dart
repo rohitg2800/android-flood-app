@@ -40,17 +40,17 @@ class ThemeAwareScaffold extends StatelessWidget {
     final rc = context.rc;
     return Scaffold(
       key: key,
-      backgroundColor:              rc.scaffoldBg,
-      appBar:                       appBar,
-      body:                         body,
-      bottomNavigationBar:          bottomNavigationBar,
-      floatingActionButton:         floatingActionButton,
+      backgroundColor: rc.scaffoldBg,
+      appBar: appBar,
+      body: body,
+      bottomNavigationBar: bottomNavigationBar,
+      floatingActionButton: floatingActionButton,
       floatingActionButtonLocation: floatingActionButtonLocation,
-      drawer:                       drawer,
-      endDrawer:                    endDrawer,
-      resizeToAvoidBottomInset:     resizeToAvoidBottomInset,
-      extendBody:                   extendBody,
-      extendBodyBehindAppBar:       extendBodyBehindAppBar,
+      drawer: drawer,
+      endDrawer: endDrawer,
+      resizeToAvoidBottomInset: resizeToAvoidBottomInset,
+      extendBody: extendBody,
+      extendBodyBehindAppBar: extendBodyBehindAppBar,
     );
   }
 }
@@ -66,18 +66,18 @@ PreferredSizeWidget rxAppBar({
 }) {
   final rc = context.rc;
   return AppBar(
-    backgroundColor:  rc.navBg,
-    foregroundColor:  rc.textPrimary,
-    elevation:        elevation,
-    centerTitle:      centerTitle,
+    backgroundColor: rc.navBg,
+    foregroundColor: rc.textPrimary,
+    elevation: elevation,
+    centerTitle: centerTitle,
     surfaceTintColor: Colors.transparent,
-    leading:          leading,
+    leading: leading,
     title: Text(
       title,
       style: TextStyle(
-        color:       rc.textPrimary,
-        fontSize:    20,
-        fontWeight:  FontWeight.w800,
+        color: rc.textPrimary,
+        fontSize: 20,
+        fontWeight: FontWeight.w800,
         letterSpacing: -0.5,
       ),
     ),

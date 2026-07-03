@@ -31,11 +31,21 @@ class AppTheme {
         outline: c.surfaceOutline,
       ),
       textTheme: TextTheme(
-        titleMedium: TextStyle(color: c.textPrimary, fontSize: 16, fontWeight: FontWeight.w600),
+        titleMedium: TextStyle(
+            color: c.textPrimary, fontSize: 16, fontWeight: FontWeight.w600),
         bodyLarge: TextStyle(color: c.textPrimary, fontSize: 15, height: 1.5),
-        bodyMedium: TextStyle(color: c.textSecondary, fontSize: 13, height: 1.4),
-        labelMedium: TextStyle(color: c.textSecondary, fontSize: 12, fontWeight: FontWeight.w500, letterSpacing: 0.4),
-        labelSmall: TextStyle(color: c.textMuted, fontSize: 11, letterSpacing: 0.9, fontWeight: FontWeight.w600),
+        bodyMedium:
+            TextStyle(color: c.textSecondary, fontSize: 13, height: 1.4),
+        labelMedium: TextStyle(
+            color: c.textSecondary,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 0.4),
+        labelSmall: TextStyle(
+            color: c.textMuted,
+            fontSize: 11,
+            letterSpacing: 0.9,
+            fontWeight: FontWeight.w600),
       ),
       iconTheme: IconThemeData(color: c.textSecondary, size: 20),
       splashColor: c.accentSoft,

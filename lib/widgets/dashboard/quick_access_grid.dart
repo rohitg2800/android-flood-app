@@ -7,12 +7,15 @@ class QuickAccessGrid extends StatelessWidget {
   const QuickAccessGrid({super.key});
 
   static const _items = [
-    _QuickItem(icon: Icons.map_outlined,          label: 'River Map',    route: '/map'),
-    _QuickItem(icon: Icons.analytics_outlined,    label: 'Predict',      route: '/predict'),
-    _QuickItem(icon: Icons.notifications_outlined, label: 'Alerts',      route: '/alerts'),
-    _QuickItem(icon: Icons.cloud_outlined,         label: 'Weather',     route: '/weather'),
-    _QuickItem(icon: Icons.sos_outlined,           label: 'SOS',         route: '/sos'),
-    _QuickItem(icon: Icons.settings_outlined,      label: 'Settings',    route: '/settings'),
+    _QuickItem(icon: Icons.map_outlined, label: 'River Map', route: '/map'),
+    _QuickItem(
+        icon: Icons.analytics_outlined, label: 'Predict', route: '/predict'),
+    _QuickItem(
+        icon: Icons.notifications_outlined, label: 'Alerts', route: '/alerts'),
+    _QuickItem(icon: Icons.cloud_outlined, label: 'Weather', route: '/weather'),
+    _QuickItem(icon: Icons.sos_outlined, label: 'SOS', route: '/sos'),
+    _QuickItem(
+        icon: Icons.settings_outlined, label: 'Settings', route: '/settings'),
   ];
 
   @override
@@ -34,9 +37,10 @@ class QuickAccessGrid extends StatelessWidget {
 
 class _QuickItem {
   final IconData icon;
-  final String   label;
-  final String   route;
-  const _QuickItem({required this.icon, required this.label, required this.route});
+  final String label;
+  final String route;
+  const _QuickItem(
+      {required this.icon, required this.label, required this.route});
 }
 
 class _GridCell extends StatelessWidget {

@@ -53,6 +53,5 @@ class StationTrendStore {
 
   // ── Internal ──────────────────────────────────────────────────────────────
 
-  static String _norm(String city) =>
-      city.toLowerCase().trim();
+  static String _norm(String city) => city.toLowerCase().trim();
 }

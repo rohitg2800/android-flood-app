@@ -16,16 +16,14 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
         backgroundColor: const Color(0xFF0A0A0F),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: Colors.white),
+          icon:
+              const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'Accessibility',
           style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-              fontSize: 18),
+              color: Colors.white, fontWeight: FontWeight.w700, fontSize: 18),
         ),
       ),
       body: ListView(
@@ -143,8 +141,7 @@ class _ToggleTile extends StatelessWidget {
         border: Border.all(color: Colors.white.withOpacity(0.06)),
       ),
       child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
@@ -159,8 +156,8 @@ class _ToggleTile extends StatelessWidget {
                 fontSize: 14,
                 fontWeight: FontWeight.w600)),
         subtitle: Text(subtitle,
-            style: TextStyle(
-                color: Colors.white.withOpacity(0.45), fontSize: 12)),
+            style:
+                TextStyle(color: Colors.white.withOpacity(0.45), fontSize: 12)),
         trailing: Switch.adaptive(
           value: value,
           onChanged: onChanged,

@@ -7,8 +7,8 @@ import '../services/alert_share_service.dart';
 
 class AlertShareButton extends StatelessWidget {
   final FloodAlert alert;
-  final String?    district;   // optional — city_detail_screen passes district:
-  final String?    riverName;  // optional — city_detail_screen passes riverName:
+  final String? district; // optional — city_detail_screen passes district:
+  final String? riverName; // optional — city_detail_screen passes riverName:
   const AlertShareButton({
     super.key,
     required this.alert,
@@ -49,7 +49,7 @@ class _ShareSheetState extends State<_ShareSheet> {
   void initState() {
     super.initState();
     englishMsg = AlertShareService.buildEnglishMessage(widget.alert);
-    hindiMsg   = AlertShareService.buildHindiMessage(widget.alert);
+    hindiMsg = AlertShareService.buildHindiMessage(widget.alert);
   }
 
   @override

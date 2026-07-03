@@ -20,19 +20,22 @@ final alertProvider = alertProviderInstance;
 class AlertProvider extends ChangeNotifier {
   List<FloodAlert> _alerts = [];
 
-  List<FloodAlert> get all      => _alerts;
-  List<FloodAlert> get danger   => _alerts.where((a) =>
-      a.severity == AlertSeverity.critical ||
-      a.severity == AlertSeverity.emergency).toList();
-  List<FloodAlert> get warnings => _alerts.where(
-      (a) => a.severity == AlertSeverity.warning).toList();
-  List<FloodAlert> get watches  => _alerts.where(
-      (a) => a.severity == AlertSeverity.info).toList();
-
-  int get dangerCount =>
-      _alerts.where((a) =>
+  List<FloodAlert> get all => _alerts;
+  List<FloodAlert> get danger => _alerts
+      .where((a) =>
           a.severity == AlertSeverity.critical ||
-          a.severity == AlertSeverity.emergency).length;
+          a.severity == AlertSeverity.emergency)
+      .toList();
+  List<FloodAlert> get warnings =>
+      _alerts.where((a) => a.severity == AlertSeverity.warning).toList();
+  List<FloodAlert> get watches =>
+      _alerts.where((a) => a.severity == AlertSeverity.info).toList();
+
+  int get dangerCount => _alerts
+      .where((a) =>
+          a.severity == AlertSeverity.critical ||
+          a.severity == AlertSeverity.emergency)
+      .length;
   int get infoCount =>
       _alerts.where((a) => a.severity == AlertSeverity.info).length;
 

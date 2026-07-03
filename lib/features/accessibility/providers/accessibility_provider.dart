@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 // ── State Model ────────────────────────────────────────────────────────────
 
 class AccessibilitySettings {
-  final double fontSizeScale;   // 0.8 = small, 1.0 = normal, 1.2 = large, 1.5 = XL
+  final double
+      fontSizeScale; // 0.8 = small, 1.0 = normal, 1.2 = large, 1.5 = XL
   final bool highContrast;
   final bool reduceMotion;
   final bool screenReaderOptimized;
@@ -67,8 +68,7 @@ class AccessibilitySettings {
 
 // ── StateNotifier ──────────────────────────────────────────────────────────
 
-class AccessibilityNotifier
-    extends StateNotifier<AccessibilitySettings> {
+class AccessibilityNotifier extends StateNotifier<AccessibilitySettings> {
   AccessibilityNotifier() : super(const AccessibilitySettings());
 
   void setFontSizeScale(double scale) =>
@@ -83,14 +83,12 @@ class AccessibilityNotifier
   void toggleScreenReaderOptimized() => state =
       state.copyWith(screenReaderOptimized: !state.screenReaderOptimized);
 
-  void toggleBoldText() =>
-      state = state.copyWith(boldText: !state.boldText);
+  void toggleBoldText() => state = state.copyWith(boldText: !state.boldText);
 
   void toggleLargeIcons() =>
       state = state.copyWith(largeIcons: !state.largeIcons);
 
-  void setThemeMode(ThemeMode mode) =>
-      state = state.copyWith(themeMode: mode);
+  void setThemeMode(ThemeMode mode) => state = state.copyWith(themeMode: mode);
 
   void resetToDefaults() => state = const AccessibilitySettings();
 }

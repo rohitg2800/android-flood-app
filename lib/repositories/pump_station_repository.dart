@@ -7,9 +7,7 @@ class PumpStationRepository {
 
   Future<List<PumpStation>> getPumpStations() async {
     final response = await _dio.get('/api/pump-stations');
-    return (response.data as List)
-        .map((e) => PumpStation.fromJson(e))
-        .toList();
+    return (response.data as List).map((e) => PumpStation.fromJson(e)).toList();
   }
 
   Future<PumpStation> getPumpStationById(String id) async {

@@ -18,8 +18,11 @@ class DistrictChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Chip(
-        label: Text(district, style: TextStyle(fontSize: 12, color: selected ? Colors.white : null)),
-        backgroundColor: selected ? Theme.of(context).colorScheme.primary : null,
+        label: Text(district,
+            style:
+                TextStyle(fontSize: 12, color: selected ? Colors.white : null)),
+        backgroundColor:
+            selected ? Theme.of(context).colorScheme.primary : null,
         padding: EdgeInsets.zero,
       ),
     );

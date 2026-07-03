@@ -15,7 +15,7 @@ class StubStation {
   final String river;
   final double level;
   final double dangerLevel;
-  final bool   isLive;
+  final bool isLive;
   const StubStation({
     required this.id,
     required this.name,
@@ -33,22 +33,20 @@ class StationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pct        = station.level / station.dangerLevel;
+    final pct = station.level / station.dangerLevel;
     final overDanger = pct >= 1.0;
     return ListTile(
-      key:   ValueKey('station_tile_${station.id}'),
-      title: Text(station.name,
-          key: const Key('station_tile_name')),
+      key: ValueKey('station_tile_${station.id}'),
+      title: Text(station.name, key: const Key('station_tile_name')),
       subtitle: Text('${station.river} • ${station.level.toStringAsFixed(2)} m',
           key: const Key('station_tile_subtitle')),
       trailing: Container(
-        key:   const Key('station_tile_badge'),
-        width: 12, height: 12,
+        key: const Key('station_tile_badge'),
+        width: 12,
+        height: 12,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: overDanger
-              ? const Color(0xFFFF1744)
-              : const Color(0xFF4CAF50),
+          color: overDanger ? const Color(0xFFFF1744) : const Color(0xFF4CAF50),
         ),
       ),
       onTap: onTap,
@@ -62,8 +60,7 @@ class StationTile extends StatelessWidget {
 
 void main() {
   group('StationTile widget', () {
-    Widget buildTile(StubStation s, {VoidCallback? onTap}) =>
-        ProviderScope(
+    Widget buildTile(StubStation s, {VoidCallback? onTap}) => ProviderScope(
           child: MaterialApp(
             home: Scaffold(
               body: StationTile(station: s, onTap: onTap),
@@ -72,18 +69,18 @@ void main() {
         );
 
     const normal = StubStation(
-      id:          'GG001',
-      name:        'Gandhi Ghat',
-      river:       'Ganga',
-      level:       48.5,
+      id: 'GG001',
+      name: 'Gandhi Ghat',
+      river: 'Ganga',
+      level: 48.5,
       dangerLevel: 55.0,
     );
 
     const overDanger = StubStation(
-      id:          'HB001',
-      name:        'Harding Bridge',
-      river:       'Ganga',
-      level:       62.0,
+      id: 'HB001',
+      name: 'Harding Bridge',
+      river: 'Ganga',
+      level: 62.0,
       dangerLevel: 58.0,
     );
 
@@ -99,25 +96,23 @@ void main() {
 
     testWidgets('badge is green when below danger', (tester) async {
       await tester.pumpWidget(buildTile(normal));
-      final badge = tester.widget<Container>(
-          find.byKey(const Key('station_tile_badge')));
+      final badge =
+          tester.widget<Container>(find.byKey(const Key('station_tile_badge')));
       final dec = badge.decoration as BoxDecoration;
       expect(dec.color, const Color(0xFF4CAF50));
     });
 
-    testWidgets('badge is red when over danger level',
-        (tester) async {
+    testWidgets('badge is red when over danger level', (tester) async {
       await tester.pumpWidget(buildTile(overDanger));
-      final badge = tester.widget<Container>(
-          find.byKey(const Key('station_tile_badge')));
+      final badge =
+          tester.widget<Container>(find.byKey(const Key('station_tile_badge')));
       final dec = badge.decoration as BoxDecoration;
       expect(dec.color, const Color(0xFFFF1744));
     });
 
     testWidgets('onTap fires callback', (tester) async {
       var tapped = false;
-      await tester.pumpWidget(
-          buildTile(normal, onTap: () => tapped = true));
+      await tester.pumpWidget(buildTile(normal, onTap: () => tapped = true));
       await tester.tap(find.byType(ListTile));
       expect(tapped, isTrue);
     });

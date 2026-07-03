@@ -34,7 +34,6 @@ class ApiEndpoints {
 
   // ── Notifications ──────────────────────────────────────────────
   static const String notifications = '/notifications';
-  static const String markNotificationRead =
-      '/notifications/{id}/read';
+  static const String markNotificationRead = '/notifications/{id}/read';
   static const String registerFcmToken = '/notifications/fcm-token';
 }

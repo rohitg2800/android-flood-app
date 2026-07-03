@@ -33,15 +33,15 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage msg) async {
 
 class _RouteResolver {
   static String resolve(Map<String, dynamic> data) {
-    final type   = data['type']  as String? ?? '';
+    final type = data['type'] as String? ?? '';
     final target = data['target'] as String? ?? '';
     return switch (type) {
-      'alert'      => '/shell?tab=2',          // Alerts tab
-      'station'    => '/station/$target',      // CWC station detail
-      'evacuation' => '/evacuation',           // Evacuation routes
-      'news'       => '/shell?tab=3',          // News tab
-      'sos'        => '/sos',                  // SOS screen
-      _            => '/shell',                // Fallback → dashboard
+      'alert' => '/shell?tab=2', // Alerts tab
+      'station' => '/station/$target', // CWC station detail
+      'evacuation' => '/evacuation', // Evacuation routes
+      'news' => '/shell?tab=3', // News tab
+      'sos' => '/sos', // SOS screen
+      _ => '/shell', // Fallback → dashboard
     };
   }
 }
@@ -68,13 +68,11 @@ class NotificationHandler {
   // --------------------------------------------------
   // Init — call from main() after Firebase.initializeApp()
   // --------------------------------------------------
-  static Future<void> init(
-      GlobalKey<NavigatorState> navigatorKey) async {
+  static Future<void> init(GlobalKey<NavigatorState> navigatorKey) async {
     _navigatorKey = navigatorKey;
 
     // 1. Register background handler
-    FirebaseMessaging.onBackgroundMessage(
-        firebaseMessagingBackgroundHandler);
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
     // 2. Android notification channel
     await _localNotifs
@@ -84,8 +82,7 @@ class NotificationHandler {
 
     // 3. Local notifications init
     const initSettings = InitializationSettings(
-      android: AndroidInitializationSettings(
-          '@mipmap/ic_launcher'),
+      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
       iOS: DarwinInitializationSettings(
           requestAlertPermission: true,
           requestBadgePermission: true,
@@ -103,17 +100,19 @@ class NotificationHandler {
 
     // 4. Request FCM permission
     await FirebaseMessaging.instance.requestPermission(
-      alert:    true,
-      badge:    true,
-      sound:    true,
-      carPlay:  false,
+      alert: true,
+      badge: true,
+      sound: true,
+      carPlay: false,
       criticalAlert: true,
     );
 
     // 5. FCM foreground presentation (iOS)
     await FirebaseMessaging.instance
         .setForegroundNotificationPresentationOptions(
-      alert: true, badge: true, sound: true,
+      alert: true,
+      badge: true,
+      sound: true,
     );
 
     // 6. Foreground message handler
@@ -123,8 +122,7 @@ class NotificationHandler {
     FirebaseMessaging.onMessageOpenedApp.listen(_onTap);
 
     // 8. Terminated state: app opened via notification
-    final initial =
-        await FirebaseMessaging.instance.getInitialMessage();
+    final initial = await FirebaseMessaging.instance.getInitialMessage();
     if (initial != null) _onTap(initial);
 
     // 9. Log FCM token (remove in prod or send to Firestore)
@@ -154,15 +152,15 @@ class NotificationHandler {
           _channel.id,
           _channel.name,
           channelDescription: _channel.description,
-          importance:          Importance.max,
-          priority:            Priority.high,
-          icon:                '@mipmap/ic_launcher',
-          color:               const Color(0xFF0D47A1),
+          importance: Importance.max,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+          color: const Color(0xFF0D47A1),
         ),
         iOS: const DarwinNotificationDetails(
-          presentAlert:  true,
-          presentBadge:  true,
-          presentSound:  true,
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
         ),
       ),
       payload: jsonEncode(msg.data),

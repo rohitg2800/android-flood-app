@@ -20,8 +20,7 @@ Duration motionDuration(
   Duration normal, [
   Duration reduced = Duration.zero,
 ]) {
-  final disable =
-      MediaQuery.of(context).disableAnimations;
+  final disable = MediaQuery.of(context).disableAnimations;
   return disable ? reduced : normal;
 }
 

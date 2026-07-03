@@ -8,21 +8,24 @@ final alertsViewModelProvider = Provider<List<AlertItem>>((ref) {
   return stations
       .where((s) => s.current > 0 && s.current >= s.warning)
       .map((s) {
-        AlertSeverity sev;
-        if (s.current >= s.danger)        sev = AlertSeverity.critical;
-        else if (s.current >= s.warning)  sev = AlertSeverity.warning;
-        else                              sev = AlertSeverity.info;
+    AlertSeverity sev;
+    if (s.current >= s.danger)
+      sev = AlertSeverity.critical;
+    else if (s.current >= s.warning)
+      sev = AlertSeverity.warning;
+    else
+      sev = AlertSeverity.info;
 
-        return AlertItem(
-          id:       s.station,
-          title:    '\${s.city} — \${sev.name.toUpperCase()}',
-          message:  'Level \${s.current.toStringAsFixed(2)}m of \${s.danger.toStringAsFixed(2)}m danger',
-          station:  s.city,
-          severity: sev,
-          time:     DateTime.now(),
-        );
-      })
-      .toList()
+    return AlertItem(
+      id: s.station,
+      title: '\${s.city} — \${sev.name.toUpperCase()}',
+      message:
+          'Level \${s.current.toStringAsFixed(2)}m of \${s.danger.toStringAsFixed(2)}m danger',
+      station: s.city,
+      severity: sev,
+      time: DateTime.now(),
+    );
+  }).toList()
     ..sort((a, b) => b.severity.index.compareTo(a.severity.index));
 });
 
@@ -31,7 +34,5 @@ final alertsCountProvider = Provider<int>((ref) {
 });
 
 final criticalAlertsProvider = Provider<List<AlertItem>>((ref) {
-  return ref.watch(alertsViewModelProvider)
-      .where((a) => a.isUrgent)
-      .toList();
+  return ref.watch(alertsViewModelProvider).where((a) => a.isUrgent).toList();
 });

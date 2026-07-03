@@ -23,7 +23,7 @@ class ThresholdEntry {
   final double? wl;
   final double? dl;
   final double? hfl;
-  final String  source;
+  final String source;
   final DateTime fetchedAt;
 
   const ThresholdEntry({
@@ -35,21 +35,21 @@ class ThresholdEntry {
   });
 
   Map<String, dynamic> toJson() => {
-    'wl':        wl,
-    'dl':        dl,
-    'hfl':       hfl,
-    'source':    source,
-    'fetchedAt': fetchedAt.millisecondsSinceEpoch,
-  };
+        'wl': wl,
+        'dl': dl,
+        'hfl': hfl,
+        'source': source,
+        'fetchedAt': fetchedAt.millisecondsSinceEpoch,
+      };
 
   factory ThresholdEntry.fromJson(Map<String, dynamic> j) => ThresholdEntry(
-    wl:        (j['wl']  as num?)?.toDouble(),
-    dl:        (j['dl']  as num?)?.toDouble(),
-    hfl:       (j['hfl'] as num?)?.toDouble(),
-    source:    j['source'] as String? ?? 'RTDAS',
-    fetchedAt: DateTime.fromMillisecondsSinceEpoch(
-        (j['fetchedAt'] as int?) ?? 0),
-  );
+        wl: (j['wl'] as num?)?.toDouble(),
+        dl: (j['dl'] as num?)?.toDouble(),
+        hfl: (j['hfl'] as num?)?.toDouble(),
+        source: j['source'] as String? ?? 'RTDAS',
+        fetchedAt:
+            DateTime.fromMillisecondsSinceEpoch((j['fetchedAt'] as int?) ?? 0),
+      );
 }
 
 class ThresholdOverrideStore {
@@ -68,7 +68,7 @@ class ThresholdOverrideStore {
     if (_loaded) return;
     try {
       final prefs = await SharedPreferences.getInstance();
-      final raw   = prefs.getString(_prefsKey);
+      final raw = prefs.getString(_prefsKey);
       if (raw != null) {
         final decoded = jsonDecode(raw) as Map<String, dynamic>;
         for (final kv in decoded.entries) {
@@ -87,7 +87,7 @@ class ThresholdOverrideStore {
   Future<void> save() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final map   = { for (final kv in _cache.entries) kv.key: kv.value.toJson() };
+      final map = {for (final kv in _cache.entries) kv.key: kv.value.toJson()};
       await prefs.setString(_prefsKey, jsonEncode(map));
     } catch (e) {
       debugPrint('[ThresholdStore] save error: $e');

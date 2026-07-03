@@ -25,9 +25,13 @@ class AlertBanner extends StatelessWidget {
           children: [
             Icon(icon, color: color, size: 20),
             const SizedBox(width: 10),
-            Expanded(child: Text(message, style: TextStyle(color: color, fontSize: 13))),
+            Expanded(
+                child: Text(message,
+                    style: TextStyle(color: color, fontSize: 13))),
             if (onDismiss != null)
-              IconButton(icon: Icon(Icons.close, color: color, size: 18), onPressed: onDismiss),
+              IconButton(
+                  icon: Icon(Icons.close, color: color, size: 18),
+                  onPressed: onDismiss),
           ],
         ),
       ),

@@ -17,8 +17,7 @@ class DashboardEmptyState extends StatelessWidget {
             tween: Tween(begin: 0.0, end: 1.0),
             duration: const Duration(milliseconds: 800),
             curve: Curves.elasticOut,
-            builder: (_, v, child) =>
-                Transform.scale(scale: v, child: child),
+            builder: (_, v, child) => Transform.scale(scale: v, child: child),
             child: Container(
               width: 72,
               height: 72,
@@ -26,8 +25,7 @@ class DashboardEmptyState extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: t.accent.withValues(alpha: 0.10),
               ),
-              child: Icon(Icons.water_drop_outlined,
-                  color: t.accent, size: 36),
+              child: Icon(Icons.water_drop_outlined, color: t.accent, size: 36),
             ),
           ),
           const SizedBox(height: 20),

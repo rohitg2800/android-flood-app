@@ -5,7 +5,8 @@ class SeverityBadge extends StatelessWidget {
   final String label;
   final Color color;
 
-  const SeverityBadge({super.key, required this.label, this.color = Colors.grey});
+  const SeverityBadge(
+      {super.key, required this.label, this.color = Colors.grey});
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +19,8 @@ class SeverityBadge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600),
+        style:
+            TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600),
       ),
     );
   }

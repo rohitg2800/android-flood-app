@@ -27,9 +27,9 @@ import 'bihar_live_provider.dart';
 final biharCityProvider =
     Provider.family<BiharStationData?, String>((ref, city) {
   return ref.watch(biharLiveProvider).maybeWhen(
-    data: (s) => s.byCity(city),
-    orElse: () => null,
-  );
+        data: (s) => s.byCity(city),
+        orElse: () => null,
+      );
 });
 
 /// True while the live provider has no usable data yet.
@@ -37,8 +37,8 @@ final biharCityProvider =
 /// when data has arrived but the station list is still empty.
 final biharCityLoadingProvider = Provider<bool>((ref) {
   return ref.watch(biharLiveProvider).when(
-    loading: () => true,
-    error:   (_, __) => false,
-    data:    (s) => s.stations.isEmpty,
-  );
+        loading: () => true,
+        error: (_, __) => false,
+        data: (s) => s.stations.isEmpty,
+      );
 });

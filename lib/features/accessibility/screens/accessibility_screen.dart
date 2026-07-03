@@ -31,8 +31,7 @@ class AccessibilityScreen extends ConsumerWidget {
           // ── Text Size ────────────────────────────────────────────
           _SectionHeader(title: 'Text'),
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -43,8 +42,7 @@ class AccessibilityScreen extends ConsumerWidget {
                     Text(
                       _fontSizeLabel(settings.fontSizeScale),
                       style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: Colors.blue),
+                          fontWeight: FontWeight.w600, color: Colors.blue),
                     ),
                   ],
                 ),
@@ -110,8 +108,7 @@ class AccessibilityScreen extends ConsumerWidget {
 
           // Theme mode
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

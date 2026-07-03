@@ -5,9 +5,13 @@ import 'package:flutter/material.dart';
 
 Color riskColor(String lvl) {
   switch (lvl.toUpperCase()) {
-    case 'CRITICAL': return AppPalette.critical;
-    case 'SEVERE':   return AppPalette.danger;
-    case 'MODERATE': return AppPalette.warning;
-    default:         return AppPalette.safe;
+    case 'CRITICAL':
+      return AppPalette.critical;
+    case 'SEVERE':
+      return AppPalette.danger;
+    case 'MODERATE':
+      return AppPalette.warning;
+    default:
+      return AppPalette.safe;
   }
 }

@@ -16,7 +16,9 @@ class AccessibilityService {
       AccessibilitySettings settings) async {
     final resp = await _dio.put(
       '/accessibility/me',
-      data: settings.toJson()..remove('userId')..remove('user_id'),
+      data: settings.toJson()
+        ..remove('userId')
+        ..remove('user_id'),
     );
     return AccessibilitySettings.fromJson(resp.data as Map<String, dynamic>);
   }

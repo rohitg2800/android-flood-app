@@ -10,18 +10,18 @@ class LanguageTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final current  = ref.watch(localeProvider);
+    final current = ref.watch(localeProvider);
     final notifier = ref.read(localeProvider.notifier);
-    final rc       = RiverColors.of(context);
+    final rc = RiverColors.of(context);
 
     return ListTile(
       leading: Icon(Icons.language, color: rc.accent),
-      title:   Text('Language', style: TextStyle(color: rc.textPrimary)),
+      title: Text('Language', style: TextStyle(color: rc.textPrimary)),
       trailing: DropdownButtonHideUnderline(
         child: DropdownButton<Locale>(
-          value:      current,
+          value: current,
           dropdownColor: rc.cardBgElevated,
-          style:      TextStyle(color: rc.accent, fontWeight: FontWeight.w700),
+          style: TextStyle(color: rc.accent, fontWeight: FontWeight.w700),
           items: kSupportedLocales
               .map(
                 (l) => DropdownMenuItem(

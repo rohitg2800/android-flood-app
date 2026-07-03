@@ -18,7 +18,7 @@ class NearbyStationsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state  = ref.watch(nearbyStationsProvider);
+    final state = ref.watch(nearbyStationsProvider);
     final colors = Theme.of(context).colorScheme;
 
     if (state.isLoading) {
@@ -26,7 +26,8 @@ class NearbyStationsSection extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Center(
           child: SizedBox(
-            height: 20, width: 20,
+            height: 20,
+            width: 20,
             child: CircularProgressIndicator(
                 strokeWidth: 2, color: colors.primary),
           ),
@@ -44,8 +45,7 @@ class NearbyStationsSection extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Row(
             children: [
-              Icon(Icons.place_rounded,
-                  size: 16, color: colors.primary),
+              Icon(Icons.place_rounded, size: 16, color: colors.primary),
               const SizedBox(width: 6),
               Text(
                 'PREFERRED CITIES',
@@ -67,8 +67,7 @@ class NearbyStationsSection extends ConsumerWidget {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 12),
             itemCount: state.cards.length,
-            itemBuilder: (ctx, i) =>
-                _PreferredCityCard(card: state.cards[i]),
+            itemBuilder: (ctx, i) => _PreferredCityCard(card: state.cards[i]),
           ),
         ),
         const SizedBox(height: 4),
@@ -88,20 +87,24 @@ class _PreferredCityCard extends StatelessWidget {
   Color _riskColor(String label) {
     switch (label.toUpperCase()) {
       case 'CRITICAL':
-      case 'DANGER':  return const Color(0xFFFF3B30);
-      case 'SEVERE':  return const Color(0xFFFF6B35);
+      case 'DANGER':
+        return const Color(0xFFFF3B30);
+      case 'SEVERE':
+        return const Color(0xFFFF6B35);
       case 'HIGH':
-      case 'WARNING': return const Color(0xFFFFCC00);
-      default:        return const Color(0xFF34C759);
+      case 'WARNING':
+        return const Color(0xFFFFCC00);
+      default:
+        return const Color(0xFF34C759);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final station  = card.nearby.station;
+    final station = card.nearby.station;
     final contacts = card.contacts;
-    final scheme   = Theme.of(context).colorScheme;
-    final color    = _riskColor(station.riskLabel);
+    final scheme = Theme.of(context).colorScheme;
+    final color = _riskColor(station.riskLabel);
 
     return Container(
       width: 220,
@@ -109,8 +112,7 @@ class _PreferredCityCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: scheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-            color: color.withValues(alpha: 0.35), width: 1.2),
+        border: Border.all(color: color.withValues(alpha: 0.35), width: 1.2),
         boxShadow: [
           BoxShadow(
             color: color.withValues(alpha: 0.08),
@@ -129,8 +131,7 @@ class _PreferredCityCard extends StatelessWidget {
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(15)),
             ),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(
               children: [
                 Icon(Icons.water_rounded, size: 14, color: color),
@@ -148,13 +149,12 @@ class _PreferredCityCard extends StatelessWidget {
                 ),
                 // Risk pill
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 7, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                        color: color.withValues(alpha: 0.5)),
+                    border: Border.all(color: color.withValues(alpha: 0.5)),
                   ),
                   child: Text(
                     station.riskLabel,
@@ -185,8 +185,7 @@ class _PreferredCityCard extends StatelessWidget {
 
           // ── Level progress bar ────────────────────────────────────────
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -194,13 +193,10 @@ class _PreferredCityCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
                     value: station.danger > 0
-                        ? (station.current / station.danger)
-                            .clamp(0.0, 1.0)
+                        ? (station.current / station.danger).clamp(0.0, 1.0)
                         : 0.0,
-                    backgroundColor:
-                        scheme.onSurface.withValues(alpha: 0.1),
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(color),
+                    backgroundColor: scheme.onSurface.withValues(alpha: 0.1),
+                    valueColor: AlwaysStoppedAnimation<Color>(color),
                     minHeight: 5,
                   ),
                 ),
@@ -245,8 +241,7 @@ class _PreferredCityCard extends StatelessWidget {
       child: Row(
         children: [
           Icon(Icons.phone_disabled_rounded,
-              size: 13,
-              color: scheme.onSurface.withValues(alpha: 0.4)),
+              size: 13, color: scheme.onSurface.withValues(alpha: 0.4)),
           const SizedBox(width: 6),
           Text(
             'No contacts on file',
@@ -273,8 +268,7 @@ class _ContactFeed extends StatelessWidget {
   Widget build(BuildContext context) {
     final shown = contacts.take(4).toList();
     return ListView.builder(
-      padding:
-          const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       physics: const NeverScrollableScrollPhysics(),
       itemCount: shown.length,
       itemBuilder: (ctx, i) => _ContactRow(contact: shown[i]),
@@ -292,14 +286,22 @@ class _ContactRow extends StatelessWidget {
 
   Color _catColor() {
     switch (contact.category) {
-      case 'NDRF':                    return const Color(0xFF007AFF);
-      case 'NDMA':                    return const Color(0xFFFF6B35);
-      case 'SDRF Bihar':              return const Color(0xFFFF3B30);
-      case 'District Administration': return const Color(0xFF34C759);
-      case 'Barrage':                 return const Color(0xFF5AC8FA);
-      case 'Medical':                 return const Color(0xFFFF2D55);
-      case 'Emergency':               return const Color(0xFFFF9500);
-      default:                        return const Color(0xFF8E8E93);
+      case 'NDRF':
+        return const Color(0xFF007AFF);
+      case 'NDMA':
+        return const Color(0xFFFF6B35);
+      case 'SDRF Bihar':
+        return const Color(0xFFFF3B30);
+      case 'District Administration':
+        return const Color(0xFF34C759);
+      case 'Barrage':
+        return const Color(0xFF5AC8FA);
+      case 'Medical':
+        return const Color(0xFFFF2D55);
+      case 'Emergency':
+        return const Color(0xFFFF9500);
+      default:
+        return const Color(0xFF8E8E93);
     }
   }
 
@@ -311,7 +313,7 @@ class _ContactRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final cat    = _catColor();
+    final cat = _catColor();
 
     return GestureDetector(
       onTap: _call,
@@ -330,9 +332,9 @@ class _ContactRow extends StatelessWidget {
           children: [
             // Category colour dot
             Container(
-              width: 7, height: 7,
-              decoration: BoxDecoration(
-                  color: cat, shape: BoxShape.circle),
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(color: cat, shape: BoxShape.circle),
             ),
             const SizedBox(width: 6),
 
@@ -353,19 +355,16 @@ class _ContactRow extends StatelessWidget {
             GestureDetector(
               onTap: _call,
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: cat.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                      color: cat.withValues(alpha: 0.35)),
+                  border: Border.all(color: cat.withValues(alpha: 0.35)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.call_rounded,
-                        size: 9, color: cat),
+                    Icon(Icons.call_rounded, size: 9, color: cat),
                     const SizedBox(width: 3),
                     Text(
                       contact.phone,

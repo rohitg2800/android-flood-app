@@ -70,8 +70,7 @@ final biharFloodRiskIndexProvider =
 // ── Bihar district GeoJSON (used by BiharRiverMapScreen district layer) ────────
 // Fetched once and kept alive for the session.
 
-final biharGeoJsonProvider =
-    FutureProvider<Map<String, dynamic>>((ref) async {
+final biharGeoJsonProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   // keepAlive so it is not disposed when no listener exists temporarily.
   ref.keepAlive();
 
@@ -82,9 +81,8 @@ final biharGeoJsonProvider =
       'https://raw.githubusercontent.com/datameet/maps/master/Districts/Bihar.geojson';
 
   Future<Map<String, dynamic>> fetchGeoJson(String uri) async {
-    final res = await http
-        .get(Uri.parse(uri))
-        .timeout(const Duration(seconds: 15));
+    final res =
+        await http.get(Uri.parse(uri)).timeout(const Duration(seconds: 15));
     if (res.statusCode != 200) {
       throw Exception('GeoJSON fetch failed: HTTP \${res.statusCode}');
     }
@@ -120,11 +118,11 @@ Map<String, dynamic> _topoToGeoJson(Map<String, dynamic> topo) {
     cursor[1] += delta[1];
     final x = scale != null
         ? cursor[0] * (scale[0] as num).toDouble() +
-              (translate![0] as num).toDouble()
+            (translate![0] as num).toDouble()
         : cursor[0].toDouble();
     final y = scale != null
         ? cursor[1] * (scale[1] as num).toDouble() +
-              (translate![1] as num).toDouble()
+            (translate![1] as num).toDouble()
         : cursor[1].toDouble();
     return [x, y];
   }

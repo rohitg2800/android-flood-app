@@ -15,7 +15,7 @@ enum _Range { h24, h72, d7 }
 class SparklineCard extends StatefulWidget {
   final String stationId;
   final double dangerLevel;
-  final Color  accentColor;
+  final Color accentColor;
   const SparklineCard({
     super.key,
     required this.stationId,
@@ -41,7 +41,11 @@ class _SparklineCardState extends State<SparklineCard> {
   Future<void> _load() async {
     final hist =
         await LocalCacheService.instance.loadGaugeHistory(widget.stationId);
-    if (mounted) setState(() { _all = hist; _loading = false; });
+    if (mounted)
+      setState(() {
+        _all = hist;
+        _loading = false;
+      });
   }
 
   List<(DateTime, double)> get _filtered {
@@ -49,16 +53,16 @@ class _SparklineCardState extends State<SparklineCard> {
     final cutoff = switch (_range) {
       _Range.h24 => DateTime.now().subtract(const Duration(hours: 24)),
       _Range.h72 => DateTime.now().subtract(const Duration(hours: 72)),
-      _Range.d7  => DateTime.now().subtract(const Duration(days: 7)),
+      _Range.d7 => DateTime.now().subtract(const Duration(days: 7)),
     };
     return _all.where((e) => e.$1.isAfter(cutoff)).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final t       = RiverColors.of(context);
-    final color   = widget.accentColor;
-    final data    = _filtered;
+    final t = RiverColors.of(context);
+    final color = widget.accentColor;
+    final data = _filtered;
     final hasData = data.length >= 2;
 
     return Container(
@@ -107,7 +111,8 @@ class _SparklineCardState extends State<SparklineCard> {
             child: _loading
                 ? Center(
                     child: SizedBox(
-                      width: 20, height: 20,
+                      width: 20,
+                      height: 20,
                       child: CircularProgressIndicator(
                           strokeWidth: 2,
                           valueColor: AlwaysStoppedAnimation(color)),
@@ -117,15 +122,15 @@ class _SparklineCardState extends State<SparklineCard> {
                     ? Center(
                         child: Text(
                           'No history yet — syncs every 15 min',
-                          style: TextStyle(
-                              color: t.textSecondary, fontSize: 12),
+                          style:
+                              TextStyle(color: t.textSecondary, fontSize: 12),
                         ),
                       )
                     : _Chart(
-                        data:        data,
+                        data: data,
                         dangerLevel: widget.dangerLevel,
-                        color:       color,
-                        t:           t,
+                        color: color,
+                        t: t,
                       ),
           ),
 
@@ -135,14 +140,16 @@ class _SparklineCardState extends State<SparklineCard> {
             Row(
               children: [
                 Container(
-                  width: 16, height: 2,
+                  width: 16,
+                  height: 2,
                   color: AppPalette.critical.withValues(alpha: 0.7),
                 ),
                 const SizedBox(width: 6),
                 Text(
                   'Danger: ${widget.dangerLevel.toStringAsFixed(2)} m',
                   style: TextStyle(
-                      color: t.textSecondary, fontSize: 10,
+                      color: t.textSecondary,
+                      fontSize: 10,
                       fontWeight: FontWeight.w600),
                 ),
               ],
@@ -158,8 +165,8 @@ class _SparklineCardState extends State<SparklineCard> {
 
 class _Chart extends StatelessWidget {
   final List<(DateTime, double)> data;
-  final double      dangerLevel;
-  final Color       color;
+  final double dangerLevel;
+  final Color color;
   final RiverColors t;
   const _Chart({
     required this.data,
@@ -170,15 +177,17 @@ class _Chart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final base   = data.first.$1.millisecondsSinceEpoch.toDouble();
-    final spots  = data.map((e) => FlSpot(
-      (e.$1.millisecondsSinceEpoch - base) / 3600000.0,  // hours offset
-      e.$2,
-    )).toList();
+    final base = data.first.$1.millisecondsSinceEpoch.toDouble();
+    final spots = data
+        .map((e) => FlSpot(
+              (e.$1.millisecondsSinceEpoch - base) / 3600000.0, // hours offset
+              e.$2,
+            ))
+        .toList();
 
-    final maxY   = spots.map((s) => s.y).reduce((a, b) => a > b ? a : b);
-    final minY   = spots.map((s) => s.y).reduce((a, b) => a < b ? a : b);
-    final padY   = (maxY - minY).clamp(0.5, double.infinity) * 0.2;
+    final maxY = spots.map((s) => s.y).reduce((a, b) => a > b ? a : b);
+    final minY = spots.map((s) => s.y).reduce((a, b) => a < b ? a : b);
+    final padY = (maxY - minY).clamp(0.5, double.infinity) * 0.2;
     final chartMaxY = (maxY + padY).clamp(maxY, maxY + padY);
     final chartMinY = (minY - padY).clamp(0.0, minY);
 
@@ -209,17 +218,17 @@ class _Chart extends StatelessWidget {
             ),
           ),
           bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles:    AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles:  AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
         ),
         // Danger level reference line
         extraLinesData: ExtraLinesData(
           horizontalLines: [
             HorizontalLine(
-              y:          dangerLevel,
-              color:      AppPalette.critical.withValues(alpha: 0.65),
+              y: dangerLevel,
+              color: AppPalette.critical.withValues(alpha: 0.65),
               strokeWidth: 1.5,
-              dashArray:  [4, 4],
+              dashArray: [4, 4],
               label: HorizontalLineLabel(
                 show: false, // shown in legend below chart
               ),
@@ -234,25 +243,23 @@ class _Chart extends StatelessWidget {
               return LineTooltipItem(
                 '${s.y.toStringAsFixed(2)} m',
                 TextStyle(
-                    color: color,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800),
+                    color: color, fontSize: 11, fontWeight: FontWeight.w800),
               );
             }).toList(),
           ),
         ),
         lineBarsData: [
           LineChartBarData(
-            spots:           spots,
-            isCurved:        true,
-            color:           color,
-            barWidth:        2.5,
+            spots: spots,
+            isCurved: true,
+            color: color,
+            barWidth: 2.5,
             isStrokeCapRound: true,
             dotData: FlDotData(
               show: spots.length <= 12, // only show dots for sparse data
               getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
                 radius: 3,
-                color:  color,
+                color: color,
                 strokeWidth: 1.5,
                 strokeColor: t.cardBg,
               ),
@@ -260,16 +267,19 @@ class _Chart extends StatelessWidget {
             belowBarData: BarAreaData(
               show: true,
               gradient: LinearGradient(
-                colors: [color.withValues(alpha: 0.25), color.withValues(alpha: 0.01)],
+                colors: [
+                  color.withValues(alpha: 0.25),
+                  color.withValues(alpha: 0.01)
+                ],
                 begin: Alignment.topCenter,
-                end:   Alignment.bottomCenter,
+                end: Alignment.bottomCenter,
               ),
             ),
           ),
         ],
       ),
       duration: const Duration(milliseconds: 600),
-      curve:    Curves.easeInOut,
+      curve: Curves.easeInOut,
     );
   }
 }
@@ -277,13 +287,15 @@ class _Chart extends StatelessWidget {
 // ── Toggle bar ──────────────────────────────────────────────────────────────────
 
 class _ToggleBar extends StatelessWidget {
-  final _Range   selected;
+  final _Range selected;
   final void Function(_Range) onSelect;
   final RiverColors t;
-  final Color       color;
+  final Color color;
   const _ToggleBar({
-    required this.selected, required this.onSelect,
-    required this.t,        required this.color,
+    required this.selected,
+    required this.onSelect,
+    required this.t,
+    required this.color,
   });
 
   @override
@@ -295,7 +307,7 @@ class _ToggleBar extends StatelessWidget {
         const SizedBox(width: 4),
         _Chip('72h', _Range.h72),
         const SizedBox(width: 4),
-        _Chip('7d',  _Range.d7),
+        _Chip('7d', _Range.d7),
       ],
     );
   }

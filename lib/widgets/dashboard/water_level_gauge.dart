@@ -25,8 +25,8 @@ class WaterLevelGauge extends ConsumerStatefulWidget {
   });
 
   final RiverStation station;
-  final double       size;
-  final bool         showLabel;
+  final double size;
+  final bool showLabel;
 
   @override
   ConsumerState<WaterLevelGauge> createState() => _WaterLevelGaugeState();
@@ -34,9 +34,8 @@ class WaterLevelGauge extends ConsumerStatefulWidget {
 
 class _WaterLevelGaugeState extends ConsumerState<WaterLevelGauge>
     with SingleTickerProviderStateMixin {
-
   late final AnimationController _ctrl;
-  late final Animation<double>    _arcAnim; // 0 → target pct
+  late final Animation<double> _arcAnim; // 0 → target pct
 
   double _prevPct = 0;
 
@@ -44,13 +43,13 @@ class _WaterLevelGaugeState extends ConsumerState<WaterLevelGauge>
   void initState() {
     super.initState();
     final rc = ThemeRegistry.of(ref.read(appSkinProvider));
-    _ctrl = AnimationController(
-        vsync:    this,
-        duration: rc.entryDuration);
+    _ctrl = AnimationController(vsync: this, duration: rc.entryDuration);
     _arcAnim = Tween<double>(begin: 0, end: widget.station.progressPct)
         .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic));
     _prevPct = widget.station.progressPct;
-    Future.microtask(() { if (mounted) _ctrl.forward(); });
+    Future.microtask(() {
+      if (mounted) _ctrl.forward();
+    });
   }
 
   @override
@@ -76,7 +75,7 @@ class _WaterLevelGaugeState extends ConsumerState<WaterLevelGauge>
 
   @override
   Widget build(BuildContext context) {
-    final rc      = ref.watch(themeRegistryProvider);
+    final rc = ref.watch(themeRegistryProvider);
     final station = widget.station;
     final lvlColor = station.hasData
         ? rc.levelColor(station.current, station.warning, station.danger)
@@ -84,17 +83,17 @@ class _WaterLevelGaugeState extends ConsumerState<WaterLevelGauge>
     final pct = station.progressPct.clamp(0.0, 1.0);
 
     return Container(
-      width:       widget.size,
-      height:      widget.size,
-      decoration:  rc.gaugeBox,
+      width: widget.size,
+      height: widget.size,
+      decoration: rc.gaugeBox,
       child: AnimatedBuilder(
         animation: _arcAnim,
         builder: (_, __) => CustomPaint(
           painter: _GaugePainter(
-            pct:       (_arcAnim.value * pct).clamp(0.0, 1.0),
-            color:     lvlColor,
+            pct: (_arcAnim.value * pct).clamp(0.0, 1.0),
+            color: lvlColor,
             trackColor: rc.surfaceHigh,
-            glowColor:  lvlColor,
+            glowColor: lvlColor,
             strokeWidth: widget.size * 0.075,
           ),
           child: Center(
@@ -109,21 +108,20 @@ class _WaterLevelGaugeState extends ConsumerState<WaterLevelGauge>
                   builder: (_, v, __) => Text(
                     v.toStringAsFixed(2),
                     style: rc.monoLg.copyWith(
-                      color:    lvlColor,
+                      color: lvlColor,
                       fontSize: widget.size * 0.17,
                     ),
                   ),
                 ),
                 Text('metres',
                     style: rc.labelXs.copyWith(
-                        color: rc.textMuted,
-                        fontSize: widget.size * 0.07)),
+                        color: rc.textMuted, fontSize: widget.size * 0.07)),
                 const SizedBox(height: 4),
                 if (widget.showLabel)
                   Text(
                     station.station.toUpperCase(),
                     style: rc.labelXs.copyWith(
-                      color:    rc.textSecondary,
+                      color: rc.textSecondary,
                       fontSize: widget.size * 0.065,
                     ),
                     overflow: TextOverflow.ellipsis,
@@ -148,65 +146,64 @@ class _GaugePainter extends CustomPainter {
   });
 
   final double pct;
-  final Color  color;
-  final Color  trackColor;
-  final Color  glowColor;
+  final Color color;
+  final Color trackColor;
+  final Color glowColor;
   final double strokeWidth;
 
-  static const _startAngle = math.pi * 0.75;    // 135°
-  static const _sweepTotal = math.pi * 1.5;     // 270° arc
+  static const _startAngle = math.pi * 0.75; // 135°
+  static const _sweepTotal = math.pi * 1.5; // 270° arc
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = (size.shortestSide / 2) - strokeWidth;
-    final rect   = Rect.fromCircle(center: center, radius: radius);
+    final rect = Rect.fromCircle(center: center, radius: radius);
 
     // — Track (background arc)
     final trackPaint = Paint()
-      ..color       = trackColor
-      ..style       = PaintingStyle.stroke
+      ..color = trackColor
+      ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
-      ..strokeCap   = StrokeCap.round;
+      ..strokeCap = StrokeCap.round;
     canvas.drawArc(rect, _startAngle, _sweepTotal, false, trackPaint);
 
     if (pct <= 0) return;
 
     // — Glow layer (wider, lower opacity)
     final glowPaint = Paint()
-      ..color       = glowColor.withValues(alpha: 0.25)
-      ..style       = PaintingStyle.stroke
+      ..color = glowColor.withValues(alpha: 0.25)
+      ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth * 2.0
-      ..strokeCap   = StrokeCap.round
-      ..maskFilter  = const MaskFilter.blur(BlurStyle.normal, 8);
-    canvas.drawArc(
-        rect, _startAngle, _sweepTotal * pct, false, glowPaint);
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+    canvas.drawArc(rect, _startAngle, _sweepTotal * pct, false, glowPaint);
 
     // — Fill arc with gradient
     final sweep = _sweepTotal * pct;
     final gradientPaint = Paint()
       ..shader = SweepGradient(
-          center:     Alignment.center,
-          startAngle: _startAngle,
-          endAngle:   _startAngle + sweep,
-          colors: [
-            color.withValues(alpha: 0.55),
-            color,
-          ],
-        ).createShader(rect)
-      ..style       = PaintingStyle.stroke
+        center: Alignment.center,
+        startAngle: _startAngle,
+        endAngle: _startAngle + sweep,
+        colors: [
+          color.withValues(alpha: 0.55),
+          color,
+        ],
+      ).createShader(rect)
+      ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
-      ..strokeCap   = StrokeCap.round;
+      ..strokeCap = StrokeCap.round;
     canvas.drawArc(rect, _startAngle, sweep, false, gradientPaint);
 
     // — Tip dot (bright end-cap glow)
-    final tipAngle  = _startAngle + sweep;
+    final tipAngle = _startAngle + sweep;
     final tipOffset = Offset(
       center.dx + radius * math.cos(tipAngle),
       center.dy + radius * math.sin(tipAngle),
     );
     final tipPaint = Paint()
-      ..color      = color
+      ..color = color
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
     canvas.drawCircle(tipOffset, strokeWidth * 0.6, tipPaint);
     canvas.drawCircle(tipOffset, strokeWidth * 0.35,
@@ -214,6 +211,5 @@ class _GaugePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_GaugePainter old) =>
-      old.pct != pct || old.color != color;
+  bool shouldRepaint(_GaugePainter old) => old.pct != pct || old.color != color;
 }

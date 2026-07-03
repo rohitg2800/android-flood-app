@@ -94,9 +94,9 @@ class QuietHours {
   bool get isActiveNow {
     final now = DateTime.now();
     final startParts = start.split(':');
-    final endParts   = end.split(':');
-    final startMins  = int.parse(startParts[0]) * 60 + int.parse(startParts[1]);
-    final endMins    = int.parse(endParts[0])   * 60 + int.parse(endParts[1]);
+    final endParts = end.split(':');
+    final startMins = int.parse(startParts[0]) * 60 + int.parse(startParts[1]);
+    final endMins = int.parse(endParts[0]) * 60 + int.parse(endParts[1]);
     final currentMins = now.hour * 60 + now.minute;
     if (startMins > endMins) {
       return currentMins >= startMins || currentMins < endMins;
@@ -118,23 +118,16 @@ class AlertConfigService {
 
   Stream<List<AlertConfig>> watchAlertConfigs() {
     if (_userId == null) return const Stream.empty();
-    return _collection
-        .where('user_id', isEqualTo: _userId)
-        .snapshots()
-        .map((snap) => snap.docs
-            .map((d) => AlertConfig.fromMap(d.id, d.data()))
-            .toList());
+    return _collection.where('user_id', isEqualTo: _userId).snapshots().map(
+        (snap) =>
+            snap.docs.map((d) => AlertConfig.fromMap(d.id, d.data())).toList());
   }
 
   Future<List<AlertConfig>> getAlertConfigs() async {
     if (_userId == null) return [];
     try {
-      final snap = await _collection
-          .where('user_id', isEqualTo: _userId)
-          .get();
-      return snap.docs
-          .map((d) => AlertConfig.fromMap(d.id, d.data()))
-          .toList();
+      final snap = await _collection.where('user_id', isEqualTo: _userId).get();
+      return snap.docs.map((d) => AlertConfig.fromMap(d.id, d.data())).toList();
     } catch (e) {
       if (kDebugMode) debugPrint('[AlertConfigService] getAlertConfigs: $e');
       return [];

@@ -33,28 +33,28 @@ import '../services/data_validator.dart';
 // ─── Source registry ──────────────────────────────────────────────────────────
 
 enum DataSource {
-  wrdBihar,   // Primary   — OpsFlood backend (/api/live-levels?state=Bihar)
-  befiqrCwc,  // Secondary — irrigation.befiqr.in live scrape
-  localSeed,  // Tertiary  — embedded 32-station snapshot (no network)
+  wrdBihar, // Primary   — OpsFlood backend (/api/live-levels?state=Bihar)
+  befiqrCwc, // Secondary — irrigation.befiqr.in live scrape
+  localSeed, // Tertiary  — embedded 32-station snapshot (no network)
 }
 
 extension DataSourceLabel on DataSource {
   String get label => switch (this) {
-    DataSource.wrdBihar  => 'WRD Bihar',
-    DataSource.befiqrCwc => 'Befiqr CWC',
-    DataSource.localSeed => 'Local Seed',
-  };
+        DataSource.wrdBihar => 'WRD Bihar',
+        DataSource.befiqrCwc => 'Befiqr CWC',
+        DataSource.localSeed => 'Local Seed',
+      };
 }
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
 class SourcePolicyState {
-  final List<CwcStation>      stations;
-  final DataQualityState      quality;
-  final DataSource            activeSource;
-  final DataSource?           failedSource;       // null when primary succeeded
-  final ValidationFailure?    lastFailure;        // most recent failure detail
-  final bool                  showFallbackBanner;
+  final List<CwcStation> stations;
+  final DataQualityState quality;
+  final DataSource activeSource;
+  final DataSource? failedSource; // null when primary succeeded
+  final ValidationFailure? lastFailure; // most recent failure detail
+  final bool showFallbackBanner;
 
   const SourcePolicyState({
     required this.stations,
@@ -68,29 +68,29 @@ class SourcePolicyState {
   String? get subtleBannerMessage {
     if (!showFallbackBanner) return null;
     if (failedSource == null) return null;
-    final fs  = failedSource!.label;
+    final fs = failedSource!.label;
     final as_ = activeSource.label;
     return switch (quality) {
-      DataQualityState.stale       => '$fs data is stale — showing $as_',
+      DataQualityState.stale => '$fs data is stale — showing $as_',
       DataQualityState.sourceError => '$fs unavailable — switched to $as_',
-      DataQualityState.fresh       => 'Using $as_ (primary $fs unavailable)',
+      DataQualityState.fresh => 'Using $as_ (primary $fs unavailable)',
     };
   }
 
   SourcePolicyState copyWith({
-    List<CwcStation>?   stations,
-    DataQualityState?   quality,
-    DataSource?         activeSource,
-    DataSource?         failedSource,
-    ValidationFailure?  lastFailure,
-    bool?               showFallbackBanner,
+    List<CwcStation>? stations,
+    DataQualityState? quality,
+    DataSource? activeSource,
+    DataSource? failedSource,
+    ValidationFailure? lastFailure,
+    bool? showFallbackBanner,
   }) =>
       SourcePolicyState(
-        stations:           stations           ?? this.stations,
-        quality:            quality            ?? this.quality,
-        activeSource:       activeSource       ?? this.activeSource,
-        failedSource:       failedSource,
-        lastFailure:        lastFailure,
+        stations: stations ?? this.stations,
+        quality: quality ?? this.quality,
+        activeSource: activeSource ?? this.activeSource,
+        failedSource: failedSource,
+        lastFailure: lastFailure,
         showFallbackBanner: showFallbackBanner ?? this.showFallbackBanner,
       );
 }
@@ -98,7 +98,6 @@ class SourcePolicyState {
 // ─── Notifier ─────────────────────────────────────────────────────────────────
 
 class SourcePolicyNotifier extends AsyncNotifier<SourcePolicyState> {
-
   static const _chain = [
     DataSource.wrdBihar,
     DataSource.befiqrCwc,
@@ -116,17 +115,17 @@ class SourcePolicyNotifier extends AsyncNotifier<SourcePolicyState> {
 
   /// User dismissed the fallback banner.
   void dismissBanner() {
-    state.whenData((s) =>
-        state = AsyncData(s.copyWith(showFallbackBanner: false)));
+    state.whenData(
+        (s) => state = AsyncData(s.copyWith(showFallbackBanner: false)));
   }
 
   Future<SourcePolicyState> _fetch() async {
-    DataSource?        failedSource;
+    DataSource? failedSource;
     ValidationFailure? lastFailure;
 
     for (final source in _chain) {
       try {
-        final raw    = await _fetchFromSource(source);
+        final raw = await _fetchFromSource(source);
         // null means the source deliberately signalled "no usable data".
         if (raw == null) {
           failedSource ??= source;
@@ -142,24 +141,24 @@ class SourcePolicyNotifier extends AsyncNotifier<SourcePolicyState> {
 
           DataQualityState quality = DataQualityState.fresh;
           if (failures.isNotEmpty) {
-            final hasStale = failures.any(
-                (f) => f.kind == ValidationFailureKind.staleTimestamp);
-            quality = hasStale ? DataQualityState.stale : DataQualityState.fresh;
+            final hasStale = failures
+                .any((f) => f.kind == ValidationFailureKind.staleTimestamp);
+            quality =
+                hasStale ? DataQualityState.stale : DataQualityState.fresh;
           }
 
           return SourcePolicyState(
-            stations:           valid.isEmpty ? stations : valid,
-            quality:            quality,
-            activeSource:       source,
-            failedSource:       failedSource,
-            lastFailure:        lastFailure,
+            stations: valid.isEmpty ? stations : valid,
+            quality: quality,
+            activeSource: source,
+            failedSource: failedSource,
+            lastFailure: lastFailure,
             showFallbackBanner: failedSource != null,
           );
         }
 
-        lastFailure  = result.failureOrNull;
+        lastFailure = result.failureOrNull;
         failedSource ??= source;
-
       } catch (_) {
         failedSource ??= source;
       }
@@ -167,11 +166,11 @@ class SourcePolicyNotifier extends AsyncNotifier<SourcePolicyState> {
 
     // All sources failed.
     return SourcePolicyState(
-      stations:           const [],
-      quality:            DataQualityState.sourceError,
-      activeSource:       DataSource.localSeed,
-      failedSource:       failedSource,
-      lastFailure:        lastFailure,
+      stations: const [],
+      quality: DataQualityState.sourceError,
+      activeSource: DataSource.localSeed,
+      failedSource: failedSource,
+      lastFailure: lastFailure,
       showFallbackBanner: true,
     );
   }
@@ -203,6 +202,7 @@ class SourcePolicyNotifier extends AsyncNotifier<SourcePolicyState> {
             }
             return null;
           }
+
           String s(List<String> keys, String fb) {
             for (final k in keys) {
               final v = m[k];
@@ -210,23 +210,23 @@ class SourcePolicyNotifier extends AsyncNotifier<SourcePolicyState> {
             }
             return fb;
           }
+
           return <String, dynamic>{
-            'river':        s(['river_name', 'river'],              ''),
-            'site':         s(['city', 'station', 'site'],          ''),
-            'currentLevel': d(['current_level', 'currentLevel'])   ?? 0.0,
-            'dangerLevel':  d(['danger_level',  'dangerLevel'])    ?? 0.0,
+            'river': s(['river_name', 'river'], ''),
+            'site': s(['city', 'station', 'site'], ''),
+            'currentLevel': d(['current_level', 'currentLevel']) ?? 0.0,
+            'dangerLevel': d(['danger_level', 'dangerLevel']) ?? 0.0,
             'warningLevel': d(['warning_level', 'warningLevel']),
-            'trend':        m['trend'],
-            'status':       m['risk_label'] ?? m['status'],
-            'source':       'WRD_BIHAR_BACKEND',
-            'isFromSeed':   false,
-            'fetchedAt':    m['timestamp'] ?? m['fetchedAt'] ?? now,
+            'trend': m['trend'],
+            'status': m['risk_label'] ?? m['status'],
+            'source': 'WRD_BIHAR_BACKEND',
+            'isFromSeed': false,
+            'fetchedAt': m['timestamp'] ?? m['fetchedAt'] ?? now,
           };
         }).toList();
         // Filter out records with dangerLevel == 0 (backend placeholder rows).
-        final usable = normalised
-            .where((m) => (m['dangerLevel'] as double) > 0)
-            .toList();
+        final usable =
+            normalised.where((m) => (m['dangerLevel'] as double) > 0).toList();
         if (usable.isEmpty) return null;
         return jsonEncode(usable);
 
@@ -257,15 +257,15 @@ final sourcePolicyProvider =
 // ─── Derived providers — subscribe to only what you need ─────────────────────
 
 /// Quality state only — widgets that show badges subscribe here.
-final dataQualityProvider = Provider<DataQualityState>((ref) =>
-    ref.watch(sourcePolicyProvider).maybeWhen(
-      data:   (s) => s.quality,
-      orElse: ()  => DataQualityState.fresh,
-    ));
+final dataQualityProvider = Provider<DataQualityState>(
+    (ref) => ref.watch(sourcePolicyProvider).maybeWhen(
+          data: (s) => s.quality,
+          orElse: () => DataQualityState.fresh,
+        ));
 
 /// Banner message — null when fresh or user dismissed.
-final fallbackBannerProvider = Provider<String?>((ref) =>
-    ref.watch(sourcePolicyProvider).maybeWhen(
-      data:   (s) => s.subtleBannerMessage,
-      orElse: ()  => null,
-    ));
+final fallbackBannerProvider =
+    Provider<String?>((ref) => ref.watch(sourcePolicyProvider).maybeWhen(
+          data: (s) => s.subtleBannerMessage,
+          orElse: () => null,
+        ));

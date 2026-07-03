@@ -16,7 +16,7 @@ class NewDashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final c     = core_theme.RiverTheme.of(context).colors;
+    final c = core_theme.RiverTheme.of(context).colors;
     final stats = ref.watch(dashboardStatsProvider);
 
     return Scaffold(
@@ -24,7 +24,6 @@ class NewDashboardScreen extends ConsumerWidget {
       body: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
-
           SliverAppBar(
             pinned: true,
             floating: true,
@@ -49,7 +48,8 @@ class NewDashboardScreen extends ConsumerWidget {
             ),
             actions: [
               IconButton(
-                icon: Icon(Icons.notifications_outlined, color: c.textSecondary),
+                icon:
+                    Icon(Icons.notifications_outlined, color: c.textSecondary),
                 onPressed: () => context.go(Routes.alerts),
               ),
               IconButton(
@@ -59,9 +59,7 @@ class NewDashboardScreen extends ConsumerWidget {
               const SizedBox(width: 4),
             ],
           ),
-
           SliverToBoxAdapter(child: HeroSummary(stats: stats)),
-
           if (stats.critical > 0)
             SliverToBoxAdapter(
               child: Padding(
@@ -74,7 +72,6 @@ class NewDashboardScreen extends ConsumerWidget {
                 ),
               ),
             ),
-
           SliverToBoxAdapter(
             child: QuickStatsRow(
               stats: stats,
@@ -82,28 +79,23 @@ class NewDashboardScreen extends ConsumerWidget {
               onElevatedTap: () => context.go(Routes.alerts),
             ),
           ),
-
           const SliverToBoxAdapter(child: SizedBox(height: 8)),
-
           SectionSliver(
             label: context.l10n.tabMonitors,
             icon: Icons.pin_drop_outlined,
             tiles: monitoringTiles(context),
             columns: 2,
           ),
-
           SectionSliver(
             label: context.l10n.alerts,
             icon: Icons.crisis_alert_rounded,
             tiles: alertsTiles(context),
           ),
-
           SectionSliver(
             label: context.l10n.forecast,
             icon: Icons.psychology_rounded,
             tiles: forecastTiles(context),
           ),
-
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),

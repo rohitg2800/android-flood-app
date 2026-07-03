@@ -14,34 +14,32 @@ class DashboardFooter extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = RiverColors.of(context);
     return StreamBuilder<DataFetchSnapshot>(
-      stream:      DataFetchEngine.instance.stream,
+      stream: DataFetchEngine.instance.stream,
       initialData: DataFetchEngine.instance.last,
       builder: (context, snap) {
-        final data      = snap.data;
+        final data = snap.data;
         final fetchedAt = data?.fetchedAt;
         final isLoading = data?.isLoading ?? false;
-        final count     = data?.stations.length ?? 0;
-        final errored   = data?.error != null;
+        final count = data?.stations.length ?? 0;
+        final errored = data?.error != null;
 
-        final Color  dotColor;
+        final Color dotColor;
         final String statusLabel;
         if (isLoading) {
-          dotColor    = AppPalette.warning;
+          dotColor = AppPalette.warning;
           statusLabel = 'Refreshing\u2026';
         } else if (errored) {
-          dotColor    = AppPalette.critical;
+          dotColor = AppPalette.critical;
           statusLabel = 'Connection error';
         } else if (count > 0) {
-          dotColor    = AppPalette.safe;
+          dotColor = AppPalette.safe;
           statusLabel = '$count stations live';
         } else {
-          dotColor    = AppPalette.warning;
+          dotColor = AppPalette.warning;
           statusLabel = 'Awaiting data\u2026';
         }
 
-        final timeLabel = fetchedAt == null
-            ? ''
-            : _relativeTime(fetchedAt);
+        final timeLabel = fetchedAt == null ? '' : _relativeTime(fetchedAt);
 
         return Padding(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
@@ -49,7 +47,8 @@ class DashboardFooter extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 7, height: 7,
+                width: 7,
+                height: 7,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: dotColor,
@@ -82,8 +81,8 @@ class DashboardFooter extends StatelessWidget {
 
   static String _relativeTime(DateTime t) {
     final d = DateTime.now().difference(t);
-    if (d.inSeconds < 60)  return '${d.inSeconds}s ago';
-    if (d.inMinutes < 60)  return '${d.inMinutes}m ago';
+    if (d.inSeconds < 60) return '${d.inSeconds}s ago';
+    if (d.inMinutes < 60) return '${d.inMinutes}m ago';
     return '${d.inHours}h ago';
   }
 }

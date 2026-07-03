@@ -28,8 +28,7 @@ Route<dynamic> generateRoute(RouteSettings settings) {
     final stationId = args is String ? args : '';
     return MaterialPageRoute(
       settings: settings,
-      builder: (_) =>
-          PumpStationDetailScreen(stationId: stationId),
+      builder: (_) => PumpStationDetailScreen(stationId: stationId),
     );
   }
 
@@ -69,8 +68,7 @@ extension AppNavigation on BuildContext {
       Navigator.pushNamed<T>(this, AppRoutes.pumpStations);
 
   Future<T?> pushPumpStationDetail<T>(String id) =>
-      Navigator.pushNamed<T>(this, AppRoutes.pumpStationDetail,
-          arguments: id);
+      Navigator.pushNamed<T>(this, AppRoutes.pumpStationDetail, arguments: id);
 
   Future<T?> pushAccessibility<T>() =>
       Navigator.pushNamed<T>(this, AppRoutes.accessibility);

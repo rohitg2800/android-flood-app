@@ -21,8 +21,7 @@ import '../providers/prediction_provider.dart';
 
 abstract final class FloodHomeWidget {
   // Android widget provider class name (matches AndroidManifest)
-  static const _androidProvider =
-      'com.opsflood.android.FloodWidgetProvider';
+  static const _androidProvider = 'com.opsflood.android.FloodWidgetProvider';
 
   // iOS widget kind (matches widget extension)
   static const _iOSKind = 'FloodWidget';
@@ -32,25 +31,24 @@ abstract final class FloodHomeWidget {
   static Future<void> update(FloodPrediction p) async {
     try {
       await Future.wait([
-        HomeWidget.saveWidgetData<String>('station',    p.station),
-        HomeWidget.saveWidgetData<String>('river',      p.river),
+        HomeWidget.saveWidgetData<String>('station', p.station),
+        HomeWidget.saveWidgetData<String>('river', p.river),
         HomeWidget.saveWidgetData<String>(
-            'level',    '${p.currentLevel.toStringAsFixed(2)} m'),
+            'level', '${p.currentLevel.toStringAsFixed(2)} m'),
         HomeWidget.saveWidgetData<String>(
-            'danger',   '${p.dangerLevel.toStringAsFixed(2)} m'),
+            'danger', '${p.dangerLevel.toStringAsFixed(2)} m'),
         HomeWidget.saveWidgetData<int>(
-            'pct',      p.progressPct.round().clamp(0, 100)),
-        HomeWidget.saveWidgetData<String>('trend',      p.trend),
-        HomeWidget.saveWidgetData<String>('outlook',    p.outlook),
+            'pct', p.progressPct.round().clamp(0, 100)),
+        HomeWidget.saveWidgetData<String>('trend', p.trend),
+        HomeWidget.saveWidgetData<String>('outlook', p.outlook),
         HomeWidget.saveWidgetData<String>(
-            'risk',     p.riskScore.toStringAsFixed(1)),
-        HomeWidget.saveWidgetData<String>(
-            'updated',  _fmtNow()),
+            'risk', p.riskScore.toStringAsFixed(1)),
+        HomeWidget.saveWidgetData<String>('updated', _fmtNow()),
       ]);
 
       await HomeWidget.updateWidget(
         androidName: _androidProvider,
-        iOSName:     _iOSKind,
+        iOSName: _iOSKind,
       );
     } catch (e, st) {
       // Never crash the main app over a widget update failure
@@ -63,16 +61,16 @@ abstract final class FloodHomeWidget {
     try {
       await Future.wait([
         HomeWidget.saveWidgetData<String>('station', 'Loading…'),
-        HomeWidget.saveWidgetData<String>('river',   '—'),
-        HomeWidget.saveWidgetData<String>('level',   '—'),
-        HomeWidget.saveWidgetData<int>   ('pct',     0),
-        HomeWidget.saveWidgetData<String>('trend',   'stable'),
+        HomeWidget.saveWidgetData<String>('river', '—'),
+        HomeWidget.saveWidgetData<String>('level', '—'),
+        HomeWidget.saveWidgetData<int>('pct', 0),
+        HomeWidget.saveWidgetData<String>('trend', 'stable'),
         HomeWidget.saveWidgetData<String>('outlook', 'Fetching data…'),
         HomeWidget.saveWidgetData<String>('updated', _fmtNow()),
       ]);
       await HomeWidget.updateWidget(
         androidName: _androidProvider,
-        iOSName:     _iOSKind,
+        iOSName: _iOSKind,
       );
     } catch (e) {
       debugPrint('[FloodHomeWidget] reset error: $e');

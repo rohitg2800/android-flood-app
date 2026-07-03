@@ -16,9 +16,9 @@ class AlertLog extends StatelessWidget {
   String _timeAgo(DateTime? ts) {
     if (ts == null) return 'unknown';
     final diff = DateTime.now().difference(ts);
-    if (diff.inMinutes < 1)  return 'just now';
+    if (diff.inMinutes < 1) return 'just now';
     if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours   < 24) return '${diff.inHours}h ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
     return '${diff.inDays}d ago';
   }
 
@@ -31,8 +31,8 @@ class AlertLog extends StatelessWidget {
   String _subtitle(FloodData d) {
     final parts = <String>[];
     if ((d.riverName ?? '').isNotEmpty) parts.add(d.riverName!);
-    if ((d.district  ?? '').isNotEmpty) parts.add(d.district!);
-    if ((d.state     ?? '').isNotEmpty) parts.add(d.state!);
+    if ((d.district ?? '').isNotEmpty) parts.add(d.district!);
+    if ((d.state ?? '').isNotEmpty) parts.add(d.state!);
     return parts.join('  ·  ');
   }
 
@@ -52,7 +52,8 @@ class AlertLog extends StatelessWidget {
           ),
           child: Row(
             children: [
-              const Icon(Icons.check_circle_outline_rounded, color: AppPalette.safe, size: 18),
+              const Icon(Icons.check_circle_outline_rounded,
+                  color: AppPalette.safe, size: 18),
               const SizedBox(width: 10),
               Text('No critical alerts — all stations normal',
                   style: TextStyle(color: t.textSecondary, fontSize: 12)),
@@ -72,22 +73,24 @@ class AlertLog extends StatelessWidget {
         ),
         child: Column(
           children: data.asMap().entries.map((e) {
-            final i     = e.key;
-            final d     = e.value;
-            final col   = riskColor(d.riskLevel);
+            final i = e.key;
+            final d = e.value;
+            final col = riskColor(d.riskLevel);
             final stale = _isStale(d);
-            final hasWarning   = d.warningLevel > 0;
-            final hasDanger    = d.dangerLevel  > 0;
+            final hasWarning = d.warningLevel > 0;
+            final hasDanger = d.dangerLevel > 0;
             final aboveWarning = hasWarning && d.currentLevel > d.warningLevel;
 
             return AnimatedBuilder(
               animation: entryCtrl,
               builder: (_, child) {
                 final delay = (i * 0.07).clamp(0.0, 0.6);
-                final p = ((entryCtrl.value - delay) / (1.0 - delay)).clamp(0.0, 1.0);
+                final p =
+                    ((entryCtrl.value - delay) / (1.0 - delay)).clamp(0.0, 1.0);
                 return Opacity(
                   opacity: p,
-                  child: Transform.translate(offset: Offset(-16 * (1 - p), 0), child: child),
+                  child: Transform.translate(
+                      offset: Offset(-16 * (1 - p), 0), child: child),
                 );
               },
               child: Column(
@@ -99,8 +102,11 @@ class AlertLog extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
-                          width: 3, height: 52,
-                          decoration: BoxDecoration(color: col, borderRadius: BorderRadius.circular(2)),
+                          width: 3,
+                          height: 52,
+                          decoration: BoxDecoration(
+                              color: col,
+                              borderRadius: BorderRadius.circular(2)),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -112,47 +118,80 @@ class AlertLog extends StatelessWidget {
                                   Expanded(
                                     child: Text(
                                       d.city ?? d.stationName,
-                                      style: TextStyle(color: t.textPrimary, fontSize: 13, fontWeight: FontWeight.w800),
+                                      style: TextStyle(
+                                          color: t.textPrimary,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w800),
                                     ),
                                   ),
                                   if (stale)
                                     Padding(
                                       padding: const EdgeInsets.only(left: 6),
-                                      child: Icon(Icons.access_time_rounded, size: 12, color: const Color(0xFFFFA726)),
+                                      child: Icon(Icons.access_time_rounded,
+                                          size: 12,
+                                          color: const Color(0xFFFFA726)),
                                     ),
                                   const SizedBox(width: 4),
                                   Text(
                                     _timeAgo(d.lastUpdated),
                                     style: TextStyle(
-                                      color: stale ? const Color(0xFFFFA726) : t.textSecondary,
-                                      fontSize: 10, fontWeight: FontWeight.w600,
+                                      color: stale
+                                          ? const Color(0xFFFFA726)
+                                          : t.textSecondary,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 3),
-                              Text(_subtitle(d), style: TextStyle(color: t.textSecondary, fontSize: 11)),
+                              Text(_subtitle(d),
+                                  style: TextStyle(
+                                      color: t.textSecondary, fontSize: 11)),
                               const SizedBox(height: 6),
                               Row(
                                 children: [
-                                  AlertChip(label: '${d.currentLevel.toStringAsFixed(2)} m', color: col, icon: Icons.height),
+                                  AlertChip(
+                                      label:
+                                          '${d.currentLevel.toStringAsFixed(2)} m',
+                                      color: col,
+                                      icon: Icons.height),
                                   if (hasDanger) ...[
                                     const SizedBox(width: 5),
-                                    AlertChip(label: '/${d.dangerLevel.toStringAsFixed(1)} m', color: t.textSecondary, icon: Icons.stream),
+                                    AlertChip(
+                                        label:
+                                            '/${d.dangerLevel.toStringAsFixed(1)} m',
+                                        color: t.textSecondary,
+                                        icon: Icons.stream),
                                   ],
                                   if (d.effectiveRainfallMm > 0) ...[
                                     const SizedBox(width: 5),
-                                    AlertChip(label: '${d.effectiveRainfallMm.toStringAsFixed(0)} mm', color: const Color(0xFF42A5F5), icon: Icons.water_drop_outlined),
+                                    AlertChip(
+                                        label:
+                                            '${d.effectiveRainfallMm.toStringAsFixed(0)} mm',
+                                        color: const Color(0xFF42A5F5),
+                                        icon: Icons.water_drop_outlined),
                                   ],
                                   if (aboveWarning) ...[
                                     const SizedBox(width: 5),
-                                    AlertChip(label: '▲ warning', color: const Color(0xFFFFA726), icon: Icons.warning_amber_rounded),
+                                    AlertChip(
+                                        label: '▲ warning',
+                                        color: const Color(0xFFFFA726),
+                                        icon: Icons.warning_amber_rounded),
                                   ],
                                   const Spacer(),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(color: col.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(20)),
-                                    child: Text(d.riskLevel, style: TextStyle(color: col, fontSize: 10, fontWeight: FontWeight.w800)),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                        color: col.withValues(alpha: 0.10),
+                                        borderRadius:
+                                            BorderRadius.circular(20)),
+                                    child: Text(d.riskLevel,
+                                        style: TextStyle(
+                                            color: col,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w800)),
                                   ),
                                 ],
                               ),
@@ -178,14 +217,20 @@ class AlertChip extends StatelessWidget {
   final String label;
   final Color color;
   final IconData icon;
-  const AlertChip({super.key, required this.label, required this.color, required this.icon});
+  const AlertChip(
+      {super.key,
+      required this.label,
+      required this.color,
+      required this.icon});
   @override
   Widget build(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Icon(icon, size: 10, color: color),
-      const SizedBox(width: 2),
-      Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w700)),
-    ],
-  );
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 10, color: color),
+          const SizedBox(width: 2),
+          Text(label,
+              style: TextStyle(
+                  color: color, fontSize: 10, fontWeight: FontWeight.w700)),
+        ],
+      );
 }

@@ -120,7 +120,9 @@ class _LegendItem extends StatelessWidget {
           decoration: BoxDecoration(
             color: c,
             shape: BoxShape.circle,
-            boxShadow: [BoxShadow(color: c.withValues(alpha: 0.4), blurRadius: 4)],
+            boxShadow: [
+              BoxShadow(color: c.withValues(alpha: 0.4), blurRadius: 4)
+            ],
           ),
         ),
       );
@@ -135,7 +137,9 @@ class _LegendItem extends StatelessWidget {
           decoration: BoxDecoration(
             color: c,
             shape: BoxShape.circle,
-            boxShadow: [BoxShadow(color: c.withValues(alpha: 0.5), blurRadius: 5)],
+            boxShadow: [
+              BoxShadow(color: c.withValues(alpha: 0.5), blurRadius: 5)
+            ],
           ),
         ),
         const SizedBox(width: 5),

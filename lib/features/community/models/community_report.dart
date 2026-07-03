@@ -4,8 +4,17 @@ part 'community_report.freezed.dart';
 part 'community_report.g.dart';
 
 enum ReportSeverity { low, medium, high, critical }
+
 enum ReportStatus { pending, verified, dismissed }
-enum ReportCategory { flooding, blocked_drain, pump_failure, road_damage, evacuation_needed, other }
+
+enum ReportCategory {
+  flooding,
+  blocked_drain,
+  pump_failure,
+  road_damage,
+  evacuation_needed,
+  other
+}
 
 @freezed
 class CommunityReport with _$CommunityReport {

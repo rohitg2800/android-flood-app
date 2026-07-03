@@ -22,8 +22,7 @@ class PumpStationDetailScreen extends ConsumerWidget {
         ],
       ),
       body: stationAsync.when(
-        loading: () =>
-            const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -52,8 +51,7 @@ class _StationDetailBody extends ConsumerStatefulWidget {
   const _StationDetailBody({required this.station});
 
   @override
-  ConsumerState<_StationDetailBody> createState() =>
-      _StationDetailBodyState();
+  ConsumerState<_StationDetailBody> createState() => _StationDetailBodyState();
 }
 
 class _StationDetailBodyState extends ConsumerState<_StationDetailBody> {
@@ -125,8 +123,8 @@ class _StationDetailBodyState extends ConsumerState<_StationDetailBody> {
         children: [
           // ── Info Card ──────────────────────────────────────────
           Card(
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -144,8 +142,7 @@ class _StationDetailBodyState extends ConsumerState<_StationDetailBody> {
                   _InfoRow(label: 'Status', value: station.status),
                   _InfoRow(
                       label: 'Capacity',
-                      value:
-                          '${station.capacityPercent.toStringAsFixed(1)}%'),
+                      value: '${station.capacityPercent.toStringAsFixed(1)}%'),
                   if (station.district != null)
                     _InfoRow(label: 'District', value: station.district!),
                   if (station.lastMaintenance != null)
@@ -157,8 +154,7 @@ class _StationDetailBodyState extends ConsumerState<_StationDetailBody> {
                         label: 'Next Maintenance',
                         value: station.nextMaintenance!),
                   if (station.contactNumber != null)
-                    _InfoRow(
-                        label: 'Contact', value: station.contactNumber!),
+                    _InfoRow(label: 'Contact', value: station.contactNumber!),
                 ],
               ),
             ),
@@ -171,8 +167,7 @@ class _StationDetailBodyState extends ConsumerState<_StationDetailBody> {
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
-                onPressed: () =>
-                    setState(() => _showReportForm = true),
+                onPressed: () => setState(() => _showReportForm = true),
                 icon: const Icon(Icons.report_problem),
                 label: const Text('Report an Issue'),
                 style: OutlinedButton.styleFrom(
@@ -214,16 +209,13 @@ class _StationDetailBodyState extends ConsumerState<_StationDetailBody> {
                         ),
                         items: const [
                           DropdownMenuItem(
-                              value: 'mechanical',
-                              child: Text('Mechanical')),
+                              value: 'mechanical', child: Text('Mechanical')),
                           DropdownMenuItem(
-                              value: 'electrical',
-                              child: Text('Electrical')),
+                              value: 'electrical', child: Text('Electrical')),
                           DropdownMenuItem(
                               value: 'flooding', child: Text('Flooding')),
                           DropdownMenuItem(
-                              value: 'blockage',
-                              child: Text('Blockage')),
+                              value: 'blockage', child: Text('Blockage')),
                           DropdownMenuItem(
                               value: 'other', child: Text('Other')),
                         ],
@@ -240,12 +232,10 @@ class _StationDetailBodyState extends ConsumerState<_StationDetailBody> {
                           border: OutlineInputBorder(),
                         ),
                         items: const [
-                          DropdownMenuItem(
-                              value: 'low', child: Text('Low')),
+                          DropdownMenuItem(value: 'low', child: Text('Low')),
                           DropdownMenuItem(
                               value: 'medium', child: Text('Medium')),
-                          DropdownMenuItem(
-                              value: 'high', child: Text('High')),
+                          DropdownMenuItem(value: 'high', child: Text('High')),
                           DropdownMenuItem(
                               value: 'critical', child: Text('Critical')),
                         ],
@@ -263,10 +253,9 @@ class _StationDetailBodyState extends ConsumerState<_StationDetailBody> {
                           hintText: 'Describe the issue in detail…',
                           border: OutlineInputBorder(),
                         ),
-                        validator: (v) =>
-                            v == null || v.trim().isEmpty
-                                ? 'Description is required'
-                                : null,
+                        validator: (v) => v == null || v.trim().isEmpty
+                            ? 'Description is required'
+                            : null,
                       ),
                       const SizedBox(height: 12),
 
@@ -295,17 +284,16 @@ class _StationDetailBodyState extends ConsumerState<_StationDetailBody> {
                         children: [
                           Expanded(
                             child: OutlinedButton(
-                              onPressed: () => setState(
-                                  () => _showReportForm = false),
+                              onPressed: () =>
+                                  setState(() => _showReportForm = false),
                               child: const Text('Cancel'),
                             ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: ElevatedButton(
-                              onPressed: reportState.isLoading
-                                  ? null
-                                  : _submitReport,
+                              onPressed:
+                                  reportState.isLoading ? null : _submitReport,
                               child: reportState.isLoading
                                   ? const SizedBox(
                                       height: 18,
@@ -344,8 +332,7 @@ class _InfoRow extends StatelessWidget {
           Text(label,
               style: const TextStyle(
                   color: Colors.grey, fontWeight: FontWeight.w500)),
-          Text(value,
-              style: const TextStyle(fontWeight: FontWeight.w600)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
         ],
       ),
     );

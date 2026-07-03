@@ -26,7 +26,7 @@ class AlertSettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final t    = RiverColors.of(context);
+    final t = RiverColors.of(context);
     final subs = ref.watch(subscriptionProvider);
 
     return Scaffold(
@@ -56,7 +56,8 @@ class AlertSettingsScreen extends ConsumerWidget {
         actions: [
           if (subs.isNotEmpty)
             TextButton.icon(
-              icon: Icon(Icons.delete_sweep_outlined, color: AppPalette.critical, size: 18),
+              icon: Icon(Icons.delete_sweep_outlined,
+                  color: AppPalette.critical, size: 18),
               label: Text('Clear all',
                   style: TextStyle(color: AppPalette.critical, fontSize: 12)),
               onPressed: () => _confirmClearAll(context, ref, subs),
@@ -80,11 +81,11 @@ class AlertSettingsScreen extends ConsumerWidget {
           ? _EmptyState(t: t)
           : ListView.separated(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-              itemCount:    subs.length,
+              itemCount: subs.length,
               separatorBuilder: (_, __) => const SizedBox(height: 10),
               itemBuilder: (_, i) => _SubCard(
                 sub: subs[i],
-                t:   t,
+                t: t,
                 onRemove: () => ref
                     .read(subscriptionProvider.notifier)
                     .unsubscribe(subs[i].stationId),
@@ -100,17 +101,20 @@ class AlertSettingsScreen extends ConsumerWidget {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Clear all alerts?'),
-        content: Text('This will remove all ${subs.length} station subscriptions.'),
+        content:
+            Text('This will remove all ${subs.length} station subscriptions.'),
         actions: [
           TextButton(
               child: const Text('Cancel'),
               onPressed: () => Navigator.pop(context)),
           TextButton(
-            child: Text('Clear all',
-                style: TextStyle(color: AppPalette.critical)),
+            child:
+                Text('Clear all', style: TextStyle(color: AppPalette.critical)),
             onPressed: () {
               for (final s in subs) {
-                ref.read(subscriptionProvider.notifier).unsubscribe(s.stationId);
+                ref
+                    .read(subscriptionProvider.notifier)
+                    .unsubscribe(s.stationId);
               }
               Navigator.pop(context);
             },
@@ -120,8 +124,8 @@ class AlertSettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showEditSheet(
-      BuildContext context, WidgetRef ref, AlertSubscription sub, RiverColors t) {
+  void _showEditSheet(BuildContext context, WidgetRef ref,
+      AlertSubscription sub, RiverColors t) {
     showModalBottomSheet(
       context: context,
       backgroundColor: t.cardBg,
@@ -135,12 +139,14 @@ class AlertSettingsScreen extends ConsumerWidget {
 
 class _SubCard extends StatelessWidget {
   final AlertSubscription sub;
-  final RiverColors       t;
-  final VoidCallback      onRemove;
-  final VoidCallback      onEdit;
+  final RiverColors t;
+  final VoidCallback onRemove;
+  final VoidCallback onEdit;
   const _SubCard({
-    required this.sub, required this.t,
-    required this.onRemove, required this.onEdit,
+    required this.sub,
+    required this.t,
+    required this.onRemove,
+    required this.onEdit,
   });
 
   @override
@@ -161,7 +167,8 @@ class _SubCard extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 40, height: 40,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               color: t.accent.withValues(alpha: 0.12),
               shape: BoxShape.circle,
@@ -184,29 +191,29 @@ class _SubCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   '${sub.riverName} • ${sub.notifyRadiusKm.toInt()} km radius',
-                  style: TextStyle(
-                      color: t.textSecondary, fontSize: 11),
+                  style: TextStyle(color: t.textSecondary, fontSize: 11),
                 ),
                 if (sub.customThresholdMetres != null)
                   Text(
                     'Custom threshold: ${sub.customThresholdMetres!.toStringAsFixed(2)} m',
                     style: TextStyle(
-                        color: AppPalette.gold, fontSize: 11,
+                        color: AppPalette.gold,
+                        fontSize: 11,
                         fontWeight: FontWeight.w700),
                   ),
                 if (sub.breachOnlyMode)
                   Text(
                     'Breach-only mode',
                     style: TextStyle(
-                        color: AppPalette.warning, fontSize: 11,
+                        color: AppPalette.warning,
+                        fontSize: 11,
                         fontWeight: FontWeight.w700),
                   ),
               ],
             ),
           ),
           IconButton(
-            icon: Icon(Icons.tune_rounded,
-                color: t.accent, size: 20),
+            icon: Icon(Icons.tune_rounded, color: t.accent, size: 20),
             tooltip: 'Edit',
             onPressed: onEdit,
           ),
@@ -224,8 +231,8 @@ class _SubCard extends StatelessWidget {
 
 class _EditSheet extends StatefulWidget {
   final AlertSubscription sub;
-  final RiverColors       t;
-  final WidgetRef         ref;
+  final RiverColors t;
+  final WidgetRef ref;
   const _EditSheet({required this.sub, required this.t, required this.ref});
   @override
   State<_EditSheet> createState() => _EditSheetState();
@@ -233,16 +240,16 @@ class _EditSheet extends StatefulWidget {
 
 class _EditSheetState extends State<_EditSheet> {
   late double _radius;
-  late bool   _breachOnly;
-  late bool   _useCustom;
+  late bool _breachOnly;
+  late bool _useCustom;
   late double _customLevel;
 
   @override
   void initState() {
     super.initState();
-    _radius      = widget.sub.notifyRadiusKm;
-    _breachOnly  = widget.sub.breachOnlyMode;
-    _useCustom   = widget.sub.customThresholdMetres != null;
+    _radius = widget.sub.notifyRadiusKm;
+    _breachOnly = widget.sub.breachOnlyMode;
+    _useCustom = widget.sub.customThresholdMetres != null;
     _customLevel = widget.sub.customThresholdMetres ?? 5.0;
   }
 
@@ -253,17 +260,19 @@ class _EditSheetState extends State<_EditSheet> {
       child: Padding(
         padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom,
-            left: 20, right: 20, top: 24),
+            left: 20,
+            right: 20,
+            top: 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Center(
               child: Container(
-                width: 36, height: 4,
+                width: 36,
+                height: 4,
                 decoration: BoxDecoration(
-                    color: t.divider,
-                    borderRadius: BorderRadius.circular(2)),
+                    color: t.divider, borderRadius: BorderRadius.circular(2)),
               ),
             ),
             const SizedBox(height: 16),
@@ -277,40 +286,46 @@ class _EditSheetState extends State<_EditSheet> {
             const SizedBox(height: 20),
             _SheetLabel('Notification radius: ${_radius.toInt()} km', t),
             Slider(
-              value:    _radius,
-              min:      10, max: 200, divisions: 19,
-              label:    '${_radius.toInt()} km',
+              value: _radius,
+              min: 10,
+              max: 200,
+              divisions: 19,
+              label: '${_radius.toInt()} km',
               activeColor: t.accent,
               onChanged: (v) => setState(() => _radius = v),
             ),
             const SizedBox(height: 4),
             SwitchListTile(
-              value:           _breachOnly,
-              onChanged:       (v) => setState(() => _breachOnly = v),
-              title:           Text('Breach-only alerts',
+              value: _breachOnly,
+              onChanged: (v) => setState(() => _breachOnly = v),
+              title: Text('Breach-only alerts',
                   style: TextStyle(color: t.textPrimary, fontSize: 13)),
-              subtitle:        Text('Notify only when predicted level will breach danger',
+              subtitle: Text(
+                  'Notify only when predicted level will breach danger',
                   style: TextStyle(color: t.textSecondary, fontSize: 11)),
-              activeColor:     t.accent,
+              activeColor: t.accent,
               contentPadding: EdgeInsets.zero,
             ),
             const SizedBox(height: 4),
             SwitchListTile(
-              value:           _useCustom,
-              onChanged:       (v) => setState(() => _useCustom = v),
-              title:           Text('Custom threshold',
+              value: _useCustom,
+              onChanged: (v) => setState(() => _useCustom = v),
+              title: Text('Custom threshold',
                   style: TextStyle(color: t.textPrimary, fontSize: 13)),
-              subtitle:        Text('Override station danger level',
+              subtitle: Text('Override station danger level',
                   style: TextStyle(color: t.textSecondary, fontSize: 11)),
-              activeColor:     t.accent,
+              activeColor: t.accent,
               contentPadding: EdgeInsets.zero,
             ),
             if (_useCustom) ...[
-              _SheetLabel('Alert when level ≥ ${_customLevel.toStringAsFixed(2)} m', t),
+              _SheetLabel(
+                  'Alert when level ≥ ${_customLevel.toStringAsFixed(2)} m', t),
               Slider(
-                value:    _customLevel,
-                min:      1.0, max: 20.0, divisions: 190,
-                label:    '${_customLevel.toStringAsFixed(2)} m',
+                value: _customLevel,
+                min: 1.0,
+                max: 20.0,
+                divisions: 190,
+                label: '${_customLevel.toStringAsFixed(2)} m',
                 activeColor: AppPalette.warning,
                 onChanged: (v) => setState(() => _customLevel = v),
               ),
@@ -338,8 +353,8 @@ class _EditSheetState extends State<_EditSheet> {
 
   void _save() {
     final updated = widget.sub.copyWith(
-      notifyRadiusKm:        _radius,
-      breachOnlyMode:        _breachOnly,
+      notifyRadiusKm: _radius,
+      breachOnlyMode: _breachOnly,
       customThresholdMetres: _useCustom ? _customLevel : null,
     );
     widget.ref.read(subscriptionProvider.notifier).update(updated);
@@ -348,16 +363,14 @@ class _EditSheetState extends State<_EditSheet> {
 }
 
 class _SheetLabel extends StatelessWidget {
-  final String      text;
+  final String text;
   final RiverColors t;
   const _SheetLabel(this.text, this.t);
   @override
   Widget build(BuildContext context) {
     return Text(text,
         style: TextStyle(
-            color: t.textSecondary,
-            fontSize: 12,
-            fontWeight: FontWeight.w600));
+            color: t.textSecondary, fontSize: 12, fontWeight: FontWeight.w600));
   }
 }
 

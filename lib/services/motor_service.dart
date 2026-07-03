@@ -38,8 +38,9 @@ class MotorService {
     final resp = await _dio.post(
       '/pump-stations/$stationId/motor-action',
       data: {
-        'action': action.name.replaceAll(
-            RegExp(r'(?<=[a-z])(?=[A-Z])'), '-').toLowerCase(),
+        'action': action.name
+            .replaceAll(RegExp(r'(?<=[a-z])(?=[A-Z])'), '-')
+            .toLowerCase(),
         if (reason != null) 'reason': reason,
         if (waterLevelRefId != null) 'water_level_ref_id': waterLevelRefId,
       },

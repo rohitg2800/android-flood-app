@@ -7,10 +7,10 @@ import 'package:flutter/material.dart';
 
 class OpsAreaChart extends StatelessWidget {
   final List<double> values;
-  final Color?       lineColor;
-  final Color?       fillColor;
-  final double       minY;
-  final double       maxY;
+  final Color? lineColor;
+  final Color? fillColor;
+  final double minY;
+  final double maxY;
   final List<String> xLabels;
 
   const OpsAreaChart({
@@ -37,46 +37,46 @@ class OpsAreaChart extends StatelessWidget {
   /// Factory so callers using the default constructor with a `labels` named
   /// param compile without changing the call site.
   factory OpsAreaChart.labels({
-    Key?          key,
+    Key? key,
     required List<double> values,
-    Color?        lineColor,
-    Color?        fillColor,
-    double        minY    = 0,
-    double        maxY    = 100,
-    List<String>  labels  = const [],
+    Color? lineColor,
+    Color? fillColor,
+    double minY = 0,
+    double maxY = 100,
+    List<String> labels = const [],
   }) =>
       OpsAreaChart(
-        key:       key,
-        values:    values,
+        key: key,
+        values: values,
         lineColor: lineColor,
         fillColor: fillColor,
-        minY:      minY,
-        maxY:      maxY,
-        xLabels:   labels,
+        minY: minY,
+        maxY: maxY,
+        xLabels: labels,
       );
 
   @override
   Widget build(BuildContext context) {
-    final cs   = Theme.of(context).colorScheme;
-    final lc   = lineColor ?? cs.primary;
-    final fc   = fillColor ?? lc.withValues(alpha: 0.18);
-    final sec  = cs.onSurfaceVariant;
-    final spots = List.generate(
-        values.length, (i) => FlSpot(i.toDouble(), values[i]));
+    final cs = Theme.of(context).colorScheme;
+    final lc = lineColor ?? cs.primary;
+    final fc = fillColor ?? lc.withValues(alpha: 0.18);
+    final sec = cs.onSurfaceVariant;
+    final spots =
+        List.generate(values.length, (i) => FlSpot(i.toDouble(), values[i]));
 
     return LineChart(
       LineChartData(
         minY: minY,
         maxY: maxY,
-        gridData:   const FlGridData(show: false),
+        gridData: const FlGridData(show: false),
         borderData: FlBorderData(show: false),
         titlesData: FlTitlesData(
-          leftTitles:   const AxisTitles(
-              sideTitles: SideTitles(showTitles: false)),
-          rightTitles:  const AxisTitles(
-              sideTitles: SideTitles(showTitles: false)),
-          topTitles:    const AxisTitles(
-              sideTitles: SideTitles(showTitles: false)),
+          leftTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: xLabels.isNotEmpty,
@@ -103,11 +103,11 @@ class OpsAreaChart extends StatelessWidget {
         ),
         lineBarsData: [
           LineChartBarData(
-            spots:        spots,
-            isCurved:     true,
-            color:        lc,
-            barWidth:     2.5,
-            dotData:      const FlDotData(show: false),
+            spots: spots,
+            isCurved: true,
+            color: lc,
+            barWidth: 2.5,
+            dotData: const FlDotData(show: false),
             belowBarData: BarAreaData(show: true, color: fc),
           ),
         ],

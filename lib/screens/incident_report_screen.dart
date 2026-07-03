@@ -28,43 +28,70 @@ enum IncidentType {
 extension IncidentTypeExt on IncidentType {
   String get label {
     switch (this) {
-      case IncidentType.flood:            return 'Flood / Waterlogging';
-      case IncidentType.embankmentBreach: return 'Embankment Breach';
-      case IncidentType.landslide:        return 'Landslide';
-      case IncidentType.roadBlock:        return 'Road Blocked';
-      case IncidentType.reliefCamp:       return 'Relief Camp Needed';
-      case IncidentType.rescueNeeded:     return 'Rescue Needed';
-      case IncidentType.casualty:         return 'Casualty / Fatality';
-      case IncidentType.propertyDamage:   return 'Property Damage';
-      case IncidentType.other:            return 'Other';
+      case IncidentType.flood:
+        return 'Flood / Waterlogging';
+      case IncidentType.embankmentBreach:
+        return 'Embankment Breach';
+      case IncidentType.landslide:
+        return 'Landslide';
+      case IncidentType.roadBlock:
+        return 'Road Blocked';
+      case IncidentType.reliefCamp:
+        return 'Relief Camp Needed';
+      case IncidentType.rescueNeeded:
+        return 'Rescue Needed';
+      case IncidentType.casualty:
+        return 'Casualty / Fatality';
+      case IncidentType.propertyDamage:
+        return 'Property Damage';
+      case IncidentType.other:
+        return 'Other';
     }
   }
 
   IconData get icon {
     switch (this) {
-      case IncidentType.flood:            return Icons.water;
-      case IncidentType.embankmentBreach: return Icons.broken_image;
-      case IncidentType.landslide:        return Icons.landscape;
-      case IncidentType.roadBlock:        return Icons.block;
-      case IncidentType.reliefCamp:       return Icons.medical_services;
-      case IncidentType.rescueNeeded:     return Icons.sos;
-      case IncidentType.casualty:         return Icons.personal_injury;
-      case IncidentType.propertyDamage:   return Icons.home_work;
-      case IncidentType.other:            return Icons.report_problem;
+      case IncidentType.flood:
+        return Icons.water;
+      case IncidentType.embankmentBreach:
+        return Icons.broken_image;
+      case IncidentType.landslide:
+        return Icons.landscape;
+      case IncidentType.roadBlock:
+        return Icons.block;
+      case IncidentType.reliefCamp:
+        return Icons.medical_services;
+      case IncidentType.rescueNeeded:
+        return Icons.sos;
+      case IncidentType.casualty:
+        return Icons.personal_injury;
+      case IncidentType.propertyDamage:
+        return Icons.home_work;
+      case IncidentType.other:
+        return Icons.report_problem;
     }
   }
 
   Color get color {
     switch (this) {
-      case IncidentType.flood:            return Colors.blue;
-      case IncidentType.embankmentBreach: return Colors.deepOrange;
-      case IncidentType.landslide:        return Colors.brown;
-      case IncidentType.roadBlock:        return Colors.amber;
-      case IncidentType.reliefCamp:       return Colors.green;
-      case IncidentType.rescueNeeded:     return Colors.red;
-      case IncidentType.casualty:         return const Color(0xFFB71C1C);
-      case IncidentType.propertyDamage:   return Colors.orange;
-      case IncidentType.other:            return Colors.grey;
+      case IncidentType.flood:
+        return Colors.blue;
+      case IncidentType.embankmentBreach:
+        return Colors.deepOrange;
+      case IncidentType.landslide:
+        return Colors.brown;
+      case IncidentType.roadBlock:
+        return Colors.amber;
+      case IncidentType.reliefCamp:
+        return Colors.green;
+      case IncidentType.rescueNeeded:
+        return Colors.red;
+      case IncidentType.casualty:
+        return const Color(0xFFB71C1C);
+      case IncidentType.propertyDamage:
+        return Colors.orange;
+      case IncidentType.other:
+        return Colors.grey;
     }
   }
 }
@@ -74,28 +101,40 @@ enum Severity { critical, high, medium, low }
 extension SeverityExt on Severity {
   String get label {
     switch (this) {
-      case Severity.critical: return 'Critical';
-      case Severity.high:     return 'High';
-      case Severity.medium:   return 'Medium';
-      case Severity.low:      return 'Low';
+      case Severity.critical:
+        return 'Critical';
+      case Severity.high:
+        return 'High';
+      case Severity.medium:
+        return 'Medium';
+      case Severity.low:
+        return 'Low';
     }
   }
 
   Color get color {
     switch (this) {
-      case Severity.critical: return Colors.red;
-      case Severity.high:     return Colors.deepOrange;
-      case Severity.medium:   return Colors.amber;
-      case Severity.low:      return Colors.green;
+      case Severity.critical:
+        return Colors.red;
+      case Severity.high:
+        return Colors.deepOrange;
+      case Severity.medium:
+        return Colors.amber;
+      case Severity.low:
+        return Colors.green;
     }
   }
 
   IconData get icon {
     switch (this) {
-      case Severity.critical: return Icons.crisis_alert;
-      case Severity.high:     return Icons.warning_amber;
-      case Severity.medium:   return Icons.info_outline;
-      case Severity.low:      return Icons.check_circle_outline;
+      case Severity.critical:
+        return Icons.crisis_alert;
+      case Severity.high:
+        return Icons.warning_amber;
+      case Severity.medium:
+        return Icons.info_outline;
+      case Severity.low:
+        return Icons.check_circle_outline;
     }
   }
 }
@@ -118,19 +157,19 @@ class IncidentDraft {
   DateTime createdAt = DateTime.now();
 
   Map<String, dynamic> toJson() => {
-    'type': type?.name,
-    'severity': severity.name,
-    'district': district,
-    'block': block,
-    'village': village,
-    'lat': lat,
-    'lng': lng,
-    'description': description,
-    'reporterName': reporterName,
-    'reporterPhone': reporterPhone,
-    'photoCount': photoCount,
-    'createdAt': createdAt.toIso8601String(),
-  };
+        'type': type?.name,
+        'severity': severity.name,
+        'district': district,
+        'block': block,
+        'village': village,
+        'lat': lat,
+        'lng': lng,
+        'description': description,
+        'reporterName': reporterName,
+        'reporterPhone': reporterPhone,
+        'photoCount': photoCount,
+        'createdAt': createdAt.toIso8601String(),
+      };
 
   factory IncidentDraft.fromJson(Map<String, dynamic> j) {
     final d = IncidentDraft()
@@ -156,8 +195,7 @@ class IncidentDraft {
     return d;
   }
 
-  String get shareText =>
-      '🚨 Flood Incident Report\n'
+  String get shareText => '🚨 Flood Incident Report\n'
       'Type: ${type?.label ?? "—"}\n'
       'Severity: ${severity.label}\n'
       'Location: $district${block.isNotEmpty ? " > $block" : ""}${village.isNotEmpty ? " > $village" : ""}\n'
@@ -169,12 +207,43 @@ class IncidentDraft {
 }
 
 const List<String> _biharDistricts = [
-  'Araria', 'Arwal', 'Aurangabad', 'Banka', 'Begusarai', 'Bhagalpur',
-  'Bhojpur', 'Buxar', 'Darbhanga', 'East Champaran', 'Gaya', 'Gopalganj',
-  'Jamui', 'Jehanabad', 'Kaimur', 'Katihar', 'Khagaria', 'Kishanganj',
-  'Lakhisarai', 'Madhepura', 'Madhubani', 'Munger', 'Muzaffarpur', 'Nalanda',
-  'Nawada', 'Patna', 'Purnia', 'Rohtas', 'Saharsa', 'Samastipur', 'Saran',
-  'Sheikhpura', 'Sheohar', 'Sitamarhi', 'Siwan', 'Supaul', 'Vaishali',
+  'Araria',
+  'Arwal',
+  'Aurangabad',
+  'Banka',
+  'Begusarai',
+  'Bhagalpur',
+  'Bhojpur',
+  'Buxar',
+  'Darbhanga',
+  'East Champaran',
+  'Gaya',
+  'Gopalganj',
+  'Jamui',
+  'Jehanabad',
+  'Kaimur',
+  'Katihar',
+  'Khagaria',
+  'Kishanganj',
+  'Lakhisarai',
+  'Madhepura',
+  'Madhubani',
+  'Munger',
+  'Muzaffarpur',
+  'Nalanda',
+  'Nawada',
+  'Patna',
+  'Purnia',
+  'Rohtas',
+  'Saharsa',
+  'Samastipur',
+  'Saran',
+  'Sheikhpura',
+  'Sheohar',
+  'Sitamarhi',
+  'Siwan',
+  'Supaul',
+  'Vaishali',
   'West Champaran',
 ];
 
@@ -198,11 +267,11 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
 
   final IncidentDraft _draft = IncidentDraft();
 
-  final _blockCtrl   = TextEditingController();
+  final _blockCtrl = TextEditingController();
   final _villageCtrl = TextEditingController();
-  final _descCtrl    = TextEditingController();
-  final _nameCtrl    = TextEditingController();
-  final _phoneCtrl   = TextEditingController();
+  final _descCtrl = TextEditingController();
+  final _nameCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
 
   static const String _draftKey = 'incident_draft_v1';
 
@@ -228,8 +297,8 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString(_draftKey);
       if (raw != null) {
-        final loaded = IncidentDraft.fromJson(
-            jsonDecode(raw) as Map<String, dynamic>);
+        final loaded =
+            IncidentDraft.fromJson(jsonDecode(raw) as Map<String, dynamic>);
         setState(() {
           _draft
             ..type = loaded.type
@@ -242,11 +311,11 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
             ..description = loaded.description
             ..reporterName = loaded.reporterName
             ..reporterPhone = loaded.reporterPhone;
-          _blockCtrl.text   = loaded.block;
+          _blockCtrl.text = loaded.block;
           _villageCtrl.text = loaded.village;
-          _descCtrl.text    = loaded.description;
-          _nameCtrl.text    = loaded.reporterName;
-          _phoneCtrl.text   = loaded.reporterPhone;
+          _descCtrl.text = loaded.description;
+          _nameCtrl.text = loaded.reporterName;
+          _phoneCtrl.text = loaded.reporterPhone;
         });
       }
     } catch (_) {}
@@ -269,10 +338,10 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
 
   void _syncControllers() {
     _draft
-      ..block         = _blockCtrl.text.trim()
-      ..village       = _villageCtrl.text.trim()
-      ..description   = _descCtrl.text.trim()
-      ..reporterName  = _nameCtrl.text.trim()
+      ..block = _blockCtrl.text.trim()
+      ..village = _villageCtrl.text.trim()
+      ..description = _descCtrl.text.trim()
+      ..reporterName = _nameCtrl.text.trim()
       ..reporterPhone = _phoneCtrl.text.trim();
   }
 
@@ -280,8 +349,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
     _saveDraft();
     setState(() => _step = s);
     _page.animateToPage(s,
-        duration: const Duration(milliseconds: 350),
-        curve: Curves.easeInOut);
+        duration: const Duration(milliseconds: 350), curve: Curves.easeInOut);
   }
 
   bool get _step1Valid => _draft.type != null;
@@ -289,7 +357,10 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
   bool get _step3Valid => _descCtrl.text.trim().length >= 10;
 
   Future<void> _tryGetLocation() async {
-    setState(() { _draft.lat = 25.5941; _draft.lng = 85.1376; });
+    setState(() {
+      _draft.lat = 25.5941;
+      _draft.lng = 85.1376;
+    });
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('📍 GPS location captured (Patna — demo)'),
@@ -310,7 +381,11 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
       await prefs.setStringList('incident_queue_v1', queue);
     } catch (_) {}
     await _clearDraft();
-    if (mounted) setState(() { _submitting = false; _submitted = true; });
+    if (mounted)
+      setState(() {
+        _submitting = false;
+        _submitted = true;
+      });
   }
 
   @override
@@ -364,7 +439,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: List.generate(4, (i) {
-          final done   = i < _step;
+          final done = i < _step;
           final active = i == _step;
           return Expanded(
             child: Row(
@@ -407,10 +482,14 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   decoration: BoxDecoration(
-                    color: selected ? type.color.withValues(alpha: 0.18) : t.cardBg,
+                    color: selected
+                        ? type.color.withValues(alpha: 0.18)
+                        : t.cardBg,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: selected ? type.color : t.divider.withValues(alpha: 0.5),
+                      color: selected
+                          ? type.color
+                          : t.divider.withValues(alpha: 0.5),
                       width: selected ? 2.0 : 1.0,
                     ),
                   ),
@@ -426,7 +505,8 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 10,
-                          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                          fontWeight:
+                              selected ? FontWeight.w700 : FontWeight.w500,
                           color: selected ? type.color : t.textSecondary,
                         ),
                       ),
@@ -454,20 +534,21 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                         color: sel ? s.color.withValues(alpha: 0.18) : t.cardBg,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: sel ? s.color : t.divider.withValues(alpha: 0.4),
+                          color:
+                              sel ? s.color : t.divider.withValues(alpha: 0.4),
                           width: sel ? 2.0 : 1.0,
                         ),
                       ),
                       child: Column(
                         children: [
                           Icon(s.icon,
-                              color: sel ? s.color : t.textSecondary,
-                              size: 18),
+                              color: sel ? s.color : t.textSecondary, size: 18),
                           const SizedBox(height: 4),
                           Text(s.label,
                               style: TextStyle(
                                 fontSize: 10,
-                                fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
+                                fontWeight:
+                                    sel ? FontWeight.w700 : FontWeight.w500,
                                 color: sel ? s.color : t.textSecondary,
                               )),
                         ],
@@ -562,8 +643,10 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                 IconButton(
                   icon: const Icon(Icons.clear, size: 18),
                   tooltip: 'Clear GPS',
-                  onPressed: () => setState(
-                      () { _draft.lat = null; _draft.lng = null; }),
+                  onPressed: () => setState(() {
+                    _draft.lat = null;
+                    _draft.lng = null;
+                  }),
                 ),
               ],
             ],
@@ -600,8 +683,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                 hintStyle: TextStyle(color: t.textSecondary, fontSize: 13),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.all(12),
-                counterStyle:
-                    TextStyle(color: t.textSecondary, fontSize: 11),
+                counterStyle: TextStyle(color: t.textSecondary, fontSize: 11),
               ),
             ),
           ),
@@ -754,8 +836,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
           const SizedBox(height: 16),
           if (!_step1Valid)
             _Warning('Please go back and select an incident type.'),
-          if (!_step2Valid)
-            _Warning('Please go back and select a district.'),
+          if (!_step2Valid) _Warning('Please go back and select a district.'),
           if (!_step3Valid)
             _Warning('Description must be at least 10 characters.'),
           const SizedBox(height: 8),
@@ -841,10 +922,14 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
 
   bool get _canProceed {
     switch (_step) {
-      case 0: return _step1Valid;
-      case 1: return _step2Valid;
-      case 2: return _step3Valid;
-      default: return true;
+      case 0:
+        return _step1Valid;
+      case 1:
+        return _step2Valid;
+      case 2:
+        return _step3Valid;
+      default:
+        return true;
     }
   }
 
@@ -866,8 +951,7 @@ class _IncidentReportScreenState extends State<IncidentReportScreen> {
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.green, width: 2),
                   ),
-                  child: const Icon(Icons.check,
-                      color: Colors.green, size: 40),
+                  child: const Icon(Icons.check, color: Colors.green, size: 40),
                 ),
                 const SizedBox(height: 24),
                 Text('Report Submitted!',
@@ -945,11 +1029,14 @@ class _StepDot extends StatelessWidget {
     final Color bg;
     final Color fg;
     if (done) {
-      bg = t.accent;         fg = Colors.white;
+      bg = t.accent;
+      fg = Colors.white;
     } else if (active) {
-      bg = Colors.deepOrange; fg = Colors.white;
+      bg = Colors.deepOrange;
+      fg = Colors.white;
     } else {
-      bg = t.cardBg;          fg = t.textSecondary;
+      bg = t.cardBg;
+      fg = t.textSecondary;
     }
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
@@ -959,7 +1046,8 @@ class _StepDot extends StatelessWidget {
         color: bg,
         shape: BoxShape.circle,
         border: Border.all(
-            color: active ? Colors.deepOrange : t.divider.withValues(alpha: 0.5),
+            color:
+                active ? Colors.deepOrange : t.divider.withValues(alpha: 0.5),
             width: 1.5),
       ),
       child: Center(
@@ -967,9 +1055,7 @@ class _StepDot extends StatelessWidget {
             ? const Icon(Icons.check, size: 14, color: Colors.white)
             : Text('$index',
                 style: TextStyle(
-                    color: fg,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700)),
+                    color: fg, fontSize: 12, fontWeight: FontWeight.w700)),
       ),
     );
   }

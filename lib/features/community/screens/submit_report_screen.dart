@@ -7,12 +7,10 @@ class SubmitReportScreen extends ConsumerStatefulWidget {
   const SubmitReportScreen({super.key});
 
   @override
-  ConsumerState<SubmitReportScreen> createState() =>
-      _SubmitReportScreenState();
+  ConsumerState<SubmitReportScreen> createState() => _SubmitReportScreenState();
 }
 
-class _SubmitReportScreenState
-    extends ConsumerState<SubmitReportScreen> {
+class _SubmitReportScreenState extends ConsumerState<SubmitReportScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
@@ -55,16 +53,14 @@ class _SubmitReportScreenState
         backgroundColor: const Color(0xFF0A0A0F),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: Colors.white),
+          icon:
+              const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'Submit Report',
           style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-              fontSize: 18),
+              color: Colors.white, fontWeight: FontWeight.w700, fontSize: 18),
         ),
       ),
       body: SingleChildScrollView(
@@ -90,9 +86,7 @@ class _SubmitReportScreenState
                 hint: 'Describe the situation in detail...',
                 maxLines: 4,
                 validator: (v) =>
-                    (v == null || v.isEmpty)
-                        ? 'Description is required'
-                        : null,
+                    (v == null || v.isEmpty) ? 'Description is required' : null,
               ),
               const SizedBox(height: 20),
               Row(
@@ -106,9 +100,8 @@ class _SubmitReportScreenState
                         _StyledTextField(
                           controller: _latCtrl,
                           hint: '25.59',
-                          keyboardType:
-                              const TextInputType.numberWithOptions(
-                                  decimal: true, signed: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true, signed: true),
                           validator: (v) {
                             if (v == null || v.isEmpty) return 'Required';
                             if (double.tryParse(v) == null) return 'Invalid';
@@ -128,9 +121,8 @@ class _SubmitReportScreenState
                         _StyledTextField(
                           controller: _lngCtrl,
                           hint: '85.13',
-                          keyboardType:
-                              const TextInputType.numberWithOptions(
-                                  decimal: true, signed: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true, signed: true),
                           validator: (v) {
                             if (v == null || v.isEmpty) return 'Required';
                             if (double.tryParse(v) == null) return 'Invalid';
@@ -229,7 +221,8 @@ class _StyledTextField extends StatelessWidget {
       style: const TextStyle(color: Colors.white, fontSize: 14),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 14),
+        hintStyle:
+            TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 14),
         filled: true,
         fillColor: const Color(0xFF16161E),
         contentPadding:
@@ -246,18 +239,15 @@ class _StyledTextField extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide:
-              const BorderSide(color: Color(0xFF00D4FF), width: 1.5),
+          borderSide: const BorderSide(color: Color(0xFF00D4FF), width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide:
-              const BorderSide(color: Color(0xFFFF4C4C), width: 1),
+          borderSide: const BorderSide(color: Color(0xFFFF4C4C), width: 1),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide:
-              const BorderSide(color: Color(0xFFFF4C4C), width: 1.5),
+          borderSide: const BorderSide(color: Color(0xFFFF4C4C), width: 1.5),
         ),
       ),
     );
@@ -267,8 +257,7 @@ class _StyledTextField extends StatelessWidget {
 class _SeveritySelector extends StatelessWidget {
   final ReportSeverity selected;
   final ValueChanged<ReportSeverity> onChanged;
-  const _SeveritySelector(
-      {required this.selected, required this.onChanged});
+  const _SeveritySelector({required this.selected, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -309,9 +298,8 @@ class _SeveritySelector extends StatelessWidget {
                             ? colors[s]
                             : Colors.white.withOpacity(0.4),
                         fontSize: 12,
-                        fontWeight: selected == s
-                            ? FontWeight.w700
-                            : FontWeight.w500,
+                        fontWeight:
+                            selected == s ? FontWeight.w700 : FontWeight.w500,
                       ),
                     ),
                   ),
@@ -327,8 +315,7 @@ class _SeveritySelector extends StatelessWidget {
 class _CategoryDropdown extends StatelessWidget {
   final ReportCategory selected;
   final ValueChanged<ReportCategory> onChanged;
-  const _CategoryDropdown(
-      {required this.selected, required this.onChanged});
+  const _CategoryDropdown({required this.selected, required this.onChanged});
 
   String _label(ReportCategory c) {
     switch (c) {
@@ -370,16 +357,14 @@ class _CategoryDropdown extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide:
-              const BorderSide(color: Color(0xFF00D4FF), width: 1.5),
+          borderSide: const BorderSide(color: Color(0xFF00D4FF), width: 1.5),
         ),
       ),
       items: ReportCategory.values
           .map((c) => DropdownMenuItem(
                 value: c,
                 child: Text(_label(c),
-                    style: const TextStyle(
-                        color: Colors.white, fontSize: 14)),
+                    style: const TextStyle(color: Colors.white, fontSize: 14)),
               ))
           .toList(),
       onChanged: (v) {

@@ -12,7 +12,7 @@ Future<ProviderContainer> _container({SharedPreferences? prefs}) async {
   final c = ProviderContainer(
     overrides: [
       sharedPreferencesProvider.overrideWithValue(p),
-        accessibilityProvider.overrideWith(() => AccessibilityNotifier(prefs: p)),
+      accessibilityProvider.overrideWith(() => AccessibilityNotifier(prefs: p)),
     ],
   );
   c.read(accessibilityProvider);
@@ -31,9 +31,9 @@ void main() {
     addTearDown(c.dispose);
     final state = c.read(accessibilityProvider);
 
-    expect(state.highContrast,    isFalse);
+    expect(state.highContrast, isFalse);
     expect(state.textScaleFactor, 1.0);
-    expect(state.locale,          'en');
+    expect(state.locale, 'en');
   });
 
   // ── 2. setHighContrast
@@ -99,16 +99,16 @@ void main() {
   test('prefs are reloaded into new container', () async {
     SharedPreferences.setMockInitialValues({
       'a11y_high_contrast': true,
-      'a11y_text_scale':    1.4,
-      'a11y_locale':        'bn',
+      'a11y_text_scale': 1.4,
+      'a11y_locale': 'bn',
     });
     final prefs = await SharedPreferences.getInstance();
     final c = await _container(prefs: prefs);
     addTearDown(c.dispose);
     final s = c.read(accessibilityProvider);
 
-    expect(s.highContrast,    isTrue);
+    expect(s.highContrast, isTrue);
     expect(s.textScaleFactor, 1.4);
-    expect(s.locale,          'bn');
+    expect(s.locale, 'bn');
   });
 }

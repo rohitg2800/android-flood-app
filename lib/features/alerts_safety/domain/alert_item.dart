@@ -19,14 +19,17 @@ class AlertItem {
 
   String get severityLabel {
     switch (severity) {
-      case AlertSeverity.emergency: return 'EMERGENCY';
-      case AlertSeverity.critical:  return 'CRITICAL';
-      case AlertSeverity.warning:   return 'WARNING';
-      case AlertSeverity.info:      return 'INFO';
+      case AlertSeverity.emergency:
+        return 'EMERGENCY';
+      case AlertSeverity.critical:
+        return 'CRITICAL';
+      case AlertSeverity.warning:
+        return 'WARNING';
+      case AlertSeverity.info:
+        return 'INFO';
     }
   }
 
   bool get isUrgent =>
-      severity == AlertSeverity.emergency ||
-      severity == AlertSeverity.critical;
+      severity == AlertSeverity.emergency || severity == AlertSeverity.critical;
 }

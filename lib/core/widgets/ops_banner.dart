@@ -25,16 +25,16 @@ class OpsBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = RiverTheme.of(context).colors;
     final Color base = switch (variant) {
-      OpsBannerVariant.danger  => c.danger,
+      OpsBannerVariant.danger => c.danger,
       OpsBannerVariant.warning => c.warning,
       OpsBannerVariant.success => c.success,
-      OpsBannerVariant.info    => c.info,
+      OpsBannerVariant.info => c.info,
     };
     final IconData defaultIcon = switch (variant) {
-      OpsBannerVariant.danger  => Icons.warning_amber_rounded,
+      OpsBannerVariant.danger => Icons.warning_amber_rounded,
       OpsBannerVariant.warning => Icons.info_outline_rounded,
       OpsBannerVariant.success => Icons.check_circle_outline_rounded,
-      OpsBannerVariant.info    => Icons.notifications_none_rounded,
+      OpsBannerVariant.info => Icons.notifications_none_rounded,
     };
     return GestureDetector(
       onTap: onTap,
@@ -55,19 +55,24 @@ class OpsBanner extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(title,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: base, fontWeight: FontWeight.w600)),
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodyMedium
+                          ?.copyWith(color: base, fontWeight: FontWeight.w600)),
                   if (subtitle != null)
                     Text(subtitle!,
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                              color: c.textSecondary)),
+                        style: Theme.of(context)
+                            .textTheme
+                            .labelMedium
+                            ?.copyWith(color: c.textSecondary)),
                 ],
               ),
             ),
             if (onDismiss != null)
               GestureDetector(
                   onTap: onDismiss,
-                  child: Icon(Icons.close_rounded, color: c.textMuted, size: 18)),
+                  child:
+                      Icon(Icons.close_rounded, color: c.textMuted, size: 18)),
           ],
         ),
       ),

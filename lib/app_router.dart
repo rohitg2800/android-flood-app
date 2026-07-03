@@ -55,59 +55,59 @@ class Routes {
   Routes._();
 
   // ── Core flow
-  static const splash               = '/';
-  static const onboarding           = '/onboarding';
-  static const shell                = '/shell';
+  static const splash = '/';
+  static const onboarding = '/onboarding';
+  static const shell = '/shell';
 
   // ── Bottom-nav tabs
-  static const dashboard            = '/dashboard';
-  static const monitors             = '/monitors';
-  static const alerts               = '/alerts';
-  static const map                  = '/map';
-  static const community            = '/community';
-  static const settings             = '/settings';
+  static const dashboard = '/dashboard';
+  static const monitors = '/monitors';
+  static const alerts = '/alerts';
+  static const map = '/map';
+  static const community = '/community';
+  static const settings = '/settings';
 
   // ── Map variants
-  static const biharRiverMap        = '/bihar-river-map';
-  static const indiaRiverExplorer   = '/india-river-explorer';
+  static const biharRiverMap = '/bihar-river-map';
+  static const indiaRiverExplorer = '/india-river-explorer';
 
   // ── Data / detail screens
-  static const stationDetail        = '/station';
-  static const riverDetail          = '/river';
-  static const cityDetail           = '/city';
-  static const riverMonitor         = '/river-monitor';
-  static const liveStations         = '/live-stations';
-  static const stateMatrix          = '/state-matrix';
+  static const stationDetail = '/station';
+  static const riverDetail = '/river';
+  static const cityDetail = '/city';
+  static const riverMonitor = '/river-monitor';
+  static const liveStations = '/live-stations';
+  static const stateMatrix = '/state-matrix';
 
   // ── Prediction / AI
-  static const predict              = '/predict';
-  static const aiPredictor          = '/ai-predictor';
-  static const modelInfo            = '/model-info';
+  static const predict = '/predict';
+  static const aiPredictor = '/ai-predictor';
+  static const modelInfo = '/model-info';
 
   // ── Weather / rain
-  static const weather              = '/weather';
-  static const rainfallForecast     = '/rainfall-forecast';
+  static const weather = '/weather';
+  static const rainfallForecast = '/rainfall-forecast';
 
   // ── Community / reporting
-  static const crowdReports         = '/crowd-reports';
-  static const incidentReport       = '/incident-report';
-  static const sos                  = '/sos';
-  static const evacuation           = '/evacuation';
+  static const crowdReports = '/crowd-reports';
+  static const incidentReport = '/incident-report';
+  static const sos = '/sos';
+  static const evacuation = '/evacuation';
 
   // ── News / feeds
-  static const news                 = '/news';
+  static const news = '/news';
 
   // ── Analytics
-  static const analytics            = '/analytics';
-  static const historicalAnalytics  = '/historical-analytics';
-  static const export_              = '/export';
+  static const analytics = '/analytics';
+  static const historicalAnalytics = '/historical-analytics';
+  static const export_ = '/export';
 
   // ── Settings sub-screens
-  static const notificationSettings    = '/notification-settings';
-  static const alertSettings           = '/alert-settings';
-  static const accessibilitySettings   = '/settings/accessibility';
-  static const profile                 = '/profile';
-  static const adminDashboard          = '/admin';
+  static const notificationSettings = '/notification-settings';
+  static const alertSettings = '/alert-settings';
+  static const accessibilitySettings = '/settings/accessibility';
+  static const profile = '/profile';
+  static const adminDashboard = '/admin';
 }
 
 // ---------------------------------------------------------------------------
@@ -124,7 +124,7 @@ class AppRouter {
   static Widget _wrap(Widget page) => BackAwareRoute(child: page);
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
-    final uri  = Uri.parse(settings.name ?? '/');
+    final uri = Uri.parse(settings.name ?? '/');
     final path = uri.path;
 
     Widget page;
@@ -132,120 +132,151 @@ class AppRouter {
     switch (path) {
       // ── Core flow (no wrap — these manage their own back)
       case Routes.splash:
-        page = const SplashScreen(); break;
+        page = const SplashScreen();
+        break;
       case Routes.onboarding:
-        page = const OnboardingScreen(); break;
+        page = const OnboardingScreen();
+        break;
       case Routes.shell:
         page = MainShell(
-          initialIndex: settings.arguments is int
-              ? settings.arguments as int
-              : 0,
+          initialIndex:
+              settings.arguments is int ? settings.arguments as int : 0,
         );
         break;
 
       // ── Bottom-nav tabs (also reachable as standalone pushes)
       case Routes.dashboard:
-        page = _wrap(const DashboardScreen()); break;
+        page = _wrap(const DashboardScreen());
+        break;
       case Routes.monitors:
-        page = _wrap(const RiverMonitorScreen()); break;
+        page = _wrap(const RiverMonitorScreen());
+        break;
       case Routes.alerts:
-        page = _wrap(const AlertsScreen()); break;
+        page = _wrap(const AlertsScreen());
+        break;
       case Routes.map:
-        page = _wrap(const BiharRiverMapScreen()); break;
+        page = _wrap(const BiharRiverMapScreen());
+        break;
       case Routes.community:
-        page = _wrap(const CommunityScreen()); break;
+        page = _wrap(const CommunityScreen());
+        break;
       case Routes.settings:
-        page = _wrap(const SettingsScreen()); break;
+        page = _wrap(const SettingsScreen());
+        break;
 
       // ── Map variants
       case Routes.biharRiverMap:
-        page = _wrap(const BiharRiverMapScreen()); break;
+        page = _wrap(const BiharRiverMapScreen());
+        break;
       case Routes.indiaRiverExplorer:
-        page = _wrap(const IndiaRiverExplorerScreen()); break;
+        page = _wrap(const IndiaRiverExplorerScreen());
+        break;
 
       // ── Data / detail
       case Routes.liveStations:
-        page = _wrap(const LiveStationsScreen()); break;
+        page = _wrap(const LiveStationsScreen());
+        break;
       case Routes.stateMatrix:
-        page = _wrap(const StateMatrixScreen()); break;
+        page = _wrap(const StateMatrixScreen());
+        break;
       case Routes.riverMonitor:
-        page = _wrap(const RiverMonitorScreen()); break;
+        page = _wrap(const RiverMonitorScreen());
+        break;
       case Routes.modelInfo:
-        page = _wrap(const ModelInfoScreen()); break;
+        page = _wrap(const ModelInfoScreen());
+        break;
 
-      case Routes.stationDetail: {
-        final station = settings.arguments as CwcStation?;
-        page = _wrap(
-          station != null
-              ? CwcStationDetailScreen(station: station)
-              : const SplashScreen(),
-        );
-        break;
-      }
-      case Routes.riverDetail: {
-        final data = settings.arguments as FloodData?;
-        page = _wrap(
-          data != null
-              ? RiverDetailScreen(data: data)
-              : const SplashScreen(),
-        );
-        break;
-      }
-      case Routes.cityDetail: {
-        final cityName = settings.arguments as String?;
-        page = _wrap(
-          cityName != null
-              ? CityDetailScreen(cityName: cityName)
-              : const SplashScreen(),
-        );
-        break;
-      }
+      case Routes.stationDetail:
+        {
+          final station = settings.arguments as CwcStation?;
+          page = _wrap(
+            station != null
+                ? CwcStationDetailScreen(station: station)
+                : const SplashScreen(),
+          );
+          break;
+        }
+      case Routes.riverDetail:
+        {
+          final data = settings.arguments as FloodData?;
+          page = _wrap(
+            data != null ? RiverDetailScreen(data: data) : const SplashScreen(),
+          );
+          break;
+        }
+      case Routes.cityDetail:
+        {
+          final cityName = settings.arguments as String?;
+          page = _wrap(
+            cityName != null
+                ? CityDetailScreen(cityName: cityName)
+                : const SplashScreen(),
+          );
+          break;
+        }
 
       // ── Prediction / AI
       case Routes.predict:
-        page = _wrap(const PredictScreen()); break;
+        page = _wrap(const PredictScreen());
+        break;
       case Routes.aiPredictor:
-        page = _wrap(const AiPredictionScreen()); break;
+        page = _wrap(const AiPredictionScreen());
+        break;
 
       // ── Weather / rain
       case Routes.weather:
-        page = _wrap(const WeatherScreen()); break;
+        page = _wrap(const WeatherScreen());
+        break;
       case Routes.rainfallForecast:
-        page = _wrap(const RainfallForecastScreen()); break;
+        page = _wrap(const RainfallForecastScreen());
+        break;
 
       // ── Community / reporting
       case Routes.crowdReports:
-        page = _wrap(const CrowdReportFeedScreen()); break;
+        page = _wrap(const CrowdReportFeedScreen());
+        break;
       case Routes.incidentReport:
-        page = _wrap(const IncidentReportScreen()); break;
+        page = _wrap(const IncidentReportScreen());
+        break;
       case Routes.sos:
-        page = _wrap(const SosScreen()); break;
+        page = _wrap(const SosScreen());
+        break;
       case Routes.evacuation:
-        page = _wrap(const EvacuationRoutesScreen()); break;
+        page = _wrap(const EvacuationRoutesScreen());
+        break;
 
       // ── News
       case Routes.news:
-        page = _wrap(const NewsFeedScreen()); break;
+        page = _wrap(const NewsFeedScreen());
+        break;
 
       // ── Analytics
       case Routes.analytics:
-        page = _wrap(const AnalyticsDashboardScreen()); break;
+        page = _wrap(const AnalyticsDashboardScreen());
+        break;
       case Routes.historicalAnalytics:
-        page = _wrap(const HistoricalAnalyticsScreen()); break;
+        page = _wrap(const HistoricalAnalyticsScreen());
+        break;
       case Routes.export_:
-        page = _wrap(const ExportScreen()); break;
+        page = _wrap(const ExportScreen());
+        break;
 
       // ── Settings sub-screens
       case Routes.notificationSettings:
-        page = _wrap(const NotificationSettingsScreen()); break;
+        page = _wrap(const NotificationSettingsScreen());
+        break;
       case Routes.alertSettings:
-        page = _wrap(const AlertSettingsScreen()); break;
+        page = _wrap(const AlertSettingsScreen());
+        break;
       case Routes.accessibilitySettings:
-        page = _wrap(const AccessibilitySettingsScreen()); break;
+        page = _wrap(const AccessibilitySettingsScreen());
+        break;
       case Routes.profile:
-        page = _wrap(const ProfileScreen()); break;
+        page = _wrap(const ProfileScreen());
+        break;
       case Routes.adminDashboard:
-        page = _wrap(const AdminDashboardScreen()); break;
+        page = _wrap(const AdminDashboardScreen());
+        break;
 
       default:
         page = const SplashScreen();
@@ -264,11 +295,10 @@ class AppRouter {
       navigatorKey.currentState!.pushNamed<T>(route, arguments: arguments);
 
   static Future<T?> pushReplacement<T>(String route, {Object? arguments}) =>
-      navigatorKey.currentState!.pushReplacementNamed<T, dynamic>(
-          route, arguments: arguments);
+      navigatorKey.currentState!
+          .pushReplacementNamed<T, dynamic>(route, arguments: arguments);
 
-  static void pop<T>([T? result]) =>
-      navigatorKey.currentState?.pop(result);
+  static void pop<T>([T? result]) => navigatorKey.currentState?.pop(result);
 
   static void popUntilRoot() =>
       navigatorKey.currentState?.popUntil((r) => r.isFirst);

@@ -28,7 +28,6 @@ import '../providers/real_time_river_provider.dart';
 import '../providers/bihar_prediction_provider.dart';
 import '../services/predict.dart' as predict_lib;
 
-
 // ─────────────────────────────────────────────────────────────────────────────
 //  PredictScreen
 // ─────────────────────────────────────────────────────────────────────────────
@@ -54,9 +53,9 @@ class PredictScreen extends ConsumerStatefulWidget {
 class _PredictScreenState extends ConsumerState<PredictScreen>
     with SingleTickerProviderStateMixin {
   String? _selectedStationId;
-  int     _horizonHours = 24;
+  int _horizonHours = 24;
   late AnimationController _pulseCtrl;
-  late Animation<double>   _pulseAnim;
+  late Animation<double> _pulseAnim;
 
   @override
   void initState() {
@@ -80,14 +79,14 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
   String _severityFromPrediction(FloodPrediction p) {
     final pct = p.progressPct.clamp(0.0, 100.0);
     if (pct >= 100) return 'CRITICAL';
-    if (pct >= 80)  return 'SEVERE';
-    if (pct >= 60)  return 'MODERATE';
+    if (pct >= 80) return 'SEVERE';
+    if (pct >= 60) return 'MODERATE';
     return 'LOW';
   }
 
   @override
   Widget build(BuildContext context) {
-    final t        = RiverColors.of(context);
+    final t = RiverColors.of(context);
     final stations = ref.watch(mergedStationsProvider);
 
     if (_selectedStationId == null && stations.isNotEmpty) {
@@ -115,121 +114,124 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
     return Container(
       color: const Color(0xFF05070A),
       child: SafeArea(
-          child: RefreshIndicator(
-            color: const Color(0xFF4CB3FF),
-            backgroundColor: const Color(0xFF0F141B),
-            onRefresh: () async {
-              ref.invalidate(mergedStationsProvider);
-              await Future<void>.delayed(const Duration(milliseconds: 600));
-            },
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      // ── Offline stale-cache banner ──────────────────
-                      if (showOfflineBanner && station != null)
-                        FutureBuilder<predict_lib.FloodPrediction?>(
-                          future: predict_lib.PredictionService.loadCached(
-                              station.station),
-                          builder: (ctx, snap) {
-                            if (snap.data == null) return const SizedBox();
-                            final cached = snap.data!;
-                            final age = DateTime.now()
-                                .difference(cached.timestamp);
-                            final ageStr = age.inHours > 0
-                                ? '\${age.inHours}h ago'
-                                : '\${age.inMinutes}m ago';
-                            if (ageStr.isEmpty) return const SizedBox();
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 10),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF4CB3FF).withValues(alpha: 0.10),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                    color: const Color(0xFF4CB3FF).withValues(alpha: 0.35)),
-                              ),
-                              child: Row(children: [
-                                const Icon(Icons.offline_bolt_rounded,
-                                    size: 16, color: Color(0xFF4CB3FF)),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'Offline — showing cached result from \$ageStr',
-                                    style: TextStyle(
-                                        color: const Color(0xFF4CB3FF),
-                                        fontSize: 12),
-                                  ),
+        child: RefreshIndicator(
+          color: const Color(0xFF4CB3FF),
+          backgroundColor: const Color(0xFF0F141B),
+          onRefresh: () async {
+            ref.invalidate(mergedStationsProvider);
+            await Future<void>.delayed(const Duration(milliseconds: 600));
+          },
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    // ── Offline stale-cache banner ──────────────────
+                    if (showOfflineBanner && station != null)
+                      FutureBuilder<predict_lib.FloodPrediction?>(
+                        future: predict_lib.PredictionService.loadCached(
+                            station.station),
+                        builder: (ctx, snap) {
+                          if (snap.data == null) return const SizedBox();
+                          final cached = snap.data!;
+                          final age =
+                              DateTime.now().difference(cached.timestamp);
+                          final ageStr = age.inHours > 0
+                              ? '\${age.inHours}h ago'
+                              : '\${age.inMinutes}m ago';
+                          if (ageStr.isEmpty) return const SizedBox();
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF4CB3FF)
+                                  .withValues(alpha: 0.10),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                  color: const Color(0xFF4CB3FF)
+                                      .withValues(alpha: 0.35)),
+                            ),
+                            child: Row(children: [
+                              const Icon(Icons.offline_bolt_rounded,
+                                  size: 16, color: Color(0xFF4CB3FF)),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Offline — showing cached result from \$ageStr',
+                                  style: TextStyle(
+                                      color: const Color(0xFF4CB3FF),
+                                      fontSize: 12),
                                 ),
-                              ]),
-                            );
-                          },
-                        ),
-                      _AllCitiesForecast(theme: t),
-                      const SizedBox(height: 20),
-                      _StationPickerCard(
-                        stations: stations,
-                        selectedId: _selectedStationId,
-                        onChanged: (id) =>
-                            setState(() => _selectedStationId = id),
+                              ),
+                            ]),
+                          );
+                        },
+                      ),
+                    _AllCitiesForecast(theme: t),
+                    const SizedBox(height: 20),
+                    _StationPickerCard(
+                      stations: stations,
+                      selectedId: _selectedStationId,
+                      onChanged: (id) =>
+                          setState(() => _selectedStationId = id),
+                      theme: t,
+                    ),
+                    const SizedBox(height: 16),
+                    if (station == null)
+                      _EmptyState(theme: t)
+                    else if (prediction == null)
+                      _LoadingState(theme: t, pulseAnim: _pulseAnim)
+                    else ...[
+                      _CurrentLevelCard(
+                        station: station,
+                        prediction: prediction,
+                        theme: t,
+                        pulseAnim: _pulseAnim,
+                      ),
+                      const SizedBox(height: 16),
+                      _HorizonSelector(
+                        selected: _horizonHours,
+                        onChanged: (h) {
+                          setState(() => _horizonHours = h);
+                          if (station != null) {
+                            ref.invalidate(
+                                predictionProvider((station.station, h)));
+                          }
+                        },
                         theme: t,
                       ),
                       const SizedBox(height: 16),
-                      if (station == null)
-                        _EmptyState(theme: t)
-                      else if (prediction == null)
-                        _LoadingState(theme: t, pulseAnim: _pulseAnim)
-                      else ...[
-                        _CurrentLevelCard(
-                          station: station,
-                          prediction: prediction,
-                          theme: t,
-                          pulseAnim: _pulseAnim,
-                        ),
-                        const SizedBox(height: 16),
-                        _HorizonSelector(
-                          selected: _horizonHours,
-                          onChanged: (h) {
-                          setState(() => _horizonHours = h);
-                          if (station != null) {
-                            ref.invalidate(predictionProvider((station.station, h)));
-                          }
-                        },
-                          theme: t,
-                        ),
-                        const SizedBox(height: 16),
-                        _ForecastGrid(
-                          prediction: prediction,
-                          horizonHours: _horizonHours,
-                          theme: t,
-                        ),
-                        const SizedBox(height: 16),
-                        _SparklineCard(
-                          prediction: prediction,
-                          horizonHours: _horizonHours,
-                          dangerLevel: station.danger,
-                          warningLevel: station.warning,
-                          theme: t,
-                        ),
-                        const SizedBox(height: 16),
-                        _ModelMetaCard(prediction: prediction, theme: t),
-                        const SizedBox(height: 16),
-                        _ActionAdviceCard(
-                          severity: _severityFromPrediction(prediction),
-                          theme: t,
-                        ),
-                      ],
-                    ]),
-                  ),
+                      _ForecastGrid(
+                        prediction: prediction,
+                        horizonHours: _horizonHours,
+                        theme: t,
+                      ),
+                      const SizedBox(height: 16),
+                      _SparklineCard(
+                        prediction: prediction,
+                        horizonHours: _horizonHours,
+                        dangerLevel: station.danger,
+                        warningLevel: station.warning,
+                        theme: t,
+                      ),
+                      const SizedBox(height: 16),
+                      _ModelMetaCard(prediction: prediction, theme: t),
+                      const SizedBox(height: 16),
+                      _ActionAdviceCard(
+                        severity: _severityFromPrediction(prediction),
+                        theme: t,
+                      ),
+                    ],
+                  ]),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
+      ),
     );
   }
 
@@ -241,13 +243,16 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
         title: Row(
           children: [
             Container(
-              width: 32, height: 32,
+              width: 32,
+              height: 32,
               decoration: BoxDecoration(
                 color: const Color(0xFF4CB3FF).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF4CB3FF).withValues(alpha: 0.25)),
+                border: Border.all(
+                    color: const Color(0xFF4CB3FF).withValues(alpha: 0.25)),
               ),
-              child: const Icon(Icons.auto_graph_rounded, color: Color(0xFF4CB3FF), size: 17),
+              child: const Icon(Icons.auto_graph_rounded,
+                  color: Color(0xFF4CB3FF), size: 17),
             ),
             const SizedBox(width: 10),
             Column(
@@ -255,15 +260,21 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text('LSTM Flood Prediction',
-                  style: TextStyle(color: t.textPrimary, fontSize: 15, fontWeight: FontWeight.w700, letterSpacing: 0.2)),
-                Text('BiLSTM · Bihar · Live', style: TextStyle(color: t.textSecondary, fontSize: 10)),
+                    style: TextStyle(
+                        color: t.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.2)),
+                Text('BiLSTM · Bihar · Live',
+                    style: TextStyle(color: t.textSecondary, fontSize: 10)),
               ],
             ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.info_outline_rounded, color: Color(0xFF7A8290)),
+            icon: const Icon(Icons.info_outline_rounded,
+                color: Color(0xFF7A8290)),
             tooltip: 'About this model',
             onPressed: () => _showModelInfo(context, t),
           ),
@@ -289,15 +300,12 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
                     fontSize: 18,
                     fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
-            _infoRow(t, 'Architecture',
-                'Bidirectional LSTM + Ensemble blend'),
+            _infoRow(t, 'Architecture', 'Bidirectional LSTM + Ensemble blend'),
             _infoRow(t, 'Input features',
                 '11 features: peak level, duration, 7-day rainfall'),
             _infoRow(t, 'Forecast window', '24h / 48h / 72h'),
-            _infoRow(t, 'Training data',
-                'CWC Bihar stations 2000–2026'),
-            _infoRow(t, 'Blend weights',
-                'ML 70% + Rule engine 30%'),
+            _infoRow(t, 'Training data', 'CWC Bihar stations 2000–2026'),
+            _infoRow(t, 'Blend weights', 'ML 70% + Rule engine 30%'),
             _infoRow(t, 'Terrain calibration',
                 'PLAINS / HIMALAYAN / COASTAL / ARID'),
             const SizedBox(height: 8),
@@ -305,9 +313,7 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
               'Predictions are probabilistic estimates. '
               'Always follow official CWC / NDRF advisories.',
               style: TextStyle(
-                  color: const Color(0xFF7A8290),
-                  fontSize: 12,
-                  height: 1.5),
+                  color: const Color(0xFF7A8290), fontSize: 12, height: 1.5),
             ),
           ],
         ),
@@ -322,8 +328,8 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
             SizedBox(
               width: 150,
               child: Text(label,
-                  style: const TextStyle(
-                      color: Color(0xFF7A8290), fontSize: 13)),
+                  style:
+                      const TextStyle(color: Color(0xFF7A8290), fontSize: 13)),
             ),
             Expanded(
               child: Text(value,
@@ -343,9 +349,9 @@ class _PredictScreenState extends ConsumerState<PredictScreen>
 
 class _StationPickerCard extends StatefulWidget {
   final List<RiverStation> stations;
-  final String?            selectedId;
+  final String? selectedId;
   final ValueChanged<String?> onChanged;
-  final RiverColors        theme;
+  final RiverColors theme;
 
   const _StationPickerCard({
     required this.stations,
@@ -359,9 +365,9 @@ class _StationPickerCard extends StatefulWidget {
 }
 
 class _StationPickerCardState extends State<_StationPickerCard> {
-  final _ctrl    = TextEditingController();
-  final _focus   = FocusNode();
-  bool  _open    = false;
+  final _ctrl = TextEditingController();
+  final _focus = FocusNode();
+  bool _open = false;
   List<RiverStation> _results = [];
 
   @override
@@ -371,25 +377,35 @@ class _StationPickerCardState extends State<_StationPickerCard> {
   }
 
   @override
-  void dispose() { _ctrl.dispose(); _focus.dispose(); super.dispose(); }
+  void dispose() {
+    _ctrl.dispose();
+    _focus.dispose();
+    super.dispose();
+  }
 
   void _onChanged(String q) {
     final query = q.toLowerCase().trim();
     setState(() {
       _results = query.isEmpty
           ? widget.stations
-          : widget.stations.where((s) =>
-              s.city.toLowerCase().contains(query) ||
-              s.river.toLowerCase().contains(query)).toList();
+          : widget.stations
+              .where((s) =>
+                  s.city.toLowerCase().contains(query) ||
+                  s.river.toLowerCase().contains(query))
+              .toList();
     });
   }
 
   Color _dotColor(DangerClass cls) {
     switch (cls) {
-      case DangerClass.extreme:     return const Color(0xFFFF4D5A);
-      case DangerClass.severe:      return const Color(0xFFFF8C42);
-      case DangerClass.aboveNormal: return const Color(0xFFFFC857);
-      default:                      return const Color(0xFF3ACC8A);
+      case DangerClass.extreme:
+        return const Color(0xFFFF4D5A);
+      case DangerClass.severe:
+        return const Color(0xFFFF8C42);
+      case DangerClass.aboveNormal:
+        return const Color(0xFFFFC857);
+      default:
+        return const Color(0xFF3ACC8A);
     }
   }
 
@@ -404,52 +420,66 @@ class _StationPickerCardState extends State<_StationPickerCard> {
       children: [
         // ── Search input ─────────────────────────────────────────────
         GestureDetector(
-          onTap: () => setState(() { _open = !_open; if (_open) _focus.requestFocus(); }),
+          onTap: () => setState(() {
+            _open = !_open;
+            if (_open) _focus.requestFocus();
+          }),
           child: Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF0F141B),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: _open ? const Color(0xFF4CB3FF).withValues(alpha: 0.5) : const Color(0xFF232934))),
+                color: const Color(0xFF0F141B),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                    color: _open
+                        ? const Color(0xFF4CB3FF).withValues(alpha: 0.5)
+                        : const Color(0xFF232934))),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             child: Row(children: [
               Icon(Icons.search_rounded,
-                color: _open ? const Color(0xFF4CB3FF) : const Color(0xFF7A8290), size: 18),
+                  color:
+                      _open ? const Color(0xFF4CB3FF) : const Color(0xFF7A8290),
+                  size: 18),
               const SizedBox(width: 10),
               Expanded(
                 child: _open
                     ? Material(
                         color: Colors.transparent,
                         child: TextField(
-                        controller: _ctrl,
-                        focusNode: _focus,
-                        onChanged: _onChanged,
-                        style: TextStyle(color: t.textPrimary, fontSize: 14),
-                        decoration: InputDecoration(
-                          hintText: 'Search station or river…',
-                          hintStyle: TextStyle(color: t.textSecondary, fontSize: 14),
-                          border: InputBorder.none,
-                          isDense: true,
-                          contentPadding: EdgeInsets.zero,
+                          controller: _ctrl,
+                          focusNode: _focus,
+                          onChanged: _onChanged,
+                          style: TextStyle(color: t.textPrimary, fontSize: 14),
+                          decoration: InputDecoration(
+                            hintText: 'Search station or river…',
+                            hintStyle:
+                                TextStyle(color: t.textSecondary, fontSize: 14),
+                            border: InputBorder.none,
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                          ),
                         ),
-                      ),
-                    )
+                      )
                     : Text(
                         _selected != null
                             ? '${_selected!.city}  •  ${_selected!.river}'
                             : 'Select station to predict',
                         style: TextStyle(
-                          color: _selected != null ? t.textPrimary : t.textSecondary,
-                          fontSize: 14),
+                            color: _selected != null
+                                ? t.textPrimary
+                                : t.textSecondary,
+                            fontSize: 14),
                       ),
               ),
               if (_open && _ctrl.text.isNotEmpty)
                 GestureDetector(
-                  onTap: () { _ctrl.clear(); _onChanged(''); },
-                  child: Icon(Icons.close_rounded, color: const Color(0xFF7A8290), size: 16)),
+                    onTap: () {
+                      _ctrl.clear();
+                      _onChanged('');
+                    },
+                    child: Icon(Icons.close_rounded,
+                        color: const Color(0xFF7A8290), size: 16)),
               if (!_open)
                 Icon(Icons.keyboard_arrow_down_rounded,
-                  color: const Color(0xFF4CB3FF), size: 20),
+                    color: const Color(0xFF4CB3FF), size: 20),
             ]),
           ),
         ),
@@ -459,41 +489,61 @@ class _StationPickerCardState extends State<_StationPickerCard> {
             margin: const EdgeInsets.only(top: 4),
             constraints: const BoxConstraints(maxHeight: 220),
             decoration: BoxDecoration(
-              color: const Color(0xFF0F141B),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFF232934))),
+                color: const Color(0xFF0F141B),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFF232934))),
             child: ListView.builder(
               shrinkWrap: true,
               itemCount: _results.length,
               itemBuilder: (_, i) {
-                final s   = _results[i];
+                final s = _results[i];
                 final dot = _dotColor(s.dangerClass);
                 final sel = s.station == widget.selectedId;
                 return InkWell(
                   onTap: () {
                     widget.onChanged(s.station);
                     _ctrl.clear();
-                    setState(() { _open = false; _results = widget.stations; });
+                    setState(() {
+                      _open = false;
+                      _results = widget.stations;
+                    });
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
-                      color: sel ? const Color(0xFF4CB3FF).withValues(alpha: 0.08) : Colors.transparent),
+                        color: sel
+                            ? const Color(0xFF4CB3FF).withValues(alpha: 0.08)
+                            : Colors.transparent),
                     child: Row(children: [
-                      Container(width: 8, height: 8,
-                        margin: const EdgeInsets.only(right: 10),
-                        decoration: BoxDecoration(color: dot, shape: BoxShape.circle)),
+                      Container(
+                          width: 8,
+                          height: 8,
+                          margin: const EdgeInsets.only(right: 10),
+                          decoration: BoxDecoration(
+                              color: dot, shape: BoxShape.circle)),
                       Expanded(
-                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text(s.city, style: TextStyle(
-                            color: sel ? const Color(0xFF4CB3FF) : t.textPrimary,
-                            fontSize: 13, fontWeight: FontWeight.w600)),
-                          Text(s.river, style: TextStyle(color: t.textSecondary, fontSize: 11)),
-                        ]),
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(s.city,
+                                  style: TextStyle(
+                                      color: sel
+                                          ? const Color(0xFF4CB3FF)
+                                          : t.textPrimary,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600)),
+                              Text(s.river,
+                                  style: TextStyle(
+                                      color: t.textSecondary, fontSize: 11)),
+                            ]),
                       ),
                       if (s.current > 0)
                         Text('${s.current.toStringAsFixed(1)} m',
-                          style: const TextStyle(color: Color(0xFF4CB3FF), fontSize: 11, fontWeight: FontWeight.w600)),
+                            style: const TextStyle(
+                                color: Color(0xFF4CB3FF),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600)),
                     ]),
                   ),
                 );
@@ -510,9 +560,9 @@ class _StationPickerCardState extends State<_StationPickerCard> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _CurrentLevelCard extends StatelessWidget {
-  final RiverStation      station;
-  final FloodPrediction   prediction;
-  final RiverColors       theme;
+  final RiverStation station;
+  final FloodPrediction prediction;
+  final RiverColors theme;
   final Animation<double> pulseAnim;
 
   const _CurrentLevelCard({
@@ -524,16 +574,18 @@ class _CurrentLevelCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pct      = (prediction.progressPct).clamp(0.0, 100.0);
+    final pct = (prediction.progressPct).clamp(0.0, 100.0);
     final barColor = _barColor(pct);
-    final isAlert  = pct >= 80;
+    final isAlert = pct >= 80;
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF0F141B),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isAlert ? barColor.withValues(alpha: 0.5) : const Color(0xFF232934))),
-      
+          color: const Color(0xFF0F141B),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+              color: isAlert
+                  ? barColor.withValues(alpha: 0.5)
+                  : const Color(0xFF232934))),
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -584,8 +636,8 @@ class _CurrentLevelCard extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Text(
                   '${pct.toStringAsFixed(1)}% of danger',
-                  style: const TextStyle(
-                      color: Color(0xFF7A8290), fontSize: 13),
+                  style:
+                      const TextStyle(color: Color(0xFF7A8290), fontSize: 13),
                 ),
               ),
             ],
@@ -596,8 +648,7 @@ class _CurrentLevelCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: pct / 100,
               minHeight: 8,
-              backgroundColor:
-                  const Color(0xFF1A2030).withValues(alpha: 0.6),
+              backgroundColor: const Color(0xFF1A2030).withValues(alpha: 0.6),
               valueColor: AlwaysStoppedAnimation<Color>(barColor),
             ),
           ),
@@ -624,8 +675,8 @@ class _CurrentLevelCard extends StatelessWidget {
 
   Color _barColor(double pct) {
     if (pct >= 100) return const Color(0xFFFF4D5A);
-    if (pct >= 80)  return AppPalette.danger;
-    if (pct >= 60)  return const Color(0xFFFFC857);
+    if (pct >= 80) return AppPalette.danger;
+    if (pct >= 60) return const Color(0xFFFFC857);
     return const Color(0xFF3ACC8A);
   }
 }
@@ -635,9 +686,9 @@ class _CurrentLevelCard extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _HorizonSelector extends StatelessWidget {
-  final int               selected;
+  final int selected;
   final ValueChanged<int> onChanged;
-  final RiverColors       theme;
+  final RiverColors theme;
 
   const _HorizonSelector({
     required this.selected,
@@ -673,12 +724,8 @@ class _HorizonSelector extends StatelessWidget {
                 '${h}h',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: active
-                      ? const Color(0xFF4CB3FF)
-                      : theme.textSecondary,
-                  fontWeight: active
-                      ? FontWeight.bold
-                      : FontWeight.normal,
+                  color: active ? const Color(0xFF4CB3FF) : theme.textSecondary,
+                  fontWeight: active ? FontWeight.bold : FontWeight.normal,
                   fontSize: 15,
                 ),
               ),
@@ -696,8 +743,8 @@ class _HorizonSelector extends StatelessWidget {
 
 class _ForecastGrid extends StatelessWidget {
   final FloodPrediction prediction;
-  final int             horizonHours;
-  final RiverColors     theme;
+  final int horizonHours;
+  final RiverColors theme;
 
   const _ForecastGrid({
     required this.prediction,
@@ -730,7 +777,7 @@ class _ForecastGrid extends StatelessWidget {
 
     return Row(
       children: cards.map((c) {
-        final pct   = (c.level / (c.danger > 0 ? c.danger : c.level * 1.3) * 100)
+        final pct = (c.level / (c.danger > 0 ? c.danger : c.level * 1.3) * 100)
             .clamp(0.0, 100.0);
         final color = _pctColor(pct);
         return Expanded(
@@ -770,8 +817,7 @@ class _ForecastGrid extends StatelessWidget {
                 Text(
                   '${pct.toStringAsFixed(0)}%',
                   style: TextStyle(
-                      color: color.withValues(alpha: 0.7),
-                      fontSize: 11),
+                      color: color.withValues(alpha: 0.7), fontSize: 11),
                 ),
                 const SizedBox(height: 8),
                 ClipRRect(
@@ -794,8 +840,8 @@ class _ForecastGrid extends StatelessWidget {
 
   Color _pctColor(double pct) {
     if (pct >= 100) return const Color(0xFFFF4D5A);
-    if (pct >= 80)  return AppPalette.danger;
-    if (pct >= 60)  return const Color(0xFFFFC857);
+    if (pct >= 80) return AppPalette.danger;
+    if (pct >= 60) return const Color(0xFFFFC857);
     return const Color(0xFF3ACC8A);
   }
 }
@@ -804,7 +850,7 @@ class _ForecastData {
   final String label;
   final double level;
   final double danger;
-  final bool   active;
+  final bool active;
   const _ForecastData({
     required this.label,
     required this.level,
@@ -819,10 +865,10 @@ class _ForecastData {
 
 class _SparklineCard extends StatelessWidget {
   final FloodPrediction prediction;
-  final int             horizonHours;
-  final double          dangerLevel;
-  final double          warningLevel;
-  final RiverColors     theme;
+  final int horizonHours;
+  final double dangerLevel;
+  final double warningLevel;
+  final RiverColors theme;
 
   const _SparklineCard({
     required this.prediction,
@@ -848,13 +894,19 @@ class _SparklineCard extends StatelessWidget {
     ].reduce(math.max);
     final minY = series.map((p) => p.level).reduce(math.min) * 0.95;
 
-    final spots = series.asMap().entries
+    final spots = series
+        .asMap()
+        .entries
         .map((e) => FlSpot(e.key.toDouble(), e.value.level))
         .toList();
-    final dangerSpots = series.asMap().entries
+    final dangerSpots = series
+        .asMap()
+        .entries
         .map((e) => FlSpot(e.key.toDouble(), dangerLevel))
         .toList();
-    final warnSpots = series.asMap().entries
+    final warnSpots = series
+        .asMap()
+        .entries
         .map((e) => FlSpot(e.key.toDouble(), warningLevel))
         .toList();
 
@@ -1005,7 +1057,7 @@ class _SparklineCard extends StatelessWidget {
 
 class _ModelMetaCard extends StatelessWidget {
   final FloodPrediction prediction;
-  final RiverColors     theme;
+  final RiverColors theme;
   const _ModelMetaCard({required this.prediction, required this.theme});
 
   @override
@@ -1032,13 +1084,12 @@ class _ModelMetaCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          _metaRow('Confidence',
-              '${prediction.confidencePct.toStringAsFixed(0)}%'),
-          _metaRow('Risk Score',
-              prediction.riskScore.toStringAsFixed(2)),
-          _metaRow('Trend',     prediction.trend),
-          _metaRow('Model',     prediction.modelVersion),
-          _metaRow('Outlook',   prediction.outlook),
+          _metaRow(
+              'Confidence', '${prediction.confidencePct.toStringAsFixed(0)}%'),
+          _metaRow('Risk Score', prediction.riskScore.toStringAsFixed(2)),
+          _metaRow('Trend', prediction.trend),
+          _metaRow('Model', prediction.modelVersion),
+          _metaRow('Outlook', prediction.outlook),
         ],
       ),
     );
@@ -1051,8 +1102,8 @@ class _ModelMetaCard extends StatelessWidget {
             SizedBox(
               width: 100,
               child: Text(label,
-                  style: const TextStyle(
-                      color: Color(0xFF7A8290), fontSize: 12)),
+                  style:
+                      const TextStyle(color: Color(0xFF7A8290), fontSize: 12)),
             ),
             Expanded(
               child: Text(value,
@@ -1071,7 +1122,7 @@ class _ModelMetaCard extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _ActionAdviceCard extends StatelessWidget {
-  final String      severity;
+  final String severity;
   final RiverColors theme;
 
   const _ActionAdviceCard({
@@ -1092,8 +1143,7 @@ class _ActionAdviceCard extends StatelessWidget {
     'SEVERE': (
       icon: '⚠️',
       title: 'PREPARE TO EVACUATE — 6 h window',
-      body:
-          'Levels rising critically. Move valuables to upper floors. '
+      body: 'Levels rising critically. Move valuables to upper floors. '
           'Prepare go-bag: documents, medicines, 3 days of food and water. '
           'Await evacuation advisory. Avoid river banks.',
       color: Color(0xFFFF8C42),
@@ -1101,16 +1151,14 @@ class _ActionAdviceCard extends StatelessWidget {
     'MODERATE': (
       icon: '🟡',
       title: 'STAY ALERT — Monitor every 30 min',
-      body:
-          'Elevated but below danger threshold. Avoid crossing streams. '
+      body: 'Elevated but below danger threshold. Avoid crossing streams. '
           'Keep emergency kit ready. Monitor IMD alerts for upstream rainfall.',
       color: Color(0xFFFDD835),
     ),
     'LOW': (
       icon: '✅',
       title: 'NORMAL CONDITIONS',
-      body:
-          'Levels within safe range. Continue routine monitoring. '
+      body: 'Levels within safe range. Continue routine monitoring. '
           'Check forecast during heavy rain spells.',
       color: Color(0xFF43A047),
     ),
@@ -1123,10 +1171,9 @@ class _ActionAdviceCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF0F141B),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.45))
-      ),
+          color: const Color(0xFF0F141B),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withValues(alpha: 0.45))),
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1186,16 +1233,16 @@ class _TrendBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final IconData icon;
-    final Color    color;
+    final Color color;
     switch (trend) {
       case 'rising':
-        icon  = Icons.trending_up_rounded;
+        icon = Icons.trending_up_rounded;
         color = AppPalette.danger;
       case 'falling':
-        icon  = Icons.trending_down_rounded;
+        icon = Icons.trending_down_rounded;
         color = const Color(0xFF3ACC8A);
       default:
-        icon  = Icons.trending_flat_rounded;
+        icon = Icons.trending_flat_rounded;
         color = const Color(0xFFFFC857);
     }
     return Container(
@@ -1212,7 +1259,7 @@ class _TrendBadge extends StatelessWidget {
 class _ThresholdChip extends StatelessWidget {
   final String label;
   final double value;
-  final Color  color;
+  final Color color;
   const _ThresholdChip({
     required this.label,
     required this.value,
@@ -1233,14 +1280,11 @@ class _ThresholdChip extends StatelessWidget {
           children: [
             TextSpan(
                 text: '$label  ',
-                style: const TextStyle(
-                    color: Color(0xFF7A8290), fontSize: 11)),
+                style: const TextStyle(color: Color(0xFF7A8290), fontSize: 11)),
             TextSpan(
                 text: '${value.toStringAsFixed(2)} m',
                 style: TextStyle(
-                    color: color,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700)),
+                    color: color, fontSize: 11, fontWeight: FontWeight.w700)),
           ],
         ),
       ),
@@ -1249,7 +1293,7 @@ class _ThresholdChip extends StatelessWidget {
 }
 
 class _LegendDot extends StatelessWidget {
-  final Color  color;
+  final Color color;
   final String label;
   const _LegendDot({required this.color, required this.label});
 
@@ -1261,13 +1305,11 @@ class _LegendDot extends StatelessWidget {
         Container(
           width: 8,
           height: 8,
-          decoration:
-              BoxDecoration(color: color, shape: BoxShape.circle),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 4),
         Text(label,
-            style: const TextStyle(
-                color: Color(0xFF7A8290), fontSize: 10)),
+            style: const TextStyle(color: Color(0xFF7A8290), fontSize: 10)),
       ],
     );
   }
@@ -1289,8 +1331,7 @@ class _EmptyState extends StatelessWidget {
                 size: 56, color: const Color(0xFF7A8290)),
             const SizedBox(height: 16),
             Text('No stations available',
-                style: TextStyle(
-                    color: theme.textSecondary, fontSize: 15)),
+                style: TextStyle(color: theme.textSecondary, fontSize: 15)),
           ],
         ),
       ),
@@ -1299,7 +1340,7 @@ class _EmptyState extends StatelessWidget {
 }
 
 class _LoadingState extends StatelessWidget {
-  final RiverColors       theme;
+  final RiverColors theme;
   final Animation<double> pulseAnim;
   const _LoadingState({required this.theme, required this.pulseAnim});
 
@@ -1316,12 +1357,10 @@ class _LoadingState extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const CircularProgressIndicator(
-                    valueColor:
-                        AlwaysStoppedAnimation(AppPalette.cyan)),
+                    valueColor: AlwaysStoppedAnimation(AppPalette.cyan)),
                 const SizedBox(height: 16),
                 Text('Loading prediction…',
-                    style: TextStyle(
-                        color: theme.textSecondary, fontSize: 14)),
+                    style: TextStyle(color: theme.textSecondary, fontSize: 14)),
               ],
             ),
           ),
@@ -1330,7 +1369,6 @@ class _LoadingState extends StatelessWidget {
     );
   }
 }
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  All Cities Live Forecast  (Step 6.2)
@@ -1356,18 +1394,22 @@ class _AllCitiesForecastState extends ConsumerState<_AllCitiesForecast>
   }
 
   @override
-  void dispose() { _tabs.dispose(); super.dispose(); }
+  void dispose() {
+    _tabs.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final t     = widget.theme;
+    final t = widget.theme;
     final preds = ref.watch(biharBulkPredictionsProvider);
 
     return Container(
       decoration: BoxDecoration(
           color: const Color(0xFF0F141B),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFF4CB3FF).withValues(alpha: 0.20))),
+          border: Border.all(
+              color: const Color(0xFF4CB3FF).withValues(alpha: 0.20))),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1378,7 +1420,9 @@ class _AllCitiesForecastState extends ConsumerState<_AllCitiesForecast>
                   color: Color(0xFF4CB3FF), size: 16),
               const SizedBox(width: 8),
               Text('All Cities — Live Forecast',
-                  style: TextStyle(color: t.textPrimary, fontSize: 14,
+                  style: TextStyle(
+                      color: t.textPrimary,
+                      fontSize: 14,
                       fontWeight: FontWeight.w800)),
             ]),
           ),
@@ -1388,15 +1432,21 @@ class _AllCitiesForecastState extends ConsumerState<_AllCitiesForecast>
             indicatorColor: const Color(0xFF4CB3FF),
             labelColor: const Color(0xFF4CB3FF),
             unselectedLabelColor: const Color(0xFF7A8290),
-            labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-            tabs: const [Tab(text: '24 h'), Tab(text: '48 h'), Tab(text: '72 h')],
+            labelStyle:
+                const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+            tabs: const [
+              Tab(text: '24 h'),
+              Tab(text: '48 h'),
+              Tab(text: '72 h')
+            ],
           ),
           const SizedBox(height: 8),
           if (preds.isEmpty)
             Padding(
               padding: const EdgeInsets.all(24),
-              child: Center(child: Text('No live data yet',
-                  style: TextStyle(color: t.textSecondary))),
+              child: Center(
+                  child: Text('No live data yet',
+                      style: TextStyle(color: t.textSecondary))),
             )
           else
             ListView.separated(
@@ -1405,10 +1455,11 @@ class _AllCitiesForecastState extends ConsumerState<_AllCitiesForecast>
               padding: const EdgeInsets.fromLTRB(12, 0, 12, 14),
               itemCount: preds.length,
               separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (_, i) => RepaintBoundary(child: _CitySparkRow(
-                pred:       preds[i],
+              itemBuilder: (_, i) => RepaintBoundary(
+                  child: _CitySparkRow(
+                pred: preds[i],
                 horizonIdx: _horizonIdx,
-                theme:      t,
+                theme: t,
               )),
             ),
         ],
@@ -1423,8 +1474,8 @@ class _AllCitiesForecastState extends ConsumerState<_AllCitiesForecast>
 
 class _CitySparkRow extends StatelessWidget {
   final FloodPrediction pred;
-  final int             horizonIdx;
-  final RiverColors     theme;
+  final int horizonIdx;
+  final RiverColors theme;
   const _CitySparkRow({
     required this.pred,
     required this.horizonIdx,
@@ -1433,10 +1484,14 @@ class _CitySparkRow extends StatelessWidget {
 
   Color _sevColor() {
     switch (pred.severity.toUpperCase()) {
-      case 'CRITICAL': return const Color(0xFFFF4D5A);
-      case 'SEVERE':   return const Color(0xFFFF8C42);
-      case 'MODERATE': return const Color(0xFFFFC857);
-      default:         return const Color(0xFF3ACC8A);
+      case 'CRITICAL':
+        return const Color(0xFFFF4D5A);
+      case 'SEVERE':
+        return const Color(0xFFFF8C42);
+      case 'MODERATE':
+        return const Color(0xFFFFC857);
+      default:
+        return const Color(0xFF3ACC8A);
     }
   }
 
@@ -1446,7 +1501,9 @@ class _CitySparkRow extends StatelessWidget {
         : horizonIdx == 1
             ? pred.next48h
             : pred.next72h;
-    return series.asMap().entries
+    return series
+        .asMap()
+        .entries
         .map((e) => FlSpot(e.key.toDouble(), e.value.level))
         .toList();
   }
@@ -1459,9 +1516,9 @@ class _CitySparkRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c     = _sevColor();
+    final c = _sevColor();
     final spots = _spots();
-    final bar   = (pred.riskScore / 100).clamp(0.0, 1.0);
+    final bar = (pred.riskScore / 100).clamp(0.0, 1.0);
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -1477,9 +1534,12 @@ class _CitySparkRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(pred.station.split(' (').first,
-                  style: TextStyle(color: theme.textPrimary,
-                      fontSize: 12, fontWeight: FontWeight.w800),
-                  maxLines: 1, overflow: TextOverflow.ellipsis),
+                  style: TextStyle(
+                      color: theme.textPrimary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis),
               const SizedBox(height: 3),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -1488,18 +1548,19 @@ class _CitySparkRow extends StatelessWidget {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(pred.severity,
-                    style: TextStyle(color: c, fontSize: 9,
-                        fontWeight: FontWeight.w900)),
+                    style: TextStyle(
+                        color: c, fontSize: 9, fontWeight: FontWeight.w900)),
               ),
               const SizedBox(height: 6),
               Text('${_peakLevel.toStringAsFixed(2)} m',
-                  style: TextStyle(color: c, fontSize: 13,
-                      fontWeight: FontWeight.w900)),
+                  style: TextStyle(
+                      color: c, fontSize: 13, fontWeight: FontWeight.w900)),
               const SizedBox(height: 4),
               ClipRRect(
                 borderRadius: BorderRadius.circular(3),
                 child: LinearProgressIndicator(
-                  value: bar, minHeight: 4,
+                  value: bar,
+                  minHeight: 4,
                   backgroundColor: c.withValues(alpha: 0.12),
                   valueColor: AlwaysStoppedAnimation<Color>(c),
                 ),
@@ -1509,32 +1570,38 @@ class _CitySparkRow extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         SizedBox(
-          width: 120, height: 60,
+          width: 120,
+          height: 60,
           child: spots.length < 2
-              ? Center(child: Text('…',
-                  style: TextStyle(color: theme.textSecondary)))
+              ? Center(
+                  child:
+                      Text('…', style: TextStyle(color: theme.textSecondary)))
               : LineChart(
                   LineChartData(
-                    gridData:   const FlGridData(show: false),
+                    gridData: const FlGridData(show: false),
                     borderData: FlBorderData(show: false),
                     titlesData: const FlTitlesData(
-                      leftTitles:   AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      rightTitles:  AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      topTitles:    AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      leftTitles:
+                          AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      rightTitles:
+                          AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      topTitles:
+                          AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      bottomTitles:
+                          AxisTitles(sideTitles: SideTitles(showTitles: false)),
                     ),
                     lineBarsData: [
                       LineChartBarData(
-                        spots:    spots,
+                        spots: spots,
                         isCurved: true,
-                        color:    c,
+                        color: c,
                         barWidth: 2,
-                        dotData:  const FlDotData(show: false),
+                        dotData: const FlDotData(show: false),
                         belowBarData: BarAreaData(
                           show: true,
                           gradient: LinearGradient(
                             begin: Alignment.topCenter,
-                            end:   Alignment.bottomCenter,
+                            end: Alignment.bottomCenter,
                             colors: [
                               c.withValues(alpha: 0.25),
                               c.withValues(alpha: 0.0),

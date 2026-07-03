@@ -29,17 +29,16 @@ class _InjectingClient extends http.BaseClient {
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     final response = await _inner.send(request);
-    final merged = Map<String, String>.from(response.headers)
-      ..addAll(_inject);
+    final merged = Map<String, String>.from(response.headers)..addAll(_inject);
     return http.StreamedResponse(
       response.stream,
       response.statusCode,
       contentLength: response.contentLength,
-      request:       response.request,
-      headers:       merged,
-      isRedirect:    response.isRedirect,
+      request: response.request,
+      headers: merged,
+      isRedirect: response.isRedirect,
       persistentConnection: response.persistentConnection,
-      reasonPhrase:  response.reasonPhrase,
+      reasonPhrase: response.reasonPhrase,
     );
   }
 

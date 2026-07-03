@@ -6,14 +6,14 @@ import 'package:flutter/material.dart';
 import '../theme/river_theme.dart';
 
 class OpsBarChart extends StatelessWidget {
-  final List<double>  values;
-  final List<String>  labels;
-  final List<Color>?  colors;      // per-bar color (optional)
-  final Color         defaultColor;
-  final double        maxY;
-  final String        yUnit;
-  final double        barWidth;
-  final double        height;
+  final List<double> values;
+  final List<String> labels;
+  final List<Color>? colors; // per-bar color (optional)
+  final Color defaultColor;
+  final double maxY;
+  final String yUnit;
+  final double barWidth;
+  final double height;
 
   const OpsBarChart({
     super.key,
@@ -21,10 +21,10 @@ class OpsBarChart extends StatelessWidget {
     required this.labels,
     this.colors,
     this.defaultColor = AppPalette.cyan,
-    this.maxY         = 100,
-    this.yUnit        = '%',
-    this.barWidth     = 16,
-    this.height       = 160,
+    this.maxY = 100,
+    this.yUnit = '%',
+    this.barWidth = 16,
+    this.height = 160,
   });
 
   Color _colorFor(int i, double v) {
@@ -60,9 +60,12 @@ class OpsBarChart extends StatelessWidget {
             ),
           ),
           titlesData: FlTitlesData(
-            topTitles:   const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            leftTitles:  const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            leftTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
@@ -73,9 +76,12 @@ class OpsBarChart extends StatelessWidget {
                   return Padding(
                     padding: const EdgeInsets.only(top: 6),
                     child: Text(
-                      labels[i].length > 6 ? labels[i].substring(0, 6) : labels[i],
+                      labels[i].length > 6
+                          ? labels[i].substring(0, 6)
+                          : labels[i],
                       style: const TextStyle(
-                        fontSize: 8, color: AppPalette.textGrey,
+                        fontSize: 8,
+                        color: AppPalette.textGrey,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -105,8 +111,8 @@ class OpsBarChart extends StatelessWidget {
                 BarChartRodData(
                   toY: v,
                   width: barWidth,
-                  borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(6)),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(6)),
                   gradient: LinearGradient(
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,

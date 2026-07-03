@@ -11,8 +11,9 @@ import '../services/ws_gauge_service.dart';
 
 final wsLiveProvider = StreamProvider<List<FloodData>>((ref) {
   final svc = WsGaugeService.instance;
-  svc.start();         // idempotent — safe to call multiple times
-  ref.onDispose(() {   // do NOT dispose singleton; just cancel this sub
+  svc.start(); // idempotent — safe to call multiple times
+  ref.onDispose(() {
+    // do NOT dispose singleton; just cancel this sub
     // WsGaugeService is a singleton; we never fully dispose it here
   });
   return svc.stream;

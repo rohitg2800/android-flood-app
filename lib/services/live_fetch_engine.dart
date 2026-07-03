@@ -24,11 +24,11 @@ import 'wrd_bihar_service.dart';
 // CircuitBreaker
 // ─────────────────────────────────────────────────────────────────────────────
 class _CircuitBreaker {
-  static const int    _threshold   = 5;
+  static const int _threshold = 5;
   static const Duration _halfOpenAfter = Duration(seconds: 30);
 
-  int       _failures  = 0;
-  bool      _open      = false;
+  int _failures = 0;
+  bool _open = false;
   DateTime? _openedAt;
 
   bool get isOpen {
@@ -44,14 +44,14 @@ class _CircuitBreaker {
 
   void recordSuccess() {
     _failures = 0;
-    _open     = false;
+    _open = false;
     _openedAt = null;
   }
 
   void recordFailure() {
     _failures++;
     if (_failures >= _threshold) {
-      _open     = true;
+      _open = true;
       _openedAt = DateTime.now();
     }
   }
@@ -81,29 +81,28 @@ class SharedFetchCoordinator {
 // ─────────────────────────────────────────────────────────────────────────────
 class VersionedDataCache<T> {
   final Duration ttl;
-  T?        _value;
+  T? _value;
   DateTime? _fetchedAt;
-  String?   _etag;
+  String? _etag;
 
   VersionedDataCache({required this.ttl});
 
   bool get isStale =>
-      _fetchedAt == null ||
-      DateTime.now().difference(_fetchedAt!) >= ttl;
+      _fetchedAt == null || DateTime.now().difference(_fetchedAt!) >= ttl;
 
   T? get value => _value;
   String? get etag => _etag;
 
   void set(T value, {String? etag}) {
-    _value     = value;
+    _value = value;
     _fetchedAt = DateTime.now();
-    _etag      = etag;
+    _etag = etag;
   }
 
   void invalidate() {
     _fetchedAt = null;
-    _value     = null;
-    _etag      = null;
+    _value = null;
+    _etag = null;
   }
 }
 
@@ -111,10 +110,10 @@ class VersionedDataCache<T> {
 // SourceHealth
 // ─────────────────────────────────────────────────────────────────────────────
 class SourceHealth {
-  final bool      healthy;
-  final int?      latencyMs;
+  final bool healthy;
+  final int? latencyMs;
   final DateTime? lastSuccessAt;
-  final String?   lastError;
+  final String? lastError;
 
   const SourceHealth({
     required this.healthy,
@@ -124,22 +123,22 @@ class SourceHealth {
   });
 
   const SourceHealth.unknown()
-      : healthy       = false,
-        latencyMs     = null,
+      : healthy = false,
+        latencyMs = null,
         lastSuccessAt = null,
-        lastError     = null;
+        lastError = null;
 
   SourceHealth copyWith({
-    bool?     healthy,
-    int?      latencyMs,
+    bool? healthy,
+    int? latencyMs,
     DateTime? lastSuccessAt,
-    String?   lastError,
+    String? lastError,
   }) =>
       SourceHealth(
-        healthy:       healthy       ?? this.healthy,
-        latencyMs:     latencyMs     ?? this.latencyMs,
+        healthy: healthy ?? this.healthy,
+        latencyMs: latencyMs ?? this.latencyMs,
         lastSuccessAt: lastSuccessAt ?? this.lastSuccessAt,
-        lastError:     lastError     ?? this.lastError,
+        lastError: lastError ?? this.lastError,
       );
 }
 
@@ -147,20 +146,20 @@ class SourceHealth {
 // LiveCityData  (v4.2)
 // ─────────────────────────────────────────────────────────────────────────────
 class LiveCityData {
-  final double?   currentLevel;
-  final double    warningLevel;
-  final double    dangerLevel;
-  final double?   flowRate;
-  final double?   rainfall24h;
-  final String?   riskLevel;
-  final DateTime  lastUpdated;
+  final double? currentLevel;
+  final double warningLevel;
+  final double dangerLevel;
+  final double? flowRate;
+  final double? rainfall24h;
+  final String? riskLevel;
+  final DateTime lastUpdated;
 
   // v4.2 ML fields
-  final String?  predictedSeverity;
-  final int?     riskScore;
-  final double?  confidencePercent;
-  final bool?    willBreachDanger;
-  final double?  peakLevel72h;
+  final String? predictedSeverity;
+  final int? riskScore;
+  final double? confidencePercent;
+  final bool? willBreachDanger;
+  final double? peakLevel72h;
 
   const LiveCityData({
     this.currentLevel,
@@ -185,57 +184,57 @@ class LiveCityData {
       'rain=${rainfall24h}mm, level=$currentLevel m)';
 
   LiveCityData copyWith({
-    double?   currentLevel,
-    double?   warningLevel,
-    double?   dangerLevel,
-    double?   flowRate,
-    double?   rainfall24h,
-    String?   riskLevel,
+    double? currentLevel,
+    double? warningLevel,
+    double? dangerLevel,
+    double? flowRate,
+    double? rainfall24h,
+    String? riskLevel,
     DateTime? lastUpdated,
-    String?   predictedSeverity,
-    int?      riskScore,
-    double?   confidencePercent,
-    bool?     willBreachDanger,
-    double?   peakLevel72h,
+    String? predictedSeverity,
+    int? riskScore,
+    double? confidencePercent,
+    bool? willBreachDanger,
+    double? peakLevel72h,
   }) =>
       LiveCityData(
-        currentLevel:      currentLevel      ?? this.currentLevel,
-        warningLevel:      warningLevel      ?? this.warningLevel,
-        dangerLevel:       dangerLevel       ?? this.dangerLevel,
-        flowRate:          flowRate          ?? this.flowRate,
-        rainfall24h:       rainfall24h       ?? this.rainfall24h,
-        riskLevel:         riskLevel         ?? this.riskLevel,
-        lastUpdated:       lastUpdated       ?? this.lastUpdated,
+        currentLevel: currentLevel ?? this.currentLevel,
+        warningLevel: warningLevel ?? this.warningLevel,
+        dangerLevel: dangerLevel ?? this.dangerLevel,
+        flowRate: flowRate ?? this.flowRate,
+        rainfall24h: rainfall24h ?? this.rainfall24h,
+        riskLevel: riskLevel ?? this.riskLevel,
+        lastUpdated: lastUpdated ?? this.lastUpdated,
         predictedSeverity: predictedSeverity ?? this.predictedSeverity,
-        riskScore:         riskScore         ?? this.riskScore,
+        riskScore: riskScore ?? this.riskScore,
         confidencePercent: confidencePercent ?? this.confidencePercent,
-        willBreachDanger:  willBreachDanger  ?? this.willBreachDanger,
-        peakLevel72h:      peakLevel72h      ?? this.peakLevel72h,
+        willBreachDanger: willBreachDanger ?? this.willBreachDanger,
+        peakLevel72h: peakLevel72h ?? this.peakLevel72h,
       );
 
   FloodData toFloodData(String city, String state,
       {String? riverName, String district = ''}) {
     final level = currentLevel ?? 0.0;
     return FloodData(
-      city:              city,
-      district:          district,
-      state:             state,
-      riverName:         riverName,
-      currentLevel:      level,
-      warningLevel:      warningLevel,
-      dangerLevel:       dangerLevel,
-      flowRate:          flowRate,
-      imdRainfallMm:     rainfall24h,
-      lastUpdated:       lastUpdated,
-      stationId:         '',
-      stationName:       city,
-      river:             riverName ?? '',
+      city: city,
+      district: district,
+      state: state,
+      riverName: riverName,
+      currentLevel: level,
+      warningLevel: warningLevel,
+      dangerLevel: dangerLevel,
+      flowRate: flowRate,
+      imdRainfallMm: rainfall24h,
+      lastUpdated: lastUpdated,
+      stationId: '',
+      stationName: city,
+      river: riverName ?? '',
       // v4.2 ML fields
       predictedSeverity: predictedSeverity,
-      riskScore:         riskScore,
+      riskScore: riskScore,
       confidencePercent: confidencePercent,
-      willBreachDanger:  willBreachDanger,
-      peakLevel72h:      peakLevel72h,
+      willBreachDanger: willBreachDanger,
+      peakLevel72h: peakLevel72h,
     );
   }
 }
@@ -244,42 +243,46 @@ class LiveCityData {
 // LiveFetchEngine  (v4.2)
 // ─────────────────────────────────────────────────────────────────────────────
 class LiveFetchEngine {
-  static const _cacheTtl     = Duration(minutes: 5);
+  static const _cacheTtl = Duration(minutes: 5);
   static const _pollInterval = Duration(seconds: 30);
 
   static final List<Map<String, dynamic>> _allCities =
       List.unmodifiable(IndiaGeodata.monitoredCities);
 
-  final _cbWrd     = _CircuitBreaker();
-  final _cbGlofas  = _CircuitBreaker();
-  final _cbRain    = _CircuitBreaker();
-  final _cbSev     = _CircuitBreaker(); // circuit-breaker for severity endpoint
+  final _cbWrd = _CircuitBreaker();
+  final _cbGlofas = _CircuitBreaker();
+  final _cbRain = _CircuitBreaker();
+  final _cbSev = _CircuitBreaker(); // circuit-breaker for severity endpoint
 
-  final _wrdCache    = VersionedDataCache<List<WrdStation>>(ttl: const Duration(minutes: 5));
-  final _glofasCache = VersionedDataCache<List<Map<String, dynamic>>>(ttl: const Duration(minutes: 5));
-  final _rainCache   = VersionedDataCache<List<Map<String, dynamic>>>(ttl: const Duration(minutes: 5));
-  final _sevCache    = VersionedDataCache<Map<String, Map<String, dynamic>>>(ttl: const Duration(minutes: 5));
+  final _wrdCache =
+      VersionedDataCache<List<WrdStation>>(ttl: const Duration(minutes: 5));
+  final _glofasCache = VersionedDataCache<List<Map<String, dynamic>>>(
+      ttl: const Duration(minutes: 5));
+  final _rainCache = VersionedDataCache<List<Map<String, dynamic>>>(
+      ttl: const Duration(minutes: 5));
+  final _sevCache = VersionedDataCache<Map<String, Map<String, dynamic>>>(
+      ttl: const Duration(minutes: 5));
 
   final Map<String, LiveCityData> _cache = {};
-  DateTime?  _lastFetch;
-  Timer?     _pollTimer;
-  bool       _isLoading    = false;
-  bool       _isOnline     = true;
-  bool       _isWakingUp   = false;
-  bool       _isUsingCache = false;
-  String?    _error;
-  int        _queuedOffline = 0;
-  int        _retryCount    = 0;
-  final int  _wakeAttempts  = 0;
+  DateTime? _lastFetch;
+  Timer? _pollTimer;
+  bool _isLoading = false;
+  bool _isOnline = true;
+  bool _isWakingUp = false;
+  bool _isUsingCache = false;
+  String? _error;
+  int _queuedOffline = 0;
+  int _retryCount = 0;
+  final int _wakeAttempts = 0;
 
   int _wrdLiveCount = 0;
   int _wrdDiskCount = 0;
 
   final SourceHealth _backendHealth = const SourceHealth.unknown();
-  SourceHealth _glofasHealth  = const SourceHealth.unknown();
-  SourceHealth _imdHealth     = const SourceHealth.unknown();
-  SourceHealth _wrdHealth     = const SourceHealth.unknown();
-  SourceHealth _sevHealth     = const SourceHealth.unknown();
+  SourceHealth _glofasHealth = const SourceHealth.unknown();
+  SourceHealth _imdHealth = const SourceHealth.unknown();
+  SourceHealth _wrdHealth = const SourceHealth.unknown();
+  SourceHealth _sevHealth = const SourceHealth.unknown();
 
   SourceHealth get _cwcHealth => _wrdHealth;
 
@@ -298,41 +301,41 @@ class LiveFetchEngine {
   }
 
   // —— Status getters ————————————————————————————————————————————————————————
-  bool      get isLoading           => _isLoading;
-  bool      get isOnline            => _isOnline;
-  bool      get isUsingFallback     => !_isOnline && _cache.isNotEmpty;
-  bool      get isWakingUp          => _isWakingUp;
-  bool      get isUsingCache        => _isUsingCache;
-  DateTime? get lastFetchTime       => _lastFetch;
-  String?   get error               => _error;
-  int       get queuedOfflineCycles => _queuedOffline;
-  int       get debugRetryCount     => _retryCount;
-  int       get debugWakeAttempts   => _wakeAttempts;
+  bool get isLoading => _isLoading;
+  bool get isOnline => _isOnline;
+  bool get isUsingFallback => !_isOnline && _cache.isNotEmpty;
+  bool get isWakingUp => _isWakingUp;
+  bool get isUsingCache => _isUsingCache;
+  DateTime? get lastFetchTime => _lastFetch;
+  String? get error => _error;
+  int get queuedOfflineCycles => _queuedOffline;
+  int get debugRetryCount => _retryCount;
+  int get debugWakeAttempts => _wakeAttempts;
 
-  int get wrdLiveCount  => _wrdLiveCount;
-  int get wrdDiskCount  => _wrdDiskCount;
+  int get wrdLiveCount => _wrdLiveCount;
+  int get wrdDiskCount => _wrdDiskCount;
   int get wrdTotalCount => _wrdLiveCount + _wrdDiskCount;
 
   // —— Source health getters —————————————————————————————————————————————————
   SourceHealth get backendHealth => _backendHealth;
-  SourceHealth get glofasHealth  => _glofasHealth;
-  SourceHealth get imdHealth     => _imdHealth;
-  SourceHealth get wrdHealth     => _wrdHealth;
-  SourceHealth get cwcHealth     => _cwcHealth;
+  SourceHealth get glofasHealth => _glofasHealth;
+  SourceHealth get imdHealth => _imdHealth;
+  SourceHealth get wrdHealth => _wrdHealth;
+  SourceHealth get cwcHealth => _cwcHealth;
   SourceHealth get severityHealth => _sevHealth;
 
-  bool get backendHealthy  => _backendHealth.healthy;
-  bool get glofasHealthy   => _glofasHealth.healthy;
-  bool get imdHealthy      => _imdHealth.healthy;
-  bool get wrdHealthy      => _wrdHealth.healthy;
-  bool get cwcHealthy      => _cwcHealth.healthy;
+  bool get backendHealthy => _backendHealth.healthy;
+  bool get glofasHealthy => _glofasHealth.healthy;
+  bool get imdHealthy => _imdHealth.healthy;
+  bool get wrdHealthy => _wrdHealth.healthy;
+  bool get cwcHealthy => _cwcHealth.healthy;
   bool get severityHealthy => _sevHealth.healthy;
 
-  int? get backendLatencyMs  => _backendHealth.latencyMs;
-  int? get glofasLatencyMs   => _glofasHealth.latencyMs;
-  int? get imdLatencyMs      => _imdHealth.latencyMs;
-  int? get wrdLatencyMs      => _wrdHealth.latencyMs;
-  int? get cwcLatencyMs      => _cwcHealth.latencyMs;
+  int? get backendLatencyMs => _backendHealth.latencyMs;
+  int? get glofasLatencyMs => _glofasHealth.latencyMs;
+  int? get imdLatencyMs => _imdHealth.latencyMs;
+  int? get wrdLatencyMs => _wrdHealth.latencyMs;
+  int? get cwcLatencyMs => _cwcHealth.latencyMs;
   int? get severityLatencyMs => _sevHealth.latencyMs;
 
   // —— Data getters ——————————————————————————————————————————————————————————
@@ -347,40 +350,39 @@ class LiveFetchEngine {
         orElse: () => {'city': city, 'district': '', 'state': 'Unknown'},
       );
       return data.toFloodData(
-        mc['city']    as String,
-        mc['state']   as String,
-        riverName: mc['river']    as String?,
+        mc['city'] as String,
+        mc['state'] as String,
+        riverName: mc['river'] as String?,
         district: (mc['district'] as String?) ?? '',
       );
     }).toList();
   }
 
   List<dynamic> get activeCriticalAlerts => _buildCriticalAlerts();
-  List<dynamic> get criticalAlerts       => _buildCriticalAlerts();
-  int           get criticalCount        => _buildCriticalAlerts().length;
+  List<dynamic> get criticalAlerts => _buildCriticalAlerts();
+  int get criticalCount => _buildCriticalAlerts().length;
 
-  List<dynamic> get cwcStations    => liveFloodData;
-  bool          get hasCwcLiveData => _cache.isNotEmpty;
+  List<dynamic> get cwcStations => liveFloodData;
+  bool get hasCwcLiveData => _cache.isNotEmpty;
 
   MultiLocationMonitoring get monitoringData => MultiLocationMonitoring(
-    locations:   liveFloodData,
-    lastUpdated: _lastFetch,
-  );
+        locations: liveFloodData,
+        lastUpdated: _lastFetch,
+      );
 
-  List<dynamic> get imdAlerts         => const [];
-  List<dynamic> get ndmaAdvisories    => const [];
+  List<dynamic> get imdAlerts => const [];
+  List<dynamic> get ndmaAdvisories => const [];
   List<dynamic> get emergencyContacts => const [];
 
-  Map<String, dynamic> get debugLevelsRaw => {
-    for (final e in _cache.entries) e.key: e.value.toString()
-  };
+  Map<String, dynamic> get debugLevelsRaw =>
+      {for (final e in _cache.entries) e.key: e.value.toString()};
   Map<String, dynamic> get debugCwcRaw => {
-    'totalCities': _allCities.length,
-    'wrdLive':     _wrdLiveCount,
-    'wrdDisk':     _wrdDiskCount,
-    'cacheSize':   _cache.length,
-    'backend':     BackendApiService.instance.baseUrl,
-  };
+        'totalCities': _allCities.length,
+        'wrdLive': _wrdLiveCount,
+        'wrdDisk': _wrdDiskCount,
+        'cacheSize': _cache.length,
+        'backend': BackendApiService.instance.baseUrl,
+      };
 
   // —— Per-city helpers ——————————————————————————————————————————————————————
   LiveCityData? dataForCity(String city) {
@@ -396,17 +398,17 @@ class LiveFetchEngine {
       orElse: () => {'city': city, 'district': '', 'state': 'Unknown'},
     );
     return d.toFloodData(
-      mc['city']    as String,
-      mc['state']   as String,
-      riverName: mc['river']    as String?,
+      mc['city'] as String,
+      mc['state'] as String,
+      riverName: mc['river'] as String?,
       district: (mc['district'] as String?) ?? '',
     );
   }
 
-  List<dynamic> imdAlertsForState(String state)         => const [];
-  List<dynamic> ndmaAdvisoriesForState(String state)    => const [];
+  List<dynamic> imdAlertsForState(String state) => const [];
+  List<dynamic> ndmaAdvisoriesForState(String state) => const [];
   List<dynamic> emergencyContactsForState(String state) => const [];
-  List<dynamic> trendForCity(String city)               =>
+  List<dynamic> trendForCity(String city) =>
       StationTrendStore.instance.get(city);
 
   // —— Refresh ———————————————————————————————————————————————————————————————
@@ -418,18 +420,18 @@ class LiveFetchEngine {
         'live_fetch_engine_all',
         _fetchAllCities,
       );
-      _isOnline      = true;
-      _isUsingCache  = false;
-      _error         = null;
+      _isOnline = true;
+      _isUsingCache = false;
+      _error = null;
       _queuedOffline = 0;
     } catch (e) {
       _isOnline = false;
-      _error    = e.toString();
+      _error = e.toString();
       _retryCount++;
       if (_cache.isNotEmpty) _isUsingCache = true;
       _log('refreshData error: $e');
     } finally {
-      _isLoading  = false;
+      _isLoading = false;
       _isWakingUp = false;
       _notify();
     }
@@ -446,9 +448,11 @@ class LiveFetchEngine {
     final allCities = _allCities;
     if (allCities.isEmpty) return;
 
-    final lats     = allCities.map((c) => (c['lat']  as num).toDouble()).toList();
-    final lons     = allCities.map((c) => (c['lon']  as num).toDouble()).toList();
-    final cityKeys = allCities.map((c) => (c['city'] as String).toLowerCase().trim()).toList();
+    final lats = allCities.map((c) => (c['lat'] as num).toDouble()).toList();
+    final lons = allCities.map((c) => (c['lon'] as num).toDouble()).toList();
+    final cityKeys = allCities
+        .map((c) => (c['city'] as String).toLowerCase().trim())
+        .toList();
 
     // 1. WRD Bihar
     final wrdStart = DateTime.now();
@@ -469,40 +473,45 @@ class LiveFetchEngine {
           stations = _wrdCache.value!;
         }
         for (final s in stations) {
-          final isLive = s.source.contains('LIVE') || s.source.contains('BACKEND');
-          if (isLive) _wrdLiveCount++; else _wrdDiskCount++;
-          wrdByKey[s.site.toLowerCase().trim()]     = s;
+          final isLive =
+              s.source.contains('LIVE') || s.source.contains('BACKEND');
+          if (isLive)
+            _wrdLiveCount++;
+          else
+            _wrdDiskCount++;
+          wrdByKey[s.site.toLowerCase().trim()] = s;
           wrdByKey[s.district.toLowerCase().trim()] = s;
         }
         _cbWrd.recordSuccess();
         _wrdHealth = SourceHealth(
-          healthy:       stations.isNotEmpty,
-          latencyMs:     DateTime.now().difference(wrdStart).inMilliseconds,
-          lastSuccessAt: _wrdLiveCount > 0 ? DateTime.now() : _wrdHealth.lastSuccessAt,
-          lastError:     _wrdLiveCount > 0
+          healthy: stations.isNotEmpty,
+          latencyMs: DateTime.now().difference(wrdStart).inMilliseconds,
+          lastSuccessAt:
+              _wrdLiveCount > 0 ? DateTime.now() : _wrdHealth.lastSuccessAt,
+          lastError: _wrdLiveCount > 0
               ? null
               : stations.isNotEmpty
                   ? 'WRD disk-cache ($_wrdDiskCount stations)'
                   : 'WRD returned 0 stations',
         );
-        _log('WRD: ${stations.length} stations (live=$_wrdLiveCount disk=$_wrdDiskCount)');
+        _log(
+            'WRD: ${stations.length} stations (live=$_wrdLiveCount disk=$_wrdDiskCount)');
       } catch (e) {
         _cbWrd.recordFailure();
         _wrdHealth = SourceHealth(
-          healthy:       false,
-          latencyMs:     DateTime.now().difference(wrdStart).inMilliseconds,
+          healthy: false,
+          latencyMs: DateTime.now().difference(wrdStart).inMilliseconds,
           lastSuccessAt: _wrdHealth.lastSuccessAt,
-          lastError:     e.toString(),
+          lastError: e.toString(),
         );
         _log('WRD fetch failed: $e');
       }
     }
 
-
     // 2+3. GloFAS + Rainfall — run in parallel to halve latency
     var dischargeMap = <String, double?>{};
-    var meanMap      = <String, double?>{};
-    var rainMap      = <String, double?>{};
+    var meanMap = <String, double?>{};
+    var rainMap = <String, double?>{};
     final parallelStart = DateTime.now();
 
     await Future.wait([
@@ -516,7 +525,9 @@ class LiveFetchEngine {
             rows = await SharedFetchCoordinator.instance.dedupe(
               'glofas_fetch',
               () => BackendApiService.instance.fetchGloFAS(
-                lats: lats, lons: lons, cityKeys: cityKeys,
+                lats: lats,
+                lons: lons,
+                cityKeys: cityKeys,
               ),
             );
             _glofasCache.set(rows);
@@ -525,22 +536,22 @@ class LiveFetchEngine {
           }
           for (final r in rows) {
             final key = (r['city'] as String? ?? '').toLowerCase().trim();
-            dischargeMap[key] = (r['discharge']      as num?)?.toDouble();
-            meanMap[key]      = (r['discharge_mean'] as num?)?.toDouble();
+            dischargeMap[key] = (r['discharge'] as num?)?.toDouble();
+            meanMap[key] = (r['discharge_mean'] as num?)?.toDouble();
           }
           _cbGlofas.recordSuccess();
           _glofasHealth = SourceHealth(
-            healthy:       true,
-            latencyMs:     DateTime.now().difference(t0).inMilliseconds,
+            healthy: true,
+            latencyMs: DateTime.now().difference(t0).inMilliseconds,
             lastSuccessAt: DateTime.now(),
           );
         } catch (e) {
           _cbGlofas.recordFailure();
           _glofasHealth = SourceHealth(
-            healthy:       false,
-            latencyMs:     DateTime.now().difference(t0).inMilliseconds,
+            healthy: false,
+            latencyMs: DateTime.now().difference(t0).inMilliseconds,
             lastSuccessAt: _glofasHealth.lastSuccessAt,
-            lastError:     e.toString(),
+            lastError: e.toString(),
           );
           _log('GloFAS fetch failed: $e');
         }
@@ -555,7 +566,9 @@ class LiveFetchEngine {
             rows = await SharedFetchCoordinator.instance.dedupe(
               'rain_fetch',
               () => BackendApiService.instance.fetchRainfall(
-                lats: lats, lons: lons, cityKeys: cityKeys,
+                lats: lats,
+                lons: lons,
+                cityKeys: cityKeys,
               ),
             );
             _rainCache.set(rows);
@@ -568,23 +581,24 @@ class LiveFetchEngine {
           }
           _cbRain.recordSuccess();
           _imdHealth = SourceHealth(
-            healthy:       true,
-            latencyMs:     DateTime.now().difference(t0).inMilliseconds,
+            healthy: true,
+            latencyMs: DateTime.now().difference(t0).inMilliseconds,
             lastSuccessAt: DateTime.now(),
           );
         } catch (e) {
           _cbRain.recordFailure();
           _imdHealth = SourceHealth(
-            healthy:       false,
-            latencyMs:     DateTime.now().difference(t0).inMilliseconds,
+            healthy: false,
+            latencyMs: DateTime.now().difference(t0).inMilliseconds,
             lastSuccessAt: _imdHealth.lastSuccessAt,
-            lastError:     e.toString(),
+            lastError: e.toString(),
           );
           _log('Rainfall fetch failed: $e');
         }
       }(),
     ]);
-    _log('GloFAS+Rainfall parallel: ${DateTime.now().difference(parallelStart).inMilliseconds}ms');
+    _log(
+        'GloFAS+Rainfall parallel: ${DateTime.now().difference(parallelStart).inMilliseconds}ms');
 
     // 4. Severity (GET /api/live-levels?with_severity=true)
     //    Returns backend ML predictions per city; merged into cache below.
@@ -610,18 +624,18 @@ class LiveFetchEngine {
         sevByKey = _sevCache.value ?? {};
         _cbSev.recordSuccess();
         _sevHealth = SourceHealth(
-          healthy:       true,
-          latencyMs:     DateTime.now().difference(sevStart).inMilliseconds,
+          healthy: true,
+          latencyMs: DateTime.now().difference(sevStart).inMilliseconds,
           lastSuccessAt: DateTime.now(),
         );
         _log('Severity: ${sevByKey.length} cities enriched');
       } catch (e) {
         _cbSev.recordFailure();
         _sevHealth = SourceHealth(
-          healthy:       false,
-          latencyMs:     DateTime.now().difference(sevStart).inMilliseconds,
+          healthy: false,
+          latencyMs: DateTime.now().difference(sevStart).inMilliseconds,
           lastSuccessAt: _sevHealth.lastSuccessAt,
-          lastError:     e.toString(),
+          lastError: e.toString(),
         );
         _log('Severity fetch failed (non-fatal): $e');
       }
@@ -630,17 +644,17 @@ class LiveFetchEngine {
     // 5. Assemble cache
     final now = DateTime.now();
     for (int i = 0; i < allCities.length; i++) {
-      final mc       = allCities[i];
-      final cityName = mc['city']           as String;
-      final dl       = (mc['danger_level']  as num).toDouble();
-      final wl       = (mc['warning_level'] as num).toDouble();
-      final key      = cityName.toLowerCase().trim();
+      final mc = allCities[i];
+      final cityName = mc['city'] as String;
+      final dl = (mc['danger_level'] as num).toDouble();
+      final wl = (mc['warning_level'] as num).toDouble();
+      final key = cityName.toLowerCase().trim();
 
       final discharge = dischargeMap[key];
-      final mean      = meanMap[key];
-      final rain      = rainMap[key];
-      final risk      = _deriveGlofasRisk(discharge, mean);
-      final estLevel  = (discharge != null && mean != null && mean > 0 && dl > 0)
+      final mean = meanMap[key];
+      final rain = rainMap[key];
+      final risk = _deriveGlofasRisk(discharge, mean);
+      final estLevel = (discharge != null && mean != null && mean > 0 && dl > 0)
           ? (discharge / mean) * dl * 0.85
           : null;
 
@@ -663,28 +677,31 @@ class LiveFetchEngine {
 
       // Merge ML severity fields from /api/live-levels
       final sev = sevByKey[key];
-      final predictedSeverity  = sev?['predicted_severity']  as String?;
-      final riskScore          = (sev?['risk_score']         as num?)?.toInt();
-      final confidencePercent  = (sev?['confidence_percent'] as num?)?.toDouble();
-      final willBreachDanger   = sev?['will_breach_danger']  as bool?;
-      final peakLevel72h       = (sev?['peak_level_72h']     as num?)?.toDouble();
+      final predictedSeverity = sev?['predicted_severity'] as String?;
+      final riskScore = (sev?['risk_score'] as num?)?.toInt();
+      final confidencePercent =
+          (sev?['confidence_percent'] as num?)?.toDouble();
+      final willBreachDanger = sev?['will_breach_danger'] as bool?;
+      final peakLevel72h = (sev?['peak_level_72h'] as num?)?.toDouble();
 
       _cache[key] = LiveCityData(
-        currentLevel:      wrd?.currentLevel ?? estLevel,
-        warningLevel:      (wrd?.warningLevel != null && wrd!.warningLevel! > 0)
-            ? wrd.warningLevel! : wl,
-        dangerLevel:       (wrd?.dangerLevel != null && wrd!.dangerLevel! > 0)
-            ? wrd.dangerLevel!  : dl,
-        flowRate:          discharge,
-        rainfall24h:       rain,
-        riskLevel:         _mergeRisk(wrd?.riskLabel, risk),
-        lastUpdated:       now,
+        currentLevel: wrd?.currentLevel ?? estLevel,
+        warningLevel: (wrd?.warningLevel != null && wrd!.warningLevel! > 0)
+            ? wrd.warningLevel!
+            : wl,
+        dangerLevel: (wrd?.dangerLevel != null && wrd!.dangerLevel! > 0)
+            ? wrd.dangerLevel!
+            : dl,
+        flowRate: discharge,
+        rainfall24h: rain,
+        riskLevel: _mergeRisk(wrd?.riskLabel, risk),
+        lastUpdated: now,
         // v4.2 ML
         predictedSeverity: predictedSeverity,
-        riskScore:         riskScore,
+        riskScore: riskScore,
         confidencePercent: confidencePercent,
-        willBreachDanger:  willBreachDanger,
-        peakLevel72h:      peakLevel72h,
+        willBreachDanger: willBreachDanger,
+        peakLevel72h: peakLevel72h,
       );
 
       // v4.1 trend store
@@ -715,13 +732,18 @@ class LiveFetchEngine {
 
   String? _mergeRisk(String? wrd, String? glofas) {
     const severity = {
-      'CRITICAL': 5, 'HIGH': 4, 'SEVERE': 4,
-      'MODERATE': 3, 'LOW': 2, 'PRE-MONSOON': 1, 'NA': 0,
+      'CRITICAL': 5,
+      'HIGH': 4,
+      'SEVERE': 4,
+      'MODERATE': 3,
+      'LOW': 2,
+      'PRE-MONSOON': 1,
+      'NA': 0,
     };
     if (wrd == null && glofas == null) return null;
-    if (wrd    == null) return glofas;
+    if (wrd == null) return glofas;
     if (glofas == null) return wrd;
-    final ws = severity[wrd.toUpperCase()]    ?? 0;
+    final ws = severity[wrd.toUpperCase()] ?? 0;
     final gs = severity[glofas.toUpperCase()] ?? 0;
     final winner = ws >= gs ? wrd : glofas;
     return winner == 'HIGH' ? 'SEVERE' : winner;
@@ -731,19 +753,19 @@ class LiveFetchEngine {
     return _cache.entries
         .where((e) =>
             e.value.riskLevel == 'CRITICAL' ||
-            e.value.riskLevel == 'SEVERE'   ||
+            e.value.riskLevel == 'SEVERE' ||
             e.value.predictedSeverity == 'CRITICAL' ||
             e.value.predictedSeverity == 'SEVERE')
         .map((e) => {
-              'city':              e.key,
-              'riskLevel':         e.value.riskLevel,
-              'level':             e.value.currentLevel,
+              'city': e.key,
+              'riskLevel': e.value.riskLevel,
+              'level': e.value.currentLevel,
               // v4.2 ML fields
               'predictedSeverity': e.value.predictedSeverity,
-              'riskScore':         e.value.riskScore,
+              'riskScore': e.value.riskScore,
               'confidencePercent': e.value.confidencePercent,
-              'willBreachDanger':  e.value.willBreachDanger,
-              'peakLevel72h':      e.value.peakLevel72h,
+              'willBreachDanger': e.value.willBreachDanger,
+              'peakLevel72h': e.value.peakLevel72h,
             })
         .toList();
   }

@@ -11,7 +11,9 @@ class PumpStationRepository {
   Future<List<PumpStation>> fetchAll() async {
     final response = await _dio.get('/api/pump-stations');
     final List data = response.data as List;
-    return data.map((e) => PumpStation.fromJson(e as Map<String, dynamic>)).toList();
+    return data
+        .map((e) => PumpStation.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<PumpStation> fetchById(String id) async {

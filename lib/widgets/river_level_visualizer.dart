@@ -12,12 +12,12 @@ import '../theme/river_theme.dart';
 class RiverLevelVisualizer extends StatefulWidget {
   /// List of recent water-level readings (latest last).
   final List<double> history;
-  final double       current;
-  final double       warning;
-  final double       danger;
-  final double       hfl;
-  final String       cityName;
-  final Color        lineColor;
+  final double current;
+  final double warning;
+  final double danger;
+  final double hfl;
+  final String cityName;
+  final Color lineColor;
 
   const RiverLevelVisualizer({
     super.key,
@@ -31,14 +31,13 @@ class RiverLevelVisualizer extends StatefulWidget {
   });
 
   @override
-  State<RiverLevelVisualizer> createState() =>
-      _RiverLevelVisualizerState();
+  State<RiverLevelVisualizer> createState() => _RiverLevelVisualizerState();
 }
 
 class _RiverLevelVisualizerState extends State<RiverLevelVisualizer>
     with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
-  late Animation<double>   _anim;
+  late Animation<double> _anim;
 
   @override
   void initState() {
@@ -84,14 +83,14 @@ class _RiverLevelVisualizerState extends State<RiverLevelVisualizer>
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color:        AppPalette.abyss2,
+        color: AppPalette.abyss2,
         borderRadius: BorderRadius.circular(22),
-        border:       Border.all(color: AppPalette.abyssStroke),
+        border: Border.all(color: AppPalette.abyssStroke),
         boxShadow: [
           BoxShadow(
-            color:      _levelColor.withValues(alpha: 0.08),
+            color: _levelColor.withValues(alpha: 0.08),
             blurRadius: 24,
-            offset:     const Offset(0, 6),
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -107,8 +106,8 @@ class _RiverLevelVisualizerState extends State<RiverLevelVisualizer>
                   Text(
                     widget.cityName,
                     style: const TextStyle(
-                      color:      AppPalette.textWhite,
-                      fontSize:   16,
+                      color: AppPalette.textWhite,
+                      fontSize: 16,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -116,7 +115,7 @@ class _RiverLevelVisualizerState extends State<RiverLevelVisualizer>
                   const Text(
                     'River Level Monitor',
                     style: TextStyle(
-                      color:    AppPalette.textGrey,
+                      color: AppPalette.textGrey,
                       fontSize: 11,
                     ),
                   ),
@@ -130,8 +129,8 @@ class _RiverLevelVisualizerState extends State<RiverLevelVisualizer>
                   Text(
                     '${widget.current.toStringAsFixed(2)} m',
                     style: TextStyle(
-                      color:      _levelColor,
-                      fontSize:   24,
+                      color: _levelColor,
+                      fontSize: 24,
                       fontWeight: FontWeight.w900,
                       letterSpacing: -0.5,
                     ),
@@ -139,7 +138,7 @@ class _RiverLevelVisualizerState extends State<RiverLevelVisualizer>
                   Text(
                     'current level',
                     style: const TextStyle(
-                      color:    AppPalette.textGrey,
+                      color: AppPalette.textGrey,
                       fontSize: 10,
                     ),
                   ),
@@ -155,11 +154,11 @@ class _RiverLevelVisualizerState extends State<RiverLevelVisualizer>
               child: AnimatedBuilder(
                 animation: _anim,
                 builder: (_, __) => _SparkAreaChart(
-                  data:      widget.history,
-                  warning:   widget.warning,
-                  danger:    widget.danger,
-                  color:     _levelColor,
-                  progress:  _anim.value,
+                  data: widget.history,
+                  warning: widget.warning,
+                  danger: widget.danger,
+                  color: _levelColor,
+                  progress: _anim.value,
                 ),
               ),
             ),
@@ -187,7 +186,7 @@ class _RiverLevelVisualizerState extends State<RiverLevelVisualizer>
                   Container(
                     height: 8,
                     decoration: BoxDecoration(
-                      color:        AppPalette.abyss4,
+                      color: AppPalette.abyss4,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -196,16 +195,16 @@ class _RiverLevelVisualizerState extends State<RiverLevelVisualizer>
                     Positioned(
                       left: (widget.warning / widget.danger).clamp(0.0, 1.0) *
                           (MediaQuery.of(context).size.width - 100),
-                      top: 0, bottom: 0,
+                      top: 0,
+                      bottom: 0,
                       child: Container(
                           width: 2,
                           color: AppPalette.amber.withValues(alpha: 0.7)),
                     ),
                   // fill
                   FractionallySizedBox(
-                    widthFactor:
-                        (_fillPct.clamp(0.0, 1.0) * _anim.value)
-                            .clamp(0.0, 1.0),
+                    widthFactor: (_fillPct.clamp(0.0, 1.0) * _anim.value)
+                        .clamp(0.0, 1.0),
                     child: Container(
                       height: 8,
                       decoration: BoxDecoration(
@@ -218,7 +217,7 @@ class _RiverLevelVisualizerState extends State<RiverLevelVisualizer>
                         borderRadius: BorderRadius.circular(4),
                         boxShadow: [
                           BoxShadow(
-                            color:      _levelColor.withValues(alpha: 0.45),
+                            color: _levelColor.withValues(alpha: 0.45),
                             blurRadius: 8,
                           ),
                         ],
@@ -256,17 +255,16 @@ class _RiverLevelVisualizerState extends State<RiverLevelVisualizer>
   }
 
   Widget _mini(String t, Color c) => Text(t,
-      style: TextStyle(
-          color: c, fontSize: 10, fontWeight: FontWeight.w600));
+      style: TextStyle(color: c, fontSize: 10, fontWeight: FontWeight.w600));
 }
 
 // ── Spark area chart ──────────────────────────────────────────────────────────
 class _SparkAreaChart extends StatelessWidget {
   final List<double> data;
-  final double       warning;
-  final double       danger;
-  final Color        color;
-  final double       progress; // 0→1 animation
+  final double warning;
+  final double danger;
+  final Color color;
+  final double progress; // 0→1 animation
 
   const _SparkAreaChart({
     required this.data,
@@ -279,14 +277,15 @@ class _SparkAreaChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // animate: only show the first progress% of points
-    final visibleCount =
-        math.max(2, (data.length * progress).round());
+    final visibleCount = math.max(2, (data.length * progress).round());
     final visible = data.sublist(data.length - visibleCount);
 
     final minY = (visible.reduce(math.min) - 0.5).clamp(0.0, double.infinity);
     final maxY = visible.reduce(math.max) + 1.0;
 
-    final spots = visible.asMap().entries
+    final spots = visible
+        .asMap()
+        .entries
         .map((e) => FlSpot(e.key.toDouble(), e.value))
         .toList();
 
@@ -299,9 +298,9 @@ class _SparkAreaChart extends StatelessWidget {
           show: true,
           drawVerticalLine: false,
           getDrawingHorizontalLine: (_) => FlLine(
-            color:          AppPalette.abyssStroke,
-            strokeWidth:    0.5,
-            dashArray:      [4, 4],
+            color: AppPalette.abyssStroke,
+            strokeWidth: 0.5,
+            dashArray: [4, 4],
           ),
         ),
         borderData: FlBorderData(show: false),
@@ -310,15 +309,15 @@ class _SparkAreaChart extends StatelessWidget {
           horizontalLines: [
             if (warning >= minY && warning <= maxY)
               HorizontalLine(
-                y:           warning,
-                color:       AppPalette.amber.withValues(alpha: 0.5),
+                y: warning,
+                color: AppPalette.amber.withValues(alpha: 0.5),
                 strokeWidth: 1,
-                dashArray:   [5, 4],
+                dashArray: [5, 4],
                 label: HorizontalLineLabel(
-                  show:      true,
+                  show: true,
                   alignment: Alignment.topRight,
                   style: const TextStyle(
-                    color:    AppPalette.amber,
+                    color: AppPalette.amber,
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
                   ),
@@ -327,15 +326,15 @@ class _SparkAreaChart extends StatelessWidget {
               ),
             if (danger >= minY && danger <= maxY)
               HorizontalLine(
-                y:           danger,
-                color:       AppPalette.danger.withValues(alpha: 0.5),
+                y: danger,
+                color: AppPalette.danger.withValues(alpha: 0.5),
                 strokeWidth: 1,
-                dashArray:   [5, 4],
+                dashArray: [5, 4],
                 label: HorizontalLineLabel(
-                  show:      true,
+                  show: true,
                   alignment: Alignment.topRight,
                   style: const TextStyle(
-                    color:    AppPalette.danger,
+                    color: AppPalette.danger,
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
                   ),
@@ -346,17 +345,17 @@ class _SparkAreaChart extends StatelessWidget {
         ),
         lineBarsData: [
           LineChartBarData(
-            spots:          spots,
-            isCurved:       true,
+            spots: spots,
+            isCurved: true,
             curveSmoothness: 0.35,
-            color:          color,
-            barWidth:       2.5,
-            dotData:        const FlDotData(show: false),
+            color: color,
+            barWidth: 2.5,
+            dotData: const FlDotData(show: false),
             belowBarData: BarAreaData(
               show: true,
               gradient: LinearGradient(
-                begin:  Alignment.topCenter,
-                end:    Alignment.bottomCenter,
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
                 colors: [
                   color.withValues(alpha: 0.25),
                   color.withValues(alpha: 0.0),
@@ -374,7 +373,7 @@ class _SparkAreaChart extends StatelessWidget {
 class _ThresholdChip extends StatelessWidget {
   final String label;
   final String value;
-  final Color  color;
+  final Color color;
   const _ThresholdChip({
     required this.label,
     required this.value,
@@ -385,24 +384,24 @@ class _ThresholdChip extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color:        color.withValues(alpha: 0.08),
+          color: color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(10),
-          border:       Border.all(color: color.withValues(alpha: 0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Column(
           children: [
             Text(
               value,
               style: TextStyle(
-                color:      color,
-                fontSize:   12,
+                color: color,
+                fontSize: 12,
                 fontWeight: FontWeight.w800,
               ),
             ),
             Text(
               label,
               style: const TextStyle(
-                color:    AppPalette.textGrey,
+                color: AppPalette.textGrey,
                 fontSize: 9,
               ),
             ),

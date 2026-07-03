@@ -17,15 +17,12 @@ final subscriptionProvider =
 
 /// Returns true if the given stationId is currently watched.
 final isWatchedProvider = Provider.family<bool, String>((ref, stationId) {
-  return ref
-      .watch(subscriptionProvider)
-      .any((s) => s.stationId == stationId);
+  return ref.watch(subscriptionProvider).any((s) => s.stationId == stationId);
 });
 
 // ── Notifier ────────────────────────────────────────────────────────────────
 
-class SubscriptionNotifier
-    extends StateNotifier<List<AlertSubscription>> {
+class SubscriptionNotifier extends StateNotifier<List<AlertSubscription>> {
   SubscriptionNotifier() : super([]) {
     _load();
   }
@@ -55,8 +52,7 @@ class SubscriptionNotifier
   Future<void> unsubscribe(String stationId) async {
     final box = _box;
     if (box == null) return;
-    final keys = box.keys.where(
-        (k) => box.get(k)?.stationId == stationId);
+    final keys = box.keys.where((k) => box.get(k)?.stationId == stationId);
     for (final k in keys) await box.delete(k);
     state = state.where((s) => s.stationId != stationId).toList();
   }

@@ -24,21 +24,19 @@ class AlertsScreen extends ConsumerStatefulWidget {
 
 class _AlertsScreenState extends ConsumerState<AlertsScreen>
     with AutoRefreshMixin {
-
   @override
   Widget build(BuildContext context) {
-    final c        = core_theme.RiverTheme.of(context).colors;
+    final c = core_theme.RiverTheme.of(context).colors;
     final stations = ref.watch(liveEngineStationsProvider);
-    final bridge   = ref.watch(alertsParentBridgeProvider);
+    final bridge = ref.watch(alertsParentBridgeProvider);
 
     final elevated = stations
         .where((s) => s.danger > 0 && s.current > 0 && s.current >= s.warning)
         .toList();
 
     final seen0 = <String>{};
-    final badgeCount = elevated
-        .where((s) => seen0.add(s.city.toLowerCase().trim()))
-        .length;
+    final badgeCount =
+        elevated.where((s) => seen0.add(s.city.toLowerCase().trim())).length;
 
     return Scaffold(
       backgroundColor: c.scaffoldBg,
@@ -51,8 +49,10 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen>
             Icon(Icons.notifications_active_rounded, color: c.danger, size: 20),
             const SizedBox(width: 8),
             Text(context.l10n.alerts,
-              style: TextStyle(
-                color: c.textPrimary, fontSize: 17, fontWeight: FontWeight.w700)),
+                style: TextStyle(
+                    color: c.textPrimary,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700)),
             if (badgeCount > 0) ...[
               const SizedBox(width: 8),
               OpsBadge(label: '$badgeCount', variant: OpsBadgeVariant.danger),
@@ -96,10 +96,11 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen>
 
     list.sort((a, b) {
       int rank(RiverStation s) {
-        if (s.current >= s.danger)        return 0;
+        if (s.current >= s.danger) return 0;
         if (s.current >= s.warning * 1.1) return 1;
         return 2;
       }
+
       return rank(a).compareTo(rank(b));
     });
 
@@ -108,29 +109,32 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.check_circle_outline_rounded, color: c.success, size: 48),
+            Icon(Icons.check_circle_outline_rounded,
+                color: c.success, size: 48),
             const SizedBox(height: 12),
             Text(context.l10n.noAlerts,
-              style: TextStyle(color: c.textSecondary, fontSize: 16)),
+                style: TextStyle(color: c.textSecondary, fontSize: 16)),
             const SizedBox(height: 4),
             Text(context.l10n.allStationsSafe,
-              style: TextStyle(color: c.textMuted, fontSize: 13)),
+                style: TextStyle(color: c.textMuted, fontSize: 13)),
           ],
         ),
       );
     }
 
     final critical = list.where((s) => s.current >= s.danger).toList();
-    final warning  = list.where((s) => s.current < s.danger).toList();
+    final warning = list.where((s) => s.current < s.danger).toList();
 
     final items = <Widget>[
       if (critical.isNotEmpty) ...[
-        _GroupHeader(label: context.l10n.critical.toUpperCase(), color: c.danger),
+        _GroupHeader(
+            label: context.l10n.critical.toUpperCase(), color: c.danger),
         ...critical.map((s) => _AlertTile(station: s)),
         const SizedBox(height: 8),
       ],
       if (warning.isNotEmpty) ...[
-        _GroupHeader(label: context.l10n.warning.toUpperCase(), color: c.warning),
+        _GroupHeader(
+            label: context.l10n.warning.toUpperCase(), color: c.warning),
         ...warning.map((s) => _AlertTile(station: s)),
       ],
     ];
@@ -147,7 +151,7 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen>
 
 class _GroupHeader extends StatelessWidget {
   final String label;
-  final Color  color;
+  final Color color;
   const _GroupHeader({required this.label, required this.color});
 
   @override
@@ -156,14 +160,18 @@ class _GroupHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(4, 8, 0, 6),
       child: Row(
         children: [
-          Container(width: 3, height: 14,
-            decoration: BoxDecoration(
-              color: color, borderRadius: BorderRadius.circular(2))),
+          Container(
+              width: 3,
+              height: 14,
+              decoration: BoxDecoration(
+                  color: color, borderRadius: BorderRadius.circular(2))),
           const SizedBox(width: 8),
           Text(label,
-            style: TextStyle(
-              color: color, fontSize: 11,
-              fontWeight: FontWeight.w800, letterSpacing: 1.1)),
+              style: TextStyle(
+                  color: color,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.1)),
         ],
       ),
     );
@@ -175,42 +183,45 @@ class _AlertTile extends StatelessWidget {
   const _AlertTile({required this.station});
 
   bool get _isCritical => station.current >= station.danger;
-  bool get _isSevere   => !_isCritical && station.current >= station.warning * 1.1;
+  bool get _isSevere =>
+      !_isCritical && station.current >= station.warning * 1.1;
 
   Color _color(dynamic c) {
     if (_isCritical) return c.danger;
-    if (_isSevere)   return const Color(0xFFFF8C42);
+    if (_isSevere) return const Color(0xFFFF8C42);
     return c.warning;
   }
 
   OpsBadgeVariant _variant() {
     if (_isCritical) return OpsBadgeVariant.danger;
-    if (_isSevere)   return OpsBadgeVariant.danger;
+    if (_isSevere) return OpsBadgeVariant.danger;
     return OpsBadgeVariant.warning;
   }
 
   IconData _icon() {
     if (_isCritical) return Icons.crisis_alert_rounded;
-    if (_isSevere)   return Icons.warning_rounded;
+    if (_isSevere) return Icons.warning_rounded;
     return Icons.warning_amber_rounded;
   }
 
   String _riskLabel(BuildContext context) {
     if (_isCritical) return context.l10n.critical.toUpperCase();
-    if (_isSevere)   return context.l10n.danger.toUpperCase();
+    if (_isSevere) return context.l10n.danger.toUpperCase();
     return context.l10n.warning.toUpperCase();
   }
 
   @override
   Widget build(BuildContext context) {
-    final t     = core_theme.RiverTheme.of(context);
-    final c     = t.colors;
+    final t = core_theme.RiverTheme.of(context);
+    final c = t.colors;
     final color = _color(c);
-    final level  = station.current.toStringAsFixed(2);
-    final danger = station.danger > 0 ? station.danger.toStringAsFixed(2) : '--';
+    final level = station.current.toStringAsFixed(2);
+    final danger =
+        station.danger > 0 ? station.danger.toStringAsFixed(2) : '--';
 
     return GestureDetector(
-      onTap: () => context.go('${Routes.cityDetail}/${Uri.encodeComponent(station.city)}'),
+      onTap: () => context
+          .go('${Routes.cityDetail}/${Uri.encodeComponent(station.city)}'),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
@@ -221,7 +232,8 @@ class _AlertTile extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 42, height: 42,
+              width: 42,
+              height: 42,
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.14),
                 borderRadius: BorderRadius.circular(12),
@@ -237,21 +249,27 @@ class _AlertTile extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(station.city,
-                          style: TextStyle(color: c.textPrimary,
-                            fontSize: 14, fontWeight: FontWeight.w700)),
+                            style: TextStyle(
+                                color: c.textPrimary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700)),
                       ),
                       OpsBadge(label: _riskLabel(context), variant: _variant()),
                     ],
                   ),
                   const SizedBox(height: 2),
                   Text(station.river,
-                    style: TextStyle(color: c.textSecondary, fontSize: 12)),
+                      style: TextStyle(color: c.textSecondary, fontSize: 12)),
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      _LevelChip(label: 'Current', value: '$level m', color: color),
+                      _LevelChip(
+                          label: 'Current', value: '$level m', color: color),
                       const SizedBox(width: 8),
-                      _LevelChip(label: 'Danger',  value: '$danger m', color: c.textMuted),
+                      _LevelChip(
+                          label: 'Danger',
+                          value: '$danger m',
+                          color: c.textMuted),
                     ],
                   ),
                 ],
@@ -269,8 +287,9 @@ class _AlertTile extends StatelessWidget {
 class _LevelChip extends StatelessWidget {
   final String label;
   final String value;
-  final Color  color;
-  const _LevelChip({required this.label, required this.value, required this.color});
+  final Color color;
+  const _LevelChip(
+      {required this.label, required this.value, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -283,10 +302,13 @@ class _LevelChip extends StatelessWidget {
       ),
       child: RichText(
         text: TextSpan(children: [
-          TextSpan(text: '$label  ',
-            style: TextStyle(color: c.textMuted, fontSize: 10)),
-          TextSpan(text: value,
-            style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700)),
+          TextSpan(
+              text: '$label  ',
+              style: TextStyle(color: c.textMuted, fontSize: 10)),
+          TextSpan(
+              text: value,
+              style: TextStyle(
+                  color: color, fontSize: 11, fontWeight: FontWeight.w700)),
         ]),
       ),
     );

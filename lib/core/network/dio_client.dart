@@ -1,8 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-const String _baseUrl =
-    'https://android-flood-app-production.up.railway.app';
+const String _baseUrl = 'https://android-flood-app-production.up.railway.app';
 
 Dio createDio() {
   final dio = Dio(

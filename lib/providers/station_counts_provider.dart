@@ -45,13 +45,16 @@ FloodSeverity _toFloodSeverity({
   final label = gaugeRiskFromLevels(
     current: current,
     warning: warning,
-    danger:  danger,
-    hfl:     hfl,
+    danger: danger,
+    hfl: hfl,
   );
   switch (label) {
-    case 'EXTREME':  return FloodSeverity.extreme;
-    case 'CRITICAL': return FloodSeverity.danger;
-    case 'DANGER':   return FloodSeverity.warning;
+    case 'EXTREME':
+      return FloodSeverity.extreme;
+    case 'CRITICAL':
+      return FloodSeverity.danger;
+    case 'DANGER':
+      return FloodSeverity.warning;
     default:
       // NORMAL — check watch sub-bucket (approaching warning level)
       if (warning > 0 && current >= warning * 0.9) return FloodSeverity.watch;
@@ -65,10 +68,10 @@ final stationCountsProvider = Provider<Map<FloodSeverity, int>>((ref) {
   final stations = ref.watch(mergedStationsProvider);
 
   final counts = <FloodSeverity, int>{
-    FloodSeverity.normal:  0,
-    FloodSeverity.watch:   0,
+    FloodSeverity.normal: 0,
+    FloodSeverity.watch: 0,
     FloodSeverity.warning: 0,
-    FloodSeverity.danger:  0,
+    FloodSeverity.danger: 0,
     FloodSeverity.extreme: 0,
   };
 
@@ -76,8 +79,8 @@ final stationCountsProvider = Provider<Map<FloodSeverity, int>>((ref) {
     final sev = _toFloodSeverity(
       current: s.current,
       warning: s.warning,
-      danger:  s.danger,
-      hfl:     s.hfl,
+      danger: s.danger,
+      hfl: s.hfl,
     );
     counts[sev] = (counts[sev] ?? 0) + 1;
   }

@@ -44,7 +44,7 @@ void main() {
       OpsClient.overrideForTesting(_mockClient({
         'data': [
           {'city': 'Patna', 'level': 8.2},
-          {'city': 'Gaya',  'level': 5.1},
+          {'city': 'Gaya', 'level': 5.1},
         ]
       }));
 
@@ -125,8 +125,7 @@ void main() {
 
   group('fetchRiverSeverity', () {
     test('returns map on success', () async {
-      OpsClient.overrideForTesting(
-          _mockClient({'stations': [], 'total': 0}));
+      OpsClient.overrideForTesting(_mockClient({'stations': [], 'total': 0}));
 
       final result = await BackendApiService.instance.fetchRiverSeverity();
       expect(result['total'], 0);
@@ -172,8 +171,7 @@ void main() {
         ]
       }));
 
-      final result =
-          await BackendApiService.instance.fetchNews(state: 'Bihar');
+      final result = await BackendApiService.instance.fetchNews(state: 'Bihar');
       expect(result, hasLength(2));
       expect(result.first['title'], 'Flood alert in Patna');
     });
@@ -202,7 +200,8 @@ void main() {
   // ── fetchCwcStations ───────────────────────────────────────────────────────
 
   group('fetchCwcStations', () {
-    test('returns empty list immediately for empty codes — no HTTP call', () async {
+    test('returns empty list immediately for empty codes — no HTTP call',
+        () async {
       // No mock needed — should short-circuit before hitting network
       final result =
           await BackendApiService.instance.fetchCwcStations(codes: []);
@@ -259,8 +258,8 @@ void main() {
     test('postFloodEvents returns ok on 200', () async {
       OpsClient.overrideForTesting(_mockClient({'ok': true, 'events': 3}));
 
-      final result = await BackendApiService.instance
-          .postFloodEvents({'events': []});
+      final result =
+          await BackendApiService.instance.postFloodEvents({'events': []});
       expect(result['events'], 3);
     });
   });

@@ -8,12 +8,10 @@ class PumpStationsScreen extends ConsumerStatefulWidget {
   const PumpStationsScreen({super.key});
 
   @override
-  ConsumerState<PumpStationsScreen> createState() =>
-      _PumpStationsScreenState();
+  ConsumerState<PumpStationsScreen> createState() => _PumpStationsScreenState();
 }
 
-class _PumpStationsScreenState
-    extends ConsumerState<PumpStationsScreen> {
+class _PumpStationsScreenState extends ConsumerState<PumpStationsScreen> {
   final _searchController = TextEditingController();
 
   @override
@@ -69,8 +67,7 @@ class _PumpStationsScreenState
             icon: const Icon(Icons.filter_list),
             tooltip: 'Filter by status',
             onSelected: (value) {
-              ref.read(pumpStationStatusFilterProvider.notifier).state =
-                  value;
+              ref.read(pumpStationStatusFilterProvider.notifier).state = value;
             },
             itemBuilder: (_) => [
               const PopupMenuItem(
@@ -105,8 +102,7 @@ class _PumpStationsScreenState
             child: TextField(
               controller: _searchController,
               onChanged: (value) {
-                ref.read(pumpStationSearchQueryProvider.notifier).state =
-                    value;
+                ref.read(pumpStationSearchQueryProvider.notifier).state = value;
               },
               decoration: InputDecoration(
                 hintText: 'Search pump stations…',
@@ -142,9 +138,8 @@ class _PumpStationsScreenState
                   ),
                   deleteIcon: const Icon(Icons.close, size: 16),
                   onDeleted: () {
-                    ref
-                        .read(pumpStationStatusFilterProvider.notifier)
-                        .state = null;
+                    ref.read(pumpStationStatusFilterProvider.notifier).state =
+                        null;
                   },
                 ),
               ),
@@ -189,8 +184,7 @@ class _PumpStationsScreenState
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.water_damage,
-                            size: 64,
-                            color: Colors.grey.shade400),
+                            size: 64, color: Colors.grey.shade400),
                         const SizedBox(height: 16),
                         Text(
                           'No pump stations found',
@@ -211,11 +205,10 @@ class _PumpStationsScreenState
                     ref.invalidate(pumpStationsProvider);
                   },
                   child: ListView.separated(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     itemCount: stations.length,
-                    separatorBuilder: (_, __) =>
-                        const SizedBox(height: 8),
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
                     itemBuilder: (context, index) {
                       final station = stations[index];
                       return _PumpStationCard(
@@ -259,8 +252,7 @@ class _PumpStationCard extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) =>
-                  PumpStationDetailScreen(stationId: station.id),
+              builder: (_) => PumpStationDetailScreen(stationId: station.id),
             ),
           );
         },
@@ -281,8 +273,8 @@ class _PumpStationCard extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: statusColor.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(20),
@@ -310,8 +302,7 @@ class _PumpStationCard extends StatelessWidget {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  const Icon(Icons.location_on,
-                      size: 14, color: Colors.grey),
+                  const Icon(Icons.location_on, size: 14, color: Colors.grey),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
@@ -361,16 +352,15 @@ class _PumpStationCard extends StatelessWidget {
                   ),
                 ],
               ),
-              if (station.district != null) ...
-                [
-                  const SizedBox(height: 8),
-                  Text(
-                    'District: ${station.district}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey,
-                        ),
-                  ),
-                ],
+              if (station.district != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'District: ${station.district}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.grey,
+                      ),
+                ),
+              ],
             ],
           ),
         ),

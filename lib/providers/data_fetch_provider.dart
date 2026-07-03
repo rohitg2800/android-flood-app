@@ -19,27 +19,26 @@ final alertCountProvider = Provider<int>((ref) {
   return ref.watch(alertsProvider).length;
 });
 
-final criticalAlertsProvider = Provider<List<FloodAlert>>((ref) =>
-    ref.watch(alertsProvider)
-        .where((a) =>
-            a.severity == AlertSeverity.critical ||
-            a.severity == AlertSeverity.emergency)
-        .toList());
+final criticalAlertsProvider = Provider<List<FloodAlert>>((ref) => ref
+    .watch(alertsProvider)
+    .where((a) =>
+        a.severity == AlertSeverity.critical ||
+        a.severity == AlertSeverity.emergency)
+    .toList());
 
-final emergencyAlertsProvider = Provider<List<FloodAlert>>((ref) =>
-    ref.watch(alertsProvider)
-        .where((a) => a.severity == AlertSeverity.emergency)
-        .toList());
+final emergencyAlertsProvider = Provider<List<FloodAlert>>((ref) => ref
+    .watch(alertsProvider)
+    .where((a) => a.severity == AlertSeverity.emergency)
+    .toList());
 
-final warningAlertsProvider = Provider<List<FloodAlert>>((ref) =>
-    ref.watch(alertsProvider)
-        .where((a) => a.severity == AlertSeverity.warning)
-        .toList());
+final warningAlertsProvider = Provider<List<FloodAlert>>((ref) => ref
+    .watch(alertsProvider)
+    .where((a) => a.severity == AlertSeverity.warning)
+    .toList());
 
 /// Alerts for a specific station name (case-insensitive).
-final stationAlertsProvider =
-    Provider.family<List<FloodAlert>, String>((ref, stationName) =>
-        ref.watch(alertsProvider)
-            .where((a) =>
-                a.stationName.toLowerCase() == stationName.toLowerCase())
-            .toList());
+final stationAlertsProvider = Provider.family<List<FloodAlert>, String>(
+    (ref, stationName) => ref
+        .watch(alertsProvider)
+        .where((a) => a.stationName.toLowerCase() == stationName.toLowerCase())
+        .toList());

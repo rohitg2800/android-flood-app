@@ -30,7 +30,7 @@ class CwcLiveProvider {
     required String state,
     required String river,
     double warningLevel = AppConstants.defaultWarningLevel,
-    double dangerLevel  = AppConstants.defaultDangerLevel,
+    double dangerLevel = AppConstants.defaultDangerLevel,
   }) {
     // Try to find from IndiaCities registry first
     try {
@@ -40,14 +40,14 @@ class CwcLiveProvider {
     } catch (_) {}
     // Fall back to building a minimal IndiaCity from the supplied parameters
     return IndiaCity(
-      id:           city.toLowerCase().replaceAll(' ', '_'),
-      name:         city,
-      state:        state,
-      river:        river,
-      lat:          0,
-      lon:          0,
+      id: city.toLowerCase().replaceAll(' ', '_'),
+      name: city,
+      state: state,
+      river: river,
+      lat: 0,
+      lon: 0,
       warningLevel: warningLevel,
-      dangerLevel:  dangerLevel,
+      dangerLevel: dangerLevel,
     );
   }
 
@@ -60,11 +60,14 @@ class CwcLiveProvider {
     required String state,
     required String river,
     double warningLevel = AppConstants.defaultWarningLevel,
-    double dangerLevel  = AppConstants.defaultDangerLevel,
+    double dangerLevel = AppConstants.defaultDangerLevel,
   }) {
     final ic = _findCity(
-      city: city, state: state, river: river,
-      warningLevel: warningLevel, dangerLevel: dangerLevel,
+      city: city,
+      state: state,
+      river: river,
+      warningLevel: warningLevel,
+      dangerLevel: dangerLevel,
     )!;
     return _service.fetch(ic);
   }
@@ -73,11 +76,11 @@ class CwcLiveProvider {
   Future<List<CwcReading>> getAllReadings() async {
     final futures = AppConstants.monitoredCities.map((mc) {
       final ic = _findCity(
-        city:         mc['city']  as String,
-        state:        mc['state'] as String,
-        river:        mc['river'] as String,
+        city: mc['city'] as String,
+        state: mc['state'] as String,
+        river: mc['river'] as String,
         warningLevel: _fp(mc['warning_level']),
-        dangerLevel:  _fp(mc['danger_level']),
+        dangerLevel: _fp(mc['danger_level']),
       )!;
       return _service.fetch(ic);
     });
@@ -99,13 +102,12 @@ class CwcLiveProvider {
   }
 
   /// Convenience: get reading from a monitoredCities map entry.
-  Future<CwcReading?> getReadingFromMap(Map<String, dynamic> mc) =>
-      getReading(
-        city:         mc['city']          as String,
-        state:        mc['state']         as String,
-        river:        mc['river']         as String,
+  Future<CwcReading?> getReadingFromMap(Map<String, dynamic> mc) => getReading(
+        city: mc['city'] as String,
+        state: mc['state'] as String,
+        river: mc['river'] as String,
         warningLevel: _fp(mc['warning_level']),
-        dangerLevel:  _fp(mc['danger_level']),
+        dangerLevel: _fp(mc['danger_level']),
       );
 
   static double _fp(dynamic v) =>
