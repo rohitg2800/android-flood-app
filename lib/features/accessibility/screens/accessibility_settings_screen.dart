@@ -41,8 +41,8 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
             icon: Icons.text_increase_rounded,
             label: 'Large Text',
             subtitle: 'Increases font size across the app',
-            value: settings.largeText,
-            onChanged: (_) => notifier.toggleLargeText(),
+            value: settings.largeIcons,
+            onChanged: (_) => notifier.toggleLargeIcons(),
           ),
           _ToggleTile(
             icon: Icons.animation_rounded,
@@ -57,8 +57,8 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
             icon: Icons.record_voice_over_rounded,
             label: 'Screen Reader Mode',
             subtitle: 'Optimises layout for TalkBack / screen readers',
-            value: settings.screenReaderMode,
-            onChanged: (_) => notifier.toggleScreenReader(),
+            value: settings.screenReaderOptimized,
+            onChanged: (_) => notifier.toggleScreenReaderOptimized(),
           ),
           _ToggleTile(
             icon: Icons.volume_up_rounded,
@@ -86,8 +86,8 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
           const SizedBox(height: 20),
           _SectionHeader('Text Scale'),
           _ScaleSlider(
-            value: settings.textScaleFactor,
-            onChanged: notifier.setTextScale,
+            value: settings.fontSizeScale,
+            onChanged: notifier.setFontSizeScale,
           ),
           const SizedBox(height: 32),
         ],

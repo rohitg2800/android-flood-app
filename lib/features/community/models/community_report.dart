@@ -9,10 +9,10 @@ enum ReportStatus { pending, verified, dismissed }
 
 enum ReportCategory {
   flooding,
-  blocked_drain,
-  pump_failure,
-  road_damage,
-  evacuation_needed,
+  blockedDrain,
+  pumpFailure,
+  roadDamage,
+  evacuationNeeded,
   other
 }
 

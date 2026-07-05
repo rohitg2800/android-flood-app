@@ -1,0 +1,11 @@
+targets:
+  $default:
+    builders:
+      hive_generator:
+        generate_for:
+          - lib/models/alert_subscription.dart
+          - lib/models/community_incident.dart
+      json_serializable:
+        generate_for:
+          - lib/models/alert_subscription.dart
+          - lib/models/community_incident.dart
