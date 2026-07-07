@@ -1,31 +1,29 @@
 name: Flutter CI
 
 on:
-  push:
-    branches: [ develop, feature/** ]
   pull_request:
-    branches: [ develop, main ]
+    branches: [develop, main]
+  push:
+    branches: [develop]
+
+env:
+  FLUTTER_VERSION: '3.22.0'
 
 jobs:
-  build-and-test:
-    name: Build & Test
+  test:
+    name: Flutter Tests
     runs-on: ubuntu-latest
-
-    env:
-      NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
-      NEON_DEV_DB_URL: ${{ secrets.NEON_DEV_DB_URL }}
-      NEON_STAGING_DB_URL: ${{ secrets.NEON_STAGING_DB_URL }}
-      NEON_PROJECT_ID: ${{ secrets.NEON_PROJECT_ID }}
+    timeout-minutes: 30
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Flutter
+      - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: 'stable'
-          channel: 'stable'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
           cache: true
 
       - name: Install dependencies
@@ -34,33 +32,45 @@ jobs:
       - name: Verify formatting
         run: dart format --output=none --set-exit-if-changed .
 
-      - name: Analyze project source
+      - name: Analyze code
         run: flutter analyze --no-fatal-infos
 
-      - name: Run tests
-        run: flutter test --coverage
+      - name: Run unit tests
+        run: flutter test --coverage --reporter=github
+        env:
+          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          NEON_AUTH_URL: ${{ secrets.NEON_AUTH_URL }}
+          NEON_JWKS_URL: ${{ secrets.NEON_JWKS_URL }}
 
       - name: Upload coverage report
         uses: codecov/codecov-action@v4
+        if: always()
         with:
           file: coverage/lcov.info
           fail_ci_if_error: false
 
-  build-apk:
-    name: Build APK
+  build-android:
+    name: Build Android APK
     runs-on: ubuntu-latest
-    needs: build-and-test
-    if: github.ref == 'refs/heads/develop'
+    needs: test
+    timeout-minutes: 45
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Flutter
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: 'stable'
-          channel: 'stable'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
           cache: true
 
       - name: Install dependencies
@@ -68,10 +78,14 @@ jobs:
 
       - name: Build APK (debug)
         run: flutter build apk --debug
+        env:
+          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          NEON_AUTH_URL: ${{ secrets.NEON_AUTH_URL }}
+          NEON_JWKS_URL: ${{ secrets.NEON_JWKS_URL }}
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: flood-app-debug-apk
+          name: flood-app-debug-${{ github.sha }}
           path: build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 7
