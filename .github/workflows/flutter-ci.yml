@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [develop, main]
   push:
-    branches: [develop]
+    branches: [develop, main]
 
 env:
   FLUTTER_VERSION: '3.22.0'
@@ -26,6 +26,13 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: ${{ runner.os }}-pub-
+
       - name: Install dependencies
         run: flutter pub get
 
@@ -39,6 +46,9 @@ jobs:
         run: flutter test --coverage --reporter=github
         env:
           NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          NEON_DB_HOST: ${{ secrets.NEON_DB_HOST }}
+          NEON_DB_USER: ${{ secrets.NEON_DB_USER }}
+          NEON_DB_PASSWORD: ${{ secrets.NEON_DB_PASSWORD }}
           NEON_AUTH_URL: ${{ secrets.NEON_AUTH_URL }}
           NEON_JWKS_URL: ${{ secrets.NEON_JWKS_URL }}
 
@@ -54,7 +64,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     timeout-minutes: 45
-    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    if: github.event_name == 'push'
 
     steps:
       - name: Checkout code
@@ -77,9 +87,12 @@ jobs:
         run: flutter pub get
 
       - name: Build APK (debug)
-        run: flutter build apk --debug
+        run: flutter build apk --debug --no-tree-shake-icons
         env:
           NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          NEON_DB_HOST: ${{ secrets.NEON_DB_HOST }}
+          NEON_DB_USER: ${{ secrets.NEON_DB_USER }}
+          NEON_DB_PASSWORD: ${{ secrets.NEON_DB_PASSWORD }}
           NEON_AUTH_URL: ${{ secrets.NEON_AUTH_URL }}
           NEON_JWKS_URL: ${{ secrets.NEON_JWKS_URL }}
 
