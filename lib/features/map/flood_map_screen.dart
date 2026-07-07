@@ -1,124 +1,118 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'map_bloc.dart';
-import 'map_event.dart';
-import 'map_state.dart';
 
 class FloodMapScreen extends StatefulWidget {
   const FloodMapScreen({super.key});
-
   @override
   State<FloodMapScreen> createState() => _FloodMapScreenState();
 }
 
 class _FloodMapScreenState extends State<FloodMapScreen> {
   GoogleMapController? _mapController;
+  final Set<Marker> _markers = {};
+  final Set<Polygon> _floodZones = {};
+  bool _showWaterLevels = true;
+  bool _showAlertZones = true;
+
   static const CameraPosition _initialPosition = CameraPosition(
     target: LatLng(25.5941, 85.1376), // Bihar, India
-    zoom: 7,
+    zoom: 7.5,
   );
-
-  @override
-  void initState() {
-    super.initState();
-    context.read<MapBloc>().add(LoadFloodMapData());
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Flood Map'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.my_location),
-            onPressed: () => context.read<MapBloc>().add(CenterOnUserLocation()),
-          ),
-          IconButton(
-            icon: const Icon(Icons.layers),
-            onPressed: () => _showLayerOptions(context),
-          ),
-        ],
-      ),
-      body: BlocBuilder<MapBloc, MapState>(
-        builder: (ctx, state) {
-          return Stack(
-            children: [
-              GoogleMap(
-                initialCameraPosition: _initialPosition,
-                onMapCreated: (controller) => _mapController = controller,
-                markers: state is MapLoaded ? state.markers : {},
-                polygons: state is MapLoaded ? state.floodZonePolygons : {},
-                myLocationEnabled: true,
-                myLocationButtonEnabled: false,
-                mapToolbarEnabled: false,
-              ),
-              if (state is MapLoading)
-                const Center(child: CircularProgressIndicator()),
-              if (state is MapLoaded)
-                Positioned(
-                  bottom: 16,
-                  left: 16,
-                  child: _LegendCard(),
-                ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  void _showLayerOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (_) => Column(
-        mainAxisSize: MainAxisSize.min,
+      backgroundColor: const Color(0xFF0A1628),
+      body: Stack(
         children: [
-          ListTile(leading: const Icon(Icons.warning), title: const Text('Flood Zones'), onTap: () {}),
-          ListTile(leading: const Icon(Icons.water), title: const Text('Water Levels'), onTap: () {}),
-          ListTile(leading: const Icon(Icons.local_hospital), title: const Text('Relief Camps'), onTap: () {}),
+          GoogleMap(
+            initialCameraPosition: _initialPosition,
+            onMapCreated: (controller) => _mapController = controller,
+            markers: _markers,
+            polygons: _floodZones,
+            myLocationEnabled: true,
+            myLocationButtonEnabled: false,
+            mapType: MapType.hybrid,
+          ),
+          // Legend overlay
+          Positioned(
+            bottom: 100,
+            left: 16,
+            child: _buildLegend(),
+          ),
+          // Toggle controls
+          Positioned(
+            top: 50,
+            right: 16,
+            child: _buildControls(),
+          ),
+          // Water level stations button
+          Positioned(
+            bottom: 30,
+            right: 16,
+            child: FloatingActionButton(
+              backgroundColor: const Color(0xFF1E90FF),
+              onPressed: _loadWaterLevelStations,
+              child: const Icon(Icons.water),
+            ),
+          ),
         ],
       ),
     );
   }
-}
 
-class _LegendCard extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Risk Zones', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-            const SizedBox(height: 4),
-            _LegendItem(color: Colors.red, label: 'High Risk'),
-            _LegendItem(color: Colors.orange, label: 'Medium Risk'),
-            _LegendItem(color: Colors.green, label: 'Low Risk'),
-          ],
-        ),
+  Widget _buildLegend() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0A1628).withOpacity(0.9),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _legendItem(Colors.red, 'Critical Zone'),
+          _legendItem(Colors.orange, 'High Risk Zone'),
+          _legendItem(Colors.yellow, 'Medium Risk'),
+          _legendItem(Colors.green, 'Safe Zone'),
+        ],
       ),
     );
   }
-}
 
-class _LegendItem extends StatelessWidget {
-  final Color color;
-  final String label;
-  const _LegendItem({required this.color, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+  Widget _legendItem(Color color, String label) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 2),
+    child: Row(
       children: [
-        Container(width: 12, height: 12, color: color),
-        const SizedBox(width: 4),
-        Text(label, style: const TextStyle(fontSize: 11)),
+        Container(width: 14, height: 14, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 8),
+        Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
+      ],
+    ),
+  );
+
+  Widget _buildControls() {
+    return Column(
+      children: [
+        _toggleChip('Water Levels', _showWaterLevels, (v) => setState(() => _showWaterLevels = v)),
+        const SizedBox(height: 8),
+        _toggleChip('Alert Zones', _showAlertZones, (v) => setState(() => _showAlertZones = v)),
       ],
     );
+  }
+
+  Widget _toggleChip(String label, bool value, ValueChanged<bool> onChanged) {
+    return FilterChip(
+      label: Text(label, style: const TextStyle(color: Colors.white, fontSize: 11)),
+      selected: value,
+      onSelected: onChanged,
+      backgroundColor: const Color(0xFF1A2744),
+      selectedColor: const Color(0xFF1E90FF),
+      checkmarkColor: Colors.white,
+    );
+  }
+
+  void _loadWaterLevelStations() {
+    // TODO: Fetch from Neon DB via API
   }
 }
