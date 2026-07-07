@@ -56,6 +56,7 @@ jobs:
         uses: codecov/codecov-action@v4
         if: always()
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           file: coverage/lcov.info
           fail_ci_if_error: false
 
@@ -88,6 +89,17 @@ jobs:
 
       - name: Build APK (debug)
         run: flutter build apk --debug --no-tree-shake-icons
+        env:
+          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          NEON_DB_HOST: ${{ secrets.NEON_DB_HOST }}
+          NEON_DB_USER: ${{ secrets.NEON_DB_USER }}
+          NEON_DB_PASSWORD: ${{ secrets.NEON_DB_PASSWORD }}
+          NEON_AUTH_URL: ${{ secrets.NEON_AUTH_URL }}
+          NEON_JWKS_URL: ${{ secrets.NEON_JWKS_URL }}
+
+      - name: Build APK (release)
+        if: github.ref == 'refs/heads/main'
+        run: flutter build apk --release --obfuscate --split-debug-info=build/debug-info
         env:
           NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
           NEON_DB_HOST: ${{ secrets.NEON_DB_HOST }}

@@ -1,35 +1,45 @@
-# GitHub Secrets Setup for Flood App
+# GitHub Secrets Setup Guide
 
-Add the following secrets in **Settings → Secrets and variables → Actions → New repository secret**:
+Add these secrets to your repository:
+**Settings → Secrets and Variables → Actions → New repository secret**
 
-## 🔐 Neon Database Secrets
+## Required Secrets
 
-| Secret Name | Value | Branch |
+| Secret Name | Description | Neon Branch |
 |---|---|---|
-| `NEON_DATABASE_URL` | `postgresql://neondb_owner:npg_baqZUn9vjz4B@ep-damp-star-at2nqwvc-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require` | `main` (Production) |
-| `NEON_DEV_DB_URL` | `postgresql://neondb_owner:npg_baqZUn9vjz4B@ep-super-morning-at2htdqp-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require` | `neon/dev` |
-| `NEON_STAGING_DB_URL` | `postgresql://neondb_owner:npg_baqZUn9vjz4B@ep-fancy-butterfly-atfxhk7c-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require` | `neon/staging` |
-| `NEON_PROJECT_ID` | `muddy-sunset-31125820` | All branches |
+| `NEON_DATABASE_URL` | Production DB connection string | `main` (br-sweet-wave-ajjqjpcx) |
+| `NEON_DEV_DATABASE_URL` | Development DB connection string | `dev` (br-red-queen-ajflu29s) |
+| `NEON_STAGING_DATABASE_URL` | Staging DB connection string | `staging` (br-red-morning-ajqsce8g) |
+| `NEON_API_KEY` | Neon API key for PR preview branches | From neon.tech/app/settings/api-keys |
 
-## 🔐 App Secrets (Add manually)
+## Connection Strings
+
+### Production (main branch)
+```
+postgresql://neondb_owner:<password>@ep-fragrant-bonus-aj8ovok4-pooler.c-3.us-east-2.aws.neon.tech/neondb?sslmode=require
+```
+
+### Dev branch
+```
+postgresql://neondb_owner:<password>@ep-twilight-pine-ajy5sfox-pooler.c-3.us-east-2.aws.neon.tech/neondb?sslmode=require
+```
+
+### Staging branch
+```
+postgresql://neondb_owner:<password>@ep-winter-field-ajln8tbx-pooler.c-3.us-east-2.aws.neon.tech/neondb?sslmode=require
+```
+
+## Get Your Neon API Key
+1. Go to https://console.neon.tech
+2. Click your profile → **Account Settings**
+3. Go to **API Keys** tab
+4. Click **Generate new API key**
+5. Copy and add as `NEON_API_KEY` secret
+
+## Optional Secrets
 
 | Secret Name | Description |
 |---|---|
-| `GOOGLE_MAPS_API_KEY` | Google Maps Android API key |
-| `FIREBASE_GOOGLE_SERVICES` | Base64 encoded google-services.json |
-| `FCM_SERVER_KEY` | Firebase Cloud Messaging server key |
-
-## Usage in Flutter
-
-In `lib/config/env.dart`:
-```dart
-class Env {
-  static const String dbUrl = String.fromEnvironment('NEON_DATABASE_URL');
-  static const String mapsKey = String.fromEnvironment('GOOGLE_MAPS_API_KEY');
-}
-```
-
-Pass at build time:
-```bash
-flutter build apk --dart-define=NEON_DATABASE_URL=$NEON_DATABASE_URL
-```
+| `GOOGLE_MAPS_API_KEY` | For map module |
+| `FIREBASE_KEY` | For push notifications |
+| `CODECOV_TOKEN` | For coverage reporting |
