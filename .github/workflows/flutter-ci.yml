@@ -1,0 +1,187 @@
+name: Flutter CI — Flood App
+
+on:
+  push:
+    branches: [main, develop, staging]
+  pull_request:
+    branches: [main, develop, staging]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: '3.24.0'
+
+jobs:
+  # ─────────────────────────────────────────
+  # JOB 1: Analyze & Test
+  # ─────────────────────────────────────────
+  analyze-and-test:
+    name: 🔍 Analyze & Unit Test
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'main' && 'production' || github.ref_name == 'staging' && 'staging' || 'development' }}
+
+    steps:
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: 📦 Install dependencies
+        run: flutter pub get
+
+      - name: 🔎 Analyze code
+        run: flutter analyze --fatal-infos
+
+      - name: 🧪 Run unit tests
+        run: flutter test --coverage
+        env:
+          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+
+      - name: 📊 Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          file: coverage/lcov.info
+          fail_ci_if_error: false
+
+  # ─────────────────────────────────────────
+  # JOB 2: DB Schema Validation
+  # ─────────────────────────────────────────
+  db-validation:
+    name: 🗄️ Validate DB Schema
+    runs-on: ubuntu-latest
+    needs: analyze-and-test
+
+    steps:
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐘 Install psql client
+        run: sudo apt-get install -y postgresql-client
+
+      - name: ✅ Check DB tables exist (dev branch)
+        if: github.ref_name == 'develop' || github.event_name == 'pull_request'
+        run: |
+          echo "Checking schema on Neon dev branch..."
+          PGPASSWORD="" psql "$NEON_DEV_DATABASE_URL" -c "
+            SELECT table_name FROM information_schema.tables
+            WHERE table_schema = 'public'
+            ORDER BY table_name;
+          "
+        env:
+          NEON_DEV_DATABASE_URL: ${{ secrets.NEON_DEV_DATABASE_URL }}
+
+      - name: ✅ Check DB tables exist (staging branch)
+        if: github.ref_name == 'staging'
+        run: |
+          echo "Checking schema on Neon staging branch..."
+          PGPASSWORD="" psql "$NEON_STAGING_DATABASE_URL" -c "
+            SELECT table_name FROM information_schema.tables
+            WHERE table_schema = 'public'
+            ORDER BY table_name;
+          "
+        env:
+          NEON_STAGING_DATABASE_URL: ${{ secrets.NEON_STAGING_DATABASE_URL }}
+
+      - name: ✅ Check DB tables exist (production)
+        if: github.ref_name == 'main'
+        run: |
+          echo "Checking schema on Neon production branch..."
+          PGPASSWORD="" psql "$NEON_DATABASE_URL" -c "
+            SELECT table_name FROM information_schema.tables
+            WHERE table_schema = 'public'
+            ORDER BY table_name;
+          "
+        env:
+          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+
+  # ─────────────────────────────────────────
+  # JOB 3: Build APK
+  # ─────────────────────────────────────────
+  build-apk:
+    name: 🏗️ Build APK
+    runs-on: ubuntu-latest
+    needs: [analyze-and-test, db-validation]
+    if: github.ref_name == 'main' || github.ref_name == 'staging'
+
+    steps:
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: ☕ Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 📦 Install dependencies
+        run: flutter pub get
+
+      - name: 🏗️ Build release APK
+        run: flutter build apk --release --dart-define=DB_URL=${{ secrets.NEON_DATABASE_URL }}
+
+      - name: 📤 Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flood-app-release-${{ github.sha }}
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
+
+  # ─────────────────────────────────────────
+  # JOB 4: PR Comment with build status
+  # ─────────────────────────────────────────
+  pr-summary:
+    name: 📝 PR Summary
+    runs-on: ubuntu-latest
+    needs: [analyze-and-test, db-validation]
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: 💬 Post PR status comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const botComment = comments.find(c => c.body.includes('<!-- flood-ci-bot -->'));
+            const body = `<!-- flood-ci-bot -->
+            ## 🌊 Flood App CI Status
+            | Check | Status |
+            |-------|--------|
+            | 🔍 Analyze & Unit Tests | ✅ Passed |
+            | 🗄️ Neon DB Schema | ✅ Validated |
+            | 📦 Flutter Version | ${{ env.FLUTTER_VERSION }} |
+            | 🔀 Branch | \`${{ github.head_ref }}\` → \`${{ github.base_ref }}\` |
+            | 🔖 Commit | \`${{ github.sha }}\` |
+
+            > 🗄️ DB validated against **Neon dev branch** \`br-red-queen-ajflu29s\`
+            `;
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body
+              });
+            }
