@@ -112,9 +112,9 @@ class FloodData {
 
   // Progress toward danger (0.0–1.0)
   double get progressPct {
-    if (dangerLevel <= warningLevel) return 0;
-    return ((currentLevel - warningLevel) / (dangerLevel - warningLevel))
-        .clamp(0.0, 1.0);
+    final effectiveHfl = hfl ?? (dangerLevel > 0 ? dangerLevel * 1.3 : 0.0);
+    if (effectiveHfl <= 0) return 0.0;
+    return (currentLevel / effectiveHfl).clamp(0.0, 1.0);
   }
 
   // Effective rainfall
@@ -244,18 +244,22 @@ class FloodData {
         longitude: _dOpt(json['longitude']),
         observedAt: json['observed_at'] != null
             ? DateTime.parse(json['observed_at'] as String)
+            : json['last_updated'] != null
+                ? DateTime.parse(json['last_updated'] as String)
+                : json['lastUpdated'] != null
+                    ? DateTime.parse(json['lastUpdated'] as String)
+                    : null,
+        lastUpdated: json['last_updated'] != null
+            ? DateTime.parse(json['last_updated'] as String)
             : json['lastUpdated'] != null
                 ? DateTime.parse(json['lastUpdated'] as String)
                 : null,
-        lastUpdated: json['lastUpdated'] != null
-            ? DateTime.parse(json['lastUpdated'] as String)
-            : null,
         trend: json['trend'] as String?,
-        predictedSeverity: json['predictedSeverity'] as String?,
-        riskScore: (json['riskScore'] as num?)?.toInt(),
-        confidencePercent: _dOpt(json['confidencePercent']),
-        willBreachDanger: json['willBreachDanger'] as bool?,
-        peakLevel72h: _dOpt(json['peakLevel72h']),
+        predictedSeverity: (json['predicted_severity'] ?? json['predictedSeverity']) as String?,
+        riskScore: ((json['risk_score'] ?? json['riskScore']) as num?)?.toInt(),
+        confidencePercent: _dOpt(json['confidence_percent'] ?? json['confidencePercent']),
+        willBreachDanger: (json['will_breach_danger'] ?? json['willBreachDanger']) as bool?,
+        peakLevel72h: _dOpt(json['peak_level_72h'] ?? json['peakLevel72h']),
         hfl: _dOpt(json['hfl']),
         source: json['source'] as String?,
         rainfall24hMm: _dOpt(json['rainfall24hMm'] ?? json['rainfall24h']),
