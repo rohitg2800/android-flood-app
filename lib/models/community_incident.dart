@@ -1,7 +1,6 @@
 // lib/models/community_incident.dart
 import 'package:hive/hive.dart';
 
-part 'community_incident.g.dart';
 
 @HiveType(typeId: 30)
 enum IncidentType {

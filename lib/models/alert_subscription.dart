@@ -2,7 +2,6 @@
 // Hive-persisted model representing a user's watch subscription on a gauge.
 import 'package:hive_flutter/hive_flutter.dart';
 
-part 'alert_subscription.g.dart';
 
 @HiveType(typeId: 10)
 class AlertSubscription extends HiveObject {
@@ -70,4 +69,3 @@ class AlertSubscription extends HiveObject {
       'breachOnly: $breachOnlyMode)';
 }
 // Note: @GeneratedAdapters annotation removed — not a valid Hive annotation.
-// The generated adapter in alert_subscription.g.dart is used directly.

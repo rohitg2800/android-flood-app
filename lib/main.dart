@@ -126,8 +126,8 @@ Future<void> main() async {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
     await dotenv.load(fileName: '.env').catchError((_) {});
     await Hive.initFlutter();
-    Hive.registerAdapter(IncidentTypeAdapter());
-    Hive.registerAdapter(CommunityIncidentAdapter());
+// Hive.registerAdapter(IncidentTypeAdapter());
+// Hive.registerAdapter(CommunityIncidentAdapter());
     await Hive.openBox<CommunityIncident>('community_incidents');
     await OfflineCacheManager.instance.init();
     final prefs = await SharedPreferences.getInstance();
