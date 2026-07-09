@@ -1,16 +1,4 @@
-import 'package:flutter/material.dart';
-
-class PredictScreen extends StatelessWidget {
-  const PredictScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: Text('Predict Screen'),
-        ),
-      ),
-    );
-  }
-}
+// lib/screens/predict_screen.dart
+// Thin re-export shim so app_router.dart can import 'predict_screen.dart'
+// and use PredictScreen — the real implementation lives in predict_screen_impl.dart
+export 'predict_screen_impl.dart';
