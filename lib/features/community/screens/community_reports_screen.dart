@@ -127,13 +127,13 @@ class _ReportCard extends StatelessWidget {
     switch (c) {
       case ReportCategory.flooding:
         return Icons.water_rounded;
-      case ReportCategory.blocked_drain:
+      case ReportCategory.blockedDrain:
         return Icons.block_rounded;
-      case ReportCategory.pump_failure:
+      case ReportCategory.pumpFailure:
         return Icons.power_off_rounded;
-      case ReportCategory.road_damage:
+      case ReportCategory.roadDamage:
         return Icons.warning_amber_rounded;
-      case ReportCategory.evacuation_needed:
+      case ReportCategory.evacuationNeeded:
         return Icons.directions_run_rounded;
       case ReportCategory.other:
         return Icons.info_outline_rounded;
@@ -223,7 +223,7 @@ class _ReportCard extends StatelessWidget {
                 const Spacer(),
                 GestureDetector(
                   onTap: () async {
-                    final repo = ref.read(communityRepositoryProvider);
+                    final repo = ref.read(communityReportsProvider);
                     await repo.upvoteReport(report.id);
                     ref.invalidate(communityReportsProvider);
                   },

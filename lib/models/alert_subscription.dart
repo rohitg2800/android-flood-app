@@ -4,7 +4,10 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 part 'alert_subscription.g.dart';
 
+part 'alert_subscription.g.dart';
+
 @HiveType(typeId: 10)
+@HiveType(typeId: 1)
 class AlertSubscription extends HiveObject {
   @HiveField(0)
   final String stationId;

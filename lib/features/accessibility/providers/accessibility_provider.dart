@@ -15,6 +15,9 @@ class AccessibilitySettings {
 
   const AccessibilitySettings({
     this.fontSizeScale = 1.0,
+    this.textToSpeechAlerts = false,
+    this.hapticFeedback = true,
+    this.customVibrationPatterns = false,
     this.highContrast = false,
     this.reduceMotion = false,
     this.screenReaderOptimized = false,
@@ -64,6 +67,10 @@ class AccessibilitySettings {
         largeIcons,
         themeMode,
       );
+  void toggleTTS() => state = state.copyWith(textToSpeechAlerts: !state.textToSpeechAlerts);
+  void toggleHaptic() => state = state.copyWith(hapticFeedback: !state.hapticFeedback);
+  void toggleVibration() => state = state.copyWith(customVibrationPatterns: !state.customVibrationPatterns);
+  void setTextScale(double s) => setFontSizeScale(s);
 }
 
 // ── StateNotifier ──────────────────────────────────────────────────────────
@@ -91,6 +98,10 @@ class AccessibilityNotifier extends StateNotifier<AccessibilitySettings> {
   void setThemeMode(ThemeMode mode) => state = state.copyWith(themeMode: mode);
 
   void resetToDefaults() => state = const AccessibilitySettings();
+  void toggleTTS() => state = state.copyWith(textToSpeechAlerts: !state.textToSpeechAlerts);
+  void toggleHaptic() => state = state.copyWith(hapticFeedback: !state.hapticFeedback);
+  void toggleVibration() => state = state.copyWith(customVibrationPatterns: !state.customVibrationPatterns);
+  void setTextScale(double s) => setFontSizeScale(s);
 }
 
 // ── Provider ───────────────────────────────────────────────────────────────

@@ -3,6 +3,8 @@ import 'package:hive/hive.dart';
 
 part 'community_incident.g.dart';
 
+part 'community_incident.g.dart';
+
 @HiveType(typeId: 30)
 enum IncidentType {
   @HiveField(0)
@@ -70,6 +72,7 @@ extension IncidentTypeLabel on IncidentType {
 }
 
 @HiveType(typeId: 31)
+@HiveType(typeId: 2)
 class CommunityIncident extends HiveObject {
   @HiveField(0)
   final String id;

@@ -321,13 +321,13 @@ class _CategoryDropdown extends StatelessWidget {
     switch (c) {
       case ReportCategory.flooding:
         return 'Flooding';
-      case ReportCategory.blocked_drain:
+      case ReportCategory.blockedDrain:
         return 'Blocked Drain';
-      case ReportCategory.pump_failure:
+      case ReportCategory.pumpFailure:
         return 'Pump Failure';
-      case ReportCategory.road_damage:
+      case ReportCategory.roadDamage:
         return 'Road Damage';
-      case ReportCategory.evacuation_needed:
+      case ReportCategory.evacuationNeeded:
         return 'Evacuation Needed';
       case ReportCategory.other:
         return 'Other';
