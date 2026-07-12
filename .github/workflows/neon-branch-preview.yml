@@ -1,0 +1,55 @@
+name: Neon Preview Branch — Per PR
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+jobs:
+  create-neon-preview:
+    name: 🌿 Create Neon Preview Branch
+    runs-on: ubuntu-latest
+    if: github.event.action != 'closed'
+
+    steps:
+      - name: ⬇️ Checkout
+        uses: actions/checkout@v4
+
+      - name: 🌿 Create Neon preview branch for this PR
+        uses: neondatabase/create-branch-action@v5
+        id: create-branch
+        with:
+          project_id: bold-wave-10613734
+          parent: br-sweet-wave-ajjqjpcx
+          branch_name: preview/pr-${{ github.event.pull_request.number }}
+          api_key: ${{ secrets.NEON_API_KEY }}
+
+      - name: 💬 Comment preview DB on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `<!-- neon-preview -->
+              ## 🗄️ Neon Preview Database
+              A fresh Neon database branch has been created for this PR.
+              - **Branch:** \`preview/pr-${{ github.event.pull_request.number }}\`
+              - **Project ID:** \`bold-wave-10613734\`
+              - This branch is an **isolated copy** of production data structure.
+              - It will be **deleted automatically** when the PR is closed.
+              `
+            })
+
+  delete-neon-preview:
+    name: 🗑️ Delete Neon Preview Branch
+    runs-on: ubuntu-latest
+    if: github.event.action == 'closed'
+
+    steps:
+      - name: 🗑️ Delete preview branch on PR close
+        uses: neondatabase/delete-branch-action@v3
+        with:
+          project_id: bold-wave-10613734
+          branch: preview/pr-${{ github.event.pull_request.number }}
+          api_key: ${{ secrets.NEON_API_KEY }}
