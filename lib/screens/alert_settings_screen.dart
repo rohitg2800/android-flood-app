@@ -111,11 +111,7 @@ class AlertSettingsScreen extends ConsumerWidget {
             child:
                 Text('Clear all', style: TextStyle(color: AppPalette.critical)),
             onPressed: () {
-              for (final s in subs) {
-                ref
-                    .read(subscriptionProvider.notifier)
-                    .unsubscribe(s.stationId);
-              }
+              ref.read(subscriptionProvider.notifier).clearAll();
               Navigator.pop(context);
             },
           ),
