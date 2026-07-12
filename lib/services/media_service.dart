@@ -49,10 +49,10 @@ class MediaService {
     double? maxHeight,
   }) async {
     final xFile = await _picker.pickImage(
-      source:       ImageSource.camera,
+      source: ImageSource.camera,
       imageQuality: quality,
-      maxWidth:     maxWidth,
-      maxHeight:    maxHeight,
+      maxWidth: maxWidth,
+      maxHeight: maxHeight,
     );
     return _toMediaFile(xFile);
   }
@@ -63,21 +63,21 @@ class MediaService {
     double? maxHeight,
   }) async {
     final xFile = await _picker.pickImage(
-      source:       ImageSource.gallery,
+      source: ImageSource.gallery,
       imageQuality: quality,
-      maxWidth:     maxWidth,
-      maxHeight:    maxHeight,
+      maxWidth: maxWidth,
+      maxHeight: maxHeight,
     );
     return _toMediaFile(xFile);
   }
 
   Future<List<MediaFile>> pickMultipleImages({
     int quality = 70,
-    int limit   = 3,
+    int limit = 3,
   }) async {
     final xFiles = await _picker.pickMultiImage(
       imageQuality: quality,
-      limit:        limit,
+      limit: limit,
     );
     final results = <MediaFile>[];
     for (final x in xFiles) {
@@ -111,14 +111,14 @@ class MediaService {
 
   Future<MediaFile?> _toMediaFile(XFile? xFile) async {
     if (xFile == null) return null;
-    final file  = File(xFile.path);
+    final file = File(xFile.path);
     final bytes = await file.readAsBytes();
     final sizeKb = bytes.length / 1024.0;
     return MediaFile(
-      path:   xFile.path,
-      name:   xFile.name,
+      path: xFile.path,
+      name: xFile.name,
       sizeKb: sizeKb,
-      bytes:  bytes,
+      bytes: bytes,
     );
   }
 }
@@ -128,8 +128,7 @@ class MediaService {
 class _MediaChooserSheet extends StatelessWidget {
   final VoidCallback onCamera;
   final VoidCallback onGallery;
-  const _MediaChooserSheet(
-      {required this.onCamera, required this.onGallery});
+  const _MediaChooserSheet({required this.onCamera, required this.onGallery});
 
   @override
   Widget build(BuildContext context) {
@@ -144,7 +143,8 @@ class _MediaChooserSheet extends StatelessWidget {
         children: [
           const SizedBox(height: 12),
           Container(
-            width: 36, height: 4,
+            width: 36,
+            height: 4,
             decoration: BoxDecoration(
               color: Colors.white24,
               borderRadius: BorderRadius.circular(2),
@@ -152,15 +152,15 @@ class _MediaChooserSheet extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           ListTile(
-            leading: const Icon(Icons.camera_alt_rounded,
-                color: Colors.white70),
-            title: const Text('Take Photo',
-                style: TextStyle(color: Colors.white)),
+            leading:
+                const Icon(Icons.camera_alt_rounded, color: Colors.white70),
+            title:
+                const Text('Take Photo', style: TextStyle(color: Colors.white)),
             onTap: onCamera,
           ),
           ListTile(
-            leading: const Icon(Icons.photo_library_rounded,
-                color: Colors.white70),
+            leading:
+                const Icon(Icons.photo_library_rounded, color: Colors.white70),
             title: const Text('Choose from Gallery',
                 style: TextStyle(color: Colors.white)),
             onTap: onGallery,

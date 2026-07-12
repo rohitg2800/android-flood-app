@@ -32,11 +32,11 @@ class DangerProximityBanner extends ConsumerWidget {
 
   // Distance thresholds per severity (km)
   static const _distBySeverity = {
-    AlertSeverity.extreme:  120.0,
+    AlertSeverity.extreme: 120.0,
     AlertSeverity.critical: 120.0,
-    AlertSeverity.danger:    80.0,
-    AlertSeverity.rising:    60.0,
-    AlertSeverity.normal:     0.0,
+    AlertSeverity.danger: 80.0,
+    AlertSeverity.rising: 60.0,
+    AlertSeverity.normal: 0.0,
   };
 
   @override
@@ -50,21 +50,25 @@ class DangerProximityBanner extends ConsumerWidget {
 
     // Find the nearest alerting station within threshold
     AlertItem? nearest;
-    double     minDist = double.infinity;
+    double minDist = double.infinity;
 
     for (final alert in activeAlerts) {
       final threshold = _distBySeverity[alert.severity] ?? 80.0;
       if (threshold == 0.0) continue;
 
       // Look up lat/lon from gauge registry
-      final gauge = kBiharGauges.where(
-        (g) => g.station.toLowerCase() == alert.stationName.toLowerCase(),
-      ).firstOrNull;
+      final gauge = kBiharGauges
+          .where(
+            (g) => g.station.toLowerCase() == alert.stationName.toLowerCase(),
+          )
+          .firstOrNull;
       if (gauge == null) continue;
 
       final d = _haversine(
-        position.latitude, position.longitude,
-        gauge.lat, gauge.lon,
+        position.latitude,
+        position.longitude,
+        gauge.lat,
+        gauge.lon,
       );
       if (d > threshold) continue;
 
@@ -78,14 +82,15 @@ class DangerProximityBanner extends ConsumerWidget {
     return _BannerWidget(alert: nearest, distKm: minDist);
   }
 
-  static double _haversine(
-      double lat1, double lon1, double lat2, double lon2) {
-    const r    = 6371.0;
+  static double _haversine(double lat1, double lon1, double lat2, double lon2) {
+    const r = 6371.0;
     final dLat = (lat2 - lat1) * pi / 180;
     final dLon = (lon2 - lon1) * pi / 180;
-    final a    = sin(dLat / 2) * sin(dLat / 2) +
-                 cos(lat1 * pi / 180) * cos(lat2 * pi / 180) *
-                 sin(dLon / 2) * sin(dLon / 2);
+    final a = sin(dLat / 2) * sin(dLat / 2) +
+        cos(lat1 * pi / 180) *
+            cos(lat2 * pi / 180) *
+            sin(dLon / 2) *
+            sin(dLon / 2);
     return r * 2 * atan2(sqrt(a), sqrt(1 - a));
   }
 }
@@ -93,7 +98,7 @@ class DangerProximityBanner extends ConsumerWidget {
 // ── Animated banner ───────────────────────────────────────────────────────────
 class _BannerWidget extends StatefulWidget {
   final AlertItem alert;
-  final double    distKm;
+  final double distKm;
   const _BannerWidget({required this.alert, required this.distKm});
   @override
   State<_BannerWidget> createState() => _BannerWidgetState();
@@ -102,7 +107,7 @@ class _BannerWidget extends StatefulWidget {
 class _BannerWidgetState extends State<_BannerWidget>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
-  late final Animation<double>   _anim;
+  late final Animation<double> _anim;
 
   @override
   void initState() {
@@ -122,33 +127,32 @@ class _BannerWidgetState extends State<_BannerWidget>
 
   @override
   Widget build(BuildContext context) {
-    final sev       = widget.alert.severity;
+    final sev = widget.alert.severity;
     final baseColor = switch (sev) {
-      AlertSeverity.extreme  => const Color(0xFFD32F2F),
+      AlertSeverity.extreme => const Color(0xFFD32F2F),
       AlertSeverity.critical => AppPalette.critical,
-      AlertSeverity.danger   => AppPalette.warning,
-      AlertSeverity.rising   => const Color(0xFF039BE5),
-      AlertSeverity.normal   => AppPalette.textGrey,
+      AlertSeverity.danger => AppPalette.warning,
+      AlertSeverity.rising => const Color(0xFF039BE5),
+      AlertSeverity.normal => AppPalette.textGrey,
     };
 
-    final ror      = widget.alert.rateOfRiseMph ?? 0.0;
-    final rorText  = ror >= 0.5
-        ? ' · rising +${ror.toStringAsFixed(2)} m/h'
-        : '';
+    final ror = widget.alert.rateOfRiseMph ?? 0.0;
+    final rorText =
+        ror >= 0.5 ? ' · rising +${ror.toStringAsFixed(2)} m/h' : '';
     final sevLabel = switch (sev) {
-      AlertSeverity.extreme  => 'EXTREME FLOOD',
+      AlertSeverity.extreme => 'EXTREME FLOOD',
       AlertSeverity.critical => 'CRITICAL',
-      AlertSeverity.danger   => 'DANGER',
-      AlertSeverity.rising   => 'RAPID RISE',
-      AlertSeverity.normal   => '',
+      AlertSeverity.danger => 'DANGER',
+      AlertSeverity.rising => 'RAPID RISE',
+      AlertSeverity.normal => '',
     };
 
     return AnimatedBuilder(
       animation: _anim,
       builder: (_, __) => Container(
-        width:   double.infinity,
+        width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        color:   Color.lerp(
+        color: Color.lerp(
             baseColor, baseColor.withValues(alpha: 0.70), _anim.value),
         child: Row(
           children: [
@@ -157,7 +161,7 @@ class _BannerWidgetState extends State<_BannerWidget>
                   ? Icons.trending_up_rounded
                   : Icons.warning_rounded,
               color: Colors.white,
-              size:  20,
+              size: 20,
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -166,9 +170,9 @@ class _BannerWidgetState extends State<_BannerWidget>
                 '(${widget.alert.district}) '
                 '${widget.distKm.toStringAsFixed(0)} km away$rorText',
                 style: const TextStyle(
-                  color:      Colors.white,
+                  color: Colors.white,
                   fontWeight: FontWeight.w700,
-                  fontSize:   13,
+                  fontSize: 13,
                 ),
               ),
             ),

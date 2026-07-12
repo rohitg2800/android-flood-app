@@ -10,16 +10,16 @@ import 'package:http/http.dart' as http;
 
 // Base URL via AppConfig.baseUrl
 
-const _kHealthPath   = '/health';
-const _kPingPath     = '/ping';
-const _kStatusPath   = '/api/status';
-const _kTimeoutSec   = 10;
+const _kHealthPath = '/health';
+const _kPingPath = '/ping';
+const _kStatusPath = '/api/status';
+const _kTimeoutSec = 10;
 
 class BackendHealthStatus {
-  final bool   isOnline;
-  final int    statusCode;
+  final bool isOnline;
+  final int statusCode;
   final String message;
-  final int    latencyMs;
+  final int latencyMs;
   final Map<String, dynamic> details;
 
   const BackendHealthStatus({
@@ -56,11 +56,11 @@ class BackendHealthService {
             details = jsonDecode(res.body) as Map<String, dynamic>;
           } catch (_) {}
           return BackendHealthStatus(
-            isOnline:   res.statusCode < 400,
+            isOnline: res.statusCode < 400,
             statusCode: res.statusCode,
-            message:    res.statusCode < 400 ? 'OK' : 'Degraded',
-            latencyMs:  sw.elapsedMilliseconds,
-            details:    details,
+            message: res.statusCode < 400 ? 'OK' : 'Degraded',
+            latencyMs: sw.elapsedMilliseconds,
+            details: details,
           );
         }
       } catch (e) {
@@ -69,10 +69,10 @@ class BackendHealthService {
     }
     sw.stop();
     return BackendHealthStatus(
-      isOnline:   false,
+      isOnline: false,
       statusCode: 0,
-      message:    'Unreachable',
-      latencyMs:  sw.elapsedMilliseconds,
+      message: 'Unreachable',
+      latencyMs: sw.elapsedMilliseconds,
     );
   }
 

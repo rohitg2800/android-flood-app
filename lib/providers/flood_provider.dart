@@ -37,30 +37,33 @@ final floodProvider = Provider<FloodProvider>((ref) {
 });
 
 class FloodProvider extends ChangeNotifier {
-  List<FloodData> _levels   = [];
-  bool            _isOnline = true;
-  DateTime?       _lastFetch;
+  List<FloodData> _levels = [];
+  bool _isOnline = true;
+  DateTime? _lastFetch;
 
-  List<FloodData> get liveLevels   => _levels;
-  bool            get isOnline     => _isOnline;
-  DateTime?       get lastFetchTime => _lastFetch;
+  List<FloodData> get liveLevels => _levels;
+  bool get isOnline => _isOnline;
+  DateTime? get lastFetchTime => _lastFetch;
 
-  int get criticalCount => _levels.where((d) => d.riskLevel == 'CRITICAL').length;
-  int get highRiskCount => _levels.where((d) => d.riskLevel == 'HIGH' || d.riskLevel == 'CRITICAL').length;
-  int get stationCount  => _levels.length;
+  int get criticalCount =>
+      _levels.where((d) => d.riskLevel == 'CRITICAL').length;
+  int get highRiskCount => _levels
+      .where((d) => d.riskLevel == 'HIGH' || d.riskLevel == 'CRITICAL')
+      .length;
+  int get stationCount => _levels.length;
 
   List<FloodData> get critical =>
       _levels.where((d) => d.riskLevel == 'CRITICAL').toList();
 
-  List<FloodData> get highRisk =>
-      _levels.where((d) => d.riskLevel == 'HIGH' || d.riskLevel == 'CRITICAL').toList();
+  List<FloodData> get highRisk => _levels
+      .where((d) => d.riskLevel == 'HIGH' || d.riskLevel == 'CRITICAL')
+      .toList();
 
   /// Top at-risk cities sorted by severity (CRITICAL > DANGER > HIGH > WARNING).
   List<FloodData> get topAtRiskCities {
     const order = {'CRITICAL': 0, 'DANGER': 1, 'HIGH': 2, 'WARNING': 3};
-    return [..._levels]
-      ..sort((a, b) =>
-          (order[a.riskLevel] ?? 99).compareTo(order[b.riskLevel] ?? 99));
+    return [..._levels]..sort((a, b) =>
+        (order[a.riskLevel] ?? 99).compareTo(order[b.riskLevel] ?? 99));
   }
 
   /// All live stations (same as liveLevels, alias for legacy screen compat).
@@ -71,7 +74,18 @@ class FloodProvider extends ChangeNotifier {
     // DataFetchEngine auto-polls; a no-op here keeps screens working.
   }
 
-  void _updateLevels(List<FloodData> v)  { _levels   = v;  notifyListeners(); }
-  void _updateOnline(bool v)             { _isOnline = v;  notifyListeners(); }
-  void _updateLastFetch(DateTime? v)     { _lastFetch = v; notifyListeners(); }
+  void _updateLevels(List<FloodData> v) {
+    _levels = v;
+    notifyListeners();
+  }
+
+  void _updateOnline(bool v) {
+    _isOnline = v;
+    notifyListeners();
+  }
+
+  void _updateLastFetch(DateTime? v) {
+    _lastFetch = v;
+    notifyListeners();
+  }
 }

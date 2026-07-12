@@ -4,10 +4,12 @@
 
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:equinox_flood/core/theme/river_theme.dart' as core_theme;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/river_theme.dart';
 import '../theme/theme_3d.dart';
-import 'incident_report_screen.dart' show IncidentDraft, IncidentType, IncidentTypeExt, SeverityExt;
+import 'incident_report_screen.dart'
+    show IncidentDraft, IncidentType, IncidentTypeExt, SeverityExt;
 
 class CrowdReportFeedScreen extends StatefulWidget {
   static const String route = '/crowd-report-feed';
@@ -48,7 +50,10 @@ class _CrowdReportFeedScreenState extends State<CrowdReportFeedScreen> {
           .whereType<IncidentDraft>()
           .toList()
         ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      setState(() { _reports = parsed; _loading = false; });
+      setState(() {
+        _reports = parsed;
+        _loading = false;
+      });
     } catch (_) {
       setState(() => _loading = false);
     }
@@ -80,7 +85,8 @@ class _CrowdReportFeedScreenState extends State<CrowdReportFeedScreen> {
   }
 
   Set<String> get _districts {
-    final d = _reports.map((r) => r.district).where((d) => d.isNotEmpty).toSet();
+    final d =
+        _reports.map((r) => r.district).where((d) => d.isNotEmpty).toSet();
     return d;
   }
 
@@ -91,8 +97,10 @@ class _CrowdReportFeedScreenState extends State<CrowdReportFeedScreen> {
     return Scaffold(
       backgroundColor: t.scaffoldBg,
       appBar: AppBar(
-        backgroundColor: t.navBg,
-        foregroundColor: t.textPrimary,
+        backgroundColor: const Color(0xFF05070A),
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: const Color(0xFFF5F7FA),
         // v8.7-fix: title uses Row inside Flexible so it never exceeds _AppBarTitleBox width.
         title: Row(
           mainAxisSize: MainAxisSize.min,
@@ -110,9 +118,10 @@ class _CrowdReportFeedScreenState extends State<CrowdReportFeedScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.deepOrange.withOpacity(0.15),
+                  color: Colors.deepOrange.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.deepOrange.withOpacity(0.5)),
+                  border: Border.all(
+                      color: Colors.deepOrange.withValues(alpha: 0.5)),
                 ),
                 child: Text(
                   '${filtered.length}',
@@ -133,9 +142,8 @@ class _CrowdReportFeedScreenState extends State<CrowdReportFeedScreen> {
           IconButton(
             icon: const Icon(Icons.add_circle_outline),
             tooltip: 'New Report',
-            onPressed: () =>
-                Navigator.pushNamed(context, '/incident-report')
-                    .then((_) => _load()),
+            onPressed: () => Navigator.pushNamed(context, '/incident-report')
+                .then((_) => _load()),
           ),
         ],
       ),
@@ -154,15 +162,14 @@ class _CrowdReportFeedScreenState extends State<CrowdReportFeedScreen> {
                           itemCount: filtered.length,
                           separatorBuilder: (_, __) =>
                               const SizedBox(height: 10),
-                          itemBuilder: (ctx, i) =>
-                              _ReportCard(
-                                draft: filtered[i],
-                                theme: t,
-                                onDelete: () {
-                                  final idx = _reports.indexOf(filtered[i]);
-                                  if (idx >= 0) _deleteReport(idx);
-                                },
-                              ),
+                          itemBuilder: (ctx, i) => _ReportCard(
+                            draft: filtered[i],
+                            theme: t,
+                            onDelete: () {
+                              final idx = _reports.indexOf(filtered[i]);
+                              if (idx >= 0) _deleteReport(idx);
+                            },
+                          ),
                         ),
                       ),
           ),
@@ -173,9 +180,8 @@ class _CrowdReportFeedScreenState extends State<CrowdReportFeedScreen> {
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add),
         label: const Text('Report Incident'),
-        onPressed: () =>
-            Navigator.pushNamed(context, '/incident-report')
-                .then((_) => _load()),
+        onPressed: () => Navigator.pushNamed(context, '/incident-report')
+            .then((_) => _load()),
       ),
     );
   }
@@ -201,36 +207,34 @@ class _CrowdReportFeedScreenState extends State<CrowdReportFeedScreen> {
               theme: t,
               onTap: () => _showTypePicker(t),
             ),
-            if (_filterDistrict != 'All' || _filterType != null) ...
-              [
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: () => setState(() {
-                    _filterDistrict = 'All';
-                    _filterType = null;
-                  }),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                          color: Colors.red.withOpacity(0.4)),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.clear, size: 13, color: Colors.red),
-                        SizedBox(width: 4),
-                        Text('Clear',
-                            style: TextStyle(
-                                color: Colors.red, fontSize: 12)),
-                      ],
-                    ),
+            if (_filterDistrict != 'All' || _filterType != null) ...[
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () => setState(() {
+                  _filterDistrict = 'All';
+                  _filterType = null;
+                }),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(20),
+                    border:
+                        Border.all(color: Colors.red.withValues(alpha: 0.4)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.clear, size: 13, color: Colors.red),
+                      SizedBox(width: 4),
+                      Text('Clear',
+                          style: TextStyle(color: Colors.red, fontSize: 12)),
+                    ],
                   ),
                 ),
-              ],
+              ),
+            ],
           ],
         ),
       ),
@@ -293,11 +297,9 @@ class _CrowdReportFeedScreenState extends State<CrowdReportFeedScreen> {
           const SizedBox(height: 12),
           ListTile(
             leading: const Icon(Icons.all_inclusive),
-            title: Text('All Types',
-                style: TextStyle(color: t.textPrimary)),
-            trailing: _filterType == null
-                ? Icon(Icons.check, color: t.accent)
-                : null,
+            title: Text('All Types', style: TextStyle(color: t.textPrimary)),
+            trailing:
+                _filterType == null ? Icon(Icons.check, color: t.accent) : null,
             onTap: () {
               setState(() => _filterType = null);
               Navigator.pop(context);
@@ -393,10 +395,11 @@ class _ReportCard extends StatelessWidget {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: (type?.color ?? Colors.grey).withOpacity(0.15),
+                    color: (type?.color ?? Colors.grey).withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                     border: Border.all(
-                        color: (type?.color ?? Colors.grey).withOpacity(0.5)),
+                        color: (type?.color ?? Colors.grey)
+                            .withValues(alpha: 0.5)),
                   ),
                   child: Icon(type?.icon ?? Icons.report_problem,
                       color: type?.color ?? Colors.grey, size: 18),
@@ -415,20 +418,19 @@ class _ReportCard extends StatelessWidget {
                       ),
                       Text(
                         _timeAgo(draft.createdAt),
-                        style: TextStyle(
-                            color: t.textSecondary, fontSize: 11),
+                        style: TextStyle(color: t.textSecondary, fontSize: 11),
                       ),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: sev.color.withOpacity(0.15),
+                    color: sev.color.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                        color: sev.color.withOpacity(0.5), width: 1),
+                        color: sev.color.withValues(alpha: 0.5), width: 1),
                   ),
                   child: Text(
                     sev.label,
@@ -441,8 +443,8 @@ class _ReportCard extends StatelessWidget {
                 const SizedBox(width: 4),
                 IconButton(
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
-                      minWidth: 28, minHeight: 28),
+                  constraints:
+                      const BoxConstraints(minWidth: 28, minHeight: 28),
                   icon: Icon(Icons.delete_outline,
                       size: 18, color: t.textSecondary),
                   tooltip: 'Remove',
@@ -452,8 +454,7 @@ class _ReportCard extends StatelessWidget {
                       backgroundColor: t.navBg,
                       title: Text('Delete Report',
                           style: TextStyle(color: t.textPrimary)),
-                      content: Text(
-                          'Remove this report from the local queue?',
+                      content: Text('Remove this report from the local queue?',
                           style: TextStyle(color: t.textSecondary)),
                       actions: [
                         TextButton(
@@ -475,90 +476,76 @@ class _ReportCard extends StatelessWidget {
                 ),
               ],
             ),
-            if (draft.district.isNotEmpty) ...
-              [
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(Icons.location_on_outlined,
-                        size: 13, color: t.textSecondary),
-                    const SizedBox(width: 4),
-                    Text(
-                      [
-                        draft.district,
-                        if (draft.block.isNotEmpty) draft.block,
-                        if (draft.village.isNotEmpty) draft.village,
-                      ].join(' › '),
-                      style: TextStyle(
-                          color: t.textSecondary, fontSize: 12),
-                    ),
-                  ],
-                ),
-              ],
-            if (draft.description.isNotEmpty) ...
-              [
-                const SizedBox(height: 8),
-                Text(
-                  draft.description,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                      color: t.textPrimary.withOpacity(0.85),
-                      fontSize: 13,
-                      height: 1.4),
-                ),
-              ],
+            if (draft.district.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(Icons.location_on_outlined,
+                      size: 13, color: t.textSecondary),
+                  const SizedBox(width: 4),
+                  Text(
+                    [
+                      draft.district,
+                      if (draft.block.isNotEmpty) draft.block,
+                      if (draft.village.isNotEmpty) draft.village,
+                    ].join(' › '),
+                    style: TextStyle(color: t.textSecondary, fontSize: 12),
+                  ),
+                ],
+              ),
+            ],
+            if (draft.description.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                draft.description,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    color: t.textPrimary.withValues(alpha: 0.85),
+                    fontSize: 13,
+                    height: 1.4),
+              ),
+            ],
             const SizedBox(height: 10),
             Row(
               children: [
-                if (draft.lat != null) ...
-                  [
-                    const Icon(Icons.my_location,
-                        size: 12, color: Colors.green),
-                    const SizedBox(width: 4),
-                    const Text('GPS',
-                        style: TextStyle(
-                            color: Colors.green, fontSize: 11)),
-                    const SizedBox(width: 12),
-                  ],
-                if (draft.photoCount > 0) ...
-                  [
-                    Icon(Icons.photo_outlined,
-                        size: 12, color: t.textSecondary),
-                    const SizedBox(width: 4),
-                    Text('${draft.photoCount} photo(s)',
-                        style: TextStyle(
-                            color: t.textSecondary, fontSize: 11)),
-                    const SizedBox(width: 12),
-                  ],
-                if (draft.reporterName.isNotEmpty) ...
-                  [
-                    Icon(Icons.person_outline,
-                        size: 12, color: t.textSecondary),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        draft.reporterName,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                            color: t.textSecondary, fontSize: 11),
-                      ),
+                if (draft.lat != null) ...[
+                  const Icon(Icons.my_location, size: 12, color: Colors.green),
+                  const SizedBox(width: 4),
+                  const Text('GPS',
+                      style: TextStyle(color: Colors.green, fontSize: 11)),
+                  const SizedBox(width: 12),
+                ],
+                if (draft.photoCount > 0) ...[
+                  Icon(Icons.photo_outlined, size: 12, color: t.textSecondary),
+                  const SizedBox(width: 4),
+                  Text('${draft.photoCount} photo(s)',
+                      style: TextStyle(color: t.textSecondary, fontSize: 11)),
+                  const SizedBox(width: 12),
+                ],
+                if (draft.reporterName.isNotEmpty) ...[
+                  Icon(Icons.person_outline, size: 12, color: t.textSecondary),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      draft.reporterName,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: t.textSecondary, fontSize: 11),
                     ),
-                  ]
-                else
+                  ),
+                ] else
                   Expanded(
                     child: Text('Anonymous',
-                        style: TextStyle(
-                            color: t.textSecondary, fontSize: 11)),
+                        style: TextStyle(color: t.textSecondary, fontSize: 11)),
                   ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.amber.withOpacity(0.15),
+                    color: Colors.amber.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                        color: Colors.amber.withOpacity(0.5)),
+                    border:
+                        Border.all(color: Colors.amber.withValues(alpha: 0.5)),
                   ),
                   child: const Text(
                     'Pending sync',
@@ -598,12 +585,11 @@ class _FilterChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: t.cardBg,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: t.divider.withOpacity(0.6)),
+          border: Border.all(color: t.divider.withValues(alpha: 0.6)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -616,8 +602,7 @@ class _FilterChip extends StatelessWidget {
                     fontSize: 12,
                     fontWeight: FontWeight.w500)),
             const SizedBox(width: 4),
-            Icon(Icons.arrow_drop_down,
-                size: 16, color: t.textSecondary),
+            Icon(Icons.arrow_drop_down, size: 16, color: t.textSecondary),
           ],
         ),
       ),

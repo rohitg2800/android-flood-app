@@ -17,10 +17,10 @@ import '../../theme/theme_registry.dart';
 
 // Data point passed in
 class BarDataPoint {
-  final String label;    // x-axis label (e.g. station name or date)
-  final double value;    // water level or risk score
+  final String label; // x-axis label (e.g. station name or date)
+  final double value; // water level or risk score
   final double? warning; // optional warning threshold
-  final double? danger;  // optional danger threshold
+  final double? danger; // optional danger threshold
 
   const BarDataPoint({
     required this.label,
@@ -41,10 +41,10 @@ class OpsBarChart extends ConsumerStatefulWidget {
   });
 
   final List<BarDataPoint> data;
-  final String             title;
-  final String             yAxisLabel;
-  final double             height;
-  final bool               showThresholdLines;
+  final String title;
+  final String yAxisLabel;
+  final double height;
+  final bool showThresholdLines;
 
   @override
   ConsumerState<OpsBarChart> createState() => _OpsBarChartState();
@@ -52,22 +52,22 @@ class OpsBarChart extends ConsumerStatefulWidget {
 
 class _OpsBarChartState extends ConsumerState<OpsBarChart>
     with SingleTickerProviderStateMixin {
-
   late final AnimationController _ctrl;
-  late final Animation<double>    _growAnim; // 0 → 1
+  late final Animation<double> _growAnim; // 0 → 1
 
   @override
   void initState() {
     super.initState();
     final rc = ThemeRegistry.of(ref.read(appSkinProvider));
     _ctrl = AnimationController(
-        vsync:    this,
-        duration: rc.entryDuration +
-            const Duration(milliseconds: 100));
+        vsync: this,
+        duration: rc.entryDuration + const Duration(milliseconds: 100));
     _growAnim = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic),
     );
-    Future.microtask(() { if (mounted) _ctrl.forward(); });
+    Future.microtask(() {
+      if (mounted) _ctrl.forward();
+    });
   }
 
   @override
@@ -85,12 +85,13 @@ class _OpsBarChartState extends ConsumerState<OpsBarChart>
     }
 
     final maxY = widget.data
-        .map((d) => <double>[
-              d.value,
-              d.warning ?? 0,
-              d.danger  ?? 0,
-            ].reduce((a, b) => a > b ? a : b))
-        .reduce((a, b) => a > b ? a : b) * 1.15;
+            .map((d) => <double>[
+                  d.value,
+                  d.warning ?? 0,
+                  d.danger ?? 0,
+                ].reduce((a, b) => a > b ? a : b))
+            .reduce((a, b) => a > b ? a : b) *
+        1.15;
 
     return Container(
       decoration: rc.terminalBox,
@@ -106,12 +107,11 @@ class _OpsBarChartState extends ConsumerState<OpsBarChart>
               animation: _growAnim,
               builder: (_, __) => BarChart(
                 _buildBarData(
-                  rc:     rc,
+                  rc: rc,
                   growFactor: _growAnim.value,
-                  maxY:   maxY,
+                  maxY: maxY,
                 ),
-                swapAnimationDuration:
-                    const Duration(milliseconds: 200),
+                swapAnimationDuration: const Duration(milliseconds: 200),
               ),
             ),
           ),
@@ -122,8 +122,8 @@ class _OpsBarChartState extends ConsumerState<OpsBarChart>
 
   BarChartData _buildBarData({
     required SkinTokens rc,
-    required double     growFactor,
-    required double     maxY,
+    required double growFactor,
+    required double maxY,
   }) {
     final groups = widget.data.asMap().entries.map((e) {
       final i = e.key;
@@ -138,23 +138,23 @@ class _OpsBarChartState extends ConsumerState<OpsBarChart>
         x: i,
         barRods: [
           BarChartRodData(
-            toY:        d.value * growFactor,
-            width:      14,
+            toY: d.value * growFactor,
+            width: 14,
             borderRadius: BorderRadius.only(
-              topLeft:  rc.chipRadius.topLeft,
+              topLeft: rc.chipRadius.topLeft,
               topRight: rc.chipRadius.topRight,
             ),
             gradient: LinearGradient(
               begin: Alignment.bottomCenter,
-              end:   Alignment.topCenter,
+              end: Alignment.topCenter,
               colors: [
-                barColor.withOpacity(0.55),
+                barColor.withValues(alpha: 0.55),
                 barColor,
               ],
             ),
             backDrawRodData: BackgroundBarChartRodData(
-              show:  true,
-              toY:   maxY,
+              show: true,
+              toY: maxY,
               color: rc.surfaceHigh,
             ),
           ),
@@ -165,22 +165,20 @@ class _OpsBarChartState extends ConsumerState<OpsBarChart>
     // Threshold horizontal lines
     final thresholdLines = <HorizontalLine>[];
     if (widget.showThresholdLines) {
-      final warnings = widget.data
-          .where((d) => d.warning != null)
-          .map((d) => d.warning!);
-      final dangers = widget.data
-          .where((d) => d.danger != null)
-          .map((d) => d.danger!);
+      final warnings =
+          widget.data.where((d) => d.warning != null).map((d) => d.warning!);
+      final dangers =
+          widget.data.where((d) => d.danger != null).map((d) => d.danger!);
 
       if (warnings.isNotEmpty) {
         final avgWarn = warnings.reduce((a, b) => a + b) / warnings.length;
         thresholdLines.add(HorizontalLine(
-          y:         avgWarn,
-          color:     rc.warning.withOpacity(0.55),
+          y: avgWarn,
+          color: rc.warning.withValues(alpha: 0.55),
           strokeWidth: 1,
           dashArray: [4, 4],
           label: HorizontalLineLabel(
-            show:  true,
+            show: true,
             style: rc.labelXs.copyWith(color: rc.warning),
             labelResolver: (_) => 'WARN',
             alignment: Alignment.topRight,
@@ -190,12 +188,12 @@ class _OpsBarChartState extends ConsumerState<OpsBarChart>
       if (dangers.isNotEmpty) {
         final avgDang = dangers.reduce((a, b) => a + b) / dangers.length;
         thresholdLines.add(HorizontalLine(
-          y:         avgDang,
-          color:     rc.danger.withOpacity(0.55),
+          y: avgDang,
+          color: rc.danger.withValues(alpha: 0.55),
           strokeWidth: 1,
           dashArray: [4, 4],
           label: HorizontalLineLabel(
-            show:  true,
+            show: true,
             style: rc.labelXs.copyWith(color: rc.danger),
             labelResolver: (_) => 'DNGR',
             alignment: Alignment.topRight,
@@ -206,33 +204,32 @@ class _OpsBarChartState extends ConsumerState<OpsBarChart>
 
     return BarChartData(
       maxY: maxY,
-      barGroups:         groups,
-      extraLinesData:    ExtraLinesData(horizontalLines: thresholdLines),
+      barGroups: groups,
+      extraLinesData: ExtraLinesData(horizontalLines: thresholdLines),
       gridData: FlGridData(
-        show:               true,
-        drawVerticalLine:   false,
+        show: true,
+        drawVerticalLine: false,
         horizontalInterval: maxY / 4,
         getDrawingHorizontalLine: (_) => FlLine(
-          color:       rc.divider,
+          color: rc.divider,
           strokeWidth: 1,
-          dashArray:   [3, 5],
+          dashArray: [3, 5],
         ),
       ),
       borderData: FlBorderData(
         show: true,
         border: Border(
           bottom: BorderSide(color: rc.divider, width: 1),
-          left:   BorderSide(color: rc.divider, width: 1),
+          left: BorderSide(color: rc.divider, width: 1),
         ),
       ),
       titlesData: FlTitlesData(
-        topTitles:   const AxisTitles(
-            sideTitles: SideTitles(showTitles: false)),
-        rightTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false)),
+        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        rightTitles:
+            const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         leftTitles: AxisTitles(
           sideTitles: SideTitles(
-            showTitles:   true,
+            showTitles: true,
             reservedSize: 36,
             getTitlesWidget: (v, _) => Text(
               v.toStringAsFixed(0),
@@ -242,7 +239,7 @@ class _OpsBarChartState extends ConsumerState<OpsBarChart>
         ),
         bottomTitles: AxisTitles(
           sideTitles: SideTitles(
-            showTitles:   true,
+            showTitles: true,
             reservedSize: 28,
             getTitlesWidget: (v, _) {
               final i = v.toInt();
@@ -289,46 +286,45 @@ class _OpsBarChartState extends ConsumerState<OpsBarChart>
 class _ChartHeader extends StatelessWidget {
   const _ChartHeader({required this.rc, required this.title});
   final SkinTokens rc;
-  final String     title;
+  final String title;
 
   @override
   Widget build(BuildContext context) => Row(
-    children: [
-      Container(
-        width: 3, height: 14,
-        decoration: BoxDecoration(
-          color:        rc.accent,
-          borderRadius: BorderRadius.circular(2),
-          boxShadow:    rc.accentGlow,
-        ),
-      ),
-      const SizedBox(width: 8),
-      Text(title.toUpperCase(),
-          style: rc.labelSm.copyWith(color: rc.textPrimary)),
-    ],
-  );
+        children: [
+          Container(
+            width: 3,
+            height: 14,
+            decoration: BoxDecoration(
+              color: rc.accent,
+              borderRadius: BorderRadius.circular(2),
+              boxShadow: rc.accentGlow,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(title.toUpperCase(),
+              style: rc.labelSm.copyWith(color: rc.textPrimary)),
+        ],
+      );
 }
 
 class _EmptyState extends StatelessWidget {
   const _EmptyState({required this.rc, required this.title});
   final SkinTokens rc;
-  final String     title;
+  final String title;
 
   @override
   Widget build(BuildContext context) => Container(
-    height: 120,
-    decoration: rc.terminalBox,
-    child: Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.bar_chart_rounded,
-              color: rc.textMuted, size: 28),
-          const SizedBox(height: 8),
-          Text('NO DATA  —  ${title.toUpperCase()}',
-              style: rc.labelSm),
-        ],
-      ),
-    ),
-  );
+        height: 120,
+        decoration: rc.terminalBox,
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.bar_chart_rounded, color: rc.textMuted, size: 28),
+              const SizedBox(height: 8),
+              Text('NO DATA  —  ${title.toUpperCase()}', style: rc.labelSm),
+            ],
+          ),
+        ),
+      );
 }

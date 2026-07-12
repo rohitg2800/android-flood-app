@@ -1,12 +1,14 @@
 // lib/providers/flood_providers.dart
-// v10.4 — cityLookupMapProvider: O(1) city lookup; Bihar-only refresh gate
+// v10.5 — null-safety: _normCityKey(d.city ?? '') everywhere
 //
+// v10.4 — cityLookupMapProvider: O(1) city lookup; Bihar-only refresh gate
 // v10.3: pre-warm LiveFetchEngine on first realTimeProvider access
 // v10.2: _normCityKey() collapses qualifier variants so Birpur x3 → Birpur x1
 // v10.1: deduplicate liveLevelsProvider by city key.
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'live_engine_bridge_provider.dart';
 import '../models/flood_data.dart';
 import '../models/river_monitoring.dart';
 import '../models/river_station.dart';
@@ -22,7 +24,7 @@ class SelectedCityNotifier extends Notifier<String?> {
   String? build() => null;
 
   void set(String city) => state = city;
-  void clear()         => state = null;
+  void clear() => state = null;
 }
 
 final selectedCityProvider =
@@ -42,8 +44,8 @@ final realTimeProvider = Provider<RealTimeService>((ref) {
 // criticalCountProvider / isWakingUpProvider
 // ─────────────────────────────────────────────────────────────────────────────────
 
-final criticalCountProvider = Provider<int>((ref) =>
-    ref.watch(mergedCriticalCountProvider));
+final criticalCountProvider =
+    Provider<int>((ref) => ref.watch(mergedCriticalCountProvider));
 
 final isWakingUpProvider = Provider<bool>((ref) {
   final loading = ref.watch(wrdIsLoadingProvider);
@@ -52,20 +54,19 @@ final isWakingUpProvider = Provider<bool>((ref) {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────────
-// cityLookupMapProvider  (v10.4)
+// cityLookupMapProvider  (v10.5 — d.city ?? '')
 // ─────────────────────────────────────────────────────────────────────────────────
 
 final cityLookupMapProvider = Provider<Map<String, FloodData>>((ref) {
   final levels = ref.watch(liveLevelsProvider);
-  return { for (final d in levels) _normCityKey(d.city): d };
+  return {for (final d in levels) _normCityKey(d.city ?? ''): d};
 });
 
 // ─────────────────────────────────────────────────────────────────────────────────
 // cityDataProvider / cityTrendProvider  (v10.4)
 // ─────────────────────────────────────────────────────────────────────────────────
 
-final cityDataProvider =
-    Provider.family<FloodData?, String>((ref, city) {
+final cityDataProvider = Provider.family<FloodData?, String>((ref, city) {
   final map = ref.watch(cityLookupMapProvider);
   return map[_normCityKey(city)];
 });
@@ -103,11 +104,11 @@ final stateEmergencyContactsProvider =
 // ─────────────────────────────────────────────────────────────────────────────────
 
 class FloodSummary {
-  final int    totalStations;
-  final int    criticalCount;
-  final int    severeCount;
-  final int    elevatedCount;
-  final int    normalCount;
+  final int totalStations;
+  final int criticalCount;
+  final int severeCount;
+  final int elevatedCount;
+  final int normalCount;
   final double avgProgressPct;
   final double maxLevel;
   final String maxLevelStation;
@@ -127,10 +128,12 @@ class FloodSummary {
     required this.updatedAt,
   });
 
-  int    get dangerCount   => criticalCount + severeCount;
-  int    get alertCount    => criticalCount + severeCount + elevatedCount;
-  double get dangerPercent => totalStations == 0 ? 0 : dangerCount / totalStations * 100;
-  double get alertPercent  => totalStations == 0 ? 0 : alertCount  / totalStations * 100;
+  int get dangerCount => criticalCount + severeCount;
+  int get alertCount => criticalCount + severeCount + elevatedCount;
+  double get dangerPercent =>
+      totalStations == 0 ? 0 : dangerCount / totalStations * 100;
+  double get alertPercent =>
+      totalStations == 0 ? 0 : alertCount / totalStations * 100;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────────
@@ -142,10 +145,16 @@ final floodSummaryProvider = Provider<FloodSummary>((ref) {
 
   if (stations.isEmpty) {
     return FloodSummary(
-      totalStations: 0, criticalCount: 0, severeCount: 0,
-      elevatedCount: 0, normalCount: 0,
-      avgProgressPct: 0, maxLevel: 0, maxLevelStation: '—',
-      dataSource: 'loading', updatedAt: DateTime.now(),
+      totalStations: 0,
+      criticalCount: 0,
+      severeCount: 0,
+      elevatedCount: 0,
+      normalCount: 0,
+      avgProgressPct: 0,
+      maxLevel: 0,
+      maxLevelStation: '—',
+      dataSource: 'loading',
+      updatedAt: DateTime.now(),
     );
   }
 
@@ -155,28 +164,39 @@ final floodSummaryProvider = Provider<FloodSummary>((ref) {
 
   for (final s in stations) {
     switch (s.dangerClass) {
-      case DangerClass.extreme:     critical++;  break;
-      case DangerClass.severe:      severe++;    break;
-      case DangerClass.aboveNormal: elevated++;  break;
-      default:                      normal++;    break;
+      case DangerClass.extreme:
+        critical++;
+        break;
+      case DangerClass.severe:
+        severe++;
+        break;
+      case DangerClass.aboveNormal:
+        elevated++;
+        break;
+      default:
+        normal++;
+        break;
     }
     totalPct += s.progressPct;
-    if (s.current > maxLvl) { maxLvl = s.current; maxStn = s.station; }
+    if (s.current > maxLvl) {
+      maxLvl = s.current;
+      maxStn = s.station;
+    }
   }
 
   final hasCwc = stations.any((s) => s.dataSource?.contains('CWC') ?? false);
 
   return FloodSummary(
-    totalStations:   stations.length,
-    criticalCount:   critical,
-    severeCount:     severe,
-    elevatedCount:   elevated,
-    normalCount:     normal,
-    avgProgressPct:  totalPct / stations.length,
-    maxLevel:        maxLvl,
+    totalStations: stations.length,
+    criticalCount: critical,
+    severeCount: severe,
+    elevatedCount: elevated,
+    normalCount: normal,
+    avgProgressPct: totalPct / stations.length,
+    maxLevel: maxLvl,
     maxLevelStation: maxStn,
-    dataSource:      hasCwc ? 'CWC+WRD' : 'WRD',
-    updatedAt:       DateTime.now(),
+    dataSource: hasCwc ? 'CWC+WRD' : 'WRD',
+    updatedAt: DateTime.now(),
   );
 });
 
@@ -184,35 +204,54 @@ final floodSummaryProvider = Provider<FloodSummary>((ref) {
 // Scalar KPI providers
 // ─────────────────────────────────────────────────────────────────────────────────
 
-final floodTotalStationsProvider   = Provider<int>((ref) => ref.watch(floodSummaryProvider).totalStations);
-final floodCriticalCountProvider   = Provider<int>((ref) => ref.watch(floodSummaryProvider).criticalCount);
-final floodSevereCountProvider     = Provider<int>((ref) => ref.watch(floodSummaryProvider).severeCount);
-final floodElevatedCountProvider   = Provider<int>((ref) => ref.watch(floodSummaryProvider).elevatedCount);
-final floodNormalCountProvider     = Provider<int>((ref) => ref.watch(floodSummaryProvider).normalCount);
-final floodDangerCountProvider     = Provider<int>((ref) => ref.watch(floodSummaryProvider).dangerCount);
-final floodAlertCountProvider      = Provider<int>((ref) => ref.watch(floodSummaryProvider).alertCount);
-final floodAvgProgressPctProvider  = Provider<double>((ref) => ref.watch(floodSummaryProvider).avgProgressPct);
-final floodMaxLevelProvider        = Provider<double>((ref) => ref.watch(floodSummaryProvider).maxLevel);
-final floodMaxLevelStationProvider = Provider<String>((ref) => ref.watch(floodSummaryProvider).maxLevelStation);
-final floodDataSourceProvider      = Provider<String>((ref) => ref.watch(floodSummaryProvider).dataSource);
+final floodTotalStationsProvider =
+    Provider<int>((ref) => ref.watch(floodSummaryProvider).totalStations);
+final floodCriticalCountProvider =
+    Provider<int>((ref) => ref.watch(floodSummaryProvider).criticalCount);
+final floodSevereCountProvider =
+    Provider<int>((ref) => ref.watch(floodSummaryProvider).severeCount);
+final floodElevatedCountProvider =
+    Provider<int>((ref) => ref.watch(floodSummaryProvider).elevatedCount);
+final floodNormalCountProvider =
+    Provider<int>((ref) => ref.watch(floodSummaryProvider).normalCount);
+final floodDangerCountProvider =
+    Provider<int>((ref) => ref.watch(floodSummaryProvider).dangerCount);
+final floodAlertCountProvider =
+    Provider<int>((ref) => ref.watch(floodSummaryProvider).alertCount);
+final floodAvgProgressPctProvider =
+    Provider<double>((ref) => ref.watch(floodSummaryProvider).avgProgressPct);
+final floodMaxLevelProvider =
+    Provider<double>((ref) => ref.watch(floodSummaryProvider).maxLevel);
+final floodMaxLevelStationProvider =
+    Provider<String>((ref) => ref.watch(floodSummaryProvider).maxLevelStation);
+final floodDataSourceProvider =
+    Provider<String>((ref) => ref.watch(floodSummaryProvider).dataSource);
 
 // ─────────────────────────────────────────────────────────────────────────────────
 // Helper: RiverStation → FloodData
 // ─────────────────────────────────────────────────────────────────────────────────
 
 FloodData _riverStationToFloodData(RiverStation s) {
+  // Compute risk score from danger class
+  final riskScore = s.danger > 0 && s.current > 0
+      ? (s.current / s.danger * 100).clamp(0.0, 150.0)
+      : 0.0;
   return FloodData(
-    stationId:    s.station,
-    stationName:  s.station,
-    river:        s.river ?? '',
-    city:         s.city,
-    district:     '',
-    state:        s.state,
-    riverName:    s.river,
-    currentLevel: s.current,
+    stationId: s.station,
+    stationName: s.station,
+    river: s.river ?? '',
+    city: s.city ?? '',
+    district: '',
+    state: s.state ?? '',
+    riverName: s.river,
+    currentLevel: s.current > 0 ? s.current : 0.0,
     warningLevel: s.warning,
-    dangerLevel:  s.danger,
-    lastUpdated:  DateTime.now(),
+    dangerLevel: s.danger,
+    riskScore: riskScore.round(),
+    latitude: s.lat,
+    longitude: s.lon,
+    lastUpdated: DateTime.now(),
+    observedAt: DateTime.now(),
   );
 }
 
@@ -223,27 +262,24 @@ FloodData _riverStationToFloodData(RiverStation s) {
 String _normCityKey(String name) => name
     .toLowerCase()
     .replaceAll(RegExp(r'\s*\(.*?\)'), '')
-    .replaceAll(RegExp(r'[^a-z0-9\s]'),  ' ')
-    .replaceAll(RegExp(r' +'),            ' ')
+    .replaceAll(RegExp(r'[^a-z0-9\s]'), ' ')
+    .replaceAll(RegExp(r' +'), ' ')
     .trim();
 
 // ─────────────────────────────────────────────────────────────────────────────────
-// _deduplicateByCity  (v10.2)
+// _deduplicateByCity  (v10.5 — fd.city ?? '')
 // ─────────────────────────────────────────────────────────────────────────────────
 
 List<FloodData> _deduplicateByCity(List<FloodData> raw) {
   final map = <String, FloodData>{};
   for (final fd in raw) {
-    // v10.5: always normalise the key so 'Birpur', 'Birpur (CWC)', 'birpur cwc'
-    // all collapse to the same key instead of producing 3 separate cards.
-    final key = _normCityKey(
-        fd.city);
+    final key = _normCityKey(fd.city ?? '');
     if (!map.containsKey(key)) {
       map[key] = fd;
     } else {
-      final existing        = map[key]!;
-      final incomingIsLive  = fd.status == 'LIVE';
-      final existingIsLive  = existing.status == 'LIVE';
+      final existing = map[key]!;
+      final incomingIsLive = fd.status == 'LIVE';
+      final existingIsLive = existing.status == 'LIVE';
       if (incomingIsLive && !existingIsLive) {
         map[key] = fd;
       } else if (!incomingIsLive && existingIsLive) {
@@ -261,9 +297,13 @@ List<FloodData> _deduplicateByCity(List<FloodData> raw) {
 // ─────────────────────────────────────────────────────────────────────────────────
 
 final liveLevelsProvider = Provider<List<FloodData>>((ref) {
-  final raw = ref.watch(mergedStationsProvider)
-      .map(_riverStationToFloodData)
-      .toList();
+  // Use liveEngineStationsProvider as single source of truth
+  // Falls back to mergedStationsProvider if engine is empty
+  final engineStations = ref.watch(liveEngineStationsProvider);
+  final source = engineStations.isNotEmpty
+      ? engineStations
+      : ref.watch(mergedStationsProvider);
+  final raw = source.map(_riverStationToFloodData).toList();
   return _deduplicateByCity(raw);
 });
 
@@ -272,10 +312,11 @@ final liveLevelsProvider = Provider<List<FloodData>>((ref) {
 // ─────────────────────────────────────────────────────────────────────────────────
 
 final isLoadingProvider = Provider<bool>((ref) =>
-    ref.watch(wrdIsLoadingProvider) && ref.watch(mergedStationsProvider).isEmpty);
+    ref.watch(wrdIsLoadingProvider) &&
+    ref.watch(mergedStationsProvider).isEmpty);
 
-final isOfflineProvider = Provider<bool>((ref) =>
-    ref.watch(wrdErrorProvider) != null);
+final isOfflineProvider =
+    Provider<bool>((ref) => ref.watch(wrdErrorProvider) != null);
 
 final lastFetchTimeProvider = Provider<DateTime?>((ref) {
   final stations = ref.watch(mergedStationsProvider);
@@ -294,5 +335,7 @@ final lastFetchTimeProvider = Provider<DateTime?>((ref) {
 // IMD / NDMA global stubs
 // ─────────────────────────────────────────────────────────────────────────────────
 
-final imdAlertsProvider = Provider<List<Map<String, dynamic>>>((ref) => const []);
-final ndmaAdvisoriesProvider = Provider<List<Map<String, dynamic>>>((ref) => const []);
+final imdAlertsProvider =
+    Provider<List<Map<String, dynamic>>>((ref) => const []);
+final ndmaAdvisoriesProvider =
+    Provider<List<Map<String, dynamic>>>((ref) => const []);

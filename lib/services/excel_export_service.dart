@@ -54,13 +54,17 @@ class ExcelExportService {
       ]);
     }
 
-    final dir  = await getTemporaryDirectory();
+    final dir = await getTemporaryDirectory();
     final path = '${dir.path}/opsflood_alerts.xlsx';
     final file = File(path);
     await file.writeAsBytes(excel.encode()!);
 
     await Share.shareXFiles(
-      [XFile(path, mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')],
+      [
+        XFile(path,
+            mimeType:
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+      ],
       subject: 'OpsFlood Alert Export',
     );
   }

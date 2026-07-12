@@ -25,8 +25,7 @@ class MlCardTestExport extends StatelessWidget {
               color: theme.colorScheme.outline.withValues(alpha: 0.35)),
         ),
         child: DefaultTextStyle(
-          style:
-              theme.textTheme.bodyMedium ?? const TextStyle(fontSize: 14),
+          style: theme.textTheme.bodyMedium ?? const TextStyle(fontSize: 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,

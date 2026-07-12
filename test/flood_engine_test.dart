@@ -73,28 +73,28 @@ void main() {
     test('returns correct PLAINS thresholds (v1.3)', () {
       final t = getRegionRainfallThresholds('PLAINS');
       expect(t['moderate'], equals(200.0));
-      expect(t['severe'],   equals(350.0));
+      expect(t['severe'], equals(350.0));
       expect(t['critical'], equals(500.0));
     });
 
     test('returns correct COASTAL thresholds (v1.3)', () {
       final t = getRegionRainfallThresholds('COASTAL');
       expect(t['moderate'], equals(150.0));
-      expect(t['severe'],   equals(300.0));
+      expect(t['severe'], equals(300.0));
       expect(t['critical'], equals(500.0));
     });
 
     test('returns correct HIMALAYAN thresholds (v1.3)', () {
       final t = getRegionRainfallThresholds('HIMALAYAN');
       expect(t['moderate'], equals(200.0));
-      expect(t['severe'],   equals(350.0));
+      expect(t['severe'], equals(350.0));
       expect(t['critical'], equals(550.0));
     });
 
     test('returns correct ARID thresholds (v1.3)', () {
       final t = getRegionRainfallThresholds('ARID');
       expect(t['moderate'], equals(80.0));
-      expect(t['severe'],   equals(160.0));
+      expect(t['severe'], equals(160.0));
       expect(t['critical'], equals(280.0));
     });
 
@@ -166,7 +166,8 @@ void main() {
   // ─── 4. runOnDeviceEngine — output invariants ─────────────────────────────
   group('runOnDeviceEngine — output invariants', () {
     test('result.severity is one of the four valid labels', () {
-      final r = runOnDeviceEngine(_makeInput(state: 'Bihar', peak: 10.0, rain: 150));
+      final r =
+          runOnDeviceEngine(_makeInput(state: 'Bihar', peak: 10.0, rain: 150));
       expect(['LOW', 'MODERATE', 'SEVERE', 'CRITICAL'], contains(r.severity));
     });
 
@@ -262,16 +263,42 @@ void main() {
   // ─── 7. Full-India smoke — all 36 state entries ───────────────────────────
   group('Full India smoke test', () {
     final stateNames = [
-      'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar',
-      'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana',
-      'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala',
-      'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya',
-      'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
-      'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana',
-      'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
-      'Andaman and Nicobar Islands', 'Chandigarh',
-      'Dadra and Nagar Haveli', 'Delhi',
-      'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry',
+      'Andhra Pradesh',
+      'Arunachal Pradesh',
+      'Assam',
+      'Bihar',
+      'Chhattisgarh',
+      'Goa',
+      'Gujarat',
+      'Haryana',
+      'Himachal Pradesh',
+      'Jharkhand',
+      'Karnataka',
+      'Kerala',
+      'Madhya Pradesh',
+      'Maharashtra',
+      'Manipur',
+      'Meghalaya',
+      'Mizoram',
+      'Nagaland',
+      'Odisha',
+      'Punjab',
+      'Rajasthan',
+      'Sikkim',
+      'Tamil Nadu',
+      'Telangana',
+      'Tripura',
+      'Uttar Pradesh',
+      'Uttarakhand',
+      'West Bengal',
+      'Andaman and Nicobar Islands',
+      'Chandigarh',
+      'Dadra and Nagar Haveli',
+      'Delhi',
+      'Jammu and Kashmir',
+      'Ladakh',
+      'Lakshadweep',
+      'Puducherry',
     ];
 
     test('every state returns a valid engine result', () {

@@ -31,7 +31,8 @@ class AlertShareSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 36, height: 4,
+            width: 36,
+            height: 4,
             margin: const EdgeInsets.only(bottom: 16),
             decoration: BoxDecoration(
               color: t.stroke,
@@ -47,7 +48,7 @@ class AlertShareSheet extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           _ShareButton(
-            icon:  Icons.chat_rounded,
+            icon: Icons.chat_rounded,
             label: 'Share via WhatsApp',
             color: const Color(0xFF25D366),
             onTap: () async {
@@ -58,7 +59,7 @@ class AlertShareSheet extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           _ShareButton(
-            icon:  Icons.share_rounded,
+            icon: Icons.share_rounded,
             label: 'Share via Other App',
             color: t.accent,
             onTap: () async {
@@ -69,7 +70,7 @@ class AlertShareSheet extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           _ShareButton(
-            icon:  Icons.copy_rounded,
+            icon: Icons.copy_rounded,
             label: 'Copy to Clipboard',
             color: t.metricColor,
             onTap: () async {
@@ -91,8 +92,8 @@ class AlertShareSheet extends StatelessWidget {
 
 class _ShareButton extends StatelessWidget {
   final IconData icon;
-  final String   label;
-  final Color    color;
+  final String label;
+  final Color color;
   final VoidCallback onTap;
 
   const _ShareButton({

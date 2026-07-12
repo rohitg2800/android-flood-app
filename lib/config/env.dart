@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 // lib/config/env.dart
 // EQUINOX-BH — Environment variable helpers
 
@@ -21,9 +22,8 @@ class Env {
   /// In development it can be overridden at build time:
   /// which is wired via --dart-define=EQUINOX_BH_BASE_URL at build time.
   static String get backendBaseUrl {
-    if (isDebug && AppConfig.baseUrl == 'https://android-flood-app-production.up.railway.app') {
-      return 'http://localhost:8000';
-    }
-    return AppConfig.baseUrl; 
+    if (kDebugMode)
+      return 'http://10.0.2.2:8000'; // Android emulator → local backend
+    return AppConfig.baseUrl;
   }
 }

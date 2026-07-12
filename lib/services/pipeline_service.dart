@@ -87,7 +87,7 @@ class PipelineService {
             : null;
         final stations = match != null ? [match] : await wrd.fetch();
         if (stations.isNotEmpty) {
-          riverLevel  = stations.first.currentLevel;
+          riverLevel = stations.first.currentLevel;
           dangerLevel = stations.first.dangerLevel;
         }
       } catch (e) {
@@ -109,9 +109,9 @@ class PipelineService {
       );
       final res = await http.get(url).timeout(const Duration(seconds: 10));
       if (res.statusCode == 200) {
-        final body  = jsonDecode(res.body) as Map<String, dynamic>;
+        final body = jsonDecode(res.body) as Map<String, dynamic>;
         final daily = body['daily'] as Map<String, dynamic>?;
-        final vals  = daily?['precipitation_sum'] as List?;
+        final vals = daily?['precipitation_sum'] as List?;
         if (vals != null && vals.isNotEmpty && vals.first != null) {
           rainfall = (vals.first as num).toDouble();
         }
@@ -123,9 +123,9 @@ class PipelineService {
     if (riverLevel == null && rainfall == null) return null;
 
     return PipelineFeatures(
-      riverLevelM:         riverLevel,
+      riverLevelM: riverLevel,
       bestDailyRainfallMm: rainfall,
-      dangerLevelM:        dangerLevel,
+      dangerLevelM: dangerLevel,
     );
   }
 
@@ -145,100 +145,100 @@ class PipelineService {
   // rainfall7dMm = 7-day cumulative rainfall thresholds from IMD data.
   static const Map<String, StateEntry> _kStateMatrix = {
     'bihar': StateEntry(
-      dangerLevelM:  49.99, // Ganga at Patna (CWC)
+      dangerLevelM: 49.99, // Ganga at Patna (CWC)
       warningLevelM: 48.00,
-      peakLevelM:    {'moderate': 47.0,  'severe': 49.0,  'critical': 50.5},
-      rainfall7dMm:  {'moderate': 150.0, 'severe': 280.0, 'critical': 420.0},
+      peakLevelM: {'moderate': 47.0, 'severe': 49.0, 'critical': 50.5},
+      rainfall7dMm: {'moderate': 150.0, 'severe': 280.0, 'critical': 420.0},
     ),
     'assam': StateEntry(
-      dangerLevelM:  89.22, // Brahmaputra at Guwahati (CWC)
+      dangerLevelM: 89.22, // Brahmaputra at Guwahati (CWC)
       warningLevelM: 87.50,
-      peakLevelM:    {'moderate': 86.0,  'severe': 88.5,  'critical': 90.0},
-      rainfall7dMm:  {'moderate': 200.0, 'severe': 350.0, 'critical': 500.0},
+      peakLevelM: {'moderate': 86.0, 'severe': 88.5, 'critical': 90.0},
+      rainfall7dMm: {'moderate': 200.0, 'severe': 350.0, 'critical': 500.0},
     ),
     'uttar pradesh': StateEntry(
-      dangerLevelM:  84.73, // Ganga at Varanasi (CWC)
+      dangerLevelM: 84.73, // Ganga at Varanasi (CWC)
       warningLevelM: 83.00,
-      peakLevelM:    {'moderate': 81.0,  'severe': 83.5,  'critical': 85.0},
-      rainfall7dMm:  {'moderate': 120.0, 'severe': 220.0, 'critical': 340.0},
+      peakLevelM: {'moderate': 81.0, 'severe': 83.5, 'critical': 85.0},
+      rainfall7dMm: {'moderate': 120.0, 'severe': 220.0, 'critical': 340.0},
     ),
     'west bengal': StateEntry(
-      dangerLevelM:  6.10,  // Damodar / Hooghly system
+      dangerLevelM: 6.10, // Damodar / Hooghly system
       warningLevelM: 5.50,
-      peakLevelM:    {'moderate': 5.0,   'severe': 6.0,   'critical': 6.5},
-      rainfall7dMm:  {'moderate': 180.0, 'severe': 300.0, 'critical': 450.0},
+      peakLevelM: {'moderate': 5.0, 'severe': 6.0, 'critical': 6.5},
+      rainfall7dMm: {'moderate': 180.0, 'severe': 300.0, 'critical': 450.0},
     ),
     'odisha': StateEntry(
-      dangerLevelM:  25.90, // Mahanadi at Mundali (CWC)
+      dangerLevelM: 25.90, // Mahanadi at Mundali (CWC)
       warningLevelM: 24.50,
-      peakLevelM:    {'moderate': 23.0,  'severe': 25.0,  'critical': 26.5},
-      rainfall7dMm:  {'moderate': 160.0, 'severe': 280.0, 'critical': 400.0},
+      peakLevelM: {'moderate': 23.0, 'severe': 25.0, 'critical': 26.5},
+      rainfall7dMm: {'moderate': 160.0, 'severe': 280.0, 'critical': 400.0},
     ),
     'andhra pradesh': StateEntry(
-      dangerLevelM:  12.00, // Krishna at Vijayawada
+      dangerLevelM: 12.00, // Krishna at Vijayawada
       warningLevelM: 11.00,
-      peakLevelM:    {'moderate': 10.0,  'severe': 11.5,  'critical': 12.5},
-      rainfall7dMm:  {'moderate': 120.0, 'severe': 220.0, 'critical': 330.0},
+      peakLevelM: {'moderate': 10.0, 'severe': 11.5, 'critical': 12.5},
+      rainfall7dMm: {'moderate': 120.0, 'severe': 220.0, 'critical': 330.0},
     ),
     'kerala': StateEntry(
-      dangerLevelM:  8.00,
+      dangerLevelM: 8.00,
       warningLevelM: 7.00,
-      peakLevelM:    {'moderate': 6.5,   'severe': 7.5,   'critical': 8.5},
-      rainfall7dMm:  {'moderate': 200.0, 'severe': 380.0, 'critical': 550.0},
+      peakLevelM: {'moderate': 6.5, 'severe': 7.5, 'critical': 8.5},
+      rainfall7dMm: {'moderate': 200.0, 'severe': 380.0, 'critical': 550.0},
     ),
     'gujarat': StateEntry(
-      dangerLevelM:  11.00, // Sabarmati at Ahmedabad
+      dangerLevelM: 11.00, // Sabarmati at Ahmedabad
       warningLevelM: 10.00,
-      peakLevelM:    {'moderate': 9.0,   'severe': 10.5,  'critical': 11.5},
-      rainfall7dMm:  {'moderate': 100.0, 'severe': 180.0, 'critical': 280.0},
+      peakLevelM: {'moderate': 9.0, 'severe': 10.5, 'critical': 11.5},
+      rainfall7dMm: {'moderate': 100.0, 'severe': 180.0, 'critical': 280.0},
     ),
     'rajasthan': StateEntry(
-      dangerLevelM:  270.0,
+      dangerLevelM: 270.0,
       warningLevelM: 265.0,
-      peakLevelM:    {'moderate': 260.0, 'severe': 268.0, 'critical': 272.0},
-      rainfall7dMm:  {'moderate': 80.0,  'severe': 140.0, 'critical': 210.0},
+      peakLevelM: {'moderate': 260.0, 'severe': 268.0, 'critical': 272.0},
+      rainfall7dMm: {'moderate': 80.0, 'severe': 140.0, 'critical': 210.0},
     ),
     'madhya pradesh': StateEntry(
-      dangerLevelM:  410.0, // Narmada at Hoshangabad
+      dangerLevelM: 410.0, // Narmada at Hoshangabad
       warningLevelM: 406.0,
-      peakLevelM:    {'moderate': 404.0, 'severe': 408.0, 'critical': 412.0},
-      rainfall7dMm:  {'moderate': 130.0, 'severe': 230.0, 'critical': 350.0},
+      peakLevelM: {'moderate': 404.0, 'severe': 408.0, 'critical': 412.0},
+      rainfall7dMm: {'moderate': 130.0, 'severe': 230.0, 'critical': 350.0},
     ),
     'maharashtra': StateEntry(
-      dangerLevelM:  498.0, // Godavari at Nasik
+      dangerLevelM: 498.0, // Godavari at Nasik
       warningLevelM: 494.0,
-      peakLevelM:    {'moderate': 492.0, 'severe': 496.0, 'critical': 500.0},
-      rainfall7dMm:  {'moderate': 150.0, 'severe': 260.0, 'critical': 380.0},
+      peakLevelM: {'moderate': 492.0, 'severe': 496.0, 'critical': 500.0},
+      rainfall7dMm: {'moderate': 150.0, 'severe': 260.0, 'critical': 380.0},
     ),
     'karnataka': StateEntry(
-      dangerLevelM:  508.0, // Cauvery at Mysore
+      dangerLevelM: 508.0, // Cauvery at Mysore
       warningLevelM: 505.0,
-      peakLevelM:    {'moderate': 503.0, 'severe': 506.0, 'critical': 509.0},
-      rainfall7dMm:  {'moderate': 140.0, 'severe': 250.0, 'critical': 370.0},
+      peakLevelM: {'moderate': 503.0, 'severe': 506.0, 'critical': 509.0},
+      rainfall7dMm: {'moderate': 140.0, 'severe': 250.0, 'critical': 370.0},
     ),
     'himachal pradesh': StateEntry(
-      dangerLevelM:  370.0,
+      dangerLevelM: 370.0,
       warningLevelM: 366.0,
-      peakLevelM:    {'moderate': 364.0, 'severe': 368.0, 'critical': 372.0},
-      rainfall7dMm:  {'moderate': 100.0, 'severe': 180.0, 'critical': 270.0},
+      peakLevelM: {'moderate': 364.0, 'severe': 368.0, 'critical': 372.0},
+      rainfall7dMm: {'moderate': 100.0, 'severe': 180.0, 'critical': 270.0},
     ),
     'uttarakhand': StateEntry(
-      dangerLevelM:  346.0,
+      dangerLevelM: 346.0,
       warningLevelM: 342.0,
-      peakLevelM:    {'moderate': 340.0, 'severe': 344.0, 'critical': 348.0},
-      rainfall7dMm:  {'moderate': 120.0, 'severe': 210.0, 'critical': 310.0},
+      peakLevelM: {'moderate': 340.0, 'severe': 344.0, 'critical': 348.0},
+      rainfall7dMm: {'moderate': 120.0, 'severe': 210.0, 'critical': 310.0},
     ),
     'punjab': StateEntry(
-      dangerLevelM:  215.0,
+      dangerLevelM: 215.0,
       warningLevelM: 212.0,
-      peakLevelM:    {'moderate': 210.0, 'severe': 213.0, 'critical': 216.0},
-      rainfall7dMm:  {'moderate': 90.0,  'severe': 160.0, 'critical': 240.0},
+      peakLevelM: {'moderate': 210.0, 'severe': 213.0, 'critical': 216.0},
+      rainfall7dMm: {'moderate': 90.0, 'severe': 160.0, 'critical': 240.0},
     ),
     'default': StateEntry(
-      dangerLevelM:  12.0,
+      dangerLevelM: 12.0,
       warningLevelM: 10.0,
-      peakLevelM:    {'moderate': 9.0,   'severe': 11.0,  'critical': 13.0},
-      rainfall7dMm:  {'moderate': 120.0, 'severe': 220.0, 'critical': 330.0},
+      peakLevelM: {'moderate': 9.0, 'severe': 11.0, 'critical': 13.0},
+      rainfall7dMm: {'moderate': 120.0, 'severe': 220.0, 'critical': 330.0},
     ),
   };
 }

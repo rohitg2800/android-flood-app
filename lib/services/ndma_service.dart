@@ -58,14 +58,15 @@ class NdmaService {
       return list
           .whereType<Map<String, dynamic>>()
           .map((m) => EmergencyContact(
-                role:  m['role']?.toString()  ?? '',
-                name:  m['name']?.toString()  ?? '',
+                role: m['role']?.toString() ?? '',
+                name: m['name']?.toString() ?? '',
                 phone: m['phone']?.toString() ?? '',
                 state: m['state']?.toString() ?? state,
               ))
           .toList();
     } catch (e) {
-      if (kDebugMode) debugPrint('[NdmaService] fetchEmergencyContacts $state: $e');
+      if (kDebugMode)
+        debugPrint('[NdmaService] fetchEmergencyContacts $state: $e');
       return [];
     }
   }

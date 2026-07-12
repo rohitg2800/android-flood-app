@@ -5,23 +5,23 @@ import 'package:flutter/material.dart';
 import '../theme/river_theme.dart';
 
 class RiskBar extends StatefulWidget {
-  final double value;     // 0–100
-  final double warning;   // threshold line position 0–100
-  final double danger;    // threshold line position 0–100
-  final Color  barColor;
+  final double value; // 0–100
+  final double warning; // threshold line position 0–100
+  final double danger; // threshold line position 0–100
+  final Color barColor;
   final String label;
-  final bool   showLabel;
+  final bool showLabel;
   final double height;
 
   const RiskBar({
     super.key,
     required this.value,
-    this.warning  = 60,
-    this.danger   = 80,
+    this.warning = 60,
+    this.danger = 80,
     this.barColor = AppPalette.cyan,
-    this.label    = '',
+    this.label = '',
     this.showLabel = true,
-    this.height   = 10,
+    this.height = 10,
   });
 
   @override
@@ -30,7 +30,7 @@ class RiskBar extends StatefulWidget {
 
 class _RiskBarState extends State<RiskBar> with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
-  late Animation<double>   _anim;
+  late Animation<double> _anim;
 
   @override
   void initState() {
@@ -56,8 +56,8 @@ class _RiskBarState extends State<RiskBar> with SingleTickerProviderStateMixin {
   }
 
   Color _resolveColor() {
-    if (widget.value >= widget.danger)   return AppPalette.critical;
-    if (widget.value >= widget.warning)  return AppPalette.warning;
+    if (widget.value >= widget.danger) return AppPalette.critical;
+    if (widget.value >= widget.warning) return AppPalette.warning;
     return widget.barColor;
   }
 
@@ -76,14 +76,17 @@ class _RiskBarState extends State<RiskBar> with SingleTickerProviderStateMixin {
                 Text(
                   widget.label,
                   style: const TextStyle(
-                    fontSize: 10, color: AppPalette.textGrey,
+                    fontSize: 10,
+                    color: AppPalette.textGrey,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
                   '${widget.value.toStringAsFixed(0)} / 100',
                   style: TextStyle(
-                    fontSize: 10, color: color, fontWeight: FontWeight.w800,
+                    fontSize: 10,
+                    color: color,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ],
@@ -133,7 +136,8 @@ class _RiskBarState extends State<RiskBar> with SingleTickerProviderStateMixin {
                     if (widget.warning > 0)
                       Positioned(
                         left: w * (widget.warning / 100) - 0.75,
-                        top: 0, bottom: 0,
+                        top: 0,
+                        bottom: 0,
                         child: Container(
                           width: 1.5,
                           decoration: BoxDecoration(
@@ -146,7 +150,8 @@ class _RiskBarState extends State<RiskBar> with SingleTickerProviderStateMixin {
                     if (widget.danger > 0 && widget.danger < 100)
                       Positioned(
                         left: w * (widget.danger / 100) - 0.75,
-                        top: 0, bottom: 0,
+                        top: 0,
+                        bottom: 0,
                         child: Container(
                           width: 1.5,
                           decoration: BoxDecoration(

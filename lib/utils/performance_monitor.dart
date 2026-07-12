@@ -32,8 +32,7 @@ class PerfTrace {
     }
   }
 
-  static Future<T> async<T>(
-      String name, Future<T> Function() fn) async {
+  static Future<T> async<T>(String name, Future<T> Function() fn) async {
     if (kReleaseMode) return fn();
     final task = dev.TimelineTask()..start(name);
     try {
@@ -43,8 +42,7 @@ class PerfTrace {
     }
   }
 
-  static void mark(String name,
-      [Map<String, dynamic>? data]) {
+  static void mark(String name, [Map<String, dynamic>? data]) {
     if (kReleaseMode) return;
     dev.Timeline.instantSync(name, arguments: data);
   }
@@ -61,8 +59,7 @@ class FrameBudgetGuard with WidgetsBindingObserver {
 
   static void attach({int budgetMs = 16}) {
     if (kReleaseMode) return;
-    WidgetsBinding.instance.addObserver(
-        FrameBudgetGuard(budgetMs: budgetMs));
+    WidgetsBinding.instance.addObserver(FrameBudgetGuard(budgetMs: budgetMs));
   }
 
   void didBeginFrame() {
@@ -72,8 +69,7 @@ class FrameBudgetGuard with WidgetsBindingObserver {
   DateTime _start = DateTime.now();
 
   void didDrawFrame() {
-    final elapsed =
-        DateTime.now().difference(_start).inMilliseconds;
+    final elapsed = DateTime.now().difference(_start).inMilliseconds;
     if (elapsed > budgetMs) {
       debugPrint(
           '⚠️  Frame budget exceeded: ${elapsed}ms (budget ${budgetMs}ms)');

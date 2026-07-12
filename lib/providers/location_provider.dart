@@ -19,7 +19,7 @@ final userLocationProvider = FutureProvider<Position?>((ref) async {
 
   return Geolocator.getCurrentPosition(
     locationSettings: const LocationSettings(
-      accuracy: LocationAccuracy.low,   // low accuracy is fine for proximity
+      accuracy: LocationAccuracy.low, // low accuracy is fine for proximity
       timeLimit: Duration(seconds: 8),
     ),
   );

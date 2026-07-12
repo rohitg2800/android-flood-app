@@ -24,12 +24,12 @@ import 'bihar_wrd_scraper.dart';
 
 // ── Reading model ───────────────────────────────────────────────────────────────
 class CwcReading {
-  final double   level;
-  final double   warning;
-  final double   danger;
-  final double?  hfl;
-  final String   source;
-  final String?  stationName;
+  final double level;
+  final double warning;
+  final double danger;
+  final double? hfl;
+  final String source;
+  final String? stationName;
   final DateTime fetchedAt;
 
   const CwcReading({
@@ -46,7 +46,7 @@ class CwcReading {
 // ── Private cache entry ───────────────────────────────────────────────────────────
 class _CacheEntry {
   final CwcReading reading;
-  final DateTime   fetchedAt;
+  final DateTime fetchedAt;
   const _CacheEntry({required this.reading, required this.fetchedAt});
 }
 
@@ -57,8 +57,8 @@ class CwcDirectService {
 
   final http.Client _client = http.Client();
 
-  static const _kTimeout  = Duration(seconds: 14);
-  static const _kGaugeMin = 0.5;   // m MSL
+  static const _kTimeout = Duration(seconds: 14);
+  static const _kGaugeMin = 0.5; // m MSL
   static const _kGaugeMax = 250.0; // m MSL
 
   // Per-city result cache (10-min TTL)
@@ -67,7 +67,7 @@ class CwcDirectService {
 
   // ── Public fetch ───────────────────────────────────────────────────────────────
   Future<CwcReading?> fetch(IndiaCity city) async {
-    final key    = city.id;
+    final key = city.id;
     final cached = _cache[key];
     if (cached != null &&
         DateTime.now().difference(cached.fetchedAt) < _kCacheTTL) {
@@ -92,7 +92,7 @@ class CwcDirectService {
   // ── Source 1: CWC FFEM national JSON (Bihar stations only) ───────────────
   static const _ffemUrl = 'https://cwc.gov.in/sites/default/files/ffem.json';
   static Map<String, dynamic>? _ffemCache;
-  static DateTime?              _ffemCacheTime;
+  static DateTime? _ffemCacheTime;
 
   Future<CwcReading?> _fetchFromCwcFfem(IndiaCity city) async {
     final stationKey = _cwcFfemKey(city);
@@ -107,10 +107,11 @@ class CwcDirectService {
         if (res.statusCode != 200) return null;
         final body = res.body.trim();
         if (body.startsWith('<')) return null;
-        _ffemCache     = jsonDecode(body) as Map<String, dynamic>;
+        _ffemCache = jsonDecode(body) as Map<String, dynamic>;
         _ffemCacheTime = now;
         if (kDebugMode) {
-          debugPrint('[CwcDirect] FFEM fetched: ${_ffemCache!.length} stations');
+          debugPrint(
+              '[CwcDirect] FFEM fetched: ${_ffemCache!.length} stations');
         }
       }
 
@@ -127,18 +128,21 @@ class CwcDirectService {
       }
       if (entry == null) return null;
 
-      final cl = _parseLevel(entry['CL'] ?? entry['cl'] ?? entry['current_level']);
-      final dl = _parseLevel(entry['DL'] ?? entry['dl'] ?? entry['danger_level']);
-      final wl = _parseLevel(entry['WL'] ?? entry['wl'] ?? entry['warning_level']);
+      final cl =
+          _parseLevel(entry['CL'] ?? entry['cl'] ?? entry['current_level']);
+      final dl =
+          _parseLevel(entry['DL'] ?? entry['dl'] ?? entry['danger_level']);
+      final wl =
+          _parseLevel(entry['WL'] ?? entry['wl'] ?? entry['warning_level']);
       if (cl == null || cl <= 0) return null;
 
       return CwcReading(
-        level:       cl,
-        warning:     wl ?? city.warningLevel,
-        danger:      dl ?? city.dangerLevel,
-        source:      'CWC_FFEM',
+        level: cl,
+        warning: wl ?? city.warningLevel,
+        danger: dl ?? city.dangerLevel,
+        source: 'CWC_FFEM',
         stationName: stationKey,
-        fetchedAt:   DateTime.now(),
+        fetchedAt: DateTime.now(),
       );
     } catch (e) {
       if (kDebugMode) debugPrint('[CwcDirect] FFEM ${city.name}: $e');
@@ -147,10 +151,10 @@ class CwcDirectService {
   }
 
   // ── Source 2: CWC FFS per-station bulletin ───────────────────────────────────
-  static const _ffsBase    = 'https://cwc.gov.in/ffnew/stationwise_bulletin.php';
+  static const _ffsBase = 'https://cwc.gov.in/ffnew/stationwise_bulletin.php';
   static const _ffsApiBase = 'https://cwc.gov.in/api/v1/stations';
 
-  static final Map<String, _CacheEntry> _ffsCache    = {};
+  static final Map<String, _CacheEntry> _ffsCache = {};
   static const _kFfsCacheTTL = Duration(minutes: 15);
 
   Future<CwcReading?> _fetchFromCwcFfs(IndiaCity city) async {
@@ -177,7 +181,8 @@ class CwcDirectService {
 
     if (r != null) {
       _ffsCache[code] = _CacheEntry(reading: r, fetchedAt: DateTime.now());
-      if (kDebugMode) debugPrint('[CwcDirect] FFS ✓ ${city.name}: level=${r.level}');
+      if (kDebugMode)
+        debugPrint('[CwcDirect] FFS ✓ ${city.name}: level=${r.level}');
     }
     return r;
   }
@@ -206,20 +211,27 @@ class CwcDirectService {
   CwcReading? _parseFfsEntry(
       Map<String, dynamic> m, IndiaCity city, String source) {
     final cl = _parseLevel(
-      m['current_level'] ?? m['CL']    ?? m['cl'] ??
-      m['water_level']   ?? m['level'] ?? m['gauge_reading'] ??
-      m['gauge']         ?? m['obs_level'],
+      m['current_level'] ??
+          m['CL'] ??
+          m['cl'] ??
+          m['water_level'] ??
+          m['level'] ??
+          m['gauge_reading'] ??
+          m['gauge'] ??
+          m['obs_level'],
     );
     if (cl == null || cl <= 0) return null;
-    final dl = _parseLevel(m['danger_level']  ?? m['DL'] ?? m['dl'] ?? m['danger']);
-    final wl = _parseLevel(m['warning_level'] ?? m['WL'] ?? m['wl'] ?? m['warning']);
+    final dl =
+        _parseLevel(m['danger_level'] ?? m['DL'] ?? m['dl'] ?? m['danger']);
+    final wl =
+        _parseLevel(m['warning_level'] ?? m['WL'] ?? m['wl'] ?? m['warning']);
     return CwcReading(
-      level:       cl,
-      warning:     wl ?? city.warningLevel,
-      danger:      dl ?? city.dangerLevel,
-      source:      source,
+      level: cl,
+      warning: wl ?? city.warningLevel,
+      danger: dl ?? city.dangerLevel,
+      source: source,
       stationName: m['station_name']?.toString() ?? m['station']?.toString(),
-      fetchedAt:   DateTime.now(),
+      fetchedAt: DateTime.now(),
     );
   }
 
@@ -227,7 +239,7 @@ class CwcDirectService {
   static const _beamsUrl =
       'https://beams.fmiscwrdbihar.gov.in/bulletin/gaugereport.json';
   static List<dynamic>? _beamsCache;
-  static DateTime?       _beamsCacheTime;
+  static DateTime? _beamsCacheTime;
 
   Future<CwcReading?> _fetchFromBiharBeams(IndiaCity city) async {
     if (city.cwcStation == null) return null;
@@ -241,21 +253,23 @@ class CwcDirectService {
         final body = res.body.trim();
         if (body.startsWith('<')) return null;
         final parsed = jsonDecode(body);
-        _beamsCache     = parsed is List ? parsed : (parsed['data'] as List? ?? []);
+        _beamsCache = parsed is List ? parsed : (parsed['data'] as List? ?? []);
         _beamsCacheTime = now;
         if (kDebugMode) {
-          debugPrint('[CwcDirect] BEAMS fetched: ${_beamsCache!.length} stations');
+          debugPrint(
+              '[CwcDirect] BEAMS fetched: ${_beamsCache!.length} stations');
         }
       }
 
       final code = city.cwcStation!.toUpperCase();
-      final lc   = city.name.toLowerCase();
+      final lc = city.name.toLowerCase();
       Map<String, dynamic>? best;
       for (final row in _beamsCache!.whereType<Map<String, dynamic>>()) {
         final id = (row['station_id'] ?? row['id'] ?? row['code'] ?? '')
-            .toString().toUpperCase();
-        final sn = (row['station'] ?? row['name'] ?? '')
-            .toString().toLowerCase();
+            .toString()
+            .toUpperCase();
+        final sn =
+            (row['station'] ?? row['name'] ?? '').toString().toLowerCase();
         if (id == code || sn.contains(lc) || lc.contains(sn)) {
           best = row;
           break;
@@ -263,18 +277,19 @@ class CwcDirectService {
       }
       if (best == null) return null;
 
-      final cl = _parseLevel(best['current_level'] ?? best['wl'] ?? best['level']);
-      final dl = _parseLevel(best['danger_level']  ?? best['dl']);
+      final cl =
+          _parseLevel(best['current_level'] ?? best['wl'] ?? best['level']);
+      final dl = _parseLevel(best['danger_level'] ?? best['dl']);
       final wl = _parseLevel(best['warning_level'] ?? best['warning']);
       if (cl == null || cl <= 0) return null;
 
       return CwcReading(
-        level:       cl,
-        warning:     wl ?? city.warningLevel,
-        danger:      dl ?? city.dangerLevel,
-        source:      'CWC_BEAMS',
+        level: cl,
+        warning: wl ?? city.warningLevel,
+        danger: dl ?? city.dangerLevel,
+        source: 'CWC_BEAMS',
         stationName: (best['station'] ?? best['name'])?.toString(),
-        fetchedAt:   DateTime.now(),
+        fetchedAt: DateTime.now(),
       );
     } catch (e) {
       if (kDebugMode) debugPrint('[CwcDirect] BEAMS ${city.name}: $e');
@@ -287,19 +302,19 @@ class CwcDirectService {
     // Only Bihar CWC gauge stations are mapped here.
     // All non-Bihar entries have been removed (v3.3).
     const map = <String, String>{
-      'patna':       'GANDHIGHAT',
-      'bhagalpur':   'BHAGALPUR',
-      'munger':      'MUNGER',
-      'begusarai':   'HATHIDAH',
-      'katihar':     'KURSELA',
-      'supaul':      'BIRPUR',
-      'darbhanga':   'HAYAGHAT',
+      'patna': 'GANDHIGHAT',
+      'bhagalpur': 'BHAGALPUR',
+      'munger': 'MUNGER',
+      'begusarai': 'HATHIDAH',
+      'katihar': 'KURSELA',
+      'supaul': 'BIRPUR',
+      'darbhanga': 'HAYAGHAT',
       'muzaffarpur': 'ROSERA',
-      'sitamarhi':   'DHENG',
-      'gopalganj':   'TRIVENIGANJ',
-      'siwan':       'DORIGHATS',
-      'khagaria':    'KHAGARIA',
-      'purnia':      'JAMALPUR',
+      'sitamarhi': 'DHENG',
+      'gopalganj': 'TRIVENIGANJ',
+      'siwan': 'DORIGHATS',
+      'khagaria': 'KHAGARIA',
+      'purnia': 'JAMALPUR',
     };
     return map[city.id];
   }

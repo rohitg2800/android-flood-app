@@ -11,11 +11,10 @@ Future<ProviderContainer> _container({SharedPreferences? prefs}) async {
   final p = prefs ?? await SharedPreferences.getInstance();
   final c = ProviderContainer(
     overrides: [
-      accessibilityProvider.overrideWith((_) => AccessibilityNotifier(prefs: p)),
+      sharedPreferencesProvider.overrideWithValue(p),
+      accessibilityProvider.overrideWith(() => AccessibilityNotifier(prefs: p)),
     ],
   );
-  // Trigger the notifier and let _load() complete synchronously
-  // (prefs is already resolved — no async gap).
   c.read(accessibilityProvider);
   await Future.microtask(() {});
   return c;
@@ -32,9 +31,9 @@ void main() {
     addTearDown(c.dispose);
     final state = c.read(accessibilityProvider);
 
-    expect(state.highContrast,    isFalse);
+    expect(state.highContrast, isFalse);
     expect(state.textScaleFactor, 1.0);
-    expect(state.locale,          'en');
+    expect(state.locale, 'en');
   });
 
   // ── 2. setHighContrast
@@ -98,21 +97,18 @@ void main() {
 
   // ── 8. Persistence across container recreation
   test('prefs are reloaded into new container', () async {
-    // Seed values and get a live prefs instance — inject it directly
-    // so _load() never touches the singleton at all.
     SharedPreferences.setMockInitialValues({
       'a11y_high_contrast': true,
-      'a11y_text_scale':    1.4,
-      'a11y_locale':        'bn',
+      'a11y_text_scale': 1.4,
+      'a11y_locale': 'bn',
     });
     final prefs = await SharedPreferences.getInstance();
-
     final c = await _container(prefs: prefs);
     addTearDown(c.dispose);
     final s = c.read(accessibilityProvider);
 
-    expect(s.highContrast,    isTrue);
+    expect(s.highContrast, isTrue);
     expect(s.textScaleFactor, 1.4);
-    expect(s.locale,          'bn');
+    expect(s.locale, 'bn');
   });
 }

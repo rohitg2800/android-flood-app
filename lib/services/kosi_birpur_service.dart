@@ -28,24 +28,24 @@ import 'package:http/io_client.dart';
 import 'befiqr_cwc_service.dart';
 
 // ── Official CWC thresholds for Kosi @ Birpur — LOCAL GAUGE DATUM (m) ──────
-const double kBirpurDatumOffset      = 139.32;
-const double kBirpurDangerLevel      =  76.02;  // updated 17 Jun 2026
-const double kBirpurWarningLevel     =  73.70;
-const double kBirpurNormalLevel      =  71.48;
-const double kBirpurHFL              =  76.02;
+const double kBirpurDatumOffset = 139.32;
+const double kBirpurDangerLevel = 76.02; // updated 17 Jun 2026
+const double kBirpurWarningLevel = 73.70;
+const double kBirpurNormalLevel = 71.48;
+const double kBirpurHFL = 76.02;
 const double kBirpurWarningDischarge = 22000.0;
-const double kBirpurDangerDischarge  = 27014.0;
+const double kBirpurDangerDischarge = 27014.0;
 
 // ─────────────────────────────────────────────────────────────────────────────
 class KosiBirpurReading {
-  final double  levelM;
-  final double  dangerLevel;
-  final double  warningLevel;
+  final double levelM;
+  final double dangerLevel;
+  final double warningLevel;
   final double? dischargeCumecs;
   final double? levelWrd;
   final String? trend;
   final DateTime observedAt;
-  final String   source;
+  final String source;
 
   const KosiBirpurReading({
     required this.levelM,
@@ -58,15 +58,15 @@ class KosiBirpurReading {
     required this.source,
   });
 
-  double get gap        => dangerLevel - levelM;
-  bool   get isDanger   => levelM >= dangerLevel;
-  bool   get isWarning  => levelM >= warningLevel && levelM < dangerLevel;
-  bool   get isElevated => levelM >= kBirpurNormalLevel && levelM < warningLevel;
-  bool   get isNormal   => levelM < kBirpurNormalLevel;
+  double get gap => dangerLevel - levelM;
+  bool get isDanger => levelM >= dangerLevel;
+  bool get isWarning => levelM >= warningLevel && levelM < dangerLevel;
+  bool get isElevated => levelM >= kBirpurNormalLevel && levelM < warningLevel;
+  bool get isNormal => levelM < kBirpurNormalLevel;
 
   String get statusLabel {
-    if (isDanger)   return 'DANGER';
-    if (isWarning)  return 'WARNING';
+    if (isDanger) return 'DANGER';
+    if (isWarning) return 'WARNING';
     if (isElevated) return 'ELEVATED';
     return 'NORMAL';
   }
@@ -74,16 +74,16 @@ class KosiBirpurReading {
   double get fillFraction => (levelM / dangerLevel).clamp(0.0, 1.1);
 
   CwcStation toCwcStation() => CwcStation(
-    river:        'Kosi',
-    site:         'Birpur',
-    currentLevel: levelM,
-    dangerLevel:  dangerLevel,
-    warningLevel: warningLevel,
-    trend:        trend,
-    source:       source,
-    isFromSeed:   source == 'SEED',
-    fetchedAt:    observedAt,
-  );
+        river: 'Kosi',
+        site: 'Birpur',
+        currentLevel: levelM,
+        dangerLevel: dangerLevel,
+        warningLevel: warningLevel,
+        trend: trend,
+        source: source,
+        isFromSeed: source == 'SEED',
+        fetchedAt: observedAt,
+      );
 }
 
 // ── Datum conversion helper ───────────────────────────────────────────────────
@@ -96,7 +96,9 @@ double? _amslToLocal(double? amsl) {
 
 // ── HTTP client that does NOT follow redirects ─────────────────────────────
 http.Client _noRedirectClient() {
-  final inner = HttpClient()..maxConnectionsPerHost = 4;
+  final inner = HttpClient()
+    ..maxConnectionsPerHost = 4
+    ..badCertificateCallback = (cert, host, port) => true;
   inner.findProxy = null;
   return IOClient(inner);
 }
@@ -111,16 +113,16 @@ Future<http.Response?> _getNoLoop(
 }) async {
   final client = _noRedirectClient();
   try {
-    final req    = http.Request('GET', Uri.parse(url));
+    final req = http.Request('GET', Uri.parse(url));
     if (headers != null) req.headers.addAll(headers);
     final stream = await client.send(req).timeout(timeout);
-    var resp     = await http.Response.fromStream(stream);
+    var resp = await http.Response.fromStream(stream);
 
     if (resp.statusCode >= 300 && resp.statusCode < 400) {
       final loc = resp.headers['location'];
       if (loc == null) return null; // no Location header — give up
 
-      final origPath  = Uri.parse(url).path.toLowerCase();
+      final origPath = Uri.parse(url).path.toLowerCase();
       final redirPath = Uri.parse(loc).path.toLowerCase();
 
       // ── v3.4 fix: return null on loop (was returning the 302) ──────
@@ -130,7 +132,7 @@ Future<http.Response?> _getNoLoop(
         return null; // caller skips this URL cleanly
       }
       // ── follow one clean redirect ──────────────────────────────────
-      final req2    = http.Request('GET', Uri.parse(loc));
+      final req2 = http.Request('GET', Uri.parse(loc));
       if (headers != null) req2.headers.addAll(headers);
       final stream2 = await client.send(req2).timeout(timeout);
       resp = await http.Response.fromStream(stream2);
@@ -153,8 +155,8 @@ class KosiBirpurService {
   Future<KosiBirpurReading?> fetchLive() async {
     // v3.5: CWC is the authoritative source (same as bihar_live_provider).
     // Try it first synchronously — only race fallbacks if CWC returns null.
-    final cwc = await _tryFromCwcService().timeout(
-        const Duration(seconds: 13), onTimeout: () => null);
+    final cwc = await _tryFromCwcService()
+        .timeout(const Duration(seconds: 13), onTimeout: () => null);
     if (cwc != null) {
       debugPrint('[KosiBirpur] fetchLive ✅ CWC preferred: \${cwc.levelM} m');
       return cwc;
@@ -164,8 +166,10 @@ class KosiBirpurService {
     final futures = <Future<KosiBirpurReading?>>[
       _tryBeamsDirect(),
       _tryWRIS(),
-      _tryFFSEndpoint('https://ffs.india-water.gov.in/ffs/pages/getFloodData.php'),
-      _tryFFSEndpoint('https://ffs.india-water.gov.in/ffs/api/station/KOSI-BIRPUR'),
+      _tryFFSEndpoint(
+          'https://ffs.india-water.gov.in/ffs/pages/getFloodData.php'),
+      _tryFFSEndpoint(
+          'https://ffs.india-water.gov.in/ffs/api/station/KOSI-BIRPUR'),
     ];
 
     final completer = Completer<KosiBirpurReading?>();
@@ -185,8 +189,8 @@ class KosiBirpurService {
       });
     }
 
-    final result = await completer.future.timeout(
-        _raceTimeout, onTimeout: () => null);
+    final result =
+        await completer.future.timeout(_raceTimeout, onTimeout: () => null);
     return result; // v2.2: no seed fallback — let provider handle null
   }
 
@@ -203,29 +207,39 @@ class KosiBirpurService {
           headers: {'Accept': 'application/json', 'User-Agent': 'OpsFlood/3.4'},
         ).timeout(const Duration(seconds: 10));
         if (resp.statusCode == 200 && _isJsonBody(resp.body)) {
-          final body  = jsonDecode(resp.body);
-          final items = body is List ? body
+          final body = jsonDecode(resp.body);
+          final items = body is List
+              ? body
               : (body['data'] as List? ?? body['stations'] as List? ?? []);
           for (final item in items) {
-            final name = (item['site'] ?? item['station_name'] ?? '').toString().toLowerCase();
+            final name = (item['site'] ?? item['station_name'] ?? '')
+                .toString()
+                .toLowerCase();
             if (!name.contains('birpur')) continue;
-            final rawLevel = _parseDbl(item['current_level'] ?? item['water_level'] ?? item['wl']);
+            final rawLevel = _parseDbl(
+                item['current_level'] ?? item['water_level'] ?? item['wl']);
             final level = rawLevel != null && rawLevel > 100
                 ? _amslToLocal(rawLevel)
                 : rawLevel;
             if (level != null) {
               final rawDl = _parseDbl(item['danger_level']);
               final rawWl = _parseDbl(item['warning_level']);
-              final dl = (rawDl != null && rawDl > 100) ? (_amslToLocal(rawDl) ?? kBirpurDangerLevel)  : (rawDl  ?? kBirpurDangerLevel);
-              final wl = (rawWl != null && rawWl > 100) ? (_amslToLocal(rawWl) ?? kBirpurWarningLevel) : (rawWl ?? kBirpurWarningLevel);
+              final dl = (rawDl != null && rawDl > 100)
+                  ? (_amslToLocal(rawDl) ?? kBirpurDangerLevel)
+                  : (rawDl ?? kBirpurDangerLevel);
+              final wl = (rawWl != null && rawWl > 100)
+                  ? (_amslToLocal(rawWl) ?? kBirpurWarningLevel)
+                  : (rawWl ?? kBirpurWarningLevel);
               debugPrint('[KosiBirpur] BEAMS-direct ✅ $level m (local gauge)');
               return KosiBirpurReading(
-                levelM:       level,
-                dangerLevel:  dl,
+                levelM: level,
+                dangerLevel: dl,
                 warningLevel: wl,
-                trend:        item['trend']?.toString(),
-                observedAt:   DateTime.tryParse(item['observed_at']?.toString() ?? '') ?? DateTime.now(),
-                source:       'BEAMS-direct',
+                trend: item['trend']?.toString(),
+                observedAt:
+                    DateTime.tryParse(item['observed_at']?.toString() ?? '') ??
+                        DateTime.now(),
+                source: 'BEAMS-direct',
               );
             }
           }
@@ -238,27 +252,34 @@ class KosiBirpurService {
   // ── Source B: BefiqrCwcService ─────────────────────────────────────────────
   Future<KosiBirpurReading?> _tryFromCwcService() async {
     try {
-      final stations = await _cwcSvc.fetchStations().timeout(const Duration(seconds: 12));
-      final birpur   = stations.where((s) =>
-          !s.isFromSeed &&
-          s.river.toLowerCase().contains('kosi') &&
-          s.site.toLowerCase().contains('birpur')).toList();
+      final stations =
+          await _cwcSvc.fetchStations().timeout(const Duration(seconds: 12));
+      final birpur = stations
+          .where((s) =>
+              !s.isFromSeed &&
+              s.river.toLowerCase().contains('kosi') &&
+              s.site.toLowerCase().contains('birpur'))
+          .toList();
       if (birpur.isNotEmpty) {
-        final s        = birpur.first;
+        final s = birpur.first;
         final rawLevel = s.currentLevel;
-        final level    = rawLevel > 100 ? (_amslToLocal(rawLevel) ?? rawLevel) : rawLevel;
-        final rawDl    = s.dangerLevel;
-        final dl       = rawDl > 100 ? (_amslToLocal(rawDl) ?? kBirpurDangerLevel) : rawDl;
-        final rawWl    = s.warningLevel ?? kBirpurWarningLevel;
-        final wl       = rawWl > 100 ? (_amslToLocal(rawWl) ?? kBirpurWarningLevel) : rawWl;
-        debugPrint('[KosiBirpur] BefiqrCwc ✅ $level m local (raw ${s.currentLevel} from ${s.source})');
+        final level =
+            rawLevel > 100 ? (_amslToLocal(rawLevel) ?? rawLevel) : rawLevel;
+        final rawDl = s.dangerLevel;
+        final dl =
+            rawDl > 100 ? (_amslToLocal(rawDl) ?? kBirpurDangerLevel) : rawDl;
+        final rawWl = s.warningLevel ?? kBirpurWarningLevel;
+        final wl =
+            rawWl > 100 ? (_amslToLocal(rawWl) ?? kBirpurWarningLevel) : rawWl;
+        debugPrint(
+            '[KosiBirpur] BefiqrCwc ✅ $level m local (raw ${s.currentLevel} from ${s.source})');
         return KosiBirpurReading(
-          levelM:       level,
-          dangerLevel:  dl,
+          levelM: level,
+          dangerLevel: dl,
           warningLevel: wl,
-          trend:        s.trend,
-          observedAt:   s.fetchedAt,
-          source:       s.source,
+          trend: s.trend,
+          observedAt: s.fetchedAt,
+          source: s.source,
         );
       }
     } catch (e) {
@@ -290,26 +311,30 @@ class KosiBirpurService {
         }
         // v3.4: guard HTML error pages.
         if (resp.statusCode != 200 || !_isJsonBody(resp.body)) {
-          debugPrint('[KosiBirpur] WRIS[$u] status=${resp.statusCode}, non-JSON — skipping');
+          debugPrint(
+              '[KosiBirpur] WRIS[$u] status=${resp.statusCode}, non-JSON — skipping');
           continue;
         }
         final body = jsonDecode(resp.body);
         final list = (body['data'] as List? ?? body['hydrograph'] as List?);
         if (list != null && list.isNotEmpty) {
           final latest = list.last as Map<String, dynamic>;
-          final val    = _parseDbl(latest['value'] ?? latest['wl'] ?? latest['level']);
-          final obsAt  = DateTime.tryParse(
-              latest['date']?.toString() ?? latest['time']?.toString() ?? '') ?? DateTime.now();
+          final val =
+              _parseDbl(latest['value'] ?? latest['wl'] ?? latest['level']);
+          final obsAt = DateTime.tryParse(latest['date']?.toString() ??
+                  latest['time']?.toString() ??
+                  '') ??
+              DateTime.now();
           if (val != null && val > 100) {
             final local = _amslToLocal(val);
             if (local != null) {
               debugPrint('[KosiBirpur] WRIS WL ✅ $local m local (AMSL $val)');
               return KosiBirpurReading(
-                levelM:       local,
-                dangerLevel:  kBirpurDangerLevel,
+                levelM: local,
+                dangerLevel: kBirpurDangerLevel,
                 warningLevel: kBirpurWarningLevel,
-                observedAt:   obsAt,
-                source:       'India-WRIS',
+                observedAt: obsAt,
+                source: 'India-WRIS',
               );
             }
           }
@@ -317,12 +342,12 @@ class KosiBirpurService {
             final h = _dischargeToLevel(val);
             debugPrint('[KosiBirpur] WRIS Q=$val → H=$h m local');
             return KosiBirpurReading(
-              levelM:          h,
-              dangerLevel:     kBirpurDangerLevel,
-              warningLevel:    kBirpurWarningLevel,
+              levelM: h,
+              dangerLevel: kBirpurDangerLevel,
+              warningLevel: kBirpurWarningLevel,
               dischargeCumecs: val,
-              observedAt:      obsAt,
-              source:          'India-WRIS (Q→H)',
+              observedAt: obsAt,
+              source: 'India-WRIS (Q→H)',
             );
           }
         }
@@ -336,37 +361,43 @@ class KosiBirpurService {
   // ── Source D/E: CWC FFS endpoints ─────────────────────────────────────────
   Future<KosiBirpurReading?> _tryFFSEndpoint(String url) async {
     try {
-      final resp = await http.post(
-        Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept':       'application/json',
-          'Referer':      'https://ffs.india-water.gov.in/',
-          'User-Agent':   'Mozilla/5.0 (OpsFlood/3.4)',
-        },
-        body: jsonEncode({'station_id': 'BR-1', 'river': 'KOSI', 'state': 'BIHAR'}),
-      ).timeout(const Duration(seconds: 10));
+      final resp = await http
+          .post(
+            Uri.parse(url),
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'Referer': 'https://ffs.india-water.gov.in/',
+              'User-Agent': 'Mozilla/5.0 (OpsFlood/3.4)',
+            },
+            body: jsonEncode(
+                {'station_id': 'BR-1', 'river': 'KOSI', 'state': 'BIHAR'}),
+          )
+          .timeout(const Duration(seconds: 10));
       if (resp.statusCode == 200 && _isJsonBody(resp.body)) {
-        final body  = jsonDecode(resp.body) as Map<String, dynamic>;
-        final data  = body['data'] as Map<String, dynamic>? ?? body;
-        final raw   = _parseDbl(
-            data['current_level'] ?? data['gauge_level'] ??
-            data['level']         ?? data['wl']);
+        final body = jsonDecode(resp.body) as Map<String, dynamic>;
+        final data = body['data'] as Map<String, dynamic>? ?? body;
+        final raw = _parseDbl(data['current_level'] ??
+            data['gauge_level'] ??
+            data['level'] ??
+            data['wl']);
         if (raw != null) {
           final level = raw > 100 ? _amslToLocal(raw) : raw;
           if (level != null) {
             final rawDl = _parseDbl(data['danger_level']);
-            final dl    = rawDl != null
-                ? (rawDl > 100 ? (_amslToLocal(rawDl) ?? kBirpurDangerLevel) : rawDl)
+            final dl = rawDl != null
+                ? (rawDl > 100
+                    ? (_amslToLocal(rawDl) ?? kBirpurDangerLevel)
+                    : rawDl)
                 : kBirpurDangerLevel;
             debugPrint('[KosiBirpur] FFS ✅ level=$level m local ($url)');
             return KosiBirpurReading(
-              levelM:          level,
-              dangerLevel:     dl,
-              warningLevel:    kBirpurWarningLevel,
+              levelM: level,
+              dangerLevel: dl,
+              warningLevel: kBirpurWarningLevel,
               dischargeCumecs: _parseDbl(data['discharge'] ?? data['q']),
-              observedAt:      DateTime.now(),
-              source:          'CWC-FFS',
+              observedAt: DateTime.now(),
+              source: 'CWC-FFS',
             );
           }
         }
@@ -377,7 +408,6 @@ class KosiBirpurService {
     return null;
   }
 
-
   // ── Utilities ─────────────────────────────────────────────────────────────
   static double _dischargeToLevel(double q) {
     final ratio = (q / kBirpurDangerDischarge).clamp(0.0, 1.2);
@@ -386,7 +416,7 @@ class KosiBirpurService {
 
   static double? _parseDbl(dynamic v) {
     if (v == null) return null;
-    if (v is num)  return v.toDouble();
+    if (v is num) return v.toDouble();
     return double.tryParse(
         v.toString().replaceAll(RegExp(r'[^\d.]'), '').trim());
   }

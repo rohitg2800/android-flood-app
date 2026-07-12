@@ -41,9 +41,9 @@ import 'backend_api_service.dart';
 
 // ── Data model ────────────────────────────────────────────────────────────────
 class WrdStation {
-  final String  river;
-  final String  site;
-  final String  district;
+  final String river;
+  final String site;
+  final String district;
   final double? hfl;
   final double? dangerLevel;
   final double? warningLevel;
@@ -53,7 +53,7 @@ class WrdStation {
   final double? belowDanger;
   final String? trend;
   final double? forecast24h;
-  final String  source;
+  final String source;
   final DateTime fetchedAt;
 
   const WrdStation({
@@ -73,27 +73,31 @@ class WrdStation {
     required this.fetchedAt,
   });
 
-  bool get hasLiveData    => currentLevel != null;
-  bool get hasDangerLevel => dangerLevel  != null && dangerLevel! > 0;
-  bool get hasForecast    => forecast24h  != null;
+  bool get hasLiveData => currentLevel != null;
+  bool get hasDangerLevel => dangerLevel != null && dangerLevel! > 0;
+  bool get hasForecast => forecast24h != null;
 
   String get displayLevel {
     if (currentLevel != null) return '${currentLevel!.toStringAsFixed(2)} m';
     return 'NA';
   }
+
   String get displayDanger {
     if (dangerLevel != null) return '${dangerLevel!.toStringAsFixed(2)} m';
     return '—';
   }
+
   String get displayWarning {
     if (warningLevel != null) return '${warningLevel!.toStringAsFixed(2)} m';
     return '—';
   }
+
   String get displayDiff {
     if (diff24h == null) return '—';
     final sign = diff24h! >= 0 ? '+' : '';
     return '$sign${diff24h!.toStringAsFixed(2)} m';
   }
+
   String get displayForecast24h {
     if (forecast24h == null) return '—';
     return '${forecast24h!.toStringAsFixed(2)} m';
@@ -107,21 +111,24 @@ class WrdStation {
     if (!hasLiveData) return 'NA';
     if (bd == null && dangerLevel == null) return 'UNKNOWN';
     final margin = bd ?? (dangerLevel! - currentLevel!);
-    if (margin <= 0)   return 'CRITICAL';
+    if (margin <= 0) return 'CRITICAL';
     if (margin <= 3.0) return 'HIGH';
     if (margin <= 6.0) return 'MODERATE';
     return 'LOW';
   }
 
   double? get percentOfDanger {
-    if (currentLevel == null || dangerLevel == null || dangerLevel! <= 0) return null;
+    if (currentLevel == null || dangerLevel == null || dangerLevel! <= 0)
+      return null;
     return (currentLevel! / dangerLevel!) * 100.0;
   }
+
   String get displayPctOfDanger {
     final p = percentOfDanger;
     if (p == null) return '—';
     return '${p.toStringAsFixed(0)}%';
   }
+
   String get displayBelowDanger {
     if (belowDanger != null) return '${belowDanger!.toStringAsFixed(2)} m';
     if (currentLevel != null && dangerLevel != null) {
@@ -132,21 +139,21 @@ class WrdStation {
 
   // ── Serialization ─────────────────────────────────────────────────────────
   Map<String, dynamic> toJson() => {
-    'river':        river,
-    'site':         site,
-    'district':     district,
-    'hfl':          hfl,
-    'dangerLevel':  dangerLevel,
-    'warningLevel': warningLevel,
-    'prevLevel':    prevLevel,
-    'currentLevel': currentLevel,
-    'diff24h':      diff24h,
-    'belowDanger':  belowDanger,
-    'trend':        trend,
-    'forecast24h':  forecast24h,
-    'source':       source,
-    'fetchedAt':    fetchedAt.toIso8601String(),
-  };
+        'river': river,
+        'site': site,
+        'district': district,
+        'hfl': hfl,
+        'dangerLevel': dangerLevel,
+        'warningLevel': warningLevel,
+        'prevLevel': prevLevel,
+        'currentLevel': currentLevel,
+        'diff24h': diff24h,
+        'belowDanger': belowDanger,
+        'trend': trend,
+        'forecast24h': forecast24h,
+        'source': source,
+        'fetchedAt': fetchedAt.toIso8601String(),
+      };
 
   // Accepts both snake_case keys from the live backend response AND
   // camelCase keys persisted to disk by earlier app versions.
@@ -158,6 +165,7 @@ class WrdStation {
       }
       return null;
     }
+
     String s(List<String> keys, String fallback) {
       for (final k in keys) {
         final v = j[k];
@@ -167,34 +175,30 @@ class WrdStation {
     }
 
     final aboveDl = d(['above_below_danger_m']);
-    final belowDanger = aboveDl != null
-        ? -aboveDl
-        : d(['belowDanger']);
+    final belowDanger = aboveDl != null ? -aboveDl : d(['belowDanger']);
 
     return WrdStation(
-      river:        s(['river_name', 'river'], ''),
-      site:         s(['city', 'station', 'site'], ''),
-      district:     s(['district'], ''),
-      hfl:          d(['hfl_m', 'hfl']),
-      dangerLevel:  d(['danger_level', 'dangerLevel']),
+      river: s(['river_name', 'river'], ''),
+      site: s(['city', 'station', 'site'], ''),
+      district: s(['district'], ''),
+      hfl: d(['hfl_m', 'hfl']),
+      dangerLevel: d(['danger_level', 'dangerLevel']),
       warningLevel: d(['warning_level', 'warningLevel']),
-      prevLevel:    d(['prevLevel']),
+      prevLevel: d(['prevLevel']),
       currentLevel: d(['current_level', 'currentLevel']),
-      diff24h:      d(['change_24h_m', 'diff24h']),
-      belowDanger:  belowDanger,
-      trend:        j['trend'] as String?,
-      forecast24h:  d(['forecast24h']),
-      source:       s(['data_source', 'source'], 'WRD_BIHAR_BACKEND'),
-      fetchedAt:    DateTime.tryParse(
-                      j['timestamp'] as String? ??
-                      j['fetchedAt'] as String? ?? '') ??
-                    DateTime.now(),
+      diff24h: d(['change_24h_m', 'diff24h']),
+      belowDanger: belowDanger,
+      trend: j['trend'] as String?,
+      forecast24h: d(['forecast24h']),
+      source: s(['data_source', 'source'], 'WRD_BIHAR_BACKEND'),
+      fetchedAt: DateTime.tryParse(
+              j['timestamp'] as String? ?? j['fetchedAt'] as String? ?? '') ??
+          DateTime.now(),
     );
   }
 
   @override
-  String toString() =>
-      'WrdStation($river @ $site | cur=$displayLevel | '
+  String toString() => 'WrdStation($river @ $site | cur=$displayLevel | '
       'DL=$displayDanger | fc24=$displayForecast24h | '
       'risk=$riskLabel | live=$hasLiveData)';
 }
@@ -205,14 +209,14 @@ class WrdBiharService {
   static final WrdBiharService instance = WrdBiharService._();
 
   // In-memory TTL: 15 min (normal poll cadence)
-  static const _cacheTtl     = Duration(minutes: 15);
+  static const _cacheTtl = Duration(minutes: 15);
   // Disk-cache TTL: 30 min — data older than this is considered stale on
   // cold-start and the service will NOT skip the network fetch.
   static const _diskCacheTtl = Duration(minutes: 30);
-  static const _persistKey   = 'wrd_bihar_stations_v7';
+  static const _persistKey = 'wrd_bihar_stations_v7';
 
-  List<WrdStation>?        _cache;
-  DateTime?                _cacheTime;
+  List<WrdStation>? _cache;
+  DateTime? _cacheTime;
   Map<String, WrdStation>? _stationByKey;
 
   List<WrdStation>? get cachedStations => _cache;
@@ -242,19 +246,19 @@ class WrdBiharService {
         if (isFresh) {
           _cacheTime = DateTime.now().subtract(diskAge!);
           _log('cold-start: ${diskStations.length} stations from disk '
-               '(${diskAge!.inMinutes} min old — within TTL, skipping network)');
+              '(${diskAge!.inMinutes} min old — within TTL, skipping network)');
           return _cache!;
         } else {
           _cacheTime = null;
           _log('cold-start: ${diskStations.length} stations from disk '
-               '(${diskAge?.inMinutes ?? "?"}min old — STALE, will refresh)');
+              '(${diskAge?.inMinutes ?? "?"}min old — STALE, will refresh)');
         }
       }
     }
 
     // Fetch from backend
     try {
-      final raw      = await BackendApiService.instance.fetchLiveLevels('Bihar');
+      final raw = await BackendApiService.instance.fetchLiveLevels('Bihar');
       final stations = raw.map(WrdStation.fromJson).toList();
 
       // v7.4: explicit log branch for 0-station response so it is
@@ -277,11 +281,11 @@ class WrdBiharService {
 
   Future<WrdStation?> fetchBestMatch(String city, {String? river}) async {
     await fetch();
-    final lc    = city.toLowerCase().trim();
+    final lc = city.toLowerCase().trim();
     WrdStation? hit = _stationByKey?[lc];
     if (hit != null) return hit;
 
-    final all        = _cache ?? [];
+    final all = _cache ?? [];
     final candidates = all
         .where((s) =>
             s.site.toLowerCase().contains(lc) ||
@@ -289,10 +293,9 @@ class WrdBiharService {
         .toList();
     if (candidates.isEmpty) return null;
     if (river != null) {
-      final rv      = river.toLowerCase();
-      final byRiver = candidates
-          .where((s) => s.river.toLowerCase().contains(rv))
-          .toList();
+      final rv = river.toLowerCase();
+      final byRiver =
+          candidates.where((s) => s.river.toLowerCase().contains(rv)).toList();
       if (byRiver.isNotEmpty) return byRiver.first;
     }
     final withLevel = candidates.where((s) => s.hasLiveData).toList();
@@ -301,7 +304,7 @@ class WrdBiharService {
 
   Future<List<WrdStation>> fetchForRiver(String river) async {
     final all = await fetch();
-    final lc  = river.toLowerCase();
+    final lc = river.toLowerCase();
     return all.where((s) => s.river.toLowerCase().contains(lc)).toList();
   }
 
@@ -325,7 +328,7 @@ class WrdBiharService {
 
   Future<void> _saveToDisk(List<WrdStation> stations) async {
     try {
-      final prefs   = await SharedPreferences.getInstance();
+      final prefs = await SharedPreferences.getInstance();
       final encoded = jsonEncode(stations.map((s) => s.toJson()).toList());
       await prefs.setString(_persistKey, encoded);
       await prefs.setString(
@@ -341,11 +344,11 @@ class WrdBiharService {
   Future<(List<WrdStation>, Duration?)> _loadFromDiskWithAge() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final raw   = prefs.getString(_persistKey);
+      final raw = prefs.getString(_persistKey);
       if (raw == null || raw.isEmpty) return (<WrdStation>[], null);
       final tsRaw = prefs.getString('${_persistKey}_ts');
-      final ts    = tsRaw != null ? DateTime.tryParse(tsRaw) : null;
-      final age   = ts != null ? DateTime.now().difference(ts) : null;
+      final ts = tsRaw != null ? DateTime.tryParse(tsRaw) : null;
+      final age = ts != null ? DateTime.now().difference(ts) : null;
       if (age != null) {
         _log('disk: last saved ${age.inMinutes} min ago');
       }
@@ -361,7 +364,7 @@ class WrdBiharService {
   }
 
   Future<void> _setCache(List<WrdStation> stations) async {
-    _cache     = stations;
+    _cache = stations;
     _cacheTime = DateTime.now();
     _buildIndex(stations);
     await _saveToDisk(stations);
@@ -370,7 +373,7 @@ class WrdBiharService {
   void _buildIndex(List<WrdStation> stations) {
     final map = <String, WrdStation>{};
     for (final s in stations) {
-      map[s.site.toLowerCase().trim()]     = s;
+      map[s.site.toLowerCase().trim()] = s;
       map[s.district.toLowerCase().trim()] = s;
       final cityKey = s.site.toLowerCase().trim();
       if (cityKey.isNotEmpty) map[cityKey] = s;

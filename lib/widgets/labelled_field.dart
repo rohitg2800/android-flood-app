@@ -19,9 +19,12 @@ class LabelledField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+        Text(label,
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
         const SizedBox(height: 2),
-        Text(value, style: valueStyle ?? const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+        Text(value,
+            style: valueStyle ??
+                const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
       ],
     );
   }

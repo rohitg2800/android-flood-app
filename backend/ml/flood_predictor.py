@@ -79,7 +79,12 @@ GAUGE_THRESHOLDS: dict[str, dict] = {
 
 # ── Build model matching model_train.py exactly ─────────────────────────────────
 def _build_model():
-    import torch.nn as nn
+    try:
+    import torch
+    _TORCH_AVAILABLE = True
+except ImportError:
+    torch = None
+    _TORCH_AVAILABLE = False.nn as nn
 
     class _Model(nn.Module):
         def __init__(self):

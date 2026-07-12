@@ -26,6 +26,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../services/threshold_override_store.dart';
 import '../data/bihar_station_metadata.dart';
 
 import '../services/bihar_live_engine.dart';
@@ -34,20 +35,21 @@ import '../services/bihar_live_engine.dart';
 // BiharStationData
 // ─────────────────────────────────────────────────────────────────────────────
 class BiharStationData {
-  final String  id;
-  final String  city;
-  final String  river;
-  final String  district;
-  final String  state;
+  final String id;
+  final String city;
+  final String river;
+  final String district;
+  final String state;
   final double? currentLevel;
   final double? dangerLevel;
   final double? warningLevel;
   final double? diff24h;
   final double? forecast24h;
-  final String  trend;        // '↑' / '↓' / '→'
-  final String  riskLabel;    // EXTREME / CRITICAL / SEVERE / DANGER / WARNING / NORMAL
-  final String  source;       // LIVE / STATIC
-  final String  fetchedAt;    // ISO-8601 string
+  final String trend; // '↑' / '↓' / '→'
+  final String
+      riskLabel; // EXTREME / CRITICAL / SEVERE / DANGER / WARNING / NORMAL
+  final String source; // LIVE / STATIC
+  final String fetchedAt; // ISO-8601 string
 
   final double? discharge;
   final double? dischargeMean;
@@ -75,13 +77,25 @@ class BiharStationData {
 
   // ── Factory: BiharFeedItem → BiharStationData ─────────────────────────────
   factory BiharStationData.fromFeedItem(BiharFeedItem item) {
-    final rawLevel  = item.raw['level'];
-    final curDouble = rawLevel != null
-        ? _safeLevel(rawLevel)
-        : _parseLevelString(item.value);
+    final rawLevel = item.raw['level'];
+    final curDouble =
+        rawLevel != null ? _safeLevel(rawLevel) : _parseLevelString(item.value);
 
-    final dan = _safeThreshold(item.raw['danger'],  fallback: 99.0);
-    final war = _safeThreshold(item.raw['warning'], fallback: dan * 0.85);
+    final rawDan = _safeThreshold(item.raw['danger'], fallback: 99.0);
+    final rawWar = _safeThreshold(item.raw['warning'], fallback: rawDan * 0.85);
+
+    // Override with verified thresholds from ThresholdOverrideStore if available
+    final normTitle = item.title
+        .toLowerCase()
+        .replaceAll(RegExp(r'\s*\(.*?\)'), '')
+        .replaceAll(RegExp(r'[^a-z0-9\s]'), ' ')
+        .replaceAll(RegExp(r' +'), ' ')
+        .trim();
+    final override = ThresholdOverrideStore.instance.get(normTitle);
+    final dan =
+        (override?.dl != null && override!.dl! > 0) ? override.dl! : rawDan;
+    final war =
+        (override?.wl != null && override!.wl! > 0) ? override.wl! : rawWar;
 
     double? diff;
     if (item.changeStr != null) {
@@ -94,7 +108,7 @@ class BiharStationData {
       if (item.changeStr!.contains('↑')) trend = '↑';
       if (item.changeStr!.contains('↓')) trend = '↓';
     } else if (curDouble != null && war > 0) {
-      if (curDouble > war)       trend = '↑';
+      if (curDouble > war) trend = '↑';
       if (curDouble < war * 0.9) trend = '↓';
     }
 
@@ -112,31 +126,33 @@ class BiharStationData {
     final district = rawDistrict.isNotEmpty
         ? rawDistrict
         : (BiharStationRegistry.forSite(item.title) ??
-               BiharStationRegistry.forSite(
-                   item.title.replaceAll(RegExp(r'\s*\(.*?\)'), '').trim()))
-              ?.district ?? '';
+                    BiharStationRegistry.forSite(item.title
+                        .replaceAll(RegExp(r'\s*\(.*?\)'), '')
+                        .trim()))
+                ?.district ??
+            '';
     final state = (item.raw['state'] as String?)?.trim().isNotEmpty == true
         ? (item.raw['state'] as String).trim()
         : 'Bihar';
 
     return BiharStationData(
-      id:            item.id,
-      city:          item.title,
-      river:         river,
-      district:      district,
-      state:         state,
-      currentLevel:  curDouble,
-      dangerLevel:   dan,
-      warningLevel:  war,
-      diff24h:       diff,
-      forecast24h:   null,
-      trend:         trend,
-      riskLabel:     risk,
-      source:        'LIVE',
-      fetchedAt:     item.fetchedAt.toIso8601String(),
-      discharge:     null,
+      id: item.id,
+      city: item.title,
+      river: river,
+      district: district,
+      state: state,
+      currentLevel: curDouble,
+      dangerLevel: dan,
+      warningLevel: war,
+      diff24h: diff,
+      forecast24h: null,
+      trend: trend,
+      riskLabel: risk,
+      source: 'LIVE',
+      fetchedAt: item.fetchedAt.toIso8601String(),
+      discharge: null,
       dischargeMean: null,
-      rainfall24h:   _safeLevel(item.raw['rainfall']),
+      rainfall24h: _safeLevel(item.raw['rainfall']),
     );
   }
 
@@ -149,10 +165,10 @@ class BiharStationData {
   }
 
   bool get isCritical => riskLabel == 'CRITICAL' || riskLabel == 'EXTREME';
-  bool get isSevere   => riskLabel == 'SEVERE';
-  bool get isWarning  => riskLabel == 'DANGER'  || riskLabel == 'WARNING';
-  bool get isSafe     => riskLabel == 'NORMAL';
-  bool get hasNoData  => riskLabel == 'UNKNOWN' || source == 'STATIC';
+  bool get isSevere => riskLabel == 'SEVERE';
+  bool get isWarning => riskLabel == 'DANGER' || riskLabel == 'WARNING';
+  bool get isSafe => riskLabel == 'NORMAL';
+  bool get hasNoData => riskLabel == 'UNKNOWN' || source == 'STATIC';
 
   // ── Private safe-parse helpers ────────────────────────────────────────────
   static double? _parseLevelString(String? s) {
@@ -189,29 +205,31 @@ class BiharStationData {
   //   NORMAL   = below warning level
   static String _normaliseRisk(String raw) {
     // Tier 0 — EXTREME (above HFL)
-    if (raw.contains('ABOVE_HFL') || raw.contains('ABOVE HFL') ||
-        raw.contains('EXTREME'))
-      return 'EXTREME';
+    if (raw.contains('ABOVE_HFL') ||
+        raw.contains('ABOVE HFL') ||
+        raw.contains('EXTREME')) return 'EXTREME';
     // Tier 1 — CRITICAL (breach / at danger level)
-    if (raw.contains('BREACH') || raw.contains('CRITICAL'))
-      return 'CRITICAL';
+    if (raw.contains('BREACH') || raw.contains('CRITICAL')) return 'CRITICAL';
     // Tier 2 — SEVERE
-    if (raw.contains('SEVERE'))
-      return 'SEVERE';
+    if (raw.contains('SEVERE')) return 'SEVERE';
     // Tier 3 — DANGER (above warning level; API literal is 'DANGER')
-    if (raw == 'DANGER' || raw.contains('ABOVE DANGER') ||
-        raw.contains('ABOVE WARNING') || raw == 'ABOVE')
-      return 'DANGER';
+    if (raw == 'DANGER' ||
+        raw.contains('ABOVE DANGER') ||
+        raw.contains('ABOVE WARNING') ||
+        raw == 'ABOVE') return 'DANGER';
     // Tier 4 — WARNING (near warning / elevated)
-    if (raw.contains('WARNING') || raw.contains('HIGH') ||
-        raw.contains('MODERATE') || raw.contains('WATCH') ||
-        raw.contains('CAUTION'))
-      return 'WARNING';
+    if (raw.contains('WARNING') ||
+        raw.contains('HIGH') ||
+        raw.contains('MODERATE') ||
+        raw.contains('WATCH') ||
+        raw.contains('CAUTION')) return 'WARNING';
     // Tier 5 — NORMAL
-    if (raw == 'LOW'  || raw == 'SAFE'  || raw == 'NORMAL' ||
-        raw == 'PRE-MONSOON'            || raw == 'BELOW WARNING' ||
-        raw.isEmpty)
-      return 'NORMAL';
+    if (raw == 'LOW' ||
+        raw == 'SAFE' ||
+        raw == 'NORMAL' ||
+        raw == 'PRE-MONSOON' ||
+        raw == 'BELOW WARNING' ||
+        raw.isEmpty) return 'NORMAL';
     // Unknown API label — default to NORMAL (not UNKNOWN) so station stays visible
     return 'NORMAL';
   }
@@ -221,24 +239,22 @@ class BiharStationData {
 // BiharLiveState  (v3.5 — _index and byCity both use _normCityKey)
 // ─────────────────────────────────────────────────────────────────────────────
 class BiharLiveState {
-  final List<BiharStationData>        stations;
-  final DateTime?                      lastFetched;
+  final List<BiharStationData> stations;
+  final DateTime? lastFetched;
   final Map<String, BiharStationData> _index;
 
   BiharLiveState({this.stations = const [], this.lastFetched})
       : _index = {
-          for (final s in stations)
-            _normCityKey(s.city): s,
+          for (final s in stations) _normCityKey(s.city): s,
         };
 
-  BiharStationData? byCity(String city) =>
-      _index[_normCityKey(city)];
+  BiharStationData? byCity(String city) => _index[_normCityKey(city)];
 
   int get criticalCount => stations.where((s) => s.isCritical).length;
-  int get severeCount   => stations.where((s) => s.isSevere).length;
-  int get warningCount  => stations.where((s) => s.isWarning).length;
-  int get safeCount     => stations.where((s) => s.isSafe).length;
-  int get noDataCount   => stations.where((s) => s.hasNoData).length;
+  int get severeCount => stations.where((s) => s.isSevere).length;
+  int get warningCount => stations.where((s) => s.isWarning).length;
+  int get safeCount => stations.where((s) => s.isSafe).length;
+  int get noDataCount => stations.where((s) => s.hasNoData).length;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -247,13 +263,13 @@ class BiharLiveState {
 // during dedup, so a safe reading could silently replace a danger-level station.
 // ─────────────────────────────────────────────────────────────────────────────
 const _kRiskOrder = {
-  'EXTREME':  0,
+  'EXTREME': 0,
   'CRITICAL': 1,
-  'SEVERE':   2,
-  'DANGER':   3,
-  'WARNING':  4,
-  'NORMAL':   5,
-  'UNKNOWN':  6,
+  'SEVERE': 2,
+  'DANGER': 3,
+  'WARNING': 4,
+  'NORMAL': 5,
+  'UNKNOWN': 6,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -262,8 +278,8 @@ const _kRiskOrder = {
 String _normCityKey(String name) => name
     .toLowerCase()
     .replaceAll(RegExp(r'\s*\(.*?\)'), '')
-    .replaceAll(RegExp(r'[^a-z0-9\s]'),  ' ')
-    .replaceAll(RegExp(r' +'),            ' ')
+    .replaceAll(RegExp(r'[^a-z0-9\s]'), ' ')
+    .replaceAll(RegExp(r' +'), ' ')
     .trim();
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -301,7 +317,7 @@ class BiharLiveNotifier extends AsyncNotifier<BiharLiveState> {
     final rawStations = feed.items
         .where((i) =>
             i.kind == FeedItemKind.riverGauge ||
-            i.kind == FeedItemKind.barrage    ||
+            i.kind == FeedItemKind.barrage ||
             i.kind == FeedItemKind.telemetry)
         .map(BiharStationData.fromFeedItem)
         .toList();
@@ -313,13 +329,13 @@ class BiharLiveNotifier extends AsyncNotifier<BiharLiveState> {
       if (!deduped.containsKey(key)) {
         deduped[key] = s;
       } else {
-        final existing     = deduped[key]!;
-        final incomingRank = _kRiskOrder[s.riskLabel]        ?? 6;
+        final existing = deduped[key]!;
+        final incomingRank = _kRiskOrder[s.riskLabel] ?? 6;
         final existingRank = _kRiskOrder[existing.riskLabel] ?? 6;
         if (incomingRank < existingRank) {
           deduped[key] = s;
         } else if (incomingRank == existingRank) {
-          final incomingLevel = s.currentLevel        ?? 0;
+          final incomingLevel = s.currentLevel ?? 0;
           final existingLevel = existing.currentLevel ?? 0;
           if (incomingLevel > existingLevel) deduped[key] = s;
         }
@@ -327,12 +343,11 @@ class BiharLiveNotifier extends AsyncNotifier<BiharLiveState> {
     }
 
     final stations = deduped.values.toList()
-      ..sort((a, b) =>
-          (_kRiskOrder[a.riskLabel] ?? 5)
-              .compareTo(_kRiskOrder[b.riskLabel] ?? 5));
+      ..sort((a, b) => (_kRiskOrder[a.riskLabel] ?? 5)
+          .compareTo(_kRiskOrder[b.riskLabel] ?? 5));
 
     return BiharLiveState(
-      stations:    stations,
+      stations: stations,
       lastFetched: feed.generatedAt,
     );
   }

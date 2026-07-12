@@ -881,6 +881,240 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'One-tap SOS gives fast access to helplines, evacuation guidance and emergency help.'**
   String get onboardingSubtitle4;
+
+  /// No description provided for @liveOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Live only'**
+  String get liveOnly;
+
+  /// No description provided for @showAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Show all'**
+  String get showAll;
+
+  /// No description provided for @riverMonitor.
+  ///
+  /// In en, this message translates to:
+  /// **'River Monitor'**
+  String get riverMonitor;
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// No description provided for @viewDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'View Details'**
+  String get viewDetails;
+
+  /// No description provided for @biharRiverMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Bihar River Map'**
+  String get biharRiverMap;
+
+  /// No description provided for @searchStation.
+  ///
+  /// In en, this message translates to:
+  /// **'Search station or river…'**
+  String get searchStation;
+
+  /// No description provided for @monitoringMaps.
+  ///
+  /// In en, this message translates to:
+  /// **'Monitoring & Maps'**
+  String get monitoringMaps;
+
+  /// No description provided for @alertsSafety.
+  ///
+  /// In en, this message translates to:
+  /// **'Alerts & Safety'**
+  String get alertsSafety;
+
+  /// No description provided for @forecastAI.
+  ///
+  /// In en, this message translates to:
+  /// **'Forecast & AI'**
+  String get forecastAI;
+
+  /// No description provided for @biharFloodWatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Bihar Flood Watch'**
+  String get biharFloodWatch;
+
+  /// No description provided for @updatedJustNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated just now'**
+  String get updatedJustNow;
+
+  /// No description provided for @criticalNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical Now'**
+  String get criticalNow;
+
+  /// No description provided for @elevated.
+  ///
+  /// In en, this message translates to:
+  /// **'Elevated'**
+  String get elevated;
+
+  /// No description provided for @noActiveAlerts.
+  ///
+  /// In en, this message translates to:
+  /// **'No active alerts'**
+  String get noActiveAlerts;
+
+  /// No description provided for @tapToViewAlerts.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to view alerts'**
+  String get tapToViewAlerts;
+
+  /// No description provided for @aiFloodPrediction.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Flood Prediction'**
+  String get aiFloodPrediction;
+
+  /// No description provided for @hours24.
+  ///
+  /// In en, this message translates to:
+  /// **'24 Hours'**
+  String get hours24;
+
+  /// No description provided for @hours48.
+  ///
+  /// In en, this message translates to:
+  /// **'48 Hours'**
+  String get hours48;
+
+  /// No description provided for @hours72.
+  ///
+  /// In en, this message translates to:
+  /// **'72 Hours'**
+  String get hours72;
+
+  /// No description provided for @criticalRisk.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical Risk'**
+  String get criticalRisk;
+
+  /// No description provided for @severeRisk.
+  ///
+  /// In en, this message translates to:
+  /// **'Severe Risk'**
+  String get severeRisk;
+
+  /// No description provided for @moderateRisk.
+  ///
+  /// In en, this message translates to:
+  /// **'Moderate Risk'**
+  String get moderateRisk;
+
+  /// No description provided for @allClear.
+  ///
+  /// In en, this message translates to:
+  /// **'All Clear'**
+  String get allClear;
+
+  /// No description provided for @riskForecast.
+  ///
+  /// In en, this message translates to:
+  /// **'Risk Forecast'**
+  String get riskForecast;
+
+  /// No description provided for @community.
+  ///
+  /// In en, this message translates to:
+  /// **'Community'**
+  String get community;
+
+  /// No description provided for @reportIncident.
+  ///
+  /// In en, this message translates to:
+  /// **'Report Incident'**
+  String get reportIncident;
+
+  /// No description provided for @crowdReports.
+  ///
+  /// In en, this message translates to:
+  /// **'Crowd Reports'**
+  String get crowdReports;
+
+  /// No description provided for @newsFeed.
+  ///
+  /// In en, this message translates to:
+  /// **'News Feed'**
+  String get newsFeed;
+
+  /// No description provided for @floodNews.
+  ///
+  /// In en, this message translates to:
+  /// **'Flood News'**
+  String get floodNews;
+
+  /// No description provided for @dataAndSources.
+  ///
+  /// In en, this message translates to:
+  /// **'Data & Sources'**
+  String get dataAndSources;
+
+  /// No description provided for @privacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy'**
+  String get privacy;
+
+  /// No description provided for @whatWeStore.
+  ///
+  /// In en, this message translates to:
+  /// **'What we store'**
+  String get whatWeStore;
+
+  /// No description provided for @appearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get appearance;
+
+  /// No description provided for @accessibility.
+  ///
+  /// In en, this message translates to:
+  /// **'Accessibility'**
+  String get accessibility;
+
+  /// No description provided for @notifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notifications;
+
+  /// No description provided for @highContrast.
+  ///
+  /// In en, this message translates to:
+  /// **'High Contrast'**
+  String get highContrast;
+
+  /// No description provided for @textSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Text Size'**
+  String get textSize;
+
+  /// No description provided for @reducedMotion.
+  ///
+  /// In en, this message translates to:
+  /// **'Reduced Motion'**
+  String get reducedMotion;
 }
 
 class _AppLocalizationsDelegate

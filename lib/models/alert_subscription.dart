@@ -1,21 +1,26 @@
-// lib/models/alert_subscription.dart
-// Hive-persisted model representing a user's watch subscription on a gauge.
 import 'package:hive_flutter/hive_flutter.dart';
-
-part 'alert_subscription.g.dart';
-
 @HiveType(typeId: 10)
 class AlertSubscription extends HiveObject {
-  @HiveField(0) final String  stationId;
-  @HiveField(1) final String  cityName;
-  @HiveField(2) final String  riverName;
-  /// Custom threshold in metres. null = use station's own danger level.
-  @HiveField(3) final double? customThresholdMetres;
-  /// Radius in km within which the user wants to receive alerts.
-  @HiveField(4) final double  notifyRadiusKm;
-  /// If true, only notify when a BREACH is predicted (predicted24h >= danger).
-  @HiveField(5) final bool    breachOnlyMode;
-  @HiveField(6) final DateTime createdAt;
+  @HiveField(0)
+  final String stationId;
+
+  @HiveField(1)
+  final String cityName;
+
+  @HiveField(2)
+  final String riverName;
+
+  @HiveField(3)
+  final double? customThresholdMetres;
+
+  @HiveField(4)
+  final double notifyRadiusKm;
+
+  @HiveField(5)
+  final bool breachOnlyMode;
+
+  @HiveField(6)
+  final DateTime createdAt;
 
   AlertSubscription({
     required this.stationId,
@@ -27,35 +32,50 @@ class AlertSubscription extends HiveObject {
     required this.createdAt,
   });
 
-  // ── Alias getters used by alert_engine.dart ────────────────────────────────
-  /// Alias for customThresholdMetres (alert_engine uses this name).
   double? get customThresholdLevel => customThresholdMetres;
-  /// Alias for breachOnlyMode.
-  bool    get notifyOnBreachOnly   => breachOnlyMode;
-  /// Alias for notifyRadiusKm.
-  double  get radiusKm             => notifyRadiusKm;
+  bool get notifyOnBreachOnly => breachOnlyMode;
+  double get radiusKm => notifyRadiusKm;
 
   AlertSubscription copyWith({
-    double?   customThresholdMetres,
-    double?   notifyRadiusKm,
-    bool?     breachOnlyMode,
-  }) =>
-      AlertSubscription(
-        stationId:             stationId,
-        cityName:              cityName,
-        riverName:             riverName,
-        customThresholdMetres: customThresholdMetres ?? this.customThresholdMetres,
-        notifyRadiusKm:        notifyRadiusKm        ?? this.notifyRadiusKm,
-        breachOnlyMode:        breachOnlyMode        ?? this.breachOnlyMode,
-        createdAt:             createdAt,
-      );
+    double? customThresholdMetres,
+    double? notifyRadiusKm,
+    bool? breachOnlyMode,
+  }) {
+    return AlertSubscription(
+      stationId: stationId,
+      cityName: cityName,
+      riverName: riverName,
+      customThresholdMetres:
+          customThresholdMetres ?? this.customThresholdMetres,
+      notifyRadiusKm: notifyRadiusKm ?? this.notifyRadiusKm,
+      breachOnlyMode: breachOnlyMode ?? this.breachOnlyMode,
+      createdAt: createdAt,
+    );
+  }
 
   @override
   String toString() =>
-      'AlertSubscription($cityName / $stationId, '
-      'radius: ${notifyRadiusKm}km, '
-      'threshold: ${customThresholdMetres ?? "danger"}m, '
-      'breachOnly: $breachOnlyMode)';
+      'AlertSubscription($cityName / $stationId, radius: ${notifyRadiusKm}km, threshold: ${customThresholdMetres ?? "danger"}m, breachOnly: $breachOnlyMode)';
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AlertSubscription &&
+          runtimeType == other.runtimeType &&
+          stationId == other.stationId &&
+          cityName == other.cityName &&
+          riverName == other.riverName &&
+          customThresholdMetres == other.customThresholdMetres &&
+          notifyRadiusKm == other.notifyRadiusKm &&
+          breachOnlyMode == other.breachOnlyMode;
+
+  @override
+  int get hashCode => Object.hash(
+        stationId,
+        cityName,
+        riverName,
+        customThresholdMetres,
+        notifyRadiusKm,
+        breachOnlyMode,
+      );
 }
-// Note: @GeneratedAdapters annotation removed — not a valid Hive annotation.
-// The generated adapter in alert_subscription.g.dart is used directly.

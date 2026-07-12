@@ -11,8 +11,8 @@ import '../../theme/river_theme.dart';
 
 class AnimatedAreaChart extends StatefulWidget {
   final AnimationController animCtrl;
-  final Animation<double>   areaAnim;
-  final bool                reduceMotion;
+  final Animation<double> areaAnim;
+  final bool reduceMotion;
 
   const AnimatedAreaChart({
     super.key,
@@ -33,14 +33,12 @@ class _AnimatedAreaChartState extends State<AnimatedAreaChart> {
     final t = RiverColors.of(context);
 
     return StreamBuilder<DataFetchSnapshot>(
-      stream:      DataFetchEngine.instance.stream,
+      stream: DataFetchEngine.instance.stream,
       initialData: DataFetchEngine.instance.last,
       builder: (context, snap) {
         final snapshot = snap.data;
-        final stations  = snapshot?.stations ?? [];
-        final top5 = stations
-            .where((d) => d.warningLevel > 0)
-            .toList()
+        final stations = snapshot?.stations ?? [];
+        final top5 = stations.where((d) => d.warningLevel > 0).toList()
           ..sort((a, b) => b.progressPct.compareTo(a.progressPct));
         final display = top5.take(5).toList();
 
@@ -59,9 +57,10 @@ class _AnimatedAreaChartState extends State<AnimatedAreaChart> {
                   const Spacer(),
                   if (snapshot?.isLoading == true)
                     SizedBox(
-                      width: 10, height: 10,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 1.5, color: t.accent)),
+                        width: 10,
+                        height: 10,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 1.5, color: t.accent)),
                 ],
               ),
             ),
@@ -76,13 +75,14 @@ class _AnimatedAreaChartState extends State<AnimatedAreaChart> {
                 animation: widget.areaAnim,
                 builder: (_, __) => Column(
                   children: List.generate(display.length, (i) {
-                    final d    = display[i];
-                    final pct  = (d.progressPct * widget.areaAnim.value).clamp(0.0, 1.0);
-                    final col  = _riskColor(d.progressPct);
+                    final d = display[i];
+                    final pct =
+                        (d.progressPct * widget.areaAnim.value).clamp(0.0, 1.0);
+                    final col = _riskColor(d.progressPct);
 
                     return GestureDetector(
-                      onTap: () => setState(() =>
-                          _hoveredIndex = _hoveredIndex == i ? -1 : i),
+                      onTap: () => setState(
+                          () => _hoveredIndex = _hoveredIndex == i ? -1 : i),
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
                         child: Column(
@@ -92,7 +92,7 @@ class _AnimatedAreaChartState extends State<AnimatedAreaChart> {
                               children: [
                                 Expanded(
                                   child: Text(
-                                    d.river,
+                                    d.riverName ?? '',
                                     style: TextStyle(
                                         color: t.textPrimary,
                                         fontSize: 11,
@@ -115,10 +115,8 @@ class _AnimatedAreaChartState extends State<AnimatedAreaChart> {
                               child: LinearProgressIndicator(
                                 value: pct,
                                 minHeight: 5,
-                                backgroundColor:
-                                    col.withValues(alpha: 0.12),
-                                valueColor:
-                                    AlwaysStoppedAnimation<Color>(col),
+                                backgroundColor: col.withValues(alpha: 0.12),
+                                valueColor: AlwaysStoppedAnimation<Color>(col),
                               ),
                             ),
                             if (_hoveredIndex == i)
@@ -145,7 +143,7 @@ class _AnimatedAreaChartState extends State<AnimatedAreaChart> {
   }
 
   Color _riskColor(double pct) {
-    if (pct >= 1.0)  return AppPalette.critical;
+    if (pct >= 1.0) return AppPalette.critical;
     if (pct >= 0.85) return AppPalette.danger;
     if (pct >= 0.70) return AppPalette.warning;
     return AppPalette.safe;

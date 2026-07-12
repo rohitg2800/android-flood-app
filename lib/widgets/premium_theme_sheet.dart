@@ -18,48 +18,48 @@ void showPremiumThemeSheet(BuildContext context) {
 // ─── Filter metadata ───────────────────────────────────────────────────
 const _kFilters = [
   _FilterMeta(
-    mode:      AppThemeMode.system,
-    label:     'Auto',
-    subtitle:  'Follows device',
-    icon:      Icons.brightness_auto,
-    gradient:  [Color(0xFF2A3A5C), Color(0xFF3A5080)],
+    mode: AppThemeMode.system,
+    label: 'Auto',
+    subtitle: 'Follows device',
+    icon: Icons.brightness_auto,
+    gradient: [Color(0xFF2A3A5C), Color(0xFF3A5080)],
     isPremium: false,
     isRobotic: false,
   ),
   _FilterMeta(
-    mode:      AppThemeMode.dark,
-    label:     'Night River',
-    subtitle:  'Deep abyss',
-    icon:      Icons.nights_stay,
-    gradient:  [Color(0xFF010810), Color(0xFF071525)],
+    mode: AppThemeMode.dark,
+    label: 'Night River',
+    subtitle: 'Deep abyss',
+    icon: Icons.nights_stay,
+    gradient: [Color(0xFF010810), Color(0xFF071525)],
     isPremium: false,
     isRobotic: false,
   ),
   _FilterMeta(
-    mode:      AppThemeMode.sunset,
-    label:     'Sunset Warm',
-    subtitle:  'Warm & golden',
-    icon:      Icons.wb_twilight,
-    gradient:  [Color(0xFF3D1A00), Color(0xFF7A3800)],
+    mode: AppThemeMode.sunset,
+    label: 'Sunset Warm',
+    subtitle: 'Warm & golden',
+    icon: Icons.wb_twilight,
+    gradient: [Color(0xFF3D1A00), Color(0xFF7A3800)],
     isPremium: true,
     isRobotic: false,
   ),
   _FilterMeta(
-    mode:      AppThemeMode.ocean,
-    label:     'Deep Ocean',
-    subtitle:  'Cool blue depths',
-    icon:      Icons.water,
-    gradient:  [Color(0xFF00280F), Color(0xFF003A5C)],
+    mode: AppThemeMode.ocean,
+    label: 'Deep Ocean',
+    subtitle: 'Cool blue depths',
+    icon: Icons.water,
+    gradient: [Color(0xFF00280F), Color(0xFF003A5C)],
     isPremium: true,
     isRobotic: false,
   ),
   // ── Robotic themes ────────────────────────────────────────────────────
   _FilterMeta(
-    mode:      AppThemeMode.roboticDark,
-    label:     'Tactical Dark',
-    subtitle:  'Robotic · Night ops',
-    icon:      Icons.memory_rounded,
-    gradient:  [Color(0xFF0A0F0A), Color(0xFF0D1F0D)],
+    mode: AppThemeMode.roboticDark,
+    label: 'Tactical Dark',
+    subtitle: 'Robotic · Night ops',
+    icon: Icons.memory_rounded,
+    gradient: [Color(0xFF0A0F0A), Color(0xFF0D1F0D)],
     isPremium: false,
     isRobotic: true,
   ),
@@ -85,7 +85,8 @@ class PremiumThemeSheet extends ConsumerWidget {
         children: [
           Center(
             child: Container(
-              width: 36, height: 4,
+              width: 36,
+              height: 4,
               decoration: BoxDecoration(
                 color: const Color(0xFF3A4A58),
                 borderRadius: BorderRadius.circular(2),
@@ -106,7 +107,7 @@ class PremiumThemeSheet extends ConsumerWidget {
           ...List.generate(
             _kFilters.length,
             (i) => _FilterTile(
-              meta:     _kFilters[i],
+              meta: _kFilters[i],
               isActive: _kFilters[i].mode == current,
               onTap: () {
                 ref.read(themeModeProvider.notifier).setMode(_kFilters[i].mode);
@@ -122,17 +123,17 @@ class PremiumThemeSheet extends ConsumerWidget {
 
 // ─── Tile ──────────────────────────────────────────────────────────────────────────
 class _FilterTile extends StatelessWidget {
-  final _FilterMeta  meta;
-  final bool         isActive;
+  final _FilterMeta meta;
+  final bool isActive;
   final VoidCallback onTap;
-  const _FilterTile({required this.meta, required this.isActive, required this.onTap});
+  const _FilterTile(
+      {required this.meta, required this.isActive, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     // Robotic accent: neon green. Others: cyan.
-    final activeColor = meta.isRobotic
-        ? const Color(0xFF39FF14)
-        : const Color(0xFF00B4D8);
+    final activeColor =
+        meta.isRobotic ? const Color(0xFF39FF14) : const Color(0xFF00B4D8);
 
     return GestureDetector(
       onTap: onTap,
@@ -144,13 +145,12 @@ class _FilterTile extends StatelessWidget {
           gradient: LinearGradient(
             colors: meta.gradient,
             begin: Alignment.centerLeft,
-            end:   Alignment.centerRight,
+            end: Alignment.centerRight,
           ),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isActive
-                ? activeColor
-                : Colors.white.withValues(alpha: 0.06),
+            color:
+                isActive ? activeColor : Colors.white.withValues(alpha: 0.06),
             width: isActive ? 1.5 : 1,
           ),
           boxShadow: isActive && meta.isRobotic
@@ -165,8 +165,8 @@ class _FilterTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(meta.icon, size: 18,
-                color: isActive ? activeColor : Colors.white54),
+            Icon(meta.icon,
+                size: 18, color: isActive ? activeColor : Colors.white54),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -182,32 +182,54 @@ class _FilterTile extends StatelessWidget {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      if (meta.isPremium) ...[const SizedBox(width: 6),
+                      if (meta.isPremium) ...[
+                        const SizedBox(width: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF9A825).withValues(alpha: 0.15),
+                            color:
+                                const Color(0xFFF9A825).withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(4),
-                            border: Border.all(color: const Color(0xFFF9A825).withValues(alpha: 0.4)),
+                            border: Border.all(
+                                color: const Color(0xFFF9A825)
+                                    .withValues(alpha: 0.4)),
                           ),
-                          child: const Text('PRO', style: TextStyle(color: Color(0xFFF9A825), fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
+                          child: const Text('PRO',
+                              style: TextStyle(
+                                  color: Color(0xFFF9A825),
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.8)),
                         ),
                       ],
-                      if (meta.isRobotic) ...[const SizedBox(width: 6),
+                      if (meta.isRobotic) ...[
+                        const SizedBox(width: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF39FF14).withValues(alpha: 0.12),
+                            color:
+                                const Color(0xFF39FF14).withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(4),
-                            border: Border.all(color: const Color(0xFF39FF14).withValues(alpha: 0.4)),
+                            border: Border.all(
+                                color: const Color(0xFF39FF14)
+                                    .withValues(alpha: 0.4)),
                           ),
-                          child: const Text('TACTICAL', style: TextStyle(color: Color(0xFF39FF14), fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
+                          child: const Text('TACTICAL',
+                              style: TextStyle(
+                                  color: Color(0xFF39FF14),
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.8)),
                         ),
                       ],
                     ],
                   ),
                   const SizedBox(height: 2),
-                  Text(meta.subtitle, style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                  Text(meta.subtitle,
+                      style:
+                          const TextStyle(color: Colors.white38, fontSize: 11)),
                 ],
               ),
             ),
@@ -223,12 +245,12 @@ class _FilterTile extends StatelessWidget {
 // ─── Meta model ──────────────────────────────────────────────────────────────────────
 class _FilterMeta {
   final AppThemeMode mode;
-  final String       label;
-  final String       subtitle;
-  final IconData     icon;
-  final List<Color>  gradient;
-  final bool         isPremium;
-  final bool         isRobotic;
+  final String label;
+  final String subtitle;
+  final IconData icon;
+  final List<Color> gradient;
+  final bool isPremium;
+  final bool isRobotic;
   const _FilterMeta({
     required this.mode,
     required this.label,

@@ -7,9 +7,9 @@ import '../../theme/rx.dart';
 import 'map_risk_helpers.dart';
 
 class MapTelemetrySheet extends StatelessWidget {
-  final List<RiverStation>          stations;      // already-filtered list
-  final int                         totalCount;    // unfiltered total
-  final VoidCallback                onClose;
+  final List<RiverStation> stations; // already-filtered list
+  final int totalCount; // unfiltered total
+  final VoidCallback onClose;
   final void Function(RiverStation) onTap;
 
   const MapTelemetrySheet({
@@ -22,14 +22,16 @@ class MapTelemetrySheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rc        = context.rc;
+    final rc = context.rc;
     final isFiltered = stations.length != totalCount;
     final countLabel = isFiltered
         ? '${stations.length} / $totalCount stations'
         : '${stations.length} stations';
 
     return Positioned(
-      bottom: 0, left: 0, right: 0,
+      bottom: 0,
+      left: 0,
+      right: 0,
       child: ClipRRect(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
         child: Container(
@@ -40,9 +42,9 @@ class MapTelemetrySheet extends StatelessWidget {
             color: rc.cardBg,
             boxShadow: [
               BoxShadow(
-                color:      Colors.black.withValues(alpha: 0.3),
+                color: Colors.black.withValues(alpha: 0.3),
                 blurRadius: 20,
-                offset:     const Offset(0, -4),
+                offset: const Offset(0, -4),
               ),
             ],
           ),
@@ -52,9 +54,10 @@ class MapTelemetrySheet extends StatelessWidget {
               Container(height: 1, color: rc.stroke),
               Container(
                 margin: const EdgeInsets.symmetric(vertical: 8),
-                width: 36, height: 4,
+                width: 36,
+                height: 4,
                 decoration: BoxDecoration(
-                  color:        rc.stroke,
+                  color: rc.stroke,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -63,15 +66,14 @@ class MapTelemetrySheet extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
                 child: Row(
                   children: [
-                    Icon(Icons.sensors_rounded,
-                        color: rc.accent, size: 16),
+                    Icon(Icons.sensors_rounded, color: rc.accent, size: 16),
                     const SizedBox(width: 8),
                     Text(
                       'LIVE TELEMETRY  ($countLabel)',
                       style: TextStyle(
-                        color:         isFiltered ? rc.accent : rc.textPrimary,
-                        fontSize:      12,
-                        fontWeight:    FontWeight.w700,
+                        color: isFiltered ? rc.accent : rc.textPrimary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
                         letterSpacing: 0.8,
                       ),
                     ),
@@ -91,8 +93,8 @@ class MapTelemetrySheet extends StatelessWidget {
                         padding: const EdgeInsets.all(24),
                         child: Text(
                           'No stations match the current filter.',
-                          style: TextStyle(
-                              color: rc.textSecondary, fontSize: 13),
+                          style:
+                              TextStyle(color: rc.textSecondary, fontSize: 13),
                         ),
                       )
                     : ListView.separated(
@@ -101,7 +103,7 @@ class MapTelemetrySheet extends StatelessWidget {
                         separatorBuilder: (_, __) =>
                             Divider(height: 1, color: rc.stroke),
                         itemBuilder: (_, i) {
-                          final s  = stations[i];
+                          final s = stations[i];
                           final dc = s.dangerClass;
                           return InkWell(
                             onTap: () => onTap(s),
@@ -112,7 +114,8 @@ class MapTelemetrySheet extends StatelessWidget {
                               child: Row(
                                 children: [
                                   Container(
-                                    width: 10, height: 10,
+                                    width: 10,
+                                    height: 10,
                                     decoration: BoxDecoration(
                                       color: riskColorSolid(dc),
                                       shape: BoxShape.circle,
@@ -127,8 +130,8 @@ class MapTelemetrySheet extends StatelessWidget {
                                         Text(
                                           s.station,
                                           style: TextStyle(
-                                            color:      rc.textPrimary,
-                                            fontSize:   13,
+                                            color: rc.textPrimary,
+                                            fontSize: 13,
                                             fontWeight: FontWeight.w600,
                                           ),
                                           overflow: TextOverflow.ellipsis,
@@ -136,7 +139,7 @@ class MapTelemetrySheet extends StatelessWidget {
                                         Text(
                                           '${s.river}  •  ${s.city}',
                                           style: TextStyle(
-                                            color:    rc.textSecondary,
+                                            color: rc.textSecondary,
                                             fontSize: 11,
                                           ),
                                           overflow: TextOverflow.ellipsis,
@@ -145,15 +148,14 @@ class MapTelemetrySheet extends StatelessWidget {
                                     ),
                                   ),
                                   Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.end,
+                                    crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
                                       Text(
                                         s.levelText,
                                         style: TextStyle(
-                                          color:       riskColorSolid(dc),
-                                          fontSize:    13,
-                                          fontWeight:  FontWeight.w700,
+                                          color: riskColorSolid(dc),
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
                                           fontFeatures: const [
                                             FontFeature.tabularFigures(),
                                           ],
@@ -164,8 +166,8 @@ class MapTelemetrySheet extends StatelessWidget {
                                         style: TextStyle(
                                           color: riskColorSolid(dc)
                                               .withValues(alpha: 0.8),
-                                          fontSize:      11,
-                                          fontWeight:    FontWeight.w600,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
                                           letterSpacing: 0.5,
                                         ),
                                       ),

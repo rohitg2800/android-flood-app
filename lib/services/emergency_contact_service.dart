@@ -129,8 +129,7 @@ class EmergencyContactService {
   }
 
   /// Returns global contacts (no district) + contacts for [district].
-  Future<List<EmergencyContact>> getContactsByDistrict(
-      String district) async {
+  Future<List<EmergencyContact>> getContactsByDistrict(String district) async {
     final all = await getAllContacts();
     return all
         .where((c) => c.district == null || c.district == district)
@@ -194,8 +193,7 @@ class EmergencyContactService {
     return all.map((c) => c.category).toSet().toList();
   }
 
-  Future<List<EmergencyContact>> getContactsByCategory(
-      String category) async {
+  Future<List<EmergencyContact>> getContactsByCategory(String category) async {
     final all = await getAllContacts();
     return all.where((c) => c.category == category).toList();
   }

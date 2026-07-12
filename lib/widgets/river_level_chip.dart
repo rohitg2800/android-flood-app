@@ -32,7 +32,7 @@ class RiverLevelChip extends StatelessWidget {
     final dan = dangerLevel;
 
     final Color chipColor = color ?? _computeColor(lvl, dan);
-    final String text     = lvl != null ? '${lvl.toStringAsFixed(2)} m' : '—';
+    final String text = lvl != null ? '${lvl.toStringAsFixed(2)} m' : '—';
 
     if (compact) {
       return Text(
@@ -48,9 +48,9 @@ class RiverLevelChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: chipColor.withOpacity(0.12),
+        color: chipColor.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: chipColor.withOpacity(0.4)),
+        border: Border.all(color: chipColor.withValues(alpha: 0.4)),
       ),
       child: Text(
         text,
@@ -66,7 +66,7 @@ class RiverLevelChip extends StatelessWidget {
   static Color _computeColor(double? level, double? danger) {
     if (level == null || danger == null || danger <= 0) return Colors.grey;
     final pct = level / danger;
-    if (pct >= 1.0)  return Colors.red;
+    if (pct >= 1.0) return Colors.red;
     if (pct >= 0.90) return Colors.deepOrange;
     if (pct >= 0.75) return Colors.orange;
     return Colors.green;

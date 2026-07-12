@@ -26,32 +26,31 @@ enum FloodSeverity { normal, watch, warning, danger, emergency }
 
 extension FloodSeverityExt on FloodSeverity {
   String get label => switch (this) {
-    FloodSeverity.normal    => 'Normal',
-    FloodSeverity.watch     => 'Watch',
-    FloodSeverity.warning   => 'Warning',
-    FloodSeverity.danger    => 'Danger',
-    FloodSeverity.emergency => 'Emergency',
-  };
+        FloodSeverity.normal => 'Normal',
+        FloodSeverity.watch => 'Watch',
+        FloodSeverity.warning => 'Warning',
+        FloodSeverity.danger => 'Danger',
+        FloodSeverity.emergency => 'Emergency',
+      };
   Color get color => switch (this) {
-    FloodSeverity.normal    => const Color(0xFF4CAF50),
-    FloodSeverity.watch     => const Color(0xFF8BC34A),
-    FloodSeverity.warning   => const Color(0xFFFFEB3B),
-    FloodSeverity.danger    => const Color(0xFFFF9800),
-    FloodSeverity.emergency => const Color(0xFFEF4444),
-  };
-  Color get textColor => this == FloodSeverity.warning
-      ? const Color(0xFF795548)
-      : Colors.white;
+        FloodSeverity.normal => const Color(0xFF4CAF50),
+        FloodSeverity.watch => const Color(0xFF8BC34A),
+        FloodSeverity.warning => const Color(0xFFFFEB3B),
+        FloodSeverity.danger => const Color(0xFFFF9800),
+        FloodSeverity.emergency => const Color(0xFFEF4444),
+      };
+  Color get textColor =>
+      this == FloodSeverity.warning ? const Color(0xFF795548) : Colors.white;
 }
 
 FloodSeverity severityFromString(String s) => switch (s.toLowerCase()) {
-  'normal'    => FloodSeverity.normal,
-  'watch'     => FloodSeverity.watch,
-  'warning'   => FloodSeverity.warning,
-  'danger'    => FloodSeverity.danger,
-  'emergency' => FloodSeverity.emergency,
-  _           => FloodSeverity.normal,
-};
+      'normal' => FloodSeverity.normal,
+      'watch' => FloodSeverity.watch,
+      'warning' => FloodSeverity.warning,
+      'danger' => FloodSeverity.danger,
+      'emergency' => FloodSeverity.emergency,
+      _ => FloodSeverity.normal,
+    };
 
 class FloodStatusBadge extends StatelessWidget {
   final FloodSeverity severity;
@@ -66,17 +65,16 @@ class FloodStatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.symmetric(
-          horizontal: small ? 6 : 10,
-          vertical:   small ? 2 : 4),
+          horizontal: small ? 6 : 10, vertical: small ? 2 : 4),
       decoration: BoxDecoration(
-        color:        severity.color,
+        color: severity.color,
         borderRadius: BorderRadius.circular(small ? 4 : 8),
       ),
       child: Text(
         severity.label.toUpperCase(),
         style: TextStyle(
-          color:      severity.textColor,
-          fontSize:   small ? 9 : 11,
+          color: severity.textColor,
+          fontSize: small ? 9 : 11,
           fontWeight: FontWeight.bold,
           letterSpacing: 0.5,
         ),
@@ -92,10 +90,13 @@ class FloodStatusBadge extends StatelessWidget {
 class RiverLevelGauge extends StatefulWidget {
   /// Current level in metres
   final double current;
+
   /// Danger level in metres
   final double danger;
+
   /// Warning level in metres
   final double warning;
+
   /// Maximum axis value in metres
   final double max;
   final double width;
@@ -107,26 +108,24 @@ class RiverLevelGauge extends StatefulWidget {
     required this.danger,
     required this.warning,
     required this.max,
-    this.width  = 48,
+    this.width = 48,
     this.height = 160,
   });
 
   @override
-  State<RiverLevelGauge> createState() =>
-      _RiverLevelGaugeState();
+  State<RiverLevelGauge> createState() => _RiverLevelGaugeState();
 }
 
 class _RiverLevelGaugeState extends State<RiverLevelGauge>
     with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
-  late Animation<double>    _anim;
+  late Animation<double> _anim;
 
   @override
   void initState() {
     super.initState();
     _ctrl = AnimationController(
-        vsync: this,
-        duration: const Duration(milliseconds: 800));
+        vsync: this, duration: const Duration(milliseconds: 800));
     _anim = Tween<double>(
       begin: 0,
       end: (widget.current / widget.max).clamp(0.0, 1.0),
@@ -141,25 +140,25 @@ class _RiverLevelGaugeState extends State<RiverLevelGauge>
   }
 
   Color get _fillColor {
-    if (widget.current >= widget.danger)  return const Color(0xFFEF4444);
+    if (widget.current >= widget.danger) return const Color(0xFFEF4444);
     if (widget.current >= widget.warning) return const Color(0xFFFF9800);
     return const Color(0xFF42A5F5);
   }
 
   @override
   Widget build(BuildContext context) {
-    final dangerFrac  = (widget.danger  / widget.max).clamp(0.0, 1.0);
+    final dangerFrac = (widget.danger / widget.max).clamp(0.0, 1.0);
     final warningFrac = (widget.warning / widget.max).clamp(0.0, 1.0);
     return SizedBox(
-      width:  widget.width,
+      width: widget.width,
       height: widget.height,
       child: AnimatedBuilder(
         animation: _anim,
         builder: (_, __) => CustomPaint(
           painter: _GaugePainter(
-            fill:        _anim.value,
-            color:       _fillColor,
-            dangerFrac:  dangerFrac,
+            fill: _anim.value,
+            color: _fillColor,
+            dangerFrac: dangerFrac,
             warningFrac: warningFrac,
           ),
         ),
@@ -170,7 +169,7 @@ class _RiverLevelGaugeState extends State<RiverLevelGauge>
 
 class _GaugePainter extends CustomPainter {
   final double fill;
-  final Color  color;
+  final Color color;
   final double dangerFrac;
   final double warningFrac;
 
@@ -189,20 +188,19 @@ class _GaugePainter extends CustomPainter {
       Radius.circular(r),
     );
     // Background
-    canvas.drawRRect(
-        rect, Paint()..color = const Color(0xFFE0E0E0));
+    canvas.drawRRect(rect, Paint()..color = const Color(0xFFE0E0E0));
     // Fill
     final fillTop = size.height * (1 - fill);
     final fillRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(0, fillTop, size.width,
-          size.height - fillTop),
+      Rect.fromLTWH(0, fillTop, size.width, size.height - fillTop),
       Radius.circular(r),
     );
     canvas.drawRRect(fillRect, Paint()..color = color);
     // Danger line
     final dy = size.height * (1 - dangerFrac);
     canvas.drawLine(
-      Offset(0, dy), Offset(size.width, dy),
+      Offset(0, dy),
+      Offset(size.width, dy),
       Paint()
         ..color = const Color(0xFFEF4444)
         ..strokeWidth = 2
@@ -211,7 +209,8 @@ class _GaugePainter extends CustomPainter {
     // Warning line
     final wy = size.height * (1 - warningFrac);
     canvas.drawLine(
-      Offset(0, wy), Offset(size.width, wy),
+      Offset(0, wy),
+      Offset(size.width, wy),
       Paint()
         ..color = const Color(0xFFFF9800)
         ..strokeWidth = 1.5
@@ -253,10 +252,8 @@ class AlertCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final pct = (currentLevel / dangerLevel * 100).clamp(0, 200).toInt();
     return Card(
-      margin: const EdgeInsets.symmetric(
-          horizontal: 12, vertical: 4),
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: onTap,
@@ -285,29 +282,24 @@ class AlertCard extends StatelessWidget {
                           child: Text(
                             stationName,
                             style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14),
+                                fontWeight: FontWeight.bold, fontSize: 14),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        FloodStatusBadge(
-                            severity: severity, small: true),
+                        FloodStatusBadge(severity: severity, small: true),
                       ],
                     ),
                     const SizedBox(height: 2),
                     Text(
                       '$riverName • $district',
-                      style: const TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey),
+                      style: const TextStyle(fontSize: 11, color: Colors.grey),
                     ),
                     const SizedBox(height: 6),
                     // Level progress bar
                     ClipRRect(
                       borderRadius: BorderRadius.circular(4),
                       child: LinearProgressIndicator(
-                        value: (currentLevel / dangerLevel)
-                            .clamp(0.0, 1.5),
+                        value: (currentLevel / dangerLevel).clamp(0.0, 1.5),
                         backgroundColor: Colors.grey.shade200,
                         color: severity.color,
                         minHeight: 6,
@@ -316,15 +308,13 @@ class AlertCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       '${currentLevel.toStringAsFixed(2)} m  •  $pct% of danger',
-                      style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.grey.shade600),
+                      style:
+                          TextStyle(fontSize: 10, color: Colors.grey.shade600),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right,
-                  color: Colors.grey, size: 18),
+              const Icon(Icons.chevron_right, color: Colors.grey, size: 18),
             ],
           ),
         ),
@@ -339,9 +329,9 @@ class AlertCard extends StatelessWidget {
 
 class EmptyStateWidget extends StatelessWidget {
   final IconData icon;
-  final String   title;
-  final String?  subtitle;
-  final String?  actionLabel;
+  final String title;
+  final String? subtitle;
+  final String? actionLabel;
   final VoidCallback? onAction;
 
   const EmptyStateWidget({
@@ -369,23 +359,19 @@ class EmptyStateWidget extends StatelessWidget {
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: Colors.grey)),
-            if (subtitle != null) ...
-              [
-                const SizedBox(height: 8),
-                Text(subtitle!,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey.shade500)),
-              ],
-            if (actionLabel != null && onAction != null) ...
-              [
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: onAction,
-                  child: Text(actionLabel!),
-                ),
-              ],
+            if (subtitle != null) ...[
+              const SizedBox(height: 8),
+              Text(subtitle!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
+            ],
+            if (actionLabel != null && onAction != null) ...[
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: onAction,
+                child: Text(actionLabel!),
+              ),
+            ],
           ],
         ),
       ),
@@ -407,23 +393,18 @@ class LoadingOverlay extends StatelessWidget {
       color: Colors.black45,
       child: Center(
         child: Card(
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 32, vertical: 24),
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const CircularProgressIndicator(
-                    color: Color(0xFF0D47A1)),
-                if (message != null) ...
-                  [
-                    const SizedBox(height: 16),
-                    Text(message!,
-                        style: const TextStyle(
-                            fontSize: 13)),
-                  ],
+                const CircularProgressIndicator(color: Color(0xFF0D47A1)),
+                if (message != null) ...[
+                  const SizedBox(height: 16),
+                  Text(message!, style: const TextStyle(fontSize: 13)),
+                ],
               ],
             ),
           ),
@@ -447,19 +428,15 @@ class OfflineBanner extends StatelessWidget {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-              horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
             children: [
-              const Icon(Icons.wifi_off,
-                  size: 16, color: Colors.white70),
+              const Icon(Icons.wifi_off, size: 16, color: Colors.white70),
               const SizedBox(width: 8),
               const Expanded(
                 child: Text(
                   'Offline — showing cached data',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12),
+                  style: TextStyle(color: Colors.white, fontSize: 12),
                 ),
               ),
               const PulsingDot(color: Colors.orange),
@@ -481,7 +458,7 @@ class PulsingDot extends StatefulWidget {
   const PulsingDot({
     super.key,
     this.color = const Color(0xFF4CAF50),
-    this.size  = 10,
+    this.size = 10,
   });
   @override
   State<PulsingDot> createState() => _PulsingDotState();
@@ -490,18 +467,16 @@ class PulsingDot extends StatefulWidget {
 class _PulsingDotState extends State<PulsingDot>
     with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
-  late Animation<double>    _anim;
+  late Animation<double> _anim;
 
   @override
   void initState() {
     super.initState();
     _ctrl = AnimationController(
-        vsync: this,
-        duration: const Duration(milliseconds: 1200))
+        vsync: this, duration: const Duration(milliseconds: 1200))
       ..repeat(reverse: true);
     _anim = Tween<double>(begin: 0.4, end: 1.0)
-        .animate(CurvedAnimation(
-            parent: _ctrl, curve: Curves.easeInOut));
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
   }
 
   @override
@@ -516,7 +491,7 @@ class _PulsingDotState extends State<PulsingDot>
         builder: (_, __) => Opacity(
           opacity: _anim.value,
           child: Container(
-            width:  widget.size,
+            width: widget.size,
             height: widget.size,
             decoration: BoxDecoration(
               color: widget.color,
@@ -532,10 +507,10 @@ class _PulsingDotState extends State<PulsingDot>
 // ============================================================
 
 class SectionCard extends StatelessWidget {
-  final String?  title;
-  final Widget   child;
+  final String? title;
+  final Widget child;
   final EdgeInsets padding;
-  final Widget?  trailing;
+  final Widget? trailing;
 
   const SectionCard({
     super.key,
@@ -548,14 +523,13 @@ class SectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(
-          horizontal: 12, vertical: 6),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 8,
               offset: const Offset(0, 2)),
         ],
@@ -565,8 +539,7 @@ class SectionCard extends StatelessWidget {
         children: [
           if (title != null)
             Padding(
-              padding: const EdgeInsets.fromLTRB(
-                  16, 14, 16, 0),
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
               child: Row(
                 children: [
                   Expanded(
@@ -595,9 +568,9 @@ class SectionCard extends StatelessWidget {
 
 class StatTile extends StatelessWidget {
   final IconData icon;
-  final String   value;
-  final String   label;
-  final Color    color;
+  final String value;
+  final String label;
+  final Color color;
 
   const StatTile({
     super.key,
@@ -612,10 +585,9 @@ class StatTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-            color: color.withOpacity(0.25), width: 1),
+        border: Border.all(color: color.withValues(alpha: 0.25), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -625,13 +597,8 @@ class StatTile extends StatelessWidget {
           const SizedBox(height: 6),
           Text(value,
               style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: color)),
-          Text(label,
-              style: const TextStyle(
-                  fontSize: 10,
-                  color: Colors.grey)),
+                  fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+          Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
         ],
       ),
     );
@@ -647,8 +614,8 @@ Future<bool> showConfirmDialog(
   required String title,
   required String message,
   String confirmLabel = 'Confirm',
-  String cancelLabel  = 'Cancel',
-  bool   destructive  = false,
+  String cancelLabel = 'Cancel',
+  bool destructive = false,
 }) async {
   final result = await showDialog<bool>(
     context: context,
@@ -663,9 +630,7 @@ Future<bool> showConfirmDialog(
         TextButton(
           onPressed: () => Navigator.pop(context, true),
           style: TextButton.styleFrom(
-              foregroundColor: destructive
-                  ? Colors.red
-                  : null),
+              foregroundColor: destructive ? Colors.red : null),
           child: Text(confirmLabel),
         ),
       ],
@@ -688,8 +653,7 @@ class AppSnackBar {
   ]) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Row(children: [
-        const Icon(Icons.check_circle,
-            color: Colors.white, size: 16),
+        const Icon(Icons.check_circle, color: Colors.white, size: 16),
         const SizedBox(width: 8),
         Expanded(child: Text(message)),
       ]),
@@ -706,8 +670,7 @@ class AppSnackBar {
   ]) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Row(children: [
-        const Icon(Icons.error_outline,
-            color: Colors.white, size: 16),
+        const Icon(Icons.error_outline, color: Colors.white, size: 16),
         const SizedBox(width: 8),
         Expanded(child: Text(message)),
       ]),

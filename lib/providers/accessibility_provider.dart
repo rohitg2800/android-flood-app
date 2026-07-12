@@ -1,73 +1,68 @@
-// lib/providers/accessibility_provider.dart  Steps 5.2 / 5.5
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const _kHC    = 'a11y_high_contrast';
-const _kScale = 'a11y_text_scale';
-const _kLocale = 'a11y_locale';
-
 class AccessibilityState {
-  final bool   highContrast;
+  final bool highContrast;
   final double textScaleFactor;
   final String locale;
 
   const AccessibilityState({
-    this.highContrast    = false,
+    this.highContrast = false,
     this.textScaleFactor = 1.0,
-    this.locale          = 'en',
+    this.locale = 'en',
   });
 
   AccessibilityState copyWith({
-    bool?   highContrast,
+    bool? highContrast,
     double? textScaleFactor,
     String? locale,
-  }) => AccessibilityState(
-    highContrast:    highContrast    ?? this.highContrast,
-    textScaleFactor: textScaleFactor ?? this.textScaleFactor,
-    locale:          locale          ?? this.locale,
-  );
+  }) =>
+      AccessibilityState(
+        highContrast: highContrast ?? this.highContrast,
+        textScaleFactor: textScaleFactor ?? this.textScaleFactor,
+        locale: locale ?? this.locale,
+      );
 }
 
-final accessibilityProvider =
-    StateNotifierProvider<AccessibilityNotifier, AccessibilityState>(
-  (ref) => AccessibilityNotifier(),
-);
+class AccessibilityNotifier extends Notifier<AccessibilityState> {
+  final SharedPreferences prefs;
 
-class AccessibilityNotifier extends StateNotifier<AccessibilityState> {
-  // [prefs] is optional — pass it in tests to avoid singleton races
-  AccessibilityNotifier({SharedPreferences? prefs})
-      : super(const AccessibilityState()) {
-    _load(prefs);
-  }
+  AccessibilityNotifier({required this.prefs});
 
-  Future<void> _load(SharedPreferences? injected) async {
-    final prefs = injected ?? await SharedPreferences.getInstance();
-    if (!mounted) return;
-    state = AccessibilityState(
-      highContrast:    prefs.getBool(_kHC)       ?? false,
-      textScaleFactor: prefs.getDouble(_kScale)  ?? 1.0,
-      locale:          prefs.getString(_kLocale) ?? 'en',
-    );
-  }
+  @override
+  AccessibilityState build() => AccessibilityState(
+        highContrast: prefs.getBool('a11y_high_contrast') ?? false,
+        textScaleFactor: prefs.getDouble('a11y_text_scale') ?? 1.0,
+        locale: prefs.getString('a11y_locale') ?? 'en',
+      );
 
-  Future<void> setHighContrast(bool v) async {
-    state = state.copyWith(highContrast: v);
-    final p = await SharedPreferences.getInstance();
-    await p.setBool(_kHC, v);
-  }
-
-  Future<void> setTextScale(double v) async {
-    final clamped = v.clamp(1.0, 1.4);
-    state = state.copyWith(textScaleFactor: clamped);
-    final p = await SharedPreferences.getInstance();
-    await p.setDouble(_kScale, clamped);
-  }
-
-  Future<void> setLocale(String tag) async {
-    state = state.copyWith(locale: tag);
-    final p = await SharedPreferences.getInstance();
-    await p.setString(_kLocale, tag);
+  Future<void> setHighContrast(bool value) async {
+    await prefs.setBool('a11y_high_contrast', value);
+    state = state.copyWith(highContrast: value);
   }
 
   void toggleHighContrast() => setHighContrast(!state.highContrast);
+
+  Future<void> setTextScale(double value) async {
+    final clamped = value.clamp(1.0, 1.4);
+    await prefs.setDouble('a11y_text_scale', clamped);
+    state = state.copyWith(textScaleFactor: clamped);
+  }
+
+  Future<void> setLocale(String locale) async {
+    await prefs.setString('a11y_locale', locale);
+    state = state.copyWith(locale: locale);
+    debugPrint('[A11Y] locale set to: $locale');
+  }
 }
+
+/// App-wide provider — override at startup and in tests.
+final sharedPreferencesProvider = Provider<SharedPreferences>(
+  (_) => throw UnimplementedError('sharedPreferencesProvider not initialised'),
+);
+
+final accessibilityProvider =
+    NotifierProvider<AccessibilityNotifier, AccessibilityState>(
+  () => throw UnimplementedError('accessibilityProvider must be overridden'),
+);

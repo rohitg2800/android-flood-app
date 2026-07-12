@@ -108,21 +108,31 @@ class AccessibleIconButton extends StatelessWidget {
 /// Maps riskLevel string to severity icon (used with SeverityChip to avoid color-only).
 IconData severityIcon(String riskLevel) {
   switch (riskLevel.toUpperCase()) {
-    case 'EMERGENCY': return Icons.emergency_rounded;
-    case 'CRITICAL':  return Icons.warning_rounded;
-    case 'SEVERE':    return Icons.warning_amber_rounded;
-    case 'MODERATE':  return Icons.info_rounded;
-    default:          return Icons.check_circle_rounded;
+    case 'EMERGENCY':
+      return Icons.emergency_rounded;
+    case 'CRITICAL':
+      return Icons.warning_rounded;
+    case 'SEVERE':
+      return Icons.warning_amber_rounded;
+    case 'MODERATE':
+      return Icons.info_rounded;
+    default:
+      return Icons.check_circle_rounded;
   }
 }
 
 /// Maps riskLevel string to Hindi severity label for bilingual display.
 String severityHindi(String riskLevel) {
   switch (riskLevel.toUpperCase()) {
-    case 'EMERGENCY': return 'आपातकाल';
-    case 'CRITICAL':  return 'खतरा';
-    case 'SEVERE':    return 'चेतावनी';
-    case 'MODERATE':  return 'सतर्क';
-    default:          return 'सामान्य';
+    case 'EMERGENCY':
+      return 'आपातकाल';
+    case 'CRITICAL':
+      return 'खतरा';
+    case 'SEVERE':
+      return 'चेतावनी';
+    case 'MODERATE':
+      return 'सतर्क';
+    default:
+      return 'सामान्य';
   }
 }

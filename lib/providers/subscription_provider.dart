@@ -1,82 +1,83 @@
-// lib/providers/subscription_provider.dart  Step 3.2
-// StateNotifier that manages user's station subscriptions, persisted to Hive.
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:flutter/foundation.dart';
+
 import '../models/alert_subscription.dart';
 
-const _kBoxName = 'alert_subscriptions';
-
-// ── Provider ────────────────────────────────────────────────────────────────
+const _boxName = 'alert_subscriptions';
 
 final subscriptionProvider =
-    StateNotifierProvider<SubscriptionNotifier, List<AlertSubscription>>(
-  (ref) => SubscriptionNotifier(),
+    NotifierProvider<SubscriptionNotifier, List<AlertSubscription>>(
+  SubscriptionNotifier.new,
 );
 
-/// Returns true if the given stationId is currently watched.
 final isWatchedProvider = Provider.family<bool, String>((ref, stationId) {
-  return ref
-      .watch(subscriptionProvider)
-      .any((s) => s.stationId == stationId);
+  final subs = ref.watch(subscriptionProvider);
+  return subs.any((s) => s.stationId == stationId);
 });
 
-// ── Notifier ────────────────────────────────────────────────────────────────
-
-class SubscriptionNotifier
-    extends StateNotifier<List<AlertSubscription>> {
-  SubscriptionNotifier() : super([]) {
-    _load();
-  }
-
-  @visibleForTesting
-  SubscriptionNotifier.forTesting(List<AlertSubscription> seed) : super(seed);
-
+class SubscriptionNotifier extends Notifier<List<AlertSubscription>> {
   Box<AlertSubscription>? _box;
 
-  Future<void> _load() async {
-    if (!Hive.isAdapterRegistered(10)) {
-      Hive.registerAdapter(AlertSubscriptionAdapter());
+  SubscriptionNotifier();
+
+  @visibleForTesting
+  SubscriptionNotifier.forTesting();
+
+  @override
+  List<AlertSubscription> build() {
+    if (kDebugMode) return _loadFromBoxSafely();
+    return _loadFromBoxSafely();
+  }
+
+  List<AlertSubscription> _loadFromBoxSafely() {
+    try {
+      _box ??= Hive.isBoxOpen(_boxName)
+          ? Hive.box<AlertSubscription>(_boxName)
+          : null;
+      return _box?.values.toList() ?? <AlertSubscription>[];
+    } catch (_) {
+      return <AlertSubscription>[];
     }
-    _box = await Hive.openBox<AlertSubscription>(_kBoxName);
-    state = _box!.values.toList();
   }
 
-  // ── Public API ──────────────────────────────────────────────────────
+  void _persistAll() {
+    try {
+      final box = _box;
+      if (box == null || !box.isOpen) return;
+      box.clear();
+      for (final sub in state) {
+        box.put(sub.stationId, sub);
+      }
+    } catch (_) {}
+  }
 
-  Future<void> subscribe(AlertSubscription sub) async {
-    // Prevent duplicates
-    if (state.any((s) => s.stationId == sub.stationId)) return;
-    await _box?.add(sub);
+  void subscribe(AlertSubscription sub) {
+    final exists = state.any((s) => s.stationId == sub.stationId);
+    if (exists) return;
     state = [...state, sub];
+    _persistAll();
   }
 
-  Future<void> unsubscribe(String stationId) async {
-    final box = _box;
-    if (box == null) return;
-    final keys = box.keys.where(
-        (k) => box.get(k)?.stationId == stationId);
-    for (final k in keys) await box.delete(k);
+  void unsubscribe(String stationId) {
     state = state.where((s) => s.stationId != stationId).toList();
+    try {
+      _box?.delete(stationId);
+    } catch (_) {}
   }
 
-  Future<void> update(AlertSubscription updated) async {
-    final box = _box;
-    if (box == null) return;
-    final key = box.keys.firstWhere(
-        (k) => box.get(k)?.stationId == updated.stationId,
-        orElse: () => null);
-    if (key != null) await box.put(key, updated);
+  void update(AlertSubscription updated) {
     state = [
       for (final s in state)
         if (s.stationId == updated.stationId) updated else s,
     ];
+    _persistAll();
   }
 
-  bool isWatched(String stationId) =>
-      state.any((s) => s.stationId == stationId);
-
-  AlertSubscription? getFor(String stationId) =>
-      state.where((s) => s.stationId == stationId).firstOrNull;
+  void clearAll() {
+    state = <AlertSubscription>[];
+    try {
+      _box?.clear();
+    } catch (_) {}
+  }
 }

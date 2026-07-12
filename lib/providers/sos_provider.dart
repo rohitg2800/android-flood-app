@@ -9,13 +9,13 @@ enum SosPhase { idle, confirming, sending, sent, failed }
 
 class SosState {
   final SosPhase phase;
-  final double?  lat;
-  final double?  lng;
-  final String?  district;     // Bihar district detected from GPS
-  final String?  errorMessage;
+  final double? lat;
+  final double? lng;
+  final String? district; // Bihar district detected from GPS
+  final String? errorMessage;
 
   const SosState({
-    this.phase        = SosPhase.idle,
+    this.phase = SosPhase.idle,
     this.lat,
     this.lng,
     this.district,
@@ -24,16 +24,16 @@ class SosState {
 
   SosState copyWith({
     SosPhase? phase,
-    double?   lat,
-    double?   lng,
-    String?   district,
-    String?   errorMessage,
+    double? lat,
+    double? lng,
+    String? district,
+    String? errorMessage,
   }) =>
       SosState(
-        phase:        phase        ?? this.phase,
-        lat:          lat          ?? this.lat,
-        lng:          lng          ?? this.lng,
-        district:     district     ?? this.district,
+        phase: phase ?? this.phase,
+        lat: lat ?? this.lat,
+        lng: lng ?? this.lng,
+        district: district ?? this.district,
         errorMessage: errorMessage ?? this.errorMessage,
       );
 }
@@ -62,14 +62,14 @@ class SosNotifier extends Notifier<SosState> {
     final result = await _service.dispatch();
     if (result is SosSuccess) {
       state = SosState(
-        phase:    SosPhase.sent,
-        lat:      result.lat,
-        lng:      result.lng,
+        phase: SosPhase.sent,
+        lat: result.lat,
+        lng: result.lng,
         district: result.district,
       );
     } else {
       state = SosState(
-        phase:        SosPhase.failed,
+        phase: SosPhase.failed,
         errorMessage: (result as SosFailure).reason,
       );
     }

@@ -13,9 +13,9 @@ class AppStateService extends ChangeNotifier {
   bool _isPolicyLocked = false;
   String? _lockReason;
 
-  bool    get isOnline       => _isOnline;
-  bool    get isPolicyLocked => _isPolicyLocked;
-  String? get lockReason     => _lockReason;
+  bool get isOnline => _isOnline;
+  bool get isPolicyLocked => _isPolicyLocked;
+  String? get lockReason => _lockReason;
 
   void setOnline(bool value) {
     if (_isOnline == value) return;

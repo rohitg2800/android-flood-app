@@ -9,7 +9,7 @@ import '../providers/bihar_live_provider.dart';
 
 class CityCard extends StatelessWidget {
   final Map<String, dynamic> cityMeta;
-  final BiharStationData?    stationData;
+  final BiharStationData? stationData;
 
   const CityCard({
     super.key,
@@ -19,31 +19,31 @@ class CityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name   = cityMeta['city'] as String? ?? 'Unknown';
-    final river  = cityMeta['river'] as String? ?? '';
-    final data   = stationData;
+    final name = cityMeta['city'] as String? ?? 'Unknown';
+    final river = cityMeta['river'] as String? ?? '';
+    final data = stationData;
 
     final Color color;
     final String risk;
     if (data == null) {
       color = Colors.grey;
-      risk  = 'NO DATA';
+      risk = 'NO DATA';
     } else if (data.isCritical) {
       color = Colors.red;
-      risk  = data.riskLabel;
+      risk = data.riskLabel;
     } else if (data.isSevere) {
       color = Colors.deepOrange;
-      risk  = data.riskLabel;
+      risk = data.riskLabel;
     } else if (data.isWarning) {
       color = Colors.orange;
-      risk  = data.riskLabel;
+      risk = data.riskLabel;
     } else {
       color = Colors.green;
-      risk  = data.riskLabel;
+      risk = data.riskLabel;
     }
 
     final level = data?.currentLevel;
-    final dan   = data?.dangerLevel;
+    final dan = data?.dangerLevel;
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -67,11 +67,12 @@ class CityCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.15),
+                    color: color.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: color.withOpacity(0.5)),
+                    border: Border.all(color: color.withValues(alpha: 0.5)),
                   ),
                   child: Text(
                     risk,
@@ -102,7 +103,7 @@ class CityCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(2),
                 child: LinearProgressIndicator(
                   value: (level / dan).clamp(0.0, 1.0),
-                  backgroundColor: color.withOpacity(0.1),
+                  backgroundColor: color.withValues(alpha: 0.1),
                   valueColor: AlwaysStoppedAnimation<Color>(color),
                   minHeight: 6,
                 ),

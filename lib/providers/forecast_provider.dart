@@ -62,13 +62,11 @@ class ForecastProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
-  Map<String, StationForecast> get forecasts =>
-      Map.unmodifiable(_forecasts);
+  Map<String, StationForecast> get forecasts => Map.unmodifiable(_forecasts);
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  StationForecast? getForecast(String stationId) =>
-      _forecasts[stationId];
+  StationForecast? getForecast(String stationId) => _forecasts[stationId];
 
   Future<void> fetchForecast(String stationId, String baseUrl) async {
     _isLoading = true;

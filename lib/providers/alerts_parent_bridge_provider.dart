@@ -13,48 +13,45 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 enum AlertsTab { all, critical, severe, warning }
 
 class AlertsParentBridgeState {
-  final AlertsTab   activeTab;
-  final String?     pendingStationFilter;
-  final bool        badgePulse;
+  final AlertsTab activeTab;
+  final String? pendingStationFilter;
+  final bool badgePulse;
 
   const AlertsParentBridgeState({
-    this.activeTab           = AlertsTab.all,
+    this.activeTab = AlertsTab.all,
     this.pendingStationFilter,
-    this.badgePulse          = false,
+    this.badgePulse = false,
   });
 
   AlertsParentBridgeState copyWith({
     AlertsTab? activeTab,
-    String?    pendingStationFilter,
-    bool       clearFilter = false,
-    bool?      badgePulse,
+    String? pendingStationFilter,
+    bool clearFilter = false,
+    bool? badgePulse,
   }) =>
       AlertsParentBridgeState(
-        activeTab:            activeTab            ?? this.activeTab,
+        activeTab: activeTab ?? this.activeTab,
         pendingStationFilter: clearFilter
             ? null
             : pendingStationFilter ?? this.pendingStationFilter,
-        badgePulse:           badgePulse           ?? this.badgePulse,
+        badgePulse: badgePulse ?? this.badgePulse,
       );
 }
 
 // ── Notifier ────────────────────────────────────────────────────────────────
 
-class AlertsParentBridgeNotifier
-    extends Notifier<AlertsParentBridgeState> {
+class AlertsParentBridgeNotifier extends Notifier<AlertsParentBridgeState> {
   @override
   AlertsParentBridgeState build() => const AlertsParentBridgeState();
 
   void setTab(AlertsTab tab) => state = state.copyWith(activeTab: tab);
 
-  void setStationFilter(String? station) =>
-      state = state.copyWith(
+  void setStationFilter(String? station) => state = state.copyWith(
         pendingStationFilter: station,
         clearFilter: station == null,
       );
 
-  void clearFilter() =>
-      state = state.copyWith(clearFilter: true);
+  void clearFilter() => state = state.copyWith(clearFilter: true);
 
   void setBadgePulse({required bool pulse}) =>
       state = state.copyWith(badgePulse: pulse);

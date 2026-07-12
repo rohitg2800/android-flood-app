@@ -42,9 +42,9 @@ mixin AutoRefreshMixin {
     final t = _lastFetched;
     if (t == null) return '';
     final diff = DateTime.now().difference(t);
-    if (diff.inSeconds < 60)  return 'Updated just now';
-    if (diff.inMinutes < 60)  return 'Updated ${diff.inMinutes} min ago';
-    if (diff.inHours   < 24)  return 'Updated ${diff.inHours} h ago';
+    if (diff.inSeconds < 60) return 'Updated just now';
+    if (diff.inMinutes < 60) return 'Updated ${diff.inMinutes} min ago';
+    if (diff.inHours < 24) return 'Updated ${diff.inHours} h ago';
     return 'Updated ${diff.inDays} d ago';
   }
 

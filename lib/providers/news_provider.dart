@@ -26,18 +26,21 @@ class NewsFilterNotifier extends Notifier<NewsFilter> {
   @override
   NewsFilter build() => const NewsFilter();
 
-  void setDays(int d)         => state = state.copyWith(days: d);
+  void setDays(int d) => state = state.copyWith(days: d);
   void toggleSource(String s) {
     final set = Set<String>.from(state.sources);
     set.contains(s) ? set.remove(s) : set.add(s);
     state = state.copyWith(sources: set);
   }
+
   void toggleSeverity(NewsSeverity sv) {
     final set = Set<NewsSeverity>.from(state.severities);
     set.contains(sv) ? set.remove(sv) : set.add(sv);
     state = state.copyWith(severities: set);
   }
+
   void reset() => state = const NewsFilter();
+  void setLanguage(String lang) => state = state.copyWith(language: lang);
 }
 
 final newsFilterProvider =
@@ -46,12 +49,12 @@ final newsFilterProvider =
 // ── Filtered + day-grouped result ───────────────────────────────────────────
 /// Map<dayKey, List<NewsItem>> — only call inside newsAsync.when(data:)
 final filteredNewsProvider = Provider<Map<String, List<NewsItem>>>((ref) {
-  final filter   = ref.watch(newsFilterProvider);
+  final filter = ref.watch(newsFilterProvider);
   final newsAsync = ref.watch(liveNewsProvider);
   final all = newsAsync.when(
-    data:    (v)    => v,
-    loading: ()     => <NewsItem>[],
-    error:   (_, __) => <NewsItem>[],
+    data: (v) => v,
+    loading: () => <NewsItem>[],
+    error: (_, __) => <NewsItem>[],
   );
   final filtered = NewsService.applyFilter(all, filter);
   return NewsService.groupByDay(filtered);

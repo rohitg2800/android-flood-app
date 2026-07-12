@@ -18,16 +18,20 @@ class AlertBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: color.withOpacity(0.12),
+      color: color.withValues(alpha: 0.12),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(
           children: [
             Icon(icon, color: color, size: 20),
             const SizedBox(width: 10),
-            Expanded(child: Text(message, style: TextStyle(color: color, fontSize: 13))),
+            Expanded(
+                child: Text(message,
+                    style: TextStyle(color: color, fontSize: 13))),
             if (onDismiss != null)
-              IconButton(icon: Icon(Icons.close, color: color, size: 18), onPressed: onDismiss),
+              IconButton(
+                  icon: Icon(Icons.close, color: color, size: 18),
+                  onPressed: onDismiss),
           ],
         ),
       ),

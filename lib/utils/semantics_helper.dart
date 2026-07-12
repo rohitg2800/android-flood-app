@@ -9,7 +9,6 @@
 //  • focusOrder()        — returns FocusTraversalOrder for a given sortKey int
 
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
 
 /// Wraps [child] with a custom accessibility label.
 class SemanticsLabel extends StatelessWidget {
@@ -26,16 +25,16 @@ class SemanticsLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Semantics(
         label: label,
-        hint:  hint,
+        hint: hint,
         child: ExcludeSemantics(child: child),
       );
 }
 
 /// Wraps [child] with semantics role = button and an [onTap] action.
 class SemanticsButton extends StatelessWidget {
-  final String    label;
+  final String label;
   final VoidCallback? onTap;
-  final Widget    child;
+  final Widget child;
   const SemanticsButton({
     super.key,
     required this.label,
@@ -45,10 +44,10 @@ class SemanticsButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Semantics(
-        label:     label,
-        button:    true,
-        onTap:     onTap,
-        child:     ExcludeSemantics(child: child),
+        label: label,
+        button: true,
+        onTap: onTap,
+        child: ExcludeSemantics(child: child),
       );
 }
 
@@ -61,7 +60,7 @@ class SemanticsLiveRegion extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Semantics(
         liveRegion: true,
-        child:      child,
+        child: child,
       );
 }
 
@@ -71,8 +70,7 @@ class ExcludeDecoration extends StatelessWidget {
   const ExcludeDecoration({super.key, required this.child});
 
   @override
-  Widget build(BuildContext context) =>
-      ExcludeSemantics(child: child);
+  Widget build(BuildContext context) => ExcludeSemantics(child: child);
 }
 
 /// Returns a [FocusTraversalOrder] widget for explicit tab-order control.
@@ -95,7 +93,7 @@ class MinTouchTarget extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ConstrainedBox(
         constraints: BoxConstraints(
-          minWidth:  size,
+          minWidth: size,
           minHeight: size,
         ),
         child: child,

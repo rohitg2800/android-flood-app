@@ -15,7 +15,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  if (kDebugMode) debugPrint('[FCM] Background: ${message.notification?.title}');
+  if (kDebugMode)
+    debugPrint('[FCM] Background: ${message.notification?.title}');
   final plugin = FlutterLocalNotificationsPlugin();
   await plugin.initialize(
     const InitializationSettings(
@@ -24,12 +25,15 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     ),
   );
   final title = message.notification?.title ?? 'Flood Alert';
-  final body  = message.notification?.body  ?? '';
+  final body = message.notification?.body ?? '';
   await plugin.show(
-    message.hashCode, title, body,
+    message.hashCode,
+    title,
+    body,
     const NotificationDetails(
       android: AndroidNotificationDetails(
-        'flood_alerts', 'Flood Alerts',
+        'flood_alerts',
+        'Flood Alerts',
         importance: Importance.max,
         priority: Priority.max,
         playSound: true,
@@ -46,11 +50,12 @@ class FcmService {
   static FcmService get instance => _instance;
   FcmService._();
 
-  final FirebaseMessaging               _messaging  = FirebaseMessaging.instance;
-  final FlutterLocalNotificationsPlugin _localNotif = FlutterLocalNotificationsPlugin();
+  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  final FlutterLocalNotificationsPlugin _localNotif =
+      FlutterLocalNotificationsPlugin();
 
-  String?      fcmToken;
-  bool         _initialised = false;
+  String? fcmToken;
+  bool _initialised = false;
   final Set<String> _subscribed = {};
 
   // ── Init ───────────────────────────────────────────────────────────────────
@@ -62,9 +67,12 @@ class FcmService {
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
     final settings = await _messaging.requestPermission(
-      alert: true, badge: true, sound: true,
+      alert: true,
+      badge: true,
+      sound: true,
     );
-    if (kDebugMode) debugPrint('[FCM] Permission: ${settings.authorizationStatus}');
+    if (kDebugMode)
+      debugPrint('[FCM] Permission: ${settings.authorizationStatus}');
 
     await _localNotif.initialize(
       const InitializationSettings(
@@ -78,7 +86,8 @@ class FcmService {
             AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(
           const AndroidNotificationChannel(
-            'flood_alerts', 'Flood Alerts',
+            'flood_alerts',
+            'Flood Alerts',
             description: 'Live flood risk alerts for Indian cities',
             importance: Importance.max,
             playSound: true,
@@ -141,28 +150,29 @@ class FcmService {
     required String cityName,
     required String state,
     required String river,
-    required String severity,          // 'EXTREME' | 'DANGER' | 'WARNING'
-    required double currentLevel,      // m³/s
-    required double dangerLevel,       // m³/s
+    required String severity, // 'EXTREME' | 'DANGER' | 'WARNING'
+    required double currentLevel, // m³/s
+    required double dangerLevel, // m³/s
     String? message,
   }) async {
     final isCrit = severity == 'EXTREME' || severity == 'DANGER';
-    final title  = '$severity FLOOD ALERT — $cityName, $state';
-    final body   = message ??
+    final title = '$severity FLOOD ALERT — $cityName, $state';
+    final body = message ??
         '$river discharge at ${currentLevel.toStringAsFixed(0)} m³/s '
-        '(danger: ${dangerLevel.toStringAsFixed(0)} m³/s)';
+            '(danger: ${dangerLevel.toStringAsFixed(0)} m³/s)';
 
     final android = AndroidNotificationDetails(
       'flood_alerts',
       'Flood Alerts',
       channelDescription: 'Live flood risk alerts for Indian cities',
-      importance: isCrit ? Importance.max  : Importance.high,
-      priority:   isCrit ? Priority.max    : Priority.high,
+      importance: isCrit ? Importance.max : Importance.high,
+      priority: isCrit ? Priority.max : Priority.high,
       playSound: true,
       enableVibration: true,
       icon: '@mipmap/ic_launcher',
     );
-    const ios = DarwinNotificationDetails(presentAlert: true, presentSound: true);
+    const ios =
+        DarwinNotificationDetails(presentAlert: true, presentSound: true);
 
     await _localNotif.show(
       '$cityName$state'.hashCode,
@@ -182,16 +192,18 @@ class FcmService {
   // ── Foreground handler ────────────────────────────────────────────────────
 
   Future<void> _handleForeground(RemoteMessage message) async {
-    if (kDebugMode) debugPrint('[FCM] Foreground: ${message.notification?.title}');
+    if (kDebugMode)
+      debugPrint('[FCM] Foreground: ${message.notification?.title}');
     final notif = message.notification;
     if (notif == null) return;
     await _localNotif.show(
       message.hashCode,
       notif.title ?? 'Flood Alert',
-      notif.body  ?? '',
+      notif.body ?? '',
       const NotificationDetails(
         android: AndroidNotificationDetails(
-          'flood_alerts', 'Flood Alerts',
+          'flood_alerts',
+          'Flood Alerts',
           importance: Importance.max,
           priority: Priority.max,
           playSound: true,
@@ -205,8 +217,8 @@ class FcmService {
   // ── Helpers ───────────────────────────────────────────────────────────────
 
   String _cleanTopic(String raw) {
-    final s = raw.replaceAll(' ', '_')
-                 .replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '');
+    final s =
+        raw.replaceAll(' ', '_').replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '');
     return s.length > 900 ? s.substring(0, 900) : s;
   }
 

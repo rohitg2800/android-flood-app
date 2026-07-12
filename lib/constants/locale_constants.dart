@@ -11,8 +11,8 @@ const List<Locale> kSupportedLocales = [
 
 /// Human-readable labels for each supported locale.
 const Map<String, String> kLocaleLabels = {
-  'en':  'English',
-  'hi':  'हिंदी',
+  'en': 'English',
+  'hi': 'हिंदी',
   'mai': 'मैथिली',
   'bho': 'भोजपुरी',
 };

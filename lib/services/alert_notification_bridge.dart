@@ -7,9 +7,9 @@ import 'alert_engine.dart';
 
 class _Topics {
   static const emergency = 'flood_emergency_topic';
-  static const critical  = 'flood_critical_topic';
-  static const warning   = 'flood_warning_topic';
-  static const info      = 'flood_info_topic';
+  static const critical = 'flood_critical_topic';
+  static const warning = 'flood_warning_topic';
+  static const info = 'flood_info_topic';
 }
 
 class AlertNotificationBridge {
@@ -24,9 +24,9 @@ class AlertNotificationBridge {
   Future<void> init() async {
     if (_initialised) return;
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const ios     = DarwinInitializationSettings();
-    await _notif.initialize(
-        const InitializationSettings(android: android, iOS: ios));
+    const ios = DarwinInitializationSettings();
+    await _notif
+        .initialize(const InitializationSettings(android: android, iOS: ios));
     _initialised = true;
   }
 
@@ -52,8 +52,8 @@ class AlertNotificationBridge {
           _channelId(alert.severity),
           'Flood Alerts',
           channelDescription: 'Real-time flood level alerts',
-          importance:      Importance.max,
-          priority:        Priority.high,
+          importance: Importance.max,
+          priority: Priority.high,
           enableVibration: true,
         ),
         iOS: const DarwinNotificationDetails(
@@ -84,7 +84,7 @@ class AlertNotificationBridge {
   String _body(FloodAlert alert) {
     final cur = alert.currentLevel.toStringAsFixed(2);
     final thr = alert.thresholdLevel.toStringAsFixed(2);
-    final dl  = alert.dangerLevel.toStringAsFixed(2);
+    final dl = alert.dangerLevel.toStringAsFixed(2);
     final pct = (alert.pctOfDanger * 100).toStringAsFixed(0);
     final riv = alert.river;
     final sta = alert.stationName;
@@ -98,7 +98,8 @@ class AlertNotificationBridge {
         return '$riv ($sta) crossed WARNING LEVEL. Current: $cur m (Threshold: $thr m)';
       case AlertType.rapidRise:
         final ror = alert.rateOfRiseMph != null
-            ? '+${alert.rateOfRiseMph!.toStringAsFixed(2)} m/h' : 'rapid';
+            ? '+${alert.rateOfRiseMph!.toStringAsFixed(2)} m/h'
+            : 'rapid';
         return '$riv ($sta) is rising rapidly. Rate: $ror. Current: $cur m';
       case AlertType.forecastDanger24h:
         return '$riv ($sta) forecast to hit danger within 24h. Forecast: $cur m (Danger: $dl m)';
@@ -106,11 +107,13 @@ class AlertNotificationBridge {
         return '$riv ($sta) forecast to hit danger within 48h. Forecast: $cur m (Danger: $dl m)';
       case AlertType.rainfallExtreme:
         final rain = alert.rainfall24hMm != null
-            ? '${alert.rainfall24hMm!.toStringAsFixed(1)} mm' : '>100 mm';
+            ? '${alert.rainfall24hMm!.toStringAsFixed(1)} mm'
+            : '>100 mm';
         return 'EXTREME RAINFALL near $sta. 24h accumulation: $rain';
       case AlertType.rainfallHeavy:
         final rain = alert.rainfall24hMm != null
-            ? '${alert.rainfall24hMm!.toStringAsFixed(1)} mm' : '>64.5 mm';
+            ? '${alert.rainfall24hMm!.toStringAsFixed(1)} mm'
+            : '>64.5 mm';
         return 'HEAVY RAINFALL near $sta. 24h accumulation: $rain';
       case AlertType.upstreamCritical:
         return 'UPSTREAM CRITICAL on $riv. Multiple stations above danger. Downstream breach risk HIGH.';
@@ -129,19 +132,27 @@ class AlertNotificationBridge {
 
   static String _channelId(AlertSeverity s) {
     switch (s) {
-      case AlertSeverity.emergency: return 'flood_emergency';
-      case AlertSeverity.critical:  return 'flood_critical';
-      case AlertSeverity.warning:   return 'flood_warning';
-      case AlertSeverity.info:      return 'flood_info';
+      case AlertSeverity.emergency:
+        return 'flood_emergency';
+      case AlertSeverity.critical:
+        return 'flood_critical';
+      case AlertSeverity.warning:
+        return 'flood_warning';
+      case AlertSeverity.info:
+        return 'flood_info';
     }
   }
 
   static String _severityTopic(AlertSeverity s) {
     switch (s) {
-      case AlertSeverity.emergency: return _Topics.emergency;
-      case AlertSeverity.critical:  return _Topics.critical;
-      case AlertSeverity.warning:   return _Topics.warning;
-      case AlertSeverity.info:      return _Topics.info;
+      case AlertSeverity.emergency:
+        return _Topics.emergency;
+      case AlertSeverity.critical:
+        return _Topics.critical;
+      case AlertSeverity.warning:
+        return _Topics.warning;
+      case AlertSeverity.info:
+        return _Topics.info;
     }
   }
 }

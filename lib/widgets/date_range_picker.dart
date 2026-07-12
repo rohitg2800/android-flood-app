@@ -18,9 +18,7 @@ class OpsDateRangePicker extends StatelessWidget {
     return OutlinedButton.icon(
       icon: const Icon(Icons.date_range, size: 18),
       label: Text(
-        value == null
-            ? label
-            : '${_fmt(value!.start)} – ${_fmt(value!.end)}',
+        value == null ? label : '${_fmt(value!.start)} – ${_fmt(value!.end)}',
         style: const TextStyle(fontSize: 13),
       ),
       onPressed: () async {

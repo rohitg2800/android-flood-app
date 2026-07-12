@@ -15,14 +15,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'wrd_bihar_service.dart';
 
 class HistoricalReading {
-  final double  level;
+  final double level;
   final double? dangerLevel;
   final double? warningLevel;
   final double? hfl;
   final double? diff24h;
   final String? trend;
   final DateTime recordedAt;
-  final String  source; // always 'WRD_BIHAR'
+  final String source; // always 'WRD_BIHAR'
 
   const HistoricalReading({
     required this.level,
@@ -36,33 +36,33 @@ class HistoricalReading {
   });
 
   Map<String, dynamic> toJson() => {
-    'level':        level,
-    'dangerLevel':  dangerLevel,
-    'warningLevel': warningLevel,
-    'hfl':          hfl,
-    'diff24h':      diff24h,
-    'trend':        trend,
-    'recordedAt':   recordedAt.toIso8601String(),
-    'source':       source,
-  };
+        'level': level,
+        'dangerLevel': dangerLevel,
+        'warningLevel': warningLevel,
+        'hfl': hfl,
+        'diff24h': diff24h,
+        'trend': trend,
+        'recordedAt': recordedAt.toIso8601String(),
+        'source': source,
+      };
 
   factory HistoricalReading.fromJson(Map<String, dynamic> j) =>
       HistoricalReading(
-        level:        (j['level'] as num).toDouble(),
-        dangerLevel:  (j['dangerLevel'] as num?)?.toDouble(),
+        level: (j['level'] as num).toDouble(),
+        dangerLevel: (j['dangerLevel'] as num?)?.toDouble(),
         warningLevel: (j['warningLevel'] as num?)?.toDouble(),
-        hfl:          (j['hfl'] as num?)?.toDouble(),
-        diff24h:      (j['diff24h'] as num?)?.toDouble(),
-        trend:        j['trend'] as String?,
-        recordedAt:   DateTime.parse(j['recordedAt'] as String),
-        source:       j['source'] as String? ?? 'WRD_BIHAR',
+        hfl: (j['hfl'] as num?)?.toDouble(),
+        diff24h: (j['diff24h'] as num?)?.toDouble(),
+        trend: j['trend'] as String?,
+        recordedAt: DateTime.parse(j['recordedAt'] as String),
+        source: j['source'] as String? ?? 'WRD_BIHAR',
       );
 
   /// Human-readable staleness string.
   String get agoLabel {
     final d = DateTime.now().difference(recordedAt);
-    if (d.inMinutes < 60)  return '${d.inMinutes}m ago';
-    if (d.inHours   < 24)  return '${d.inHours}h ago';
+    if (d.inMinutes < 60) return '${d.inMinutes}m ago';
+    if (d.inHours < 24) return '${d.inHours}h ago';
     return '${d.inDays}d ago';
   }
 }
@@ -85,7 +85,7 @@ class StationHistoryStore {
     if (_loaded) return;
     try {
       final prefs = await SharedPreferences.getInstance();
-      final keys  = prefs.getKeys().where((k) => k.startsWith('wrd_hist_'));
+      final keys = prefs.getKeys().where((k) => k.startsWith('wrd_hist_'));
       for (final k in keys) {
         final raw = prefs.getString(k);
         if (raw == null) continue;
@@ -108,14 +108,14 @@ class StationHistoryStore {
   Future<void> record(WrdStation s) async {
     if (!s.hasLiveData) return;
     final reading = HistoricalReading(
-      level:        s.currentLevel!,
-      dangerLevel:  s.dangerLevel,
+      level: s.currentLevel!,
+      dangerLevel: s.dangerLevel,
       warningLevel: s.warningLevel,
-      hfl:          s.hfl,
-      diff24h:      s.diff24h,
-      trend:        s.trend,
-      recordedAt:   s.fetchedAt,
-      source:       s.source,
+      hfl: s.hfl,
+      diff24h: s.diff24h,
+      trend: s.trend,
+      recordedAt: s.fetchedAt,
+      source: s.source,
     );
     final k = _key(s.site);
     _cache[k] = reading;
@@ -126,6 +126,8 @@ class StationHistoryStore {
   }
 
   /// Batch-record all live stations in a fetch result.
+  HistoricalReading? get(String stationId) => _cache[_key(stationId)];
+
   Future<void> recordAll(List<WrdStation> stations) async {
     for (final s in stations) {
       await record(s);
@@ -134,14 +136,12 @@ class StationHistoryStore {
 
   /// Get the last known reading for a station site name.
   /// Returns null if no historical data exists yet.
-  HistoricalReading? getHistory(String site) =>
-      _cache[_key(site)];
+  HistoricalReading? getHistory(String site) => _cache[_key(site)];
 
   /// Merge: for every NA station, inject last known reading.
   /// Returns a new list where NA stations carry past data in
   /// the [WrdStationWithHistory] wrapper.
-  List<WrdStationWithHistory> mergeWithHistory(
-      List<WrdStation> fresh) {
+  List<WrdStationWithHistory> mergeWithHistory(List<WrdStation> fresh) {
     return fresh.map((s) {
       final hist = s.hasLiveData ? null : getHistory(s.site);
       return WrdStationWithHistory(station: s, history: hist);
@@ -152,7 +152,7 @@ class StationHistoryStore {
 // ── Extended model carrying optional past data ─────────────────────────────
 
 class WrdStationWithHistory {
-  final WrdStation        station;
+  final WrdStation station;
   final HistoricalReading? history;
 
   const WrdStationWithHistory({
@@ -172,7 +172,7 @@ class WrdStationWithHistory {
   // ─ Display helpers (prefer live, fall back to past, then '—') ─
 
   String get displayLevel {
-    if (isLive)     return station.displayLevel;
+    if (isLive) return station.displayLevel;
     if (hasPastData) return '${history!.level.toStringAsFixed(2)} m';
     return 'NA';
   }
@@ -195,8 +195,7 @@ class WrdStationWithHistory {
     return '—';
   }
 
-  String? get displayTrend =>
-      station.trend ?? history?.trend;
+  String? get displayTrend => station.trend ?? history?.trend;
 
   String get displayDiff {
     final d = station.diff24h ?? (hasPastData ? history!.diff24h : null);
@@ -207,7 +206,7 @@ class WrdStationWithHistory {
 
   double? get effectivePct {
     final cur = station.currentLevel ?? history?.level;
-    final dl  = station.dangerLevel  ?? history?.dangerLevel;
+    final dl = station.dangerLevel ?? history?.dangerLevel;
     if (cur == null || dl == null || dl <= 0) return null;
     return (cur / dl) * 100.0;
   }
@@ -218,13 +217,13 @@ class WrdStationWithHistory {
   }
 
   String get riskLabel {
-    if (isLive)      return station.riskLabel;
+    if (isLive) return station.riskLabel;
     if (hasPastData) {
       final cur = history!.level;
-      final dl  = station.dangerLevel ?? history!.dangerLevel;
+      final dl = station.dangerLevel ?? history!.dangerLevel;
       if (dl == null || dl <= 0) return 'PAST';
       final bd = dl - cur;
-      if (bd <= 0)   return 'CRITICAL*';
+      if (bd <= 0) return 'CRITICAL*';
       if (bd <= 1.0) return 'HIGH*';
       if (bd <= 2.5) return 'MODERATE*';
       return 'LOW*';
@@ -233,6 +232,5 @@ class WrdStationWithHistory {
   }
 
   /// Staleness label for the badge.
-  String get staleLabel =>
-      hasPastData ? history!.agoLabel : '';
+  String get staleLabel => hasPastData ? history!.agoLabel : '';
 }

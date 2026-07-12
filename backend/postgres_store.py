@@ -60,6 +60,35 @@ CREATE INDEX IF NOT EXISTS idx_telemetry_snapshots_created_at ON telemetry_snaps
 CREATE INDEX IF NOT EXISTS idx_telemetry_snapshots_state_station ON telemetry_snapshots (state_name, station_name, created_at DESC);
 
 
+CREATE TABLE IF NOT EXISTS station_snapshots (
+    id              SERIAL PRIMARY KEY,
+    station         TEXT NOT NULL,
+    river           TEXT,
+    district        TEXT,
+    level_m         FLOAT,
+    danger_level_m  FLOAT,
+    warning_level_m FLOAT,
+    status          TEXT,
+    change_24h_m    FLOAT,
+    source          TEXT,
+    recorded_at     TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS flood_alerts (
+    id              SERIAL PRIMARY KEY,
+    station         TEXT NOT NULL,
+    river           TEXT,
+    district        TEXT,
+    severity        TEXT,
+    level_m         FLOAT,
+    danger_level_m  FLOAT,
+    alert_type      TEXT,
+    message         TEXT,
+    is_active       BOOLEAN DEFAULT TRUE,
+    created_at      TIMESTAMPTZ DEFAULT NOW(),
+    resolved_at     TIMESTAMPTZ
+);
+
 CREATE TABLE IF NOT EXISTS audit_logs (
     id BIGSERIAL PRIMARY KEY,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -306,6 +335,90 @@ class PostgresOperationalStore:
                 row = cur.fetchone()
                 return int(row["id"]) if row else None
 
+
+    def save_station_snapshot(self, stations: list) -> int:
+        """Save WRD Bihar station snapshots to DB."""
+        if not stations: return 0
+        try:
+            with self._connect() as conn:
+                with conn.cursor() as cur:
+                    count = 0
+                    for s in stations:
+                        cur.execute("""
+                            INSERT INTO station_snapshots
+                                (station, river, district, level_m, danger_level_m,
+                                 warning_level_m, status, change_24h_m, source)
+                            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                        """, (
+                            s.get('station'), s.get('river'), s.get('district'),
+                            s.get('current_level_m'), s.get('danger_level_m'),
+                            s.get('yesterday_level_m'), s.get('status'),
+                            s.get('change_24h_m'), s.get('source','WRD_BIHAR')
+                        ))
+                        count += 1
+                    conn.commit()
+                    return count
+        except Exception as e:
+            self.last_error = str(e)
+            return 0
+
+    def save_flood_alert(self, payload: dict) -> bool:
+        """Save a flood alert event to DB."""
+        try:
+            with self._connect() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        INSERT INTO flood_alerts
+                            (station, river, district, severity, level_m,
+                             danger_level_m, alert_type, message)
+                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+                    """, (
+                        payload.get('station'), payload.get('river'),
+                        payload.get('district'), payload.get('severity'),
+                        payload.get('level_m'), payload.get('danger_level_m'),
+                        payload.get('alert_type','THRESHOLD'), payload.get('message','')
+                    ))
+                    conn.commit()
+                    return True
+        except Exception as e:
+            self.last_error = str(e)
+            return False
+
+    def list_station_snapshots(self, station: str = None, limit: int = 100) -> list:
+        """Get recent station snapshots."""
+        try:
+            with self._connect() as conn:
+                with conn.cursor() as cur:
+                    if station:
+                        cur.execute(
+                            "SELECT * FROM station_snapshots WHERE station=%s ORDER BY recorded_at DESC LIMIT %s",
+                            (station, limit))
+                    else:
+                        cur.execute(
+                            "SELECT * FROM station_snapshots ORDER BY recorded_at DESC LIMIT %s",
+                            (limit,))
+                    return cur.fetchall()
+        except Exception as e:
+            self.last_error = str(e)
+            return []
+
+    def list_flood_alerts(self, active_only: bool = True, limit: int = 50) -> list:
+        """Get flood alerts."""
+        try:
+            with self._connect() as conn:
+                with conn.cursor() as cur:
+                    if active_only:
+                        cur.execute(
+                            "SELECT * FROM flood_alerts WHERE is_active=TRUE ORDER BY created_at DESC LIMIT %s",
+                            (limit,))
+                    else:
+                        cur.execute(
+                            "SELECT * FROM flood_alerts ORDER BY created_at DESC LIMIT %s",
+                            (limit,))
+                    return cur.fetchall()
+        except Exception as e:
+            self.last_error = str(e)
+            return []
 
     def list_predictions(self, *, limit: int = 100, state_name: Optional[str] = None, station_name: Optional[str] = None) -> List[Dict[str, Any]]:
         if not self.ready:

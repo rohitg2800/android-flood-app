@@ -33,71 +33,76 @@ class _RoboticCard extends StatelessWidget {
     this.onTap,
   });
 
-  final FloodData   data;
+  final FloodData data;
   final RoboticTheme theme;
   final VoidCallback? onTap;
 
   // ── Alert-level logic (unchanged) ─────────────────────────────────────
   Color get _alertColor {
     switch (data.riskLevel) {
-      case 'CRITICAL': return theme.danger;
-      case 'SEVERE':   return theme.warning;
-      case 'MODERATE': return theme.accent2;
-      default:         return theme.accent;
+      case 'CRITICAL':
+        return theme.danger;
+      case 'SEVERE':
+        return theme.warning;
+      case 'MODERATE':
+        return theme.accent2;
+      default:
+        return theme.accent;
     }
   }
 
-  bool get _isCritical  => data.riskLevel == 'CRITICAL';
-  bool get _isSevere    => data.riskLevel == 'SEVERE';
-  bool get _isElevated  => _isCritical || _isSevere;
+  bool get _isCritical => data.riskLevel == 'CRITICAL';
+  bool get _isSevere => data.riskLevel == 'SEVERE';
+  bool get _isElevated => _isCritical || _isSevere;
 
-  double get _levelPct =>
-      data.dangerLevel > 0
-          ? (data.currentLevel / data.dangerLevel * 100).clamp(0.0, 100.0)
-          : 0.0;
+  double get _levelPct => data.dangerLevel > 0
+      ? (data.currentLevel / data.dangerLevel * 100).clamp(0.0, 100.0)
+      : 0.0;
 
   // ── Glow helpers ──────────────────────────────────────────────────────
   List<BoxShadow> _glowFor(Color c, {double intensity = 1.0}) => [
-    BoxShadow(
-      color:       c.withValues(alpha: 0.25 * intensity),
-      blurRadius:  12 * intensity,
-      spreadRadius: 1 * intensity,
-    ),
-    BoxShadow(
-      color:       c.withValues(alpha: 0.10 * intensity),
-      blurRadius:  28 * intensity,
-      spreadRadius: 0,
-    ),
-  ];
+        BoxShadow(
+          color: c.withValues(alpha: 0.25 * intensity),
+          blurRadius: 12 * intensity,
+          spreadRadius: 1 * intensity,
+        ),
+        BoxShadow(
+          color: c.withValues(alpha: 0.10 * intensity),
+          blurRadius: 28 * intensity,
+          spreadRadius: 0,
+        ),
+      ];
 
   @override
   Widget build(BuildContext context) {
-    final accent   = _alertColor;
+    final accent = _alertColor;
     final elevated = _isElevated;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 350),
-      curve:    Curves.easeOut,
+      curve: Curves.easeOut,
       decoration: BoxDecoration(
-        color:  theme.surface,
+        color: theme.surface,
         border: Border.all(
           color: elevated ? accent.withValues(alpha: 0.8) : theme.border,
           width: elevated ? 1.5 : 1.0,
         ),
         // Sharp corners — Robotic design language
         borderRadius: BorderRadius.zero,
-        boxShadow: elevated ? _glowFor(accent, intensity: elevated ? 1.2 : 0.6) : [
-          BoxShadow(
-            color:      theme.accent.withValues(alpha: 0.04),
-            blurRadius: 8,
-          ),
-        ],
+        boxShadow: elevated
+            ? _glowFor(accent, intensity: elevated ? 1.2 : 0.6)
+            : [
+                BoxShadow(
+                  color: theme.accent.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                ),
+              ],
       ),
       child: Material(
-        color:         Colors.transparent,
+        color: Colors.transparent,
         child: InkWell(
-          onTap:          onTap,
-          splashColor:    accent.withValues(alpha: 0.08),
+          onTap: onTap,
+          splashColor: accent.withValues(alpha: 0.08),
           highlightColor: accent.withValues(alpha: 0.04),
           child: Padding(
             padding: const EdgeInsets.all(14),
@@ -111,7 +116,8 @@ class _RoboticCard extends StatelessWidget {
                 _MetricsRow(data: data, theme: theme),
                 if (data.riverName != null) ...[
                   const SizedBox(height: 6),
-                  _RiverTag(name: data.riverName!, theme: theme, accent: accent),
+                  _RiverTag(
+                      name: data.riverName!, theme: theme, accent: accent),
                 ],
               ],
             ),
@@ -131,9 +137,9 @@ class _Header extends StatelessWidget {
     required this.alertColor,
   });
 
-  final FloodData    data;
+  final FloodData data;
   final RoboticTheme theme;
-  final Color        alertColor;
+  final Color alertColor;
 
   @override
   Widget build(BuildContext context) {
@@ -141,13 +147,14 @@ class _Header extends StatelessWidget {
       children: [
         // Alert indicator dot
         Container(
-          width: 8, height: 8,
+          width: 8,
+          height: 8,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: alertColor,
             boxShadow: [
               BoxShadow(
-                color:      alertColor.withValues(alpha: 0.6),
+                color: alertColor.withValues(alpha: 0.6),
                 blurRadius: 6,
                 spreadRadius: 1,
               ),
@@ -157,13 +164,13 @@ class _Header extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: Text(
-            data.city.toUpperCase(),
+            (data.city ?? "").toUpperCase(),
             style: TextStyle(
-              fontFamily:     'RobotoMono',
-              fontSize:       13,
-              fontWeight:     FontWeight.w700,
-              color:          theme.text,
-              letterSpacing:  1.4,
+              fontFamily: 'RobotoMono',
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: theme.text,
+              letterSpacing: 1.4,
             ),
             overflow: TextOverflow.ellipsis,
           ),
@@ -181,8 +188,8 @@ class _RiskBadge extends StatelessWidget {
     required this.theme,
   });
 
-  final String       riskLevel;
-  final Color        color;
+  final String riskLevel;
+  final Color color;
   final RoboticTheme theme;
 
   @override
@@ -190,17 +197,17 @@ class _RiskBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color:  color.withValues(alpha: 0.15),
+        color: color.withValues(alpha: 0.15),
         border: Border.all(color: color.withValues(alpha: 0.6), width: 1),
         // Sharp — no radius
       ),
       child: Text(
         riskLevel,
         style: TextStyle(
-          fontFamily:    'RobotoMono',
-          fontSize:      10,
-          fontWeight:    FontWeight.w700,
-          color:         color,
+          fontFamily: 'RobotoMono',
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: color,
           letterSpacing: 1.2,
         ),
       ),
@@ -215,8 +222,8 @@ class _LevelBar extends StatelessWidget {
     required this.theme,
   });
 
-  final double       pct;
-  final Color        alertColor;
+  final double pct;
+  final Color alertColor;
   final RoboticTheme theme;
 
   @override
@@ -230,19 +237,19 @@ class _LevelBar extends StatelessWidget {
             Text(
               'LEVEL',
               style: TextStyle(
-                fontFamily:    'RobotoMono',
-                fontSize:      9,
+                fontFamily: 'RobotoMono',
+                fontSize: 9,
                 letterSpacing: 1.4,
-                color:         theme.textMuted,
+                color: theme.textMuted,
               ),
             ),
             Text(
               '${pct.toStringAsFixed(1)}%',
               style: TextStyle(
-                fontFamily:    'RobotoMono',
-                fontSize:      11,
-                fontWeight:    FontWeight.w700,
-                color:         alertColor,
+                fontFamily: 'RobotoMono',
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: alertColor,
                 letterSpacing: 0.8,
               ),
             ),
@@ -251,20 +258,21 @@ class _LevelBar extends StatelessWidget {
         const SizedBox(height: 4),
         // Track
         Container(
-          height:      4,
+          height: 4,
           decoration: BoxDecoration(
             color: theme.surface2,
-            border: Border.all(color: theme.border.withValues(alpha: 0.5), width: 0.5),
+            border: Border.all(
+                color: theme.border.withValues(alpha: 0.5), width: 0.5),
           ),
           child: FractionallySizedBox(
             alignment: Alignment.centerLeft,
             widthFactor: pct / 100,
             child: Container(
               decoration: BoxDecoration(
-                color:      alertColor,
+                color: alertColor,
                 boxShadow: [
                   BoxShadow(
-                    color:      alertColor.withValues(alpha: 0.5),
+                    color: alertColor.withValues(alpha: 0.5),
                     blurRadius: 4,
                   ),
                 ],
@@ -280,7 +288,7 @@ class _LevelBar extends StatelessWidget {
 class _MetricsRow extends StatelessWidget {
   const _MetricsRow({required this.data, required this.theme});
 
-  final FloodData    data;
+  final FloodData data;
   final RoboticTheme theme;
 
   @override
@@ -305,7 +313,7 @@ class _MetricsRow extends StatelessWidget {
           value: '${data.warningLevel.toStringAsFixed(2)}m',
           theme: theme,
           isAlert: data.currentLevel >= data.warningLevel &&
-                   data.currentLevel <  data.dangerLevel,
+              data.currentLevel < data.dangerLevel,
         ),
         if (data.effectiveRainfallMm > 0) ...[
           _VertDivider(theme: theme),
@@ -328,10 +336,10 @@ class _Metric extends StatelessWidget {
     this.isAlert = false,
   });
 
-  final String       label;
-  final String       value;
+  final String label;
+  final String value;
   final RoboticTheme theme;
-  final bool         isAlert;
+  final bool isAlert;
 
   @override
   Widget build(BuildContext context) {
@@ -343,20 +351,20 @@ class _Metric extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontFamily:    'RobotoMono',
-              fontSize:      8,
+              fontFamily: 'RobotoMono',
+              fontSize: 8,
               letterSpacing: 1.2,
-              color:         theme.textMuted,
+              color: theme.textMuted,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             value,
             style: TextStyle(
-              fontFamily:    'RobotoMono',
-              fontSize:      12,
-              fontWeight:    FontWeight.w600,
-              color:         valColor,
+              fontFamily: 'RobotoMono',
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: valColor,
               letterSpacing: 0.6,
             ),
           ),
@@ -371,8 +379,11 @@ class _VertDivider extends StatelessWidget {
   final RoboticTheme theme;
 
   @override
-  Widget build(BuildContext context) =>
-      Container(width: 1, height: 28, color: theme.border, margin: const EdgeInsets.symmetric(horizontal: 8));
+  Widget build(BuildContext context) => Container(
+      width: 1,
+      height: 28,
+      color: theme.border,
+      margin: const EdgeInsets.symmetric(horizontal: 8));
 }
 
 class _RiverTag extends StatelessWidget {
@@ -382,9 +393,9 @@ class _RiverTag extends StatelessWidget {
     required this.accent,
   });
 
-  final String       name;
+  final String name;
   final RoboticTheme theme;
-  final Color        accent;
+  final Color accent;
 
   @override
   Widget build(BuildContext context) {
@@ -393,12 +404,12 @@ class _RiverTag extends StatelessWidget {
         Icon(Icons.water, size: 11, color: accent.withValues(alpha: 0.7)),
         const SizedBox(width: 4),
         Text(
-          name.toUpperCase(),
+          (name ?? "").toUpperCase(),
           style: TextStyle(
-            fontFamily:    'RobotoMono',
-            fontSize:      9,
+            fontFamily: 'RobotoMono',
+            fontSize: 9,
             letterSpacing: 1.2,
-            color:         theme.textMuted,
+            color: theme.textMuted,
           ),
         ),
       ],

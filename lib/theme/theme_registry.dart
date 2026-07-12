@@ -16,7 +16,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // ─── Skin enum ────────────────────────────────────────────────────────────────────
 enum AppSkin {
-  deepSpace,   // Universe — dark navy + cyan
+  deepSpace, // Universe — dark navy + cyan
   tacticalOps, // Robotic  — near-black + amber/green HUD
 }
 
@@ -25,15 +25,15 @@ enum AppSkin {
 class SkinTokens {
   // — Identity
   final AppSkin skin;
-  final String  displayName;
+  final String displayName;
 
   // — Scaffold / surface
   final Color scaffoldBg;
-  final Color surfaceLow;    // card bg base layer
-  final Color surfaceMid;    // elevated card / modal
-  final Color surfaceHigh;   // chip / badge bg
+  final Color surfaceLow; // card bg base layer
+  final Color surfaceMid; // elevated card / modal
+  final Color surfaceHigh; // chip / badge bg
   final Color divider;
-  final Color stroke;        // borders
+  final Color stroke; // borders
 
   // — Text
   final Color textPrimary;
@@ -41,41 +41,41 @@ class SkinTokens {
   final Color textMuted;
 
   // — Accent system
-  final Color accent;          // primary glow color
-  final Color accentDim;       // 30% opacity accent
-  final Color accentContrast;  // text on accent bg
+  final Color accent; // primary glow color
+  final Color accentDim; // 30% opacity accent
+  final Color accentContrast; // text on accent bg
   final Color accentSecondary; // secondary highlight
 
   // — Semantic colors
-  final Color danger;    // above danger level
-  final Color warning;   // above warning level
-  final Color safe;      // below warning
-  final Color critical;  // extreme / HFL exceeded
+  final Color danger; // above danger level
+  final Color warning; // above warning level
+  final Color safe; // below warning
+  final Color critical; // extreme / HFL exceeded
 
   // — Glow & shadow
-  final List<BoxShadow> cardGlow;      // terminal card glow
-  final List<BoxShadow> accentGlow;    // accent button glow
-  final List<BoxShadow> dangerGlow;    // danger badge glow
+  final List<BoxShadow> cardGlow; // terminal card glow
+  final List<BoxShadow> accentGlow; // accent button glow
+  final List<BoxShadow> dangerGlow; // danger badge glow
 
   // — Borders
-  final BoxDecoration terminalBox;     // data-terminal card decoration
-  final BoxDecoration gaugeBox;        // gauge container decoration
-  final BoxDecoration chipBox;         // small chip decoration
+  final BoxDecoration terminalBox; // data-terminal card decoration
+  final BoxDecoration gaugeBox; // gauge container decoration
+  final BoxDecoration chipBox; // small chip decoration
   final BorderRadius cardRadius;
   final BorderRadius chipRadius;
 
   // — Typography
-  final TextStyle monoLg;    // large monospace number (water level)
-  final TextStyle monoMd;    // medium monospace
-  final TextStyle monoSm;    // small monospace
-  final TextStyle labelSm;   // uppercase tracking label
-  final TextStyle labelXs;   // tiny uppercase label
-  final TextStyle bodyMd;    // body text
+  final TextStyle monoLg; // large monospace number (water level)
+  final TextStyle monoMd; // medium monospace
+  final TextStyle monoSm; // small monospace
+  final TextStyle labelSm; // uppercase tracking label
+  final TextStyle labelXs; // tiny uppercase label
+  final TextStyle bodyMd; // body text
 
   // — Animation timing
-  final Duration entryDuration;   // card slide-in duration
-  final Duration pulseDuration;   // live-badge pulse duration
-  final Curve   entryCurve;
+  final Duration entryDuration; // card slide-in duration
+  final Duration pulseDuration; // live-badge pulse duration
+  final Curve entryCurve;
 
   const SkinTokens({
     required this.skin,
@@ -118,98 +118,113 @@ class SkinTokens {
 
   // Helper: semantic color for a water level vs thresholds
   Color levelColor(double current, double warning, double danger) {
-    if (current >= danger)  return this.danger;
+    if (current >= danger) return this.danger;
     if (current >= warning) return this.warning;
     return safe;
   }
 
   // Helper: glow shadow for a semantic color
   List<BoxShadow> glowFor(Color c, {double spread = 0, double blur = 12}) => [
-    BoxShadow(color: c.withOpacity(0.35), blurRadius: blur,
-        spreadRadius: spread),
-    BoxShadow(color: c.withOpacity(0.12), blurRadius: blur * 2.5,
-        spreadRadius: spread + 2),
-  ];
+        BoxShadow(
+            color: c.withValues(alpha: 0.35),
+            blurRadius: blur,
+            spreadRadius: spread),
+        BoxShadow(
+            color: c.withValues(alpha: 0.12),
+            blurRadius: blur * 2.5,
+            spreadRadius: spread + 2),
+      ];
 }
 
 // ─── Deep-Space skin ───────────────────────────────────────────────────────────────────
 // Palette: deep navy (#0a0e1a) + void-black surfaces + cyan-400 (#22d3ee) accent
 // Font: JetBrains Mono — pure terminal aesthetic
-const _dsAccent    = Color(0xFF22d3ee); // cyan-400
+const _dsAccent = Color(0xFF22d3ee); // cyan-400
 const _dsAccentAlt = Color(0xFF818cf8); // indigo-400 secondary
-const _dsDanger    = Color(0xFFf87171); // red-400
-const _dsWarning   = Color(0xFFfbbf24); // amber-400
-const _dsSafe      = Color(0xFF4ade80); // green-400
-const _dsCritical  = Color(0xFFff4560); // deep red
+const _dsDanger = Color(0xFFf87171); // red-400
+const _dsWarning = Color(0xFFfbbf24); // amber-400
+const _dsSafe = Color(0xFF4ade80); // green-400
+const _dsCritical = Color(0xFFff4560); // deep red
 
 final _deepSpaceTokens = SkinTokens(
-  skin:        AppSkin.deepSpace,
+  skin: AppSkin.deepSpace,
   displayName: 'Deep-Space',
 
-  scaffoldBg:      const Color(0xFF070b14),
-  surfaceLow:      const Color(0xFF0d1221),
-  surfaceMid:      const Color(0xFF111827),
-  surfaceHigh:     const Color(0xFF1a2235),
-  divider:         const Color(0xFF1e2d45),
-  stroke:          const Color(0xFF22d3ee).withOpacity(0.18),
+  scaffoldBg: const Color(0xFF070b14),
+  surfaceLow: const Color(0xFF0d1221),
+  surfaceMid: const Color(0xFF111827),
+  surfaceHigh: const Color(0xFF1a2235),
+  divider: const Color(0xFF1e2d45),
+  stroke: const Color(0xFF22d3ee).withValues(alpha: 0.18),
 
-  textPrimary:     const Color(0xFFe2e8f0),
-  textSecondary:   const Color(0xFF94a3b8),
-  textMuted:       const Color(0xFF475569),
+  textPrimary: const Color(0xFFe2e8f0),
+  textSecondary: const Color(0xFF94a3b8),
+  textMuted: const Color(0xFF475569),
 
-  accent:          _dsAccent,
-  accentDim:       _dsAccent.withOpacity(0.18),
-  accentContrast:  const Color(0xFF070b14),
+  accent: _dsAccent,
+  accentDim: _dsAccent.withValues(alpha: 0.18),
+  accentContrast: const Color(0xFF070b14),
   accentSecondary: _dsAccentAlt,
 
-  danger:   _dsDanger,
-  warning:  _dsWarning,
-  safe:     _dsSafe,
+  danger: _dsDanger,
+  warning: _dsWarning,
+  safe: _dsSafe,
   critical: _dsCritical,
 
   cardGlow: [
-    BoxShadow(color: _dsAccent.withOpacity(0.10), blurRadius: 20,
+    BoxShadow(
+        color: _dsAccent.withValues(alpha: 0.10),
+        blurRadius: 20,
         spreadRadius: -4),
-    BoxShadow(color: const Color(0xFF000000).withOpacity(0.6),
-        blurRadius: 8, offset: const Offset(0, 4)),
+    BoxShadow(
+        color: const Color(0xFF000000).withValues(alpha: 0.6),
+        blurRadius: 8,
+        offset: const Offset(0, 4)),
   ],
   accentGlow: [
-    BoxShadow(color: _dsAccent.withOpacity(0.45), blurRadius: 16,
+    BoxShadow(
+        color: _dsAccent.withValues(alpha: 0.45),
+        blurRadius: 16,
         spreadRadius: 0),
-    BoxShadow(color: _dsAccent.withOpacity(0.15), blurRadius: 32,
+    BoxShadow(
+        color: _dsAccent.withValues(alpha: 0.15),
+        blurRadius: 32,
         spreadRadius: 4),
   ],
   dangerGlow: [
-    BoxShadow(color: _dsDanger.withOpacity(0.45), blurRadius: 14),
-    BoxShadow(color: _dsDanger.withOpacity(0.15), blurRadius: 28,
+    BoxShadow(color: _dsDanger.withValues(alpha: 0.45), blurRadius: 14),
+    BoxShadow(
+        color: _dsDanger.withValues(alpha: 0.15),
+        blurRadius: 28,
         spreadRadius: 2),
   ],
 
   terminalBox: BoxDecoration(
-    color:        const Color(0xFF0d1221),
+    color: const Color(0xFF0d1221),
     borderRadius: BorderRadius.circular(10),
-    border:       Border.all(
-        color: _dsAccent.withOpacity(0.22), width: 1),
+    border: Border.all(color: _dsAccent.withValues(alpha: 0.22), width: 1),
     boxShadow: [
-      BoxShadow(color: _dsAccent.withOpacity(0.08), blurRadius: 18,
+      BoxShadow(
+          color: _dsAccent.withValues(alpha: 0.08),
+          blurRadius: 18,
           spreadRadius: -2),
     ],
   ),
   gaugeBox: BoxDecoration(
-    color:        const Color(0xFF0d1221),
+    color: const Color(0xFF0d1221),
     borderRadius: BorderRadius.circular(12),
-    border:       Border.all(
-        color: _dsAccent.withOpacity(0.30), width: 1),
+    border: Border.all(color: _dsAccent.withValues(alpha: 0.30), width: 1),
     boxShadow: [
-      BoxShadow(color: _dsAccent.withOpacity(0.14), blurRadius: 24,
+      BoxShadow(
+          color: _dsAccent.withValues(alpha: 0.14),
+          blurRadius: 24,
           spreadRadius: 0),
     ],
   ),
   chipBox: BoxDecoration(
-    color:        _dsAccent.withOpacity(0.12),
+    color: _dsAccent.withValues(alpha: 0.12),
     borderRadius: BorderRadius.circular(5),
-    border:       Border.all(
-        color: _dsAccent.withOpacity(0.35), width: 1),
+    border: Border.all(color: _dsAccent.withValues(alpha: 0.35), width: 1),
   ),
 
   cardRadius: BorderRadius.circular(10),
@@ -217,126 +232,133 @@ final _deepSpaceTokens = SkinTokens(
 
   // Monospace typography — JetBrains Mono
   monoLg: const TextStyle(
-    fontFamily:  'JetBrainsMono',
-    fontSize:    28,
-    fontWeight:  FontWeight.w700,
+    fontFamily: 'JetBrainsMono',
+    fontSize: 28,
+    fontWeight: FontWeight.w700,
     letterSpacing: 1.5,
-    color:       _dsAccent,
-    height:      1.0,
+    color: _dsAccent,
+    height: 1.0,
   ),
   monoMd: const TextStyle(
-    fontFamily:  'JetBrainsMono',
-    fontSize:    16,
-    fontWeight:  FontWeight.w600,
+    fontFamily: 'JetBrainsMono',
+    fontSize: 16,
+    fontWeight: FontWeight.w600,
     letterSpacing: 1.2,
-    color:       _dsAccent,
+    color: _dsAccent,
   ),
   monoSm: const TextStyle(
-    fontFamily:  'JetBrainsMono',
-    fontSize:    12,
-    fontWeight:  FontWeight.w500,
+    fontFamily: 'JetBrainsMono',
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
     letterSpacing: 0.8,
-    color:       Color(0xFF94a3b8),
+    color: Color(0xFF94a3b8),
   ),
   labelSm: const TextStyle(
-    fontSize:      11,
-    fontWeight:    FontWeight.w700,
+    fontSize: 11,
+    fontWeight: FontWeight.w700,
     letterSpacing: 1.4,
-    color:         Color(0xFF94a3b8),
+    color: Color(0xFF94a3b8),
   ),
   labelXs: const TextStyle(
-    fontSize:      9,
-    fontWeight:    FontWeight.w700,
+    fontSize: 9,
+    fontWeight: FontWeight.w700,
     letterSpacing: 1.2,
-    color:         Color(0xFF475569),
+    color: Color(0xFF475569),
   ),
   bodyMd: const TextStyle(
-    fontSize:    13,
-    fontWeight:  FontWeight.w500,
-    color:       Color(0xFFe2e8f0),
-    height:      1.4,
+    fontSize: 13,
+    fontWeight: FontWeight.w500,
+    color: Color(0xFFe2e8f0),
+    height: 1.4,
   ),
 
   entryDuration: const Duration(milliseconds: 480),
   pulseDuration: const Duration(milliseconds: 1400),
-  entryCurve:    Curves.easeOutCubic,
+  entryCurve: Curves.easeOutCubic,
 );
 
 // ─── Tactical-Ops skin ─────────────────────────────────────────────────────────────────
 // Palette: void-black (#080b0f) + sharp amber (#f59e0b) HUD + green-500 data
-const _toAccent    = Color(0xFFf59e0b); // amber-500
+const _toAccent = Color(0xFFf59e0b); // amber-500
 const _toAccentAlt = Color(0xFF22c55e); // green-500
-const _toDanger    = Color(0xFFef4444); // red-500
-const _toWarning   = Color(0xFFf97316); // orange-500
-const _toSafe      = Color(0xFF22c55e); // green-500
-const _toCritical  = Color(0xFFdc2626); // red-600
+const _toDanger = Color(0xFFef4444); // red-500
+const _toWarning = Color(0xFFf97316); // orange-500
+const _toSafe = Color(0xFF22c55e); // green-500
+const _toCritical = Color(0xFFdc2626); // red-600
 
 final _tacticalOpsTokens = SkinTokens(
-  skin:        AppSkin.tacticalOps,
+  skin: AppSkin.tacticalOps,
   displayName: 'Tactical-Ops',
 
-  scaffoldBg:      const Color(0xFF080b0f),
-  surfaceLow:      const Color(0xFF0e1117),
-  surfaceMid:      const Color(0xFF131920),
-  surfaceHigh:     const Color(0xFF1a2130),
-  divider:         const Color(0xFF1f2937),
-  stroke:          const Color(0xFFf59e0b).withOpacity(0.20),
+  scaffoldBg: const Color(0xFF080b0f),
+  surfaceLow: const Color(0xFF0e1117),
+  surfaceMid: const Color(0xFF131920),
+  surfaceHigh: const Color(0xFF1a2130),
+  divider: const Color(0xFF1f2937),
+  stroke: const Color(0xFFf59e0b).withValues(alpha: 0.20),
 
-  textPrimary:     const Color(0xFFf1f5f9),
-  textSecondary:   const Color(0xFF9ca3af),
-  textMuted:       const Color(0xFF4b5563),
+  textPrimary: const Color(0xFFf1f5f9),
+  textSecondary: const Color(0xFF9ca3af),
+  textMuted: const Color(0xFF4b5563),
 
-  accent:          _toAccent,
-  accentDim:       _toAccent.withOpacity(0.14),
-  accentContrast:  const Color(0xFF080b0f),
+  accent: _toAccent,
+  accentDim: _toAccent.withValues(alpha: 0.14),
+  accentContrast: const Color(0xFF080b0f),
   accentSecondary: _toAccentAlt,
 
-  danger:   _toDanger,
-  warning:  _toWarning,
-  safe:     _toSafe,
+  danger: _toDanger,
+  warning: _toWarning,
+  safe: _toSafe,
   critical: _toCritical,
 
   cardGlow: [
-    BoxShadow(color: _toAccent.withOpacity(0.08), blurRadius: 16,
+    BoxShadow(
+        color: _toAccent.withValues(alpha: 0.08),
+        blurRadius: 16,
         spreadRadius: -4),
-    BoxShadow(color: const Color(0xFF000000).withOpacity(0.7),
-        blurRadius: 8, offset: const Offset(0, 4)),
+    BoxShadow(
+        color: const Color(0xFF000000).withValues(alpha: 0.7),
+        blurRadius: 8,
+        offset: const Offset(0, 4)),
   ],
   accentGlow: [
-    BoxShadow(color: _toAccent.withOpacity(0.50), blurRadius: 14),
-    BoxShadow(color: _toAccent.withOpacity(0.18), blurRadius: 30,
+    BoxShadow(color: _toAccent.withValues(alpha: 0.50), blurRadius: 14),
+    BoxShadow(
+        color: _toAccent.withValues(alpha: 0.18),
+        blurRadius: 30,
         spreadRadius: 4),
   ],
   dangerGlow: [
-    BoxShadow(color: _toDanger.withOpacity(0.50), blurRadius: 12),
-    BoxShadow(color: _toDanger.withOpacity(0.18), blurRadius: 26,
+    BoxShadow(color: _toDanger.withValues(alpha: 0.50), blurRadius: 12),
+    BoxShadow(
+        color: _toDanger.withValues(alpha: 0.18),
+        blurRadius: 26,
         spreadRadius: 2),
   ],
 
   terminalBox: BoxDecoration(
-    color:        const Color(0xFF0e1117),
-    borderRadius: BorderRadius.circular(6),  // sharper corners
-    border:       Border.all(
-        color: _toAccent.withOpacity(0.24), width: 1),
+    color: const Color(0xFF0e1117),
+    borderRadius: BorderRadius.circular(6), // sharper corners
+    border: Border.all(color: _toAccent.withValues(alpha: 0.24), width: 1),
     boxShadow: [
-      BoxShadow(color: _toAccent.withOpacity(0.06), blurRadius: 14,
+      BoxShadow(
+          color: _toAccent.withValues(alpha: 0.06),
+          blurRadius: 14,
           spreadRadius: -2),
     ],
   ),
   gaugeBox: BoxDecoration(
-    color:        const Color(0xFF0e1117),
+    color: const Color(0xFF0e1117),
     borderRadius: BorderRadius.circular(6),
-    border:       Border.all(
-        color: _toAccent.withOpacity(0.28), width: 1),
+    border: Border.all(color: _toAccent.withValues(alpha: 0.28), width: 1),
     boxShadow: [
-      BoxShadow(color: _toAccent.withOpacity(0.10), blurRadius: 18),
+      BoxShadow(color: _toAccent.withValues(alpha: 0.10), blurRadius: 18),
     ],
   ),
   chipBox: BoxDecoration(
-    color:        _toAccent.withOpacity(0.10),
-    borderRadius: BorderRadius.circular(3),  // sharp
-    border:       Border.all(
-        color: _toAccent.withOpacity(0.40), width: 1),
+    color: _toAccent.withValues(alpha: 0.10),
+    borderRadius: BorderRadius.circular(3), // sharp
+    border: Border.all(color: _toAccent.withValues(alpha: 0.40), width: 1),
   ),
 
   cardRadius: BorderRadius.circular(6),
@@ -344,61 +366,63 @@ final _tacticalOpsTokens = SkinTokens(
 
   // Monospace typography — JetBrains Mono (amber tint for Tactical)
   monoLg: const TextStyle(
-    fontFamily:    'JetBrainsMono',
-    fontSize:      28,
-    fontWeight:    FontWeight.w700,
+    fontFamily: 'JetBrainsMono',
+    fontSize: 28,
+    fontWeight: FontWeight.w700,
     letterSpacing: 1.5,
-    color:         _toAccent,
-    height:        1.0,
+    color: _toAccent,
+    height: 1.0,
   ),
   monoMd: const TextStyle(
-    fontFamily:    'JetBrainsMono',
-    fontSize:      16,
-    fontWeight:    FontWeight.w600,
+    fontFamily: 'JetBrainsMono',
+    fontSize: 16,
+    fontWeight: FontWeight.w600,
     letterSpacing: 1.2,
-    color:         _toAccent,
+    color: _toAccent,
   ),
   monoSm: const TextStyle(
-    fontFamily:    'JetBrainsMono',
-    fontSize:      12,
-    fontWeight:    FontWeight.w500,
+    fontFamily: 'JetBrainsMono',
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
     letterSpacing: 0.8,
-    color:         Color(0xFF9ca3af),
+    color: Color(0xFF9ca3af),
   ),
   labelSm: const TextStyle(
-    fontSize:      11,
-    fontWeight:    FontWeight.w700,
+    fontSize: 11,
+    fontWeight: FontWeight.w700,
     letterSpacing: 1.4,
-    color:         Color(0xFF9ca3af),
+    color: Color(0xFF9ca3af),
   ),
   labelXs: const TextStyle(
-    fontSize:      9,
-    fontWeight:    FontWeight.w700,
+    fontSize: 9,
+    fontWeight: FontWeight.w700,
     letterSpacing: 1.2,
-    color:         Color(0xFF4b5563),
+    color: Color(0xFF4b5563),
   ),
   bodyMd: const TextStyle(
-    fontSize:   13,
+    fontSize: 13,
     fontWeight: FontWeight.w500,
-    color:      Color(0xFFf1f5f9),
-    height:     1.4,
+    color: Color(0xFFf1f5f9),
+    height: 1.4,
   ),
 
   entryDuration: const Duration(milliseconds: 360),
   pulseDuration: const Duration(milliseconds: 900),
-  entryCurve:    Curves.easeOutQuart,
+  entryCurve: Curves.easeOutQuart,
 );
 
 // ─── ThemeRegistry ───────────────────────────────────────────────────────────────────
 class ThemeRegistry {
   static SkinTokens of(AppSkin skin) {
     switch (skin) {
-      case AppSkin.deepSpace:   return _deepSpaceTokens;
-      case AppSkin.tacticalOps: return _tacticalOpsTokens;
+      case AppSkin.deepSpace:
+        return _deepSpaceTokens;
+      case AppSkin.tacticalOps:
+        return _tacticalOpsTokens;
     }
   }
 
-  static SkinTokens get deepSpace   => _deepSpaceTokens;
+  static SkinTokens get deepSpace => _deepSpaceTokens;
   static SkinTokens get tacticalOps => _tacticalOpsTokens;
 
   static const all = [AppSkin.deepSpace, AppSkin.tacticalOps];
@@ -414,9 +438,8 @@ class AppSkinNotifier extends Notifier<AppSkin> {
   AppSkin build() => AppSkin.deepSpace; // default skin
 
   void toggle() {
-    state = state == AppSkin.deepSpace
-        ? AppSkin.tacticalOps
-        : AppSkin.deepSpace;
+    state =
+        state == AppSkin.deepSpace ? AppSkin.tacticalOps : AppSkin.deepSpace;
   }
 
   void set(AppSkin skin) => state = skin;

@@ -177,7 +177,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get riskIndex => 'जोखिम सूचकांक';
 
   @override
-  String get allStationsSafe => 'सभी स्टेशन सुरक्षित स्तर पर हैं';
+  String get allStationsSafe => 'सभी स्टेशन सुरक्षित हैं';
 
   @override
   String get fetchingLiveData => 'लाइव बाढ़ डेटा प्राप्त हो रहा है…';
@@ -402,4 +402,121 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get onboardingSubtitle4 =>
       'एक-टैप SOS हेल्पलाइन, निकासी मार्गदर्शन और आपातकालीन सहायता तक त्वरित पहुँच देता है।';
+
+  @override
+  String get liveOnly => 'लाइव केवल';
+
+  @override
+  String get showAll => 'सभी दिखाएं';
+
+  @override
+  String get riverMonitor => 'नदी मॉनिटर';
+
+  @override
+  String get close => 'बंद करें';
+
+  @override
+  String get viewDetails => 'विवरण देखें';
+
+  @override
+  String get biharRiverMap => 'बिहार नदी नक्शा';
+
+  @override
+  String get searchStation => 'स्टेशन या नदी खोजें…';
+
+  @override
+  String get monitoringMaps => 'निगरानी और नक्शे';
+
+  @override
+  String get alertsSafety => 'अलर्ट और सुरक्षा';
+
+  @override
+  String get forecastAI => 'पूर्वानुमान और AI';
+
+  @override
+  String get biharFloodWatch => 'बिहार बाढ़ निगरानी';
+
+  @override
+  String get updatedJustNow => 'अभी अपडेट हुआ';
+
+  @override
+  String get criticalNow => 'अभी अति खतरनाक';
+
+  @override
+  String get elevated => 'ऊंचा खतरा';
+
+  @override
+  String get noActiveAlerts => 'कोई सक्रिय अलर्ट नहीं';
+
+  @override
+  String get tapToViewAlerts => 'अलर्ट देखने के लिए टैप करें';
+
+  @override
+  String get aiFloodPrediction => 'AI बाढ़ भविष्यवाणी';
+
+  @override
+  String get hours24 => '24 घंटे';
+
+  @override
+  String get hours48 => '48 घंटे';
+
+  @override
+  String get hours72 => '72 घंटे';
+
+  @override
+  String get criticalRisk => 'अति खतरा';
+
+  @override
+  String get severeRisk => 'गंभीर खतरा';
+
+  @override
+  String get moderateRisk => 'मध्यम खतरा';
+
+  @override
+  String get allClear => 'सब सुरक्षित';
+
+  @override
+  String get riskForecast => 'जोखिम पूर्वानुमान';
+
+  @override
+  String get community => 'समुदाय';
+
+  @override
+  String get reportIncident => 'घटना रिपोर्ट करें';
+
+  @override
+  String get crowdReports => 'सामूहिक रिपोर्ट';
+
+  @override
+  String get newsFeed => 'समाचार फीड';
+
+  @override
+  String get floodNews => 'बाढ़ समाचार';
+
+  @override
+  String get dataAndSources => 'डेटा और स्रोत';
+
+  @override
+  String get privacy => 'गोपनीयता';
+
+  @override
+  String get whatWeStore => 'हम क्या संग्रहित करते हैं';
+
+  @override
+  String get appearance => 'दिखावट';
+
+  @override
+  String get accessibility => 'सुगम्यता';
+
+  @override
+  String get notifications => 'सूचनाएं';
+
+  @override
+  String get highContrast => 'उच्च कंट्रास्ट';
+
+  @override
+  String get textSize => 'पाठ आकार';
+
+  @override
+  String get reducedMotion => 'कम गति';
 }

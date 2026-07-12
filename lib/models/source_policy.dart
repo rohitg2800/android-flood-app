@@ -24,7 +24,8 @@ class SourcePolicy {
         description: json['description'] as String? ?? '',
         allowLiveCwcInApp: json['allow_live_cwc_in_app'] as bool? ?? false,
         telemetryMode: json['telemetry_mode'] as String? ?? 'unknown',
-        predictionDataSource: json['prediction_data_source'] as String? ?? 'unknown',
+        predictionDataSource:
+            json['prediction_data_source'] as String? ?? 'unknown',
         publicSources: (json['public_sources'] as List<dynamic>? ?? [])
             .map((e) => PublicSource.fromJson(e as Map<String, dynamic>))
             .toList(),

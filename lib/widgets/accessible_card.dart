@@ -13,8 +13,8 @@ import 'package:flutter/material.dart';
 /// Wraps any widget in a [Semantics] node labelled as a non-interactive card.
 /// Use for gauge cards, stat cells, ML prediction cards.
 class AccessibleCard extends StatelessWidget {
-  final String  label;
-  final Widget  child;
+  final String label;
+  final Widget child;
   final String? hint;
 
   const AccessibleCard({
@@ -27,10 +27,10 @@ class AccessibleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label:     label,
-      hint:      hint,
+      label: label,
+      hint: hint,
       container: true,
-      child:     ExcludeSemantics(child: child),
+      child: ExcludeSemantics(child: child),
     );
   }
 }
@@ -39,11 +39,11 @@ class AccessibleCard extends StatelessWidget {
 /// Wraps a tappable widget ensuring a minimum 48×48 touch target
 /// and a proper button Semantics node.
 class AccessibleButton extends StatelessWidget {
-  final String       label;
+  final String label;
   final VoidCallback onTap;
-  final Widget       child;
-  final String?      hint;
-  final bool         enabled;
+  final Widget child;
+  final String? hint;
+  final bool enabled;
 
   const AccessibleButton({
     super.key,
@@ -57,9 +57,9 @@ class AccessibleButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label:   label,
-      hint:    hint,
-      button:  true,
+      label: label,
+      hint: hint,
+      button: true,
       enabled: enabled,
       child: GestureDetector(
         onTap: enabled ? onTap : null,
@@ -77,7 +77,7 @@ class AccessibleButton extends StatelessWidget {
 /// For colour-coded risk badges. Announces the label so colour is not
 /// the only means of conveying information (WCAG 1.4.1).
 class AccessibleStatusBadge extends StatelessWidget {
-  final String label;    // e.g. "Risk level: CRITICAL"
+  final String label; // e.g. "Risk level: CRITICAL"
   final Widget child;
 
   const AccessibleStatusBadge({
@@ -89,9 +89,9 @@ class AccessibleStatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label:     label,
+      label: label,
       container: true,
-      child:     ExcludeSemantics(child: child),
+      child: ExcludeSemantics(child: child),
     );
   }
 }
@@ -100,11 +100,11 @@ class AccessibleStatusBadge extends StatelessWidget {
 /// For station/city rows in lists — announces city, river, and risk level
 /// as a single coherent announcement instead of reading four separate nodes.
 class AccessibleListTile extends StatelessWidget {
-  final String       city;
-  final String       river;
-  final String       riskLevel;
+  final String city;
+  final String river;
+  final String riskLevel;
   final VoidCallback onTap;
-  final Widget       child;
+  final Widget child;
 
   const AccessibleListTile({
     super.key,
@@ -118,11 +118,11 @@ class AccessibleListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label:   '$city, $river River, risk level $riskLevel',
-      button:  true,
-      hint:    'Double-tap to view details',
+      label: '$city, $river River, risk level $riskLevel',
+      button: true,
+      hint: 'Double-tap to view details',
       child: GestureDetector(
-        onTap:    onTap,
+        onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 48),
@@ -137,9 +137,9 @@ class AccessibleListTile extends StatelessWidget {
 /// 48×48 minimum tap target for flutter_map markers (Step 5.4).
 /// Wraps the marker icon in an opaque hit-test area.
 class AccessibleMapMarker extends StatelessWidget {
-  final String       label;    // e.g. "Patna — CRITICAL"
+  final String label; // e.g. "Patna — CRITICAL"
   final VoidCallback onTap;
-  final Widget       child;
+  final Widget child;
 
   const AccessibleMapMarker({
     super.key,
@@ -151,14 +151,14 @@ class AccessibleMapMarker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label:  label,
+      label: label,
       button: true,
-      hint:   'Double-tap to view station details',
+      hint: 'Double-tap to view station details',
       child: GestureDetector(
-        onTap:    onTap,
+        onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: SizedBox(
-          width:  48,
+          width: 48,
           height: 48,
           child: Center(child: child),
         ),

@@ -13,15 +13,19 @@ import '../providers/bihar_prediction_provider.dart';
 import '../theme/river_theme.dart';
 import '../widgets/sparkline_chart.dart';
 import 'bihar_river_map_screen.dart';
-import 'predict_screen.dart';
+import 'predict_screen_impl.dart';
 import 'sos_screen.dart';
 
 Color cityDetailRiskColor(String risk) {
   switch (risk.toUpperCase()) {
-    case 'CRITICAL': return AppPalette.critical;
-    case 'SEVERE':   return AppPalette.danger;
-    case 'MODERATE': return AppPalette.warning;
-    default:         return AppPalette.safe;
+    case 'CRITICAL':
+      return AppPalette.critical;
+    case 'SEVERE':
+      return AppPalette.danger;
+    case 'MODERATE':
+      return AppPalette.warning;
+    default:
+      return AppPalette.safe;
   }
 }
 
@@ -31,26 +35,27 @@ class ThresholdBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t    = RiverColors.of(context);
+    final t = RiverColors.of(context);
     final risk = data.riskLevel.toUpperCase();
-    final Color    bg;
-    final String   msg;
+    final Color bg;
+    final String msg;
     final IconData icon;
 
     switch (risk) {
       case 'CRITICAL':
-        bg   = AppPalette.critical.withValues(alpha: 0.18);
-        msg  = '\u{1F6A8} CRITICAL — Level above HFL. Immediate action required.';
+        bg = AppPalette.critical.withValues(alpha: 0.18);
+        msg =
+            '\u{1F6A8} CRITICAL — Level above HFL. Immediate action required.';
         icon = Icons.warning_amber_rounded;
         break;
       case 'SEVERE':
-        bg   = AppPalette.danger.withValues(alpha: 0.14);
-        msg  = '\uD83D\uDD34 SEVERE — Above danger level. Stay alert.';
+        bg = AppPalette.danger.withValues(alpha: 0.14);
+        msg = '\uD83D\uDD34 SEVERE — Above danger level. Stay alert.';
         icon = Icons.error_outline_rounded;
         break;
       case 'MODERATE':
-        bg   = AppPalette.warning.withValues(alpha: 0.12);
-        msg  = '\u26A0\uFE0F MODERATE — Above warning level. Monitor closely.';
+        bg = AppPalette.warning.withValues(alpha: 0.12);
+        msg = '\u26A0\uFE0F MODERATE — Above warning level. Monitor closely.';
         icon = Icons.info_outline_rounded;
         break;
       default:
@@ -91,8 +96,10 @@ class CitySkeletonView extends StatelessWidget {
     return Center(
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         SizedBox(
-          width: 28, height: 28,
-          child: CircularProgressIndicator(strokeWidth: 2.5, color: t.accent)),
+            width: 28,
+            height: 28,
+            child:
+                CircularProgressIndicator(strokeWidth: 2.5, color: t.accent)),
         const SizedBox(height: 16),
         Text('Loading data for $cityName\u2026',
             style: TextStyle(color: t.textSecondary, fontSize: 13)),
@@ -106,27 +113,38 @@ class GaugeHeroCard extends StatelessWidget {
   const GaugeHeroCard({super.key, required this.data});
 
   static String _formatUpdated(DateTime ts) {
-    final now     = DateTime.now();
-    final hh      = ts.hour.toString().padLeft(2, '0');
-    final mm      = ts.minute.toString().padLeft(2, '0');
-    final time    = '$hh:$mm';
-    final sameDay = ts.year == now.year &&
-                    ts.month == now.month &&
-                    ts.day == now.day;
+    final now = DateTime.now();
+    final hh = ts.hour.toString().padLeft(2, '0');
+    final mm = ts.minute.toString().padLeft(2, '0');
+    final time = '$hh:$mm';
+    final sameDay =
+        ts.year == now.year && ts.month == now.month && ts.day == now.day;
     if (sameDay) return 'Updated $time';
-    const months = ['Jan','Feb','Mar','Apr','May','Jun',
-                    'Jul','Aug','Sep','Oct','Nov','Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
     return 'Updated ${ts.day} ${months[ts.month - 1]} $time';
   }
 
   @override
   Widget build(BuildContext context) {
-    final t     = RiverColors.of(context);
+    final t = RiverColors.of(context);
     final riskC = cityDetailRiskColor(data.riskLevel);
-    final pct   = (data.currentLevel / data.dangerLevel).clamp(0.0, 1.2);
+    final pct = (data.currentLevel / data.dangerLevel).clamp(0.0, 1.2);
     final updatedLabel = _formatUpdated(data.lastUpdated!);
-    final rainfall     = data.effectiveRainfallMm;
-    final hasRain      = rainfall != null && rainfall > 0;
+    final rainfall = data.effectiveRainfallMm;
+    final hasRain = rainfall != null && rainfall > 0;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -135,22 +153,30 @@ class GaugeHeroCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: riskC.withValues(alpha: 0.30)),
         boxShadow: [
-          BoxShadow(color: riskC.withValues(alpha: 0.08),
-              blurRadius: 18, offset: const Offset(0, 5)),
+          BoxShadow(
+              color: riskC.withValues(alpha: 0.08),
+              blurRadius: 18,
+              offset: const Offset(0, 5)),
         ],
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          Expanded(child: Column(
+          Expanded(
+              child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Current Level',
-                  style: TextStyle(color: t.textSecondary, fontSize: 11,
+                  style: TextStyle(
+                      color: t.textSecondary,
+                      fontSize: 11,
                       fontWeight: FontWeight.w600)),
               const SizedBox(height: 4),
               Text('${data.currentLevel.toStringAsFixed(2)} m',
-                  style: TextStyle(color: riskC, fontSize: 28,
-                      fontWeight: FontWeight.w900, letterSpacing: -0.5)),
+                  style: TextStyle(
+                      color: riskC,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.5)),
             ],
           )),
           Container(
@@ -161,8 +187,8 @@ class GaugeHeroCard extends StatelessWidget {
               border: Border.all(color: riskC.withValues(alpha: 0.4)),
             ),
             child: Text(data.riskLevel.toUpperCase(),
-                style: TextStyle(color: riskC,
-                    fontWeight: FontWeight.w800, fontSize: 13)),
+                style: TextStyle(
+                    color: riskC, fontWeight: FontWeight.w800, fontSize: 13)),
           ),
         ]),
         const SizedBox(height: 14),
@@ -208,8 +234,10 @@ class GaugeHeroCard extends StatelessWidget {
               ),
               child: Text(
                 '\uD83C\uDF27 ${rainfall!.toStringAsFixed(1)} mm',
-                style: TextStyle(color: t.metricColor,
-                    fontSize: 10, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                    color: t.metricColor,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600),
               ),
             ),
           ],
@@ -222,9 +250,9 @@ class GaugeHeroCard extends StatelessWidget {
 class _MetricPair extends StatelessWidget {
   final String label;
   final String value;
-  final Color  color;
-  const _MetricPair({
-    required this.label, required this.value, required this.color});
+  final Color color;
+  const _MetricPair(
+      {required this.label, required this.value, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -232,8 +260,9 @@ class _MetricPair extends StatelessWidget {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(label, style: TextStyle(color: t.textSecondary, fontSize: 10)),
       const SizedBox(height: 2),
-      Text(value, style: TextStyle(color: color,
-          fontSize: 13, fontWeight: FontWeight.w700)),
+      Text(value,
+          style: TextStyle(
+              color: color, fontSize: 13, fontWeight: FontWeight.w700)),
     ]);
   }
 }
@@ -241,7 +270,8 @@ class _MetricPair extends StatelessWidget {
 class SparklineSection extends StatelessWidget {
   final FloodData data;
   final List<double> history;
-  const SparklineSection({super.key, required this.data, required this.history});
+  const SparklineSection(
+      {super.key, required this.data, required this.history});
 
   @override
   Widget build(BuildContext context) {
@@ -255,19 +285,23 @@ class SparklineSection extends StatelessWidget {
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('Level Trend (24h)',
-            style: TextStyle(color: t.textSecondary, fontSize: 11,
+            style: TextStyle(
+                color: t.textSecondary,
+                fontSize: 11,
                 fontWeight: FontWeight.w600)),
         const SizedBox(height: 10),
         SizedBox(
           height: 80,
           child: SparklineChart(
-            snapshots: List.generate(history.length, (i) => RiverLevelSnapshot(
-              level:     history[i],
-              timestamp: DateTime.now().subtract(
-                  Duration(hours: history.length - 1 - i)),
-            )),
+            snapshots: List.generate(
+                history.length,
+                (i) => RiverLevelSnapshot(
+                      level: history[i],
+                      timestamp: DateTime.now()
+                          .subtract(Duration(hours: history.length - 1 - i)),
+                    )),
             warningLevel: data.warningLevel,
-            dangerLevel:  data.dangerLevel,
+            dangerLevel: data.dangerLevel,
             color: cityDetailRiskColor(data.riskLevel),
           ),
         ),
@@ -305,13 +339,17 @@ class _CollapsibleContactsState extends State<CollapsibleContacts> {
             const SizedBox(width: 8),
             Expanded(
               child: Text('Emergency Contacts',
-                  style: TextStyle(color: t.textPrimary,
-                      fontSize: 13, fontWeight: FontWeight.w600)),
+                  style: TextStyle(
+                      color: t.textPrimary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600)),
             ),
-            Icon(_expanded
-                ? Icons.expand_less_rounded
-                : Icons.expand_more_rounded,
-                size: 18, color: t.textSecondary),
+            Icon(
+                _expanded
+                    ? Icons.expand_less_rounded
+                    : Icons.expand_more_rounded,
+                size: 18,
+                color: t.textSecondary),
           ]),
         ),
       ),
@@ -337,7 +375,8 @@ class _ContactButtons extends StatelessWidget {
         label: 'SOS / Rescue',
         color: AppPalette.critical,
         onTap: () => Navigator.pushNamed(
-          context, '/sos',
+          context,
+          '/sos',
           arguments: {'district': stationName},
         ),
       ),
@@ -361,12 +400,14 @@ class _ContactButtons extends StatelessWidget {
 
 class _ContactTile extends StatelessWidget {
   final IconData icon;
-  final String   label;
-  final Color    color;
+  final String label;
+  final Color color;
   final VoidCallback onTap;
   const _ContactTile({
-    required this.icon, required this.label,
-    required this.color, required this.onTap,
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
   });
 
   @override
@@ -385,14 +426,16 @@ class _ContactTile extends StatelessWidget {
         child: Row(children: [
           Icon(icon, size: 15, color: color),
           const SizedBox(width: 10),
-          Text(label, style: TextStyle(color: t.textPrimary,
-              fontSize: 12, fontWeight: FontWeight.w600)),
+          Text(label,
+              style: TextStyle(
+                  color: t.textPrimary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600)),
         ]),
       ),
     );
   }
 }
-
 
 // ── Live prediction banner ─────────────────────────────────────────────────
 /// Shows 24h/48h/72h predicted levels + outlook sourced from
@@ -408,18 +451,18 @@ class PredictionBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final t       = RiverColors.of(context);
+    final t = RiverColors.of(context);
     final predAsync = ref.watch(biharPredictionProvider((stationId, cityName)));
 
     return predAsync.when(
       loading: () => const SizedBox.shrink(),
-      error:   (_, __) => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
       data: (pred) {
         final Color sColor = switch (pred.severity) {
           'CRITICAL' => AppPalette.critical,
-          'SEVERE'   => AppPalette.danger,
+          'SEVERE' => AppPalette.danger,
           'MODERATE' => AppPalette.warning,
-          _          => AppPalette.safe,
+          _ => AppPalette.safe,
         };
         return Container(
           margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
@@ -443,7 +486,8 @@ class PredictionBanner extends ConsumerWidget {
                         letterSpacing: 0.8)),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: sColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
@@ -470,9 +514,7 @@ class PredictionBanner extends ConsumerWidget {
               const SizedBox(height: 10),
               Text(pred.outlook,
                   style: TextStyle(
-                      color: t.textSecondary,
-                      fontSize: 11,
-                      height: 1.4)),
+                      color: t.textSecondary, fontSize: 11, height: 1.4)),
               const SizedBox(height: 4),
               Text(
                 'Confidence: ${pred.confidencePct.toStringAsFixed(0)}%  •  ${pred.modelVersion}',
@@ -489,7 +531,7 @@ class PredictionBanner extends ConsumerWidget {
 class _PredLevel extends StatelessWidget {
   final String label;
   final double value;
-  final Color  color;
+  final Color color;
   final String suffix;
   const _PredLevel(this.label, this.value, this.color, {this.suffix = ' m'});
 
@@ -497,14 +539,11 @@ class _PredLevel extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = RiverColors.of(context);
     return Column(mainAxisSize: MainAxisSize.min, children: [
-      Text(label,
-          style: TextStyle(color: t.textSecondary, fontSize: 10)),
+      Text(label, style: TextStyle(color: t.textSecondary, fontSize: 10)),
       const SizedBox(height: 3),
       Text('${value.toStringAsFixed(suffix == '%' ? 0 : 2)}$suffix',
           style: TextStyle(
-              color: color,
-              fontSize: 13,
-              fontWeight: FontWeight.w800)),
+              color: color, fontSize: 13, fontWeight: FontWeight.w800)),
     ]);
   }
 }
@@ -521,7 +560,8 @@ class QuickActionRow extends StatelessWidget {
           icon: Icons.show_chart_rounded,
           label: 'Predict',
           onTap: () => Navigator.pushNamed(
-            context, '/predict',
+            context,
+            '/predict',
             arguments: data.stationId,
           ),
         ),
@@ -533,8 +573,7 @@ class QuickActionRow extends StatelessWidget {
           label: 'Map',
           onTap: () => Navigator.push(
             context,
-            MaterialPageRoute(
-                builder: (_) => const BiharRiverMapScreen()),
+            MaterialPageRoute(builder: (_) => const BiharRiverMapScreen()),
           ),
         ),
       ),
@@ -560,10 +599,10 @@ class QuickActionRow extends StatelessWidget {
 
 class _QuickBtn extends StatelessWidget {
   final IconData icon;
-  final String   label;
+  final String label;
   final VoidCallback onTap;
-  const _QuickBtn({
-    required this.icon, required this.label, required this.onTap});
+  const _QuickBtn(
+      {required this.icon, required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -581,8 +620,11 @@ class _QuickBtn extends StatelessWidget {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Icon(icon, size: 18, color: t.accent),
           const SizedBox(height: 4),
-          Text(label, style: TextStyle(color: t.textPrimary,
-              fontSize: 11, fontWeight: FontWeight.w600)),
+          Text(label,
+              style: TextStyle(
+                  color: t.textPrimary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600)),
         ]),
       ),
     );

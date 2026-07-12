@@ -21,7 +21,7 @@ class CwcAlertWatcher {
   static CwcAlertWatcher get instance => _i;
   CwcAlertWatcher._();
 
-  static const _pollInterval   = Duration(minutes: 15);
+  static const _pollInterval = Duration(minutes: 15);
   static const _cooldownPeriod = Duration(hours: 1);
 
   // When did we last notify for each site?
@@ -29,13 +29,13 @@ class CwcAlertWatcher {
 
   ProviderSubscription<AsyncValue<List<CwcStation>>>? _sub;
   Timer? _pollTimer;
-  bool   _started = false;
+  bool _started = false;
 
   // ── Notification channels ─────────────────────────────────────────────────
-  static const _alertChannelId   = 'cwc_flood_alerts';
+  static const _alertChannelId = 'cwc_flood_alerts';
   static const _alertChannelName = 'CWC Flood Alerts';
-  static const _newsChannelId    = 'flood_news';
-  static const _newsChannelName  = 'Flood News';
+  static const _newsChannelId = 'flood_news';
+  static const _newsChannelName = 'Flood News';
 
   final FlutterLocalNotificationsPlugin _notif =
       FlutterLocalNotificationsPlugin();
@@ -82,7 +82,7 @@ class CwcAlertWatcher {
   void _evaluate(List<CwcStation> stations) {
     for (final s in stations) {
       if (!s.isDanger && !s.isWarning) continue;
-      if (_isCoolingDown(s.site))     continue;
+      if (_isCoolingDown(s.site)) continue;
 
       _notify(s);
       _lastNotified[s.site] = DateTime.now();
@@ -96,13 +96,11 @@ class CwcAlertWatcher {
   }
 
   Future<void> _notify(CwcStation s) async {
-    final isCrit    = s.isDanger;
+    final isCrit = s.isDanger;
     final riskScore = BefiqrCwcService.riskScore(s);
-    final title     = isCrit
-        ? '🚨 DANGER ALERT — ${s.site}'
-        : '⚠️ WARNING — ${s.site}';
-    final body =
-        '${s.river} · Level ${s.currentLevel.toStringAsFixed(2)} m  '
+    final title =
+        isCrit ? '🚨 DANGER ALERT — ${s.site}' : '⚠️ WARNING — ${s.site}';
+    final body = '${s.river} · Level ${s.currentLevel.toStringAsFixed(2)} m  '
         '(danger ${s.dangerLevel.toStringAsFixed(2)} m)  '
         '· Risk ${riskScore.toStringAsFixed(0)}%';
 
@@ -115,16 +113,15 @@ class CwcAlertWatcher {
           android: AndroidNotificationDetails(
             _alertChannelId,
             _alertChannelName,
-            channelDescription:
-                'Real-time CWC Bihar station flood alerts',
-            importance: isCrit ? Importance.max  : Importance.high,
-            priority:   isCrit ? Priority.max    : Priority.high,
-            playSound:        true,
-            enableVibration:  true,
+            channelDescription: 'Real-time CWC Bihar station flood alerts',
+            importance: isCrit ? Importance.max : Importance.high,
+            priority: isCrit ? Priority.max : Priority.high,
+            playSound: true,
+            enableVibration: true,
             icon: '@mipmap/ic_launcher',
           ),
           iOS: const DarwinNotificationDetails(
-            presentAlert: true, presentSound: true),
+              presentAlert: true, presentSound: true),
         ),
       );
 
@@ -157,7 +154,7 @@ class CwcAlertWatcher {
             _newsChannelName,
             channelDescription: 'Flood-related news headlines',
             importance: Importance.defaultImportance,
-            priority:   Priority.defaultPriority,
+            priority: Priority.defaultPriority,
             playSound: false,
           ),
           iOS: DarwinNotificationDetails(presentAlert: true),
@@ -178,9 +175,8 @@ class CwcAlertWatcher {
       ),
     );
 
-    final android = _notif
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
+    final android = _notif.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
 
     await android?.createNotificationChannel(
       const AndroidNotificationChannel(

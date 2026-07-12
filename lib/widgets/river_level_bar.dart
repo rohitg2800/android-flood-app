@@ -21,7 +21,8 @@ class RiverLevelBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final pct = hfl > 0 ? (current / hfl).clamp(0.0, 1.0) : 0.0;
     Color barColor = Colors.green;
-    if (current >= danger) barColor = Colors.red;
+    if (current >= danger)
+      barColor = Colors.red;
     else if (current >= warning) barColor = Colors.orange;
 
     return LinearProgressIndicator(

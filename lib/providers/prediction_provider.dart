@@ -29,10 +29,10 @@ import 'weather_provider.dart';
 
 final predictionProvider =
     FutureProvider.family<FloodPrediction, (String, int)>((ref, record) async {
-  final stationKey   = record.$1;
+  final stationKey = record.$1;
   final horizonHours = record.$2;
-  final stations     = ref.watch(mergedStationsProvider);
-  final wxState      = ref.watch(weatherProvider);
+  final stations = ref.watch(mergedStationsProvider);
+  final wxState = ref.watch(weatherProvider);
 
   var rainfallMod = 0.3;
   if (wxState.current != null) {
@@ -52,9 +52,9 @@ final predictionProvider =
 
     final input = predict_lib.FloodPredictionInput(
       peakFloodLevelM: seedLevel,
-      state:           match.state.isNotEmpty ? match.state : 'Bihar',
-      station:         match.station,
-      forecastHours:   horizonHours,
+      state: match.state.isNotEmpty ? match.state : 'Bihar',
+      station: match.station,
+      forecastHours: horizonHours,
       t1d: wxState.rainfall7dMm * 0.25,
       t2d: wxState.rainfall7dMm * 0.20,
       t3d: wxState.rainfall7dMm * 0.18,
@@ -70,7 +70,7 @@ final predictionProvider =
     return _ruleEngineToFloodPrediction(
       match,
       rainfallMod,
-      forecast:  wxState.forecast,
+      forecast: wxState.forecast,
       updatedAt: DateTime.now(),
     );
   }
@@ -81,8 +81,8 @@ final predictionProvider =
 // ─────────────────────────────────────────────────────────────────────────────
 
 final floodPredictionsProvider = Provider<List<FloodPrediction>>((ref) {
-  final stations  = ref.watch(mergedStationsProvider);
-  final wxState   = ref.watch(weatherProvider);
+  final stations = ref.watch(mergedStationsProvider);
+  final wxState = ref.watch(weatherProvider);
 
   var rainfallMod = 0.3;
   if (wxState.current != null) {
@@ -91,8 +91,9 @@ final floodPredictionsProvider = Provider<List<FloodPrediction>>((ref) {
 
   return stations
       .map((s) => _ruleEngineToFloodPrediction(
-            s, rainfallMod,
-            forecast:  wxState.forecast,
+            s,
+            rainfallMod,
+            forecast: wxState.forecast,
             updatedAt: DateTime.now(),
           ))
       .toList()
@@ -100,7 +101,10 @@ final floodPredictionsProvider = Provider<List<FloodPrediction>>((ref) {
 });
 
 final activeFloodPredictionsProvider = Provider<List<FloodPrediction>>((ref) =>
-    ref.watch(floodPredictionsProvider).where((p) => p.riskScore >= 50).toList());
+    ref
+        .watch(floodPredictionsProvider)
+        .where((p) => p.riskScore >= 50)
+        .toList());
 
 final worstPredictionProvider = Provider<FloodPrediction?>((ref) {
   final list = ref.watch(floodPredictionsProvider);
@@ -115,9 +119,8 @@ RiverStation _resolveStation(List<RiverStation> stations, String stationKey) {
   final keyLower = stationKey.toLowerCase();
 
   if (stations.isNotEmpty) {
-    final exact = stations
-        .where((s) => s.station.toLowerCase() == keyLower)
-        .toList();
+    final exact =
+        stations.where((s) => s.station.toLowerCase() == keyLower).toList();
     if (exact.isNotEmpty) return exact.first;
 
     final partial = stations
@@ -127,8 +130,7 @@ RiverStation _resolveStation(List<RiverStation> stations, String stationKey) {
         .toList();
     if (partial.isNotEmpty) return partial.first;
 
-    return stations.reduce((a, b) =>
-        a.progressPct > b.progressPct ? a : b);
+    return stations.reduce((a, b) => a.progressPct > b.progressPct ? a : b);
   }
 
   final seed = kBiharGauges.firstWhere(
@@ -137,33 +139,33 @@ RiverStation _resolveStation(List<RiverStation> stations, String stationKey) {
   );
 
   return RiverStation(
-    city:    seed.district,
-    state:   'Bihar',
-    river:   seed.river,
+    city: seed.district,
+    state: 'Bihar',
+    river: seed.river,
     station: seed.station,
     current: seed.warningLevel * 0.70,
     warning: seed.warningLevel,
-    danger:  seed.dangerLevel,
-    hfl:     seed.hfl,
-    isLive:  false,
+    danger: seed.dangerLevel,
+    hfl: seed.hfl,
+    isLive: false,
     dataSource: 'SEED',
   );
 }
 
 String _trendLabel(String trendLowercase) => switch (trendLowercase) {
-  'rising'  => 'Rising',
-  'falling' => 'Falling',
-  'stable'  => 'Steady',
-  _         => trendLowercase,
-};
+      'rising' => 'Rising',
+      'falling' => 'Falling',
+      'stable' => 'Steady',
+      _ => trendLowercase,
+    };
 
 FloodPrediction _mlToFloodPrediction(
   RiverStation station,
   dynamic ml, {
   required DateTime updatedAt,
 }) {
-  final String severity      = (ml.severity as String?) ?? 'LOW';
-  final num riskScoreNum     = ml.riskScore as num? ?? 0;
+  final String severity = (ml.severity as String?) ?? 'LOW';
+  final num riskScoreNum = ml.riskScore as num? ?? 0;
   final num confidencePctNum = ml.confidencePercent as num? ?? 0;
 
   final double predictedLevel =
@@ -175,8 +177,10 @@ FloodPrediction _mlToFloodPrediction(
   final double predicted48h = predicted24h * 1.05;
   final double predicted72h = predicted24h * 1.10;
 
-  final double dangerLevel  = station.danger  > 0 ? station.danger  : station.current * 1.5;
-  final double warningLevel = station.warning > 0 ? station.warning : dangerLevel * 0.75;
+  final double dangerLevel =
+      station.danger > 0 ? station.danger : station.current * 1.5;
+  final double warningLevel =
+      station.warning > 0 ? station.warning : dangerLevel * 0.75;
 
   final String trendLower = switch (severity) {
     'CRITICAL' || 'SEVERE' => 'rising',
@@ -186,17 +190,18 @@ FloodPrediction _mlToFloodPrediction(
   double? cwcRiskScore;
   try {
     final details = ml.ensembleDetails as Map<String, dynamic>?;
-    final maybe   = details?['cwcRiskScore'];
+    final maybe = details?['cwcRiskScore'];
     if (maybe is num) cwcRiskScore = maybe.toDouble();
   } catch (_) {}
 
-  List<PredictionPoint> makeSeries(double start, double peak, double danger, int h) {
+  List<PredictionPoint> makeSeries(
+      double start, double peak, double danger, int h) {
     final now = DateTime.now();
     const steps = 12;
     return List.generate(steps, (i) {
       final t = i / (steps - 1);
       return PredictionPoint(
-        time:  now.add(Duration(hours: (t * h).round())),
+        time: now.add(Duration(hours: (t * h).round())),
         level: (start + (peak - start) * t).clamp(0.0, danger * 1.5),
       );
     });
@@ -204,25 +209,25 @@ FloodPrediction _mlToFloodPrediction(
 
   final s = station.current;
   return FloodPrediction(
-    severity:      severity,
-    riskScore:     riskScoreNum.toDouble(),
-    station:       '${station.station} (${station.river})',
-    currentLevel:  s,
-    warningLevel:  warningLevel,
-    dangerLevel:   dangerLevel,
-    predicted24h:  predicted24h,
-    predicted48h:  predicted48h,
-    predicted72h:  predicted72h,
-    trend:         _trendLabel(trendLower),
+    severity: severity,
+    riskScore: riskScoreNum.toDouble(),
+    station: '${station.station} (${station.river})',
+    currentLevel: s,
+    warningLevel: warningLevel,
+    dangerLevel: dangerLevel,
+    predicted24h: predicted24h,
+    predicted48h: predicted48h,
+    predicted72h: predicted72h,
+    trend: _trendLabel(trendLower),
     confidencePct: confidencePctNum.toDouble().clamp(0.0, 100.0),
-    cwcRiskScore:  cwcRiskScore,
-    modelVersion:  (ml.algorithm as String?) ?? 'ML',
-    outlook:       'AI hybrid estimate (ML + rule-engine blend)',
-    fromBackend:   (ml.fromBackend as bool?) ?? true,
-    next24h:       makeSeries(s, predicted24h, dangerLevel, 24),
-    next48h:       makeSeries(s, predicted48h, dangerLevel, 48),
-    next72h:       makeSeries(s, predicted72h, dangerLevel, 72),
-    updatedAt:     updatedAt,
+    cwcRiskScore: cwcRiskScore,
+    modelVersion: (ml.algorithm as String?) ?? 'ML',
+    outlook: 'AI hybrid estimate (ML + rule-engine blend)',
+    fromBackend: (ml.fromBackend as bool?) ?? true,
+    next24h: makeSeries(s, predicted24h, dangerLevel, 24),
+    next48h: makeSeries(s, predicted48h, dangerLevel, 48),
+    next72h: makeSeries(s, predicted72h, dangerLevel, 72),
+    updatedAt: updatedAt,
   );
 }
 
@@ -232,8 +237,8 @@ FloodPrediction _ruleEngineToFloodPrediction(
   required List<WeatherDay> forecast,
   required DateTime updatedAt,
 }) {
-  final cur  = station.current;
-  final dng  = station.danger  > 0 ? station.danger  : cur * 1.5;
+  final cur = station.current;
+  final dng = station.danger > 0 ? station.danger : cur * 1.5;
   final warn = station.warning > 0 ? station.warning : dng * 0.75;
 
   // progressPct now uses danger denominator (v2.5 river_station fix)
@@ -244,10 +249,11 @@ FloodPrediction _ruleEngineToFloodPrediction(
   final predicted48h = (cur + risePerHour * 48).clamp(0.0, dng * 2.4);
   final predicted72h = (cur + risePerHour * 72).clamp(0.0, dng * 3.0);
 
-  final riskScore    = ((predicted24h / dng) * 100).clamp(0.0, 100.0);
-  final confidencePct =
-      (55.0 + (station.isLive ? 20.0 : 0.0) + (forecast.isNotEmpty ? 15.0 : 0.0))
-          .clamp(0.0, 99.0);
+  final riskScore = ((predicted24h / dng) * 100).clamp(0.0, 100.0);
+  final confidencePct = (55.0 +
+          (station.isLive ? 20.0 : 0.0) +
+          (forecast.isNotEmpty ? 15.0 : 0.0))
+      .clamp(0.0, 99.0);
 
   // v2.0: severity labels aligned with gaugeRiskFromLevels() output
   final severity = riskScore >= 85
@@ -275,31 +281,34 @@ FloodPrediction _ruleEngineToFloodPrediction(
     return List.generate(steps, (i) {
       final t = i / (steps - 1);
       return PredictionPoint(
-        time:  now.add(Duration(hours: (t * horizonHours).round())),
+        time: now.add(Duration(hours: (t * horizonHours).round())),
         level: (start + (peak - start) * t).clamp(0.0, danger * 1.5),
       );
     });
   }
 
   return FloodPrediction(
-    severity:      severity,
-    riskScore:     riskScore,
-    station:       '${station.station} (${station.river})',
-    currentLevel:  cur,
-    dangerLevel:   dng,
-    warningLevel:  warn,
-    predicted24h:  predicted24h,
-    predicted48h:  predicted48h,
-    predicted72h:  predicted72h,
-    trend:         _trendLabel(trendLower),
+    severity: severity,
+    riskScore: riskScore,
+    station: '${station.station} (${station.river})',
+    currentLevel: cur,
+    dangerLevel: dng,
+    warningLevel: warn,
+    predicted24h: predicted24h,
+    predicted48h: predicted48h,
+    predicted72h: predicted72h,
+    trend: _trendLabel(trendLower),
     confidencePct: confidencePct,
-    cwcRiskScore:  null,
-    modelVersion:  'Rule Engine v2.0',
-    outlook:       'Offline rule-engine estimate',
-    fromBackend:   false,
-    next24h: makeSeries(start: cur, peak: predicted24h, danger: dng, horizonHours: 24),
-    next48h: makeSeries(start: cur, peak: predicted48h, danger: dng, horizonHours: 48),
-    next72h: makeSeries(start: cur, peak: predicted72h, danger: dng, horizonHours: 72),
+    cwcRiskScore: null,
+    modelVersion: 'Rule Engine v2.0',
+    outlook: 'Offline rule-engine estimate',
+    fromBackend: false,
+    next24h: makeSeries(
+        start: cur, peak: predicted24h, danger: dng, horizonHours: 24),
+    next48h: makeSeries(
+        start: cur, peak: predicted48h, danger: dng, horizonHours: 48),
+    next72h: makeSeries(
+        start: cur, peak: predicted72h, danger: dng, horizonHours: 72),
     updatedAt: updatedAt,
   );
 }

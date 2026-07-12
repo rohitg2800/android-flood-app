@@ -74,11 +74,10 @@ final activeFiltersProvider =
 class HideNormalNotifier extends StateNotifier<bool> {
   HideNormalNotifier() : super(false);
   void toggle() => state = !state;
-  void clear()  => state = false;
+  void clear() => state = false;
 }
 
-final hideNormalProvider =
-    StateNotifierProvider<HideNormalNotifier, bool>(
+final hideNormalProvider = StateNotifierProvider<HideNormalNotifier, bool>(
   (ref) => HideNormalNotifier(),
 );
 
@@ -91,8 +90,8 @@ final hideNormalProvider =
 /// [isPreMonsoonPeriod()] returns true.
 class PreMonsoonBaselineNotifier extends StateNotifier<bool> {
   PreMonsoonBaselineNotifier() : super(false);
-  void toggle()  => state = !state;
-  void enable()  => state = true;
+  void toggle() => state = !state;
+  void enable() => state = true;
   void disable() => state = false;
 }
 
@@ -111,7 +110,7 @@ final preMonsoonBaselineProvider =
 /// Note: the pre-monsoon baseline filter operates on riskScore, not DangerClass,
 /// so it is NOT reflected here — apply it via [filteredBulkPredictionsProvider].
 final effectiveVisibleClassesProvider = Provider<Set<DangerClass>?>((ref) {
-  final active     = ref.watch(activeFiltersProvider);
+  final active = ref.watch(activeFiltersProvider);
   final hideNormal = ref.watch(hideNormalProvider);
 
   if (active.isEmpty && !hideNormal) return null; // no filter
@@ -136,9 +135,9 @@ final effectiveVisibleClassesProvider = Provider<Set<DangerClass>?>((ref) {
 // Consumers: DashboardScreen Risk Forecast Strip, BiharRiverMapScreen
 // ─────────────────────────────────────────────────────────────────────────────
 final filteredBulkPredictionsProvider = Provider<List<FloodPrediction>>((ref) {
-  final all            = ref.watch(biharBulkPredictionsProvider);
-  final active         = ref.watch(activeFiltersProvider);
-  final hideNormal     = ref.watch(hideNormalProvider);
+  final all = ref.watch(biharBulkPredictionsProvider);
+  final active = ref.watch(activeFiltersProvider);
+  final hideNormal = ref.watch(hideNormalProvider);
   final baselineFilter = ref.watch(preMonsoonBaselineProvider);
 
   return all.where((pred) {
@@ -152,8 +151,7 @@ final filteredBulkPredictionsProvider = Provider<List<FloodPrediction>>((ref) {
     if (hideNormal && pred.severity == 'LOW') return false;
 
     // ── 3. Pre-monsoon baseline: suppress sub-threshold noise ───────────────
-    if (baselineFilter &&
-        pred.riskScore < kPreMonsoonBaselineRiskThreshold) {
+    if (baselineFilter && pred.riskScore < kPreMonsoonBaselineRiskThreshold) {
       return false;
     }
 
@@ -166,8 +164,8 @@ final filteredBulkPredictionsProvider = Provider<List<FloodPrediction>>((ref) {
 DangerClass _severityToDangerClass(String severity) {
   return switch (severity.toUpperCase()) {
     'CRITICAL' => DangerClass.extreme,
-    'SEVERE'   => DangerClass.severe,
+    'SEVERE' => DangerClass.severe,
     'MODERATE' => DangerClass.aboveNormal,
-    _          => DangerClass.normal,
+    _ => DangerClass.normal,
   };
 }

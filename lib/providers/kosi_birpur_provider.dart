@@ -52,13 +52,13 @@ final _birpurEnrichmentProvider =
 //  mergedStationsProvider handles null by using its own current=0.0
 //  sentinel — card shows '——' / NORMAL, NOT a fake 210 m value.
 // ─────────────────────────────────────────────────────────────────────────────────
-final kosiBirpurProvider =
-    FutureProvider<KosiBirpurReading?>((ref) async {
+final kosiBirpurProvider = FutureProvider<KosiBirpurReading?>((ref) async {
   final enrichFuture = ref.watch(_birpurEnrichmentProvider.future);
-  final dfSnap       = DataFetchEngine.instance.last;
+  final dfSnap = DataFetchEngine.instance.last;
 
-  final dfBirpur = dfSnap?.stations.where((s) =>
-      s.stationName.toLowerCase().contains('birpur')).firstOrNull;
+  final dfBirpur = dfSnap?.stations
+      .where((s) => s.stationName.toLowerCase().contains('birpur'))
+      .firstOrNull;
 
   final enrich = await enrichFuture;
 
@@ -71,13 +71,13 @@ final kosiBirpurProvider =
           '${discharge != null ? " Q=${discharge.toStringAsFixed(0)}" : ""}');
     }
     return KosiBirpurReading(
-      levelM:          enrich.levelM,
-      dangerLevel:     enrich.dangerLevel,
-      warningLevel:    enrich.warningLevel,
+      levelM: enrich.levelM,
+      dangerLevel: enrich.dangerLevel,
+      warningLevel: enrich.warningLevel,
       dischargeCumecs: discharge,
-      trend:           enrich.trend,
-      observedAt:      enrich.observedAt,
-      source:          enrich.source,
+      trend: enrich.trend,
+      observedAt: enrich.observedAt,
+      source: enrich.source,
     );
   }
 
@@ -87,16 +87,17 @@ final kosiBirpurProvider =
     final dl = dfBirpur.dangerLevel;
     if (dl >= 50.0 && dl <= 90.0) {
       if (kDebugMode) {
-        debugPrint('[KosiBirpur] ⚠ GloFAS fallback level=${dfBirpur.currentLevel}');
+        debugPrint(
+            '[KosiBirpur] ⚠ GloFAS fallback level=${dfBirpur.currentLevel}');
       }
       return KosiBirpurReading(
-        levelM:          dfBirpur.currentLevel,
-        dangerLevel:     dl,
-        warningLevel:    dfBirpur.warningLevel ?? (dl - 1.0),
+        levelM: dfBirpur.currentLevel,
+        dangerLevel: dl,
+        warningLevel: dfBirpur.warningLevel ?? (dl - 1.0),
         dischargeCumecs: dfBirpur.flowRateCumecs,
-        trend:           null,
-        observedAt:      dfBirpur.fetchedAt ?? DateTime.now(),
-        source:          'GloFAS',
+        trend: null,
+        observedAt: dfBirpur.fetchedAt ?? DateTime.now(),
+        source: 'GloFAS',
       );
     }
   }
@@ -122,14 +123,13 @@ final kosiBirpurStationProvider =
 // ─────────────────────────────────────────────────────────────────────────────────
 final cwcStationsWithBirpurProvider =
     Provider.autoDispose<AsyncValue<List<CwcStation>>>((ref) {
-  final allAsync    = ref.watch(cwcStationsProvider);
+  final allAsync = ref.watch(cwcStationsProvider);
   final birpurAsync = ref.watch(kosiBirpurStationProvider);
 
   return allAsync.whenData((allStations) {
     final filtered = allStations
-        .where((s) =>
-            !(s.river.toLowerCase().contains('kosi') &&
-              s.site.toLowerCase().contains('birpur')))
+        .where((s) => !(s.river.toLowerCase().contains('kosi') &&
+            s.site.toLowerCase().contains('birpur')))
         .toList();
 
     final liveBirpur = birpurAsync.value;
@@ -139,18 +139,18 @@ final cwcStationsWithBirpurProvider =
     } else {
       // All sources down — inject a 0.0 sentinel so no fake level is shown
       filtered.add(CwcStation(
-        river:        'Kosi',
-        site:         'Birpur',
-        currentLevel: 0.0,   // v2.1: was 210.80 (fake seed level)
-        dangerLevel:  kBirpurDangerLevel,
-        isFromSeed:   true,
-        fetchedAt:    DateTime(2026, 6, 1),
+        river: 'Kosi',
+        site: 'Birpur',
+        currentLevel: 0.0, // v2.1: was 210.80 (fake seed level)
+        dangerLevel: kBirpurDangerLevel,
+        isFromSeed: true,
+        fetchedAt: DateTime(2026, 6, 1),
       ));
     }
 
     filtered.sort((a, b) {
       if (a.river == 'Kosi' && b.river != 'Kosi') return -1;
-      if (b.river == 'Kosi' && a.river != 'Kosi') return  1;
+      if (b.river == 'Kosi' && a.river != 'Kosi') return 1;
       final r = a.river.compareTo(b.river);
       return r != 0 ? r : a.site.compareTo(b.site);
     });
@@ -164,11 +164,10 @@ final cwcStationsWithBirpurProvider =
 final kosiStationsProvider =
     Provider.autoDispose<AsyncValue<List<CwcStation>>>((ref) {
   return ref.watch(cwcStationsWithBirpurProvider).whenData(
-    (list) => list
-        .where((s) => s.river.toLowerCase().contains('kosi'))
-        .toList()
-      ..sort((a, b) => a.site.compareTo(b.site)),
-  );
+        (list) =>
+            list.where((s) => s.river.toLowerCase().contains('kosi')).toList()
+              ..sort((a, b) => a.site.compareTo(b.site)),
+      );
 });
 
 // ─────────────────────────────────────────────────────────────────────────────────
@@ -179,14 +178,14 @@ final kosiStationsProvider =
 //  and show a '——' / loading state instead of a 210 m reading.
 // ─────────────────────────────────────────────────────────────────────────────────
 class BirpurBadge {
-  final double   level;
-  final double   dangerLevel;
-  final String   status;
-  final String   source;
+  final double level;
+  final double dangerLevel;
+  final String status;
+  final String source;
   final DateTime observedAt;
-  final bool     isStale;
-  final double?  dischargeCumecs;
-  final String?  trend;
+  final bool isStale;
+  final double? dischargeCumecs;
+  final String? trend;
 
   const BirpurBadge({
     required this.level,
@@ -199,7 +198,7 @@ class BirpurBadge {
     this.trend,
   });
 
-  double get gap          => dangerLevel - level;
+  double get gap => dangerLevel - level;
   double get fillFraction => (level / dangerLevel).clamp(0.0, 1.1);
 }
 
@@ -208,14 +207,14 @@ final birpurBadgeProvider =
   return ref.watch(kosiBirpurProvider).whenData((r) {
     if (r == null) return null; // v2.1: no seed badge
     return BirpurBadge(
-      level:           r.levelM,
-      dangerLevel:     r.dangerLevel,
-      status:          r.statusLabel,
-      source:          r.source,
-      observedAt:      r.observedAt,
-      isStale:         DateTime.now().difference(r.observedAt).inHours >= 2,
+      level: r.levelM,
+      dangerLevel: r.dangerLevel,
+      status: r.statusLabel,
+      source: r.source,
+      observedAt: r.observedAt,
+      isStale: DateTime.now().difference(r.observedAt).inHours >= 2,
       dischargeCumecs: r.dischargeCumecs,
-      trend:           r.trend,
+      trend: r.trend,
     );
   });
 });

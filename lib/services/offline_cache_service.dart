@@ -23,7 +23,9 @@ class OfflineCacheService {
   static const Duration _defaultTtl = Duration(hours: 6);
 
   Future<void> initialize() async {
-    Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> results) {
+    Connectivity()
+        .onConnectivityChanged
+        .listen((List<ConnectivityResult> results) {
       _isOnline = results.isNotEmpty &&
           !results.every((r) => r == ConnectivityResult.none);
       _connectivityController.add(_isOnline);
@@ -36,7 +38,8 @@ class OfflineCacheService {
     _isOnline = results.isNotEmpty &&
         !results.every((r) => r == ConnectivityResult.none);
 
-    if (kDebugMode) debugPrint('[OfflineCacheService] initialized, online=$_isOnline');
+    if (kDebugMode)
+      debugPrint('[OfflineCacheService] initialized, online=$_isOnline');
   }
 
   Future<void> cacheData(
@@ -65,8 +68,8 @@ class OfflineCacheService {
 
       final envelope = jsonDecode(raw) as Map<String, dynamic>;
       final cachedAt = DateTime.parse(envelope['cached_at'] as String);
-      final ttlMs    = envelope['ttl_ms'] as int;
-      final age      = DateTime.now().difference(cachedAt);
+      final ttlMs = envelope['ttl_ms'] as int;
+      final age = DateTime.now().difference(cachedAt);
 
       if (age.inMilliseconds > ttlMs) {
         await prefs.remove('offline_cache_$key');
@@ -75,7 +78,8 @@ class OfflineCacheService {
 
       return envelope['data'] as Map<String, dynamic>?;
     } catch (e) {
-      if (kDebugMode) debugPrint('[OfflineCacheService] getCachedData error: $e');
+      if (kDebugMode)
+        debugPrint('[OfflineCacheService] getCachedData error: $e');
       return null;
     }
   }
@@ -90,7 +94,8 @@ class OfflineCacheService {
       if (list is! List) return null;
       return list.whereType<Map<String, dynamic>>().toList();
     } catch (e) {
-      if (kDebugMode) debugPrint('[OfflineCacheService] getCachedList error: $e');
+      if (kDebugMode)
+        debugPrint('[OfflineCacheService] getCachedList error: $e');
       return null;
     }
   }
@@ -107,16 +112,16 @@ class OfflineCacheService {
 
   Future<void> clearExpired() async {
     try {
-      final prefs  = await SharedPreferences.getInstance();
-      final keys   = prefs.getKeys().where((k) => k.startsWith('offline_cache_'));
-      final now    = DateTime.now();
+      final prefs = await SharedPreferences.getInstance();
+      final keys = prefs.getKeys().where((k) => k.startsWith('offline_cache_'));
+      final now = DateTime.now();
       for (final key in keys) {
         final raw = prefs.getString(key);
         if (raw == null) continue;
         try {
           final envelope = jsonDecode(raw) as Map<String, dynamic>;
           final cachedAt = DateTime.parse(envelope['cached_at'] as String);
-          final ttlMs    = envelope['ttl_ms'] as int;
+          final ttlMs = envelope['ttl_ms'] as int;
           if (now.difference(cachedAt).inMilliseconds > ttlMs) {
             await prefs.remove(key);
           }
@@ -125,7 +130,8 @@ class OfflineCacheService {
         }
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('[OfflineCacheService] clearExpired error: $e');
+      if (kDebugMode)
+        debugPrint('[OfflineCacheService] clearExpired error: $e');
     }
   }
 }

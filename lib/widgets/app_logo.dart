@@ -137,7 +137,7 @@ class OpsFloodSplashBridge extends StatefulWidget {
 class _OpsFloodSplashBridgeState extends State<OpsFloodSplashBridge>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
-  late final Animation<double>   _fade;
+  late final Animation<double> _fade;
   bool _ready = false;
 
   @override

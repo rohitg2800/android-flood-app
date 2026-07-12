@@ -21,7 +21,7 @@ class FcmBroadcastService {
 
   void stop() {
     _sub?.cancel();
-    _sub     = null;
+    _sub = null;
     _started = false;
   }
 
@@ -31,23 +31,25 @@ class FcmBroadcastService {
     for (final d in snap.stations) {
       if (d.currentLevel < d.warningLevel) continue;
       final alert = FloodAlert(
-        id:             '${d.stationId}_fcm_${now.day}',
-        stationName:    d.stationName,
-        title:          '${d.stationName} — ${d.riskLevel.toUpperCase()}',
-        river:          d.river,
-        district:       d.district,
-        currentLevel:   d.currentLevel,
-        dangerLevel:    d.dangerLevel,
-        warningLevel:   d.warningLevel,
-        hfl:            d.hfl,
+        id: '${d.stationId}_fcm_${now.day}',
+        stationName: d.stationName,
+        title: '${d.stationName} — ${d.riskLevel.toUpperCase()}',
+        river: d.riverName ?? '',
+        district: d.stationName,
+        currentLevel: d.currentLevel,
+        dangerLevel: d.dangerLevel,
+        warningLevel: d.warningLevel,
+        hfl: d.hfl ?? 0.0,
         thresholdLevel: d.warningLevel,
-        severity:       d.currentLevel >= d.dangerLevel
-            ? AlertSeverity.critical : AlertSeverity.warning,
-        type:           d.currentLevel >= d.dangerLevel
-            ? AlertType.levelAboveDanger : AlertType.levelAboveWarning,
-        issuedAt:       now,
-        message:        d.riskLevel,
-        state:          d.state,
+        severity: d.currentLevel >= d.dangerLevel
+            ? AlertSeverity.critical
+            : AlertSeverity.warning,
+        type: d.currentLevel >= d.dangerLevel
+            ? AlertType.levelAboveDanger
+            : AlertType.levelAboveWarning,
+        issuedAt: now,
+        message: d.riskLevel,
+        state: d.state,
       );
       final payload = FcmTemplates.instance.buildPayload(alert);
       _broadcastToTopic(payload, alert);

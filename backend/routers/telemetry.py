@@ -231,7 +231,7 @@ async def get_historical_logs(city: str = "Kolhapur", limit: int = 50):
 
 # ============= SENSORS (TELEMETRY DATA) =============
 @router.get("/sensors")
-async def get_sensors(station: str = "Kolhapur", state: str = "Maharashtra"):
+async def get_sensors(station: str = "Kolhapur", state: str = "Bihar"):
     """Get tactical telemetry data for sensors."""
     telemetry = _cwc_scraper._build_tactical_telemetry(
         state_name=state, station_name=station, limit=6
@@ -252,7 +252,7 @@ async def get_sensors(station: str = "Kolhapur", state: str = "Maharashtra"):
 # ============= LIVE TELEMETRY =============
 @router.get("/api/live-telemetry")
 async def get_live_telemetry(
-    state: str = "Maharashtra",
+    state: str = "Bihar",
     station: str = "Kolhapur",
     limit: int = 6,
 ):

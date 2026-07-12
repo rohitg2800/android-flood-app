@@ -20,12 +20,12 @@ import 'wrd_bihar_service.dart';
 // ── Result model ─────────────────────────────────────────────────────────────
 class LiveRiverResult {
   final RiverStation station;
-  final String       source;
-  final double       confidence;
-  final String?      mlRiskLevel;
-  final double?      mlFloodProb;
-  final bool         isStale;
-  final String?      rawTimestamp;
+  final String source;
+  final double confidence;
+  final String? mlRiskLevel;
+  final double? mlFloodProb;
+  final bool isStale;
+  final String? rawTimestamp;
 
   const LiveRiverResult({
     required this.station,
@@ -59,22 +59,28 @@ class RealTimeRiverService extends ChangeNotifier {
     await _wrd.fetch();
 
     if (_lfe.liveLevels.isEmpty) {
-      try { await _lfe.refreshData(); } catch (_) {}
+      try {
+        await _lfe.refreshData();
+      } catch (_) {}
     }
 
     final futures = IndiaGeodata.monitoredCities.map((mc) {
-      final city  = mc['city']  as String;
+      final city = mc['city'] as String;
       final state = mc['state'] as String;
       final river = mc['river'] as String;
-      final wl    = _fp(mc['warning_level']);
-      final dl    = _fp(mc['danger_level']);
+      final wl = _fp(mc['warning_level']);
+      final dl = _fp(mc['danger_level']);
       // v2.1: use static hfl when provided; fall back to dl*1.10 otherwise.
-      final hfl   = mc.containsKey('hfl')
+      final hfl = mc.containsKey('hfl')
           ? _fp(mc['hfl'])
           : (dl > 0 ? dl * 1.10 : wl * 1.25);
       return _fetchCity(
-        city: city, state: state, river: river,
-        warningLevel: wl, dangerLevel: dl, staticHfl: hfl,
+        city: city,
+        state: state,
+        river: river,
+        warningLevel: wl,
+        dangerLevel: dl,
+        staticHfl: hfl,
       );
     });
     results.addAll(await Future.wait(futures));
@@ -96,21 +102,27 @@ class RealTimeRiverService extends ChangeNotifier {
       (m) => (m['city'] as String).toLowerCase() == city.toLowerCase(),
       orElse: () => <String, dynamic>{},
     );
-    final dl  = _fp(mc['danger_level']);
-    final wl  = _fp(mc['warning_level']);
+    final dl = _fp(mc['danger_level']);
+    final wl = _fp(mc['warning_level']);
     final hfl = mc.containsKey('hfl')
         ? _fp(mc['hfl'])
         : (dl > 0 ? dl * 1.10 : wl * 1.25);
     return _fetchCity(
-      city: city, state: state, river: river,
-      warningLevel: wl, dangerLevel: dl, staticHfl: hfl,
+      city: city,
+      state: state,
+      river: river,
+      warningLevel: wl,
+      dangerLevel: dl,
+      staticHfl: hfl,
     );
   }
 
   // ── Public: force refresh ────────────────────────────────────────────────
   Future<List<LiveRiverResult>> refresh() async {
     await _wrd.fetch(forceRefresh: true);
-    try { await _lfe.refreshData(); } catch (_) {}
+    try {
+      await _lfe.refreshData();
+    } catch (_) {}
     return fetchAll();
   }
 
@@ -127,14 +139,13 @@ class RealTimeRiverService extends ChangeNotifier {
     required String river,
     required double warningLevel,
     required double dangerLevel,
-    required double staticHfl,   // v2.1: explicit, never re-computed
+    required double staticHfl, // v2.1: explicit, never re-computed
   }) async {
-
     try {
       final wrdMatch = await _wrd.fetchBestMatch(city, river: river);
       if (wrdMatch != null && wrdMatch.currentLevel != null) {
         final lv = wrdMatch.currentLevel!;
-        final dl = wrdMatch.dangerLevel  ?? dangerLevel;
+        final dl = wrdMatch.dangerLevel ?? dangerLevel;
         final wl = wrdMatch.warningLevel ?? warningLevel;
         // Use live hfl if provided by WRD; otherwise use staticHfl.
         final hl = wrdMatch.hfl ?? staticHfl;
@@ -142,23 +153,23 @@ class RealTimeRiverService extends ChangeNotifier {
         _log('✓ $city | src=WRD_BIHAR | risk=$risk | level=${lv}m');
         return LiveRiverResult(
           station: RiverStation(
-            city:         city,
-            state:        state,
-            river:        wrdMatch.river.isNotEmpty ? wrdMatch.river : river,
-            station:      wrdMatch.site,
-            current:      lv,
-            warning:      wl,
-            danger:       dl,
-            hfl:          hl,
-            flowRate:     null,
-            trend:        wrdMatch.trend?.toUpperCase(),
-            liveStatus:   risk,
-            lastUpdated:  wrdMatch.fetchedAt.toIso8601String(),
-            dataSource:   'WRD_BIHAR',
-            isLive:       true,
+            city: city,
+            state: state,
+            river: wrdMatch.river.isNotEmpty ? wrdMatch.river : river,
+            station: wrdMatch.site,
+            current: lv,
+            warning: wl,
+            danger: dl,
+            hfl: hl,
+            flowRate: null,
+            trend: wrdMatch.trend?.toUpperCase(),
+            liveStatus: risk,
+            lastUpdated: wrdMatch.fetchedAt.toIso8601String(),
+            dataSource: 'WRD_BIHAR',
+            isLive: true,
           ),
-          source:      'WRD_BIHAR',
-          confidence:  0.95,
+          source: 'WRD_BIHAR',
+          confidence: 0.95,
           mlRiskLevel: risk,
           mlFloodProb: _riskToProb(risk),
           rawTimestamp: wrdMatch.fetchedAt.toIso8601String(),
@@ -171,36 +182,37 @@ class RealTimeRiverService extends ChangeNotifier {
     try {
       final fd = _lfe.dataForCity(city);
       if (fd != null) {
-        final lv   = fd.currentLevel ?? 0.0;
+        final lv = fd.currentLevel ?? 0.0;
         final wlEf = fd.warningLevel > 0 ? fd.warningLevel : warningLevel;
-        final dlEf = fd.dangerLevel  > 0 ? fd.dangerLevel  : dangerLevel;
+        final dlEf = fd.dangerLevel > 0 ? fd.dangerLevel : dangerLevel;
         final risk = fd.riskLevel ?? 'LOW';
         _log('✓ $city | src=GLOFAS | risk=$risk | flow=${fd.flowRate} m³/s');
         return LiveRiverResult(
           station: RiverStation(
-            city:         city,
-            state:        state,
-            river:        river,
-            station:      '$city GloFAS',
-            current:      lv,
-            warning:      wlEf,
-            danger:       dlEf,
-            hfl:          staticHfl,   // always use the static value for GloFAS
-            flowRate:     fd.flowRate,
+            city: city,
+            state: state,
+            river: river,
+            station: '$city GloFAS',
+            current: lv,
+            warning: wlEf,
+            danger: dlEf,
+            hfl: staticHfl, // always use the static value for GloFAS
+            flowRate: fd.flowRate,
             rainfallLastHour: fd.rainfall24h != null && fd.rainfall24h! > 0
-                ? fd.rainfall24h! / 24 : null,
-            trend:        _deriveTrend(lv, wlEf, dlEf),
-            liveStatus:   risk,
-            lastUpdated:  fd.lastUpdated.toIso8601String(),
-            dataSource:   'GLOFAS',
-            isLive:       true,
+                ? fd.rainfall24h! / 24
+                : null,
+            trend: _deriveTrend(lv, wlEf, dlEf),
+            liveStatus: risk,
+            lastUpdated: fd.lastUpdated.toIso8601String(),
+            dataSource: 'GLOFAS',
+            isLive: true,
           ),
-          source:      'GLOFAS',
-          confidence:  0.75,
+          source: 'GLOFAS',
+          confidence: 0.75,
           mlRiskLevel: risk,
           mlFloodProb: _riskToProb(risk),
           isStale: DateTime.now().difference(fd.lastUpdated) >
-                   const Duration(minutes: 30),
+              const Duration(minutes: 30),
         );
       }
     } catch (e) {
@@ -210,33 +222,39 @@ class RealTimeRiverService extends ChangeNotifier {
     _log('NO_DATA: $city');
     return LiveRiverResult(
       station: RiverStation(
-        city: city, state: state, river: river,
-        station:    '$city WRD Gauge',
-        current:    0,
-        warning:    warningLevel,
-        danger:     dangerLevel,
-        hfl:        staticHfl,
+        city: city,
+        state: state,
+        river: river,
+        station: '$city WRD Gauge',
+        current: 0,
+        warning: warningLevel,
+        danger: dangerLevel,
+        hfl: staticHfl,
         dataSource: 'NO_DATA',
-        isLive:     false,
+        isLive: false,
       ),
-      source:     'NO_DATA',
+      source: 'NO_DATA',
       confidence: 0.0,
     );
   }
 
   String _deriveTrend(double lv, double wl, double dl) {
     if (dl > 0 && lv >= dl * 0.97) return 'RISING';
-    if (wl > 0 && lv >= wl)        return 'STEADY';
-    if (wl > 0 && lv < wl * 0.80)  return 'FALLING';
+    if (wl > 0 && lv >= wl) return 'STEADY';
+    if (wl > 0 && lv < wl * 0.80) return 'FALLING';
     return 'STEADY';
   }
 
   double _riskToProb(String risk) {
     switch (risk.toUpperCase()) {
-      case 'CRITICAL': return 0.92;
-      case 'HIGH':     return 0.72;
-      case 'MODERATE': return 0.48;
-      default:         return 0.15;
+      case 'CRITICAL':
+        return 0.92;
+      case 'HIGH':
+        return 0.72;
+      case 'MODERATE':
+        return 0.48;
+      default:
+        return 0.15;
     }
   }
 

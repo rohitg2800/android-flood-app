@@ -56,16 +56,30 @@ class _SystemStatsBody extends StatelessWidget {
 
   // Canonical display order — matches the 4 tiles in the screenshot.
   static const _kDisplaySources = [
-    _SourceMeta(key: 'GloFAS',    label: 'GloFAS',    detail: 'Flood Forecast', icon: Icons.waves_rounded),
-    _SourceMeta(key: 'WRD_BIHAR', label: 'WRD Bihar', detail: 'River Gauge',    icon: Icons.sensors_rounded),
-    _SourceMeta(key: 'IMD',       label: 'IMD',        detail: 'Rainfall Data',  icon: Icons.grain),
-    _SourceMeta(key: 'CWC_FFS',   label: 'CWC',        detail: 'Central Water',  icon: Icons.water_drop_rounded),
+    _SourceMeta(
+        key: 'GloFAS',
+        label: 'GloFAS',
+        detail: 'Flood Forecast',
+        icon: Icons.waves_rounded),
+    _SourceMeta(
+        key: 'WRD_BIHAR',
+        label: 'WRD Bihar',
+        detail: 'River Gauge',
+        icon: Icons.sensors_rounded),
+    _SourceMeta(
+        key: 'IMD', label: 'IMD', detail: 'Rainfall Data', icon: Icons.grain),
+    _SourceMeta(
+        key: 'CWC_FFS',
+        label: 'CWC',
+        detail: 'Central Water',
+        icon: Icons.water_drop_rounded),
   ];
 
   SourceStatus? _find(String key) {
     final k = key.toLowerCase();
     for (final s in rawSources) {
-      if (s.name.toLowerCase().contains(k) || k.contains(s.name.toLowerCase())) {
+      if (s.name.toLowerCase().contains(k) ||
+          k.contains(s.name.toLowerCase())) {
         return s;
       }
     }
@@ -80,14 +94,15 @@ class _SystemStatsBody extends StatelessWidget {
     final resolved = _kDisplaySources.map((meta) {
       final found = _find(meta.key);
       return _ResolvedSource(
-        meta:   meta,
+        meta: meta,
         status: found,
       );
     }).toList();
 
-    final healthyCount = resolved.where((r) => r.status?.healthy == true).length;
-    final total        = resolved.length;
-    final allOnline    = healthyCount == total;
+    final healthyCount =
+        resolved.where((r) => r.status?.healthy == true).length;
+    final total = resolved.length;
+    final allOnline = healthyCount == total;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -120,25 +135,33 @@ class _SystemStatsBody extends StatelessWidget {
                 AnimatedBuilder(
                   animation: pulseCtrl,
                   builder: (_, __) {
-                    final badgeColor = allOnline ? AppPalette.safe : AppPalette.warning;
+                    final badgeColor =
+                        allOnline ? AppPalette.safe : AppPalette.warning;
                     return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: badgeColor.withValues(
-                          alpha: reduceMotion ? 0.12 : 0.08 + pulseCtrl.value * 0.10,
+                          alpha: reduceMotion
+                              ? 0.12
+                              : 0.08 + pulseCtrl.value * 0.10,
                         ),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: badgeColor.withValues(alpha: 0.30)),
+                        border: Border.all(
+                            color: badgeColor.withValues(alpha: 0.30)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Container(
-                            width: 5, height: 5,
+                            width: 5,
+                            height: 5,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: badgeColor.withValues(
-                                alpha: reduceMotion ? 0.9 : 0.5 + pulseCtrl.value * 0.5,
+                                alpha: reduceMotion
+                                    ? 0.9
+                                    : 0.5 + pulseCtrl.value * 0.5,
                               ),
                             ),
                           ),
@@ -169,10 +192,10 @@ class _SystemStatsBody extends StatelessWidget {
               childAspectRatio: 2.6,
               children: resolved
                   .map((r) => _SourceTile(
-                        resolved:    r,
-                        pulseCtrl:   pulseCtrl,
+                        resolved: r,
+                        pulseCtrl: pulseCtrl,
                         reduceMotion: reduceMotion,
-                        t:           t,
+                        t: t,
                       ))
                   .toList(),
             ),
@@ -186,14 +209,13 @@ class _SystemStatsBody extends StatelessWidget {
                 final label = fetchedAt == null
                     ? 'Last sync: Never'
                     : _relativeTime(fetchedAt);
-                final dotColor = fetchedAt == null
-                    ? AppPalette.warning
-                    : AppPalette.safe;
+                final dotColor =
+                    fetchedAt == null ? AppPalette.warning : AppPalette.safe;
                 return Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.sync_rounded, size: 11,
-                        color: dotColor.withValues(alpha: 0.7)),
+                    Icon(Icons.sync_rounded,
+                        size: 11, color: dotColor.withValues(alpha: 0.7)),
                     const SizedBox(width: 5),
                     Text(
                       label,
@@ -215,17 +237,17 @@ class _SystemStatsBody extends StatelessWidget {
 
   static String _relativeTime(DateTime t) {
     final diff = DateTime.now().difference(t);
-    if (diff.inSeconds < 60)  return 'Last sync: ${diff.inSeconds}s ago';
-    if (diff.inMinutes < 60)  return 'Last sync: ${diff.inMinutes}m ago';
+    if (diff.inSeconds < 60) return 'Last sync: ${diff.inSeconds}s ago';
+    if (diff.inMinutes < 60) return 'Last sync: ${diff.inMinutes}m ago';
     return 'Last sync: ${diff.inHours}h ago';
   }
 }
 
 // ─── Source metadata (static display info) ────────────────────────────────────
 class _SourceMeta {
-  final String   key;
-  final String   label;
-  final String   detail;
+  final String key;
+  final String label;
+  final String detail;
   final IconData icon;
   const _SourceMeta({
     required this.key,
@@ -236,25 +258,25 @@ class _SourceMeta {
 }
 
 class _ResolvedSource {
-  final _SourceMeta   meta;
+  final _SourceMeta meta;
   final SourceStatus? status;
   const _ResolvedSource({required this.meta, required this.status});
 
-  bool   get healthy     => status?.healthy ?? false;
-  int?   get latencyMs   => status?.latencyMs;
-  int    get stationCnt  => status?.stationCount ?? 0;
-  String? get errorMsg   => status?.errorMessage;
+  bool get healthy => status?.healthy ?? false;
+  int? get latencyMs => status?.latencyMs;
+  int get stationCnt => status?.stationCount ?? 0;
+  String? get errorMsg => status?.errorMessage;
 
   Color get dotColor {
-    if (status == null)  return const Color(0xFFE6A817); // amber — never tried
-    if (healthy)         return AppPalette.safe;
+    if (status == null) return const Color(0xFFE6A817); // amber — never tried
+    if (healthy) return AppPalette.safe;
     if (latencyMs != null) return AppPalette.critical;
-    return const Color(0xFFE6A817);                      // amber — timeout / no response
+    return const Color(0xFFE6A817); // amber — timeout / no response
   }
 
   String get statusText {
-    if (status == null)  return 'Initialising…';
-    if (healthy)         return stationCnt > 0 ? '$stationCnt stations' : 'Online';
+    if (status == null) return 'Initialising…';
+    if (healthy) return stationCnt > 0 ? '$stationCnt stations' : 'Online';
     return errorMsg != null ? 'Error' : 'Offline';
   }
 }
@@ -299,14 +321,16 @@ class _SourceTile extends StatelessWidget {
                   ? 0.5 + pulseCtrl.value * 0.5
                   : 0.9;
               return Container(
-                width: 7, height: 7,
+                width: 7,
+                height: 7,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: col.withValues(alpha: pulse),
                   boxShadow: resolved.healthy
                       ? [
                           BoxShadow(
-                            color: col.withValues(alpha: pulseCtrl.value * 0.50),
+                            color:
+                                col.withValues(alpha: pulseCtrl.value * 0.50),
                             blurRadius: 7,
                           ),
                         ]
@@ -365,8 +389,8 @@ class _SourceTile extends StatelessWidget {
             ),
           ),
           // ── Source icon ───────────────────────────────────────────
-          Icon(resolved.meta.icon, size: 13,
-              color: col.withValues(alpha: 0.60)),
+          Icon(resolved.meta.icon,
+              size: 13, color: col.withValues(alpha: 0.60)),
         ],
       ),
     );

@@ -20,41 +20,38 @@ import '../theme/river_theme.dart';
 // ── Severity → visual mapping ──────────────────────────────────────────────────
 extension _AlertVisuals on AlertSeverity {
   Color color(BuildContext ctx) => switch (this) {
-    AlertSeverity.extreme  => const Color(0xFFD32F2F),   // deep red
-    AlertSeverity.critical => AppPalette.critical,
-    AlertSeverity.danger   => AppPalette.warning,
-    AlertSeverity.rising   => const Color(0xFF039BE5),   // sky blue
-    AlertSeverity.normal   => AppPalette.textGrey,
-  };
+        AlertSeverity.extreme => const Color(0xFFD32F2F), // deep red
+        AlertSeverity.critical => AppPalette.critical,
+        AlertSeverity.danger => AppPalette.warning,
+        AlertSeverity.rising => const Color(0xFF039BE5), // sky blue
+        AlertSeverity.normal => AppPalette.textGrey,
+      };
 
   Color glowColor(BuildContext ctx) => switch (this) {
-    AlertSeverity.extreme  =>
-        const Color(0xFFD32F2F).withValues(alpha: 0.35),
-    AlertSeverity.critical =>
-        AppPalette.critical.withValues(alpha: 0.28),
-    AlertSeverity.danger   =>
-        AppPalette.warning.withValues(alpha: 0.22),
-    AlertSeverity.rising   =>
-        const Color(0xFF039BE5).withValues(alpha: 0.20),
-    AlertSeverity.normal   => Colors.transparent,
-  };
+        AlertSeverity.extreme =>
+          const Color(0xFFD32F2F).withValues(alpha: 0.35),
+        AlertSeverity.critical => AppPalette.critical.withValues(alpha: 0.28),
+        AlertSeverity.danger => AppPalette.warning.withValues(alpha: 0.22),
+        AlertSeverity.rising => const Color(0xFF039BE5).withValues(alpha: 0.20),
+        AlertSeverity.normal => Colors.transparent,
+      };
 
   IconData get icon => switch (this) {
-    AlertSeverity.extreme  => Icons.flood_rounded,
-    AlertSeverity.critical => Icons.warning_amber_rounded,
-    AlertSeverity.danger   => Icons.water_rounded,
-    AlertSeverity.rising   => Icons.trending_up_rounded,
-    AlertSeverity.normal   => Icons.check_circle_outline_rounded,
-  };
+        AlertSeverity.extreme => Icons.flood_rounded,
+        AlertSeverity.critical => Icons.warning_amber_rounded,
+        AlertSeverity.danger => Icons.water_rounded,
+        AlertSeverity.rising => Icons.trending_up_rounded,
+        AlertSeverity.normal => Icons.check_circle_outline_rounded,
+      };
 
   // null = never auto-dismiss
   int? get autoDismissSeconds => switch (this) {
-    AlertSeverity.extreme  => null,
-    AlertSeverity.critical => null,
-    AlertSeverity.danger   => 120,
-    AlertSeverity.rising   => 60,
-    AlertSeverity.normal   => 30,
-  };
+        AlertSeverity.extreme => null,
+        AlertSeverity.critical => null,
+        AlertSeverity.danger => 120,
+        AlertSeverity.rising => 60,
+        AlertSeverity.normal => 30,
+      };
 }
 
 // ── LiveAlertBanner ─────────────────────────────────────────────────────────
@@ -66,9 +63,9 @@ class LiveAlertBanner extends StatefulWidget {
     this.onDismiss,
   });
 
-  final AlertItem      alert;
-  final VoidCallback?  onTap;
-  final VoidCallback?  onDismiss;
+  final AlertItem alert;
+  final VoidCallback? onTap;
+  final VoidCallback? onDismiss;
 
   @override
   State<LiveAlertBanner> createState() => _LiveAlertBannerState();
@@ -77,7 +74,7 @@ class LiveAlertBanner extends StatefulWidget {
 class _LiveAlertBannerState extends State<LiveAlertBanner>
     with SingleTickerProviderStateMixin {
   late final AnimationController _pulseCtrl;
-  late final Animation<double>   _pulseAnim;
+  late final Animation<double> _pulseAnim;
   bool _dismissed = false;
 
   @override
@@ -114,14 +111,14 @@ class _LiveAlertBannerState extends State<LiveAlertBanner>
     if (_dismissed) return const SizedBox.shrink();
 
     final alert = widget.alert;
-    final sev   = alert.severity;
-    final c     = sev.color(context);
-    final glow  = sev.glowColor(context);
-    final icon  = sev.icon;
+    final sev = alert.severity;
+    final c = sev.color(context);
+    final glow = sev.glowColor(context);
+    final icon = sev.icon;
 
     return AnimatedSize(
       duration: const Duration(milliseconds: 280),
-      curve:    Curves.easeInOut,
+      curve: Curves.easeInOut,
       child: GestureDetector(
         onTap: () {
           HapticFeedback.mediumImpact();
@@ -131,9 +128,9 @@ class _LiveAlertBannerState extends State<LiveAlertBanner>
           margin: const EdgeInsets.fromLTRB(16, 6, 16, 4),
           padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
           decoration: BoxDecoration(
-            color:        c.withValues(alpha: 0.10),
+            color: c.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(16),
-            border:       Border.all(color: c.withValues(alpha: 0.50), width: 1.4),
+            border: Border.all(color: c.withValues(alpha: 0.50), width: 1.4),
             boxShadow: [
               BoxShadow(color: glow, blurRadius: 12, spreadRadius: 1),
             ],
@@ -165,36 +162,35 @@ class _LiveAlertBannerState extends State<LiveAlertBanner>
                           child: Text(
                             alert.message,
                             style: TextStyle(
-                              fontSize:   13,
+                              fontSize: 13,
                               fontWeight: FontWeight.w700,
-                              color:      c,
-                              height:     1.2,
+                              color: c,
+                              height: 1.2,
                             ),
                           ),
                         ),
                         const SizedBox(width: 4),
-                        _SourceBadge(source: alert.source, isLive: alert.isLive),
+                        _SourceBadge(
+                            source: alert.source, isLive: alert.isLive),
                       ],
                     ),
                     // Sub-message (level detail)
-                    if (alert.subMessage != null) ...
-                      [
-                        const SizedBox(height: 3),
-                        Text(
-                          alert.subMessage!,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color:    AppPalette.textGrey,
-                            height:   1.3,
-                          ),
+                    if (alert.subMessage != null) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        alert.subMessage!,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppPalette.textGrey,
+                          height: 1.3,
                         ),
-                      ],
+                      ),
+                    ],
                     // Rate-of-rise chip
-                    if ((alert.rateOfRiseMph ?? 0) >= 0.3) ...
-                      [
-                        const SizedBox(height: 5),
-                        _RorChip(ror: alert.rateOfRiseMph!),
-                      ],
+                    if ((alert.rateOfRiseMph ?? 0) >= 0.3) ...[
+                      const SizedBox(height: 5),
+                      _RorChip(ror: alert.rateOfRiseMph!),
+                    ],
                   ],
                 ),
               ),
@@ -228,27 +224,27 @@ class _LiveAlertBannerState extends State<LiveAlertBanner>
 // ── Source badge ──────────────────────────────────────────────────────────────
 class _SourceBadge extends StatelessWidget {
   final String source;
-  final bool   isLive;
+  final bool isLive;
   const _SourceBadge({required this.source, required this.isLive});
 
   @override
   Widget build(BuildContext context) {
     final label = isLive ? 'LIVE' : 'EST';
-    final bg    = isLive
+    final bg = isLive
         ? const Color(0xFF1B5E20).withValues(alpha: 0.85)
         : const Color(0xFF4A4A4A).withValues(alpha: 0.75);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
       decoration: BoxDecoration(
-        color:        bg,
+        color: bg,
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
         label,
         style: const TextStyle(
-          fontSize:   9,
+          fontSize: 9,
           fontWeight: FontWeight.w800,
-          color:      Colors.white,
+          color: Colors.white,
           letterSpacing: 0.8,
         ),
       ),
@@ -267,14 +263,12 @@ class _RorChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color:        (urgent
-            ? const Color(0xFFD32F2F)
-            : const Color(0xFFE65100)).withValues(alpha: 0.15),
+        color: (urgent ? const Color(0xFFD32F2F) : const Color(0xFFE65100))
+            .withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: (urgent
-              ? const Color(0xFFD32F2F)
-              : const Color(0xFFE65100)).withValues(alpha: 0.5),
+          color: (urgent ? const Color(0xFFD32F2F) : const Color(0xFFE65100))
+              .withValues(alpha: 0.5),
         ),
       ),
       child: Row(
@@ -282,14 +276,14 @@ class _RorChip extends StatelessWidget {
         children: [
           Icon(
             Icons.trending_up_rounded,
-            size:  11,
+            size: 11,
             color: urgent ? const Color(0xFFD32F2F) : const Color(0xFFE65100),
           ),
           const SizedBox(width: 3),
           Text(
             '+${ror.toStringAsFixed(2)} m/h',
             style: TextStyle(
-              fontSize:   10,
+              fontSize: 10,
               fontWeight: FontWeight.w700,
               color: urgent ? const Color(0xFFD32F2F) : const Color(0xFFE65100),
             ),
@@ -315,22 +309,24 @@ class AlertSeverityBannerList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<AlertItem>>(
-      stream:       ActiveAlertController.instance.stream,
-      initialData:  ActiveAlertController.instance.alerts,
+      stream: ActiveAlertController.instance.stream,
+      initialData: ActiveAlertController.instance.alerts,
       builder: (context, snap) {
         final alerts = snap.data ?? [];
         if (alerts.isEmpty) return const SizedBox.shrink();
         return Column(
           mainAxisSize: MainAxisSize.min,
-          children: alerts.map((a) => LiveAlertBanner(
-            key:      ValueKey('alert_${a.stationKey}'),
-            alert:    a,
-            onTap:    onTapAlert != null ? () => onTapAlert!(a) : null,
-            onDismiss: () {
-              // Locally dismissed — no state change in controller;
-              // will re-appear on next cycle if still alerting.
-            },
-          )).toList(),
+          children: alerts
+              .map((a) => LiveAlertBanner(
+                    key: ValueKey('alert_${a.stationKey}'),
+                    alert: a,
+                    onTap: onTapAlert != null ? () => onTapAlert!(a) : null,
+                    onDismiss: () {
+                      // Locally dismissed — no state change in controller;
+                      // will re-appear on next cycle if still alerting.
+                    },
+                  ))
+              .toList(),
         );
       },
     );

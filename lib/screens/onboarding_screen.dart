@@ -7,6 +7,7 @@
 // • Shown only on first launch; subsequent launches route to /shell
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_palette.dart';
 
@@ -80,12 +81,10 @@ class OnboardingScreen extends StatefulWidget {
   static const String route = '/onboarding';
   const OnboardingScreen({super.key});
   @override
-  State<OnboardingScreen> createState() =>
-      _OnboardingScreenState();
+  State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState
-    extends State<OnboardingScreen>
+class _OnboardingScreenState extends State<OnboardingScreen>
     with SingleTickerProviderStateMixin {
   final _pageCtrl = PageController();
   int _current = 0;
@@ -104,7 +103,7 @@ class _OnboardingScreenState
   Future<void> _finish() async {
     await markOnboardingDone();
     if (!mounted) return;
-    Navigator.pushReplacementNamed(context, '/shell');
+    context.go('/shell'); // ✅ GoRouter-aware navigation
   }
 
   @override
@@ -117,6 +116,8 @@ class _OnboardingScreenState
   Widget build(BuildContext context) {
     final page = _pages[_current];
     return Scaffold(
+      extendBodyBehindAppBar: true,
+      extendBody: true,
       backgroundColor: page.color,
       body: SafeArea(
         child: Column(
@@ -127,19 +128,16 @@ class _OnboardingScreenState
               child: TextButton(
                 onPressed: _finish,
                 child: const Text('Skip',
-                    style: TextStyle(
-                        color: Colors.white70, fontSize: 14)),
+                    style: TextStyle(color: Colors.white70, fontSize: 14)),
               ),
             ),
             // Pages
             Expanded(
               child: PageView.builder(
                 controller: _pageCtrl,
-                onPageChanged: (i) =>
-                    setState(() => _current = i),
+                onPageChanged: (i) => setState(() => _current = i),
                 itemCount: _pages.length,
-                itemBuilder: (_, i) =>
-                    _OnboardingPage(data: _pages[i]),
+                itemBuilder: (_, i) => _OnboardingPage(data: _pages[i]),
               ),
             ),
             // Dots
@@ -149,14 +147,11 @@ class _OnboardingScreenState
                 _pages.length,
                 (i) => AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
-                  margin: const EdgeInsets.symmetric(
-                      horizontal: 4),
-                  width:  _current == i ? 20 : 8,
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  width: _current == i ? 20 : 8,
                   height: 8,
                   decoration: BoxDecoration(
-                    color: _current == i
-                        ? Colors.white
-                        : Colors.white38,
+                    color: _current == i ? Colors.white : Colors.white38,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -173,19 +168,14 @@ class _OnboardingScreenState
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: page.color,
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(30)),
+                        borderRadius: BorderRadius.circular(30)),
                   ),
                   child: Text(
-                    _current == _pages.length - 1
-                        ? 'Get Started'
-                        : 'Next',
+                    _current == _pages.length - 1 ? 'Get Started' : 'Next',
                     style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16),
+                        fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                 ),
               ),
@@ -209,20 +199,18 @@ class _OnboardingPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(
-          horizontal: 32, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width:  120,
+            width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
+              color: Colors.white.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
-            child: Icon(data.icon,
-                size: 60, color: Colors.white),
+            child: Icon(data.icon, size: 60, color: Colors.white),
           ),
           const SizedBox(height: 40),
           Text(

@@ -50,34 +50,34 @@ import 'city_detail_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 class _P {
-  static const riverBlue     = Color(0xFF2196F3);
-  static const signalGreen   = Color(0xFF26A69A);
-  static const mapTeal       = Color(0xFF00897B);
-  static const explorerCyan  = Color(0xFF0097A7);
-  static const layerSlate    = Color(0xFF546E7A);
-  static const aiViolet      = Color(0xFF7E57C2);
-  static const rainfallBlue  = Color(0xFF1976D2);
-  static const sunAmber      = Color(0xFFFF8F00);
-  static const matrixIndigo  = Color(0xFF3949AB);
-  static const alertRed      = Color(0xFFE53935);
-  static const criticalOrange= Color(0xFFEF6C00);
-  static const sosRed        = Color(0xFFC62828);
-  static const evacAmber     = Color(0xFFF57F17);
-  static const communityGreen= Color(0xFF388E3C);
-  static const incidentOrange= Color(0xFFE64A19);
-  static const crowdPurple   = Color(0xFF6A1B9A);
-  static const newsGold      = Color(0xFFF9A825);
+  static const riverBlue = Color(0xFF2196F3);
+  static const signalGreen = Color(0xFF26A69A);
+  static const mapTeal = Color(0xFF00897B);
+  static const explorerCyan = Color(0xFF0097A7);
+  static const layerSlate = Color(0xFF546E7A);
+  static const aiViolet = Color(0xFF7E57C2);
+  static const rainfallBlue = Color(0xFF1976D2);
+  static const sunAmber = Color(0xFFFF8F00);
+  static const matrixIndigo = Color(0xFF3949AB);
+  static const alertRed = Color(0xFFE53935);
+  static const criticalOrange = Color(0xFFEF6C00);
+  static const sosRed = Color(0xFFC62828);
+  static const evacAmber = Color(0xFFF57F17);
+  static const communityGreen = Color(0xFF388E3C);
+  static const incidentOrange = Color(0xFFE64A19);
+  static const crowdPurple = Color(0xFF6A1B9A);
+  static const newsGold = Color(0xFFF9A825);
   static const analyticsBlue = Color(0xFF0288D1);
-  static const historyBrown  = Color(0xFF6D4C41);
-  static const exportSteel   = Color(0xFF455A64);
-  static const settingsGray  = Color(0xFF607D8B);
+  static const historyBrown = Color(0xFF6D4C41);
+  static const exportSteel = Color(0xFF455A64);
+  static const settingsGray = Color(0xFF607D8B);
 }
 
 class _Tile {
-  final String       label;
-  final IconData     icon;
-  final Color        color;
-  final String?      badge;
+  final String label;
+  final IconData icon;
+  final Color color;
+  final String? badge;
   final WidgetBuilder builder;
   const _Tile({
     required this.label,
@@ -97,80 +97,164 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen>
     with AutoRefreshMixin {
-
-  String _query = '';
-
   List<_Tile> get _monitoringTiles => [
-    _Tile(label:'River Monitor', icon:Icons.monitor_heart_outlined,       color:_P.riverBlue,     builder:(_)=>const RiverMonitorScreen()),
-    _Tile(label:'Live Stations', icon:Icons.broadcast_on_personal_rounded, color:_P.signalGreen,   builder:(_)=>const LiveStationsScreen()),
-    _Tile(label:'Bihar Map',     icon:Icons.map_rounded,                   color:_P.mapTeal,       builder:(_)=>const BiharRiverMapScreen()),
-    _Tile(label:'India Explorer',icon:Icons.travel_explore_rounded,        color:_P.explorerCyan,  builder:(_)=>const IndiaRiverExplorerScreen()),
-    _Tile(label:'Map View',      icon:Icons.layers_rounded,                color:_P.layerSlate,    builder:(_)=>const BiharRiverMapScreen()),
-  ];
+        _Tile(
+            label: 'River Monitor',
+            icon: Icons.monitor_heart_outlined,
+            color: _P.riverBlue,
+            builder: (_) => const RiverMonitorScreen()),
+        _Tile(
+            label: 'Live Stations',
+            icon: Icons.broadcast_on_personal_rounded,
+            color: _P.signalGreen,
+            builder: (_) => const LiveStationsScreen()),
+        _Tile(
+            label: 'Bihar Map',
+            icon: Icons.map_rounded,
+            color: _P.mapTeal,
+            builder: (_) => const BiharRiverMapScreen()),
+        _Tile(
+            label: 'India Explorer',
+            icon: Icons.travel_explore_rounded,
+            color: _P.explorerCyan,
+            builder: (_) => const IndiaRiverExplorerScreen()),
+        _Tile(
+            label: 'Map View',
+            icon: Icons.layers_rounded,
+            color: _P.layerSlate,
+            builder: (_) => const BiharRiverMapScreen()),
+      ];
 
   List<_Tile> get _forecastTiles => [
-    _Tile(label:'AI Prediction', icon:Icons.psychology_rounded,   color:_P.aiViolet,     builder:(_)=>const RainfallForecastScreen()),
-    _Tile(label:'Rainfall',      icon:Icons.grain_rounded,        color:_P.rainfallBlue, builder:(_)=>const RainfallForecastScreen()),
-    _Tile(label:'Weather',       icon:Icons.wb_sunny_rounded,     color:_P.sunAmber,     builder:(_)=>const WeatherScreen()),
-    _Tile(label:'State Matrix',  icon:Icons.grid_view_rounded,    color:_P.matrixIndigo, builder:(_)=>const StateMatrixScreen()),
-  ];
+        _Tile(
+            label: 'AI Prediction',
+            icon: Icons.psychology_rounded,
+            color: _P.aiViolet,
+            builder: (_) => const RainfallForecastScreen()),
+        _Tile(
+            label: 'Rainfall',
+            icon: Icons.grain_rounded,
+            color: _P.rainfallBlue,
+            builder: (_) => const RainfallForecastScreen()),
+        _Tile(
+            label: 'Weather',
+            icon: Icons.wb_sunny_rounded,
+            color: _P.sunAmber,
+            builder: (_) => const WeatherScreen()),
+        _Tile(
+            label: 'State Matrix',
+            icon: Icons.grid_view_rounded,
+            color: _P.matrixIndigo,
+            builder: (_) => const StateMatrixScreen()),
+      ];
 
   List<_Tile> get _alertsTiles => [
-    _Tile(label:'Alerts',        icon:Icons.notifications_active_rounded, color:_P.alertRed,      builder:(_)=>const AlertsScreen()),
-    _Tile(label:'Active Alerts', icon:Icons.crisis_alert_rounded,         color:_P.criticalOrange,builder:(_)=>const AlertsScreen()),
-    _Tile(label:'SOS',           icon:Icons.health_and_safety_rounded,    color:_P.sosRed,        builder:(_)=>const SosScreen()),
-    _Tile(label:'Evacuation',    icon:Icons.directions_run_rounded,       color:_P.evacAmber,     builder:(_)=>const EvacuationRoutesScreen()),
-  ];
+        _Tile(
+            label: 'Alerts',
+            icon: Icons.notifications_active_rounded,
+            color: _P.alertRed,
+            builder: (_) => const AlertsScreen()),
+        _Tile(
+            label: 'Active Alerts',
+            icon: Icons.crisis_alert_rounded,
+            color: _P.criticalOrange,
+            builder: (_) => const AlertsScreen()),
+        _Tile(
+            label: 'SOS',
+            icon: Icons.health_and_safety_rounded,
+            color: _P.sosRed,
+            builder: (_) => const SosScreen()),
+        _Tile(
+            label: 'Evacuation',
+            icon: Icons.directions_run_rounded,
+            color: _P.evacAmber,
+            builder: (_) => const EvacuationRoutesScreen()),
+      ];
 
   List<_Tile> get _communityTiles => [
-    _Tile(label:'Community',      icon:Icons.groups_rounded,         color:_P.communityGreen, builder:(_)=>const CommunityScreen()),
-    _Tile(label:'Report Incident',icon:Icons.report_problem_rounded, color:_P.incidentOrange, builder:(_)=>const IncidentReportScreen()),
-    _Tile(label:'Crowd Reports',  icon:Icons.forum_rounded,          color:_P.crowdPurple,    builder:(_)=>const CrowdReportFeedScreen()),
-    _Tile(label:'News Feed',      icon:Icons.article_rounded,        color:_P.newsGold,       builder:(_)=>const NewsFeedScreen()),
-  ];
+        _Tile(
+            label: 'Community',
+            icon: Icons.groups_rounded,
+            color: _P.communityGreen,
+            builder: (_) => const CommunityScreen()),
+        _Tile(
+            label: 'Report Incident',
+            icon: Icons.report_problem_rounded,
+            color: _P.incidentOrange,
+            builder: (_) => const IncidentReportScreen()),
+        _Tile(
+            label: 'Crowd Reports',
+            icon: Icons.forum_rounded,
+            color: _P.crowdPurple,
+            builder: (_) => const CrowdReportFeedScreen()),
+        _Tile(
+            label: 'News Feed',
+            icon: Icons.article_rounded,
+            color: _P.newsGold,
+            builder: (_) => const NewsFeedScreen()),
+      ];
 
   List<_Tile> get _analyticsTiles => [
-    _Tile(label:'Analytics',  icon:Icons.area_chart_rounded,  color:_P.analyticsBlue, builder:(_)=>const AnalyticsDashboardScreen()),
-    _Tile(label:'Historical', icon:Icons.timeline_rounded,    color:_P.historyBrown,  builder:(_)=>const HistoricalAnalyticsScreen()),
-    _Tile(label:'Export',     icon:Icons.upload_file_rounded, color:_P.exportSteel,   builder:(_)=>const ExportScreen()),
-    _Tile(label:'Settings',   icon:Icons.tune_rounded,        color:_P.settingsGray,  builder:(_)=>const SettingsScreen()),
-  ];
+        _Tile(
+            label: 'Analytics',
+            icon: Icons.area_chart_rounded,
+            color: _P.analyticsBlue,
+            builder: (_) => const AnalyticsDashboardScreen()),
+        _Tile(
+            label: 'Historical',
+            icon: Icons.timeline_rounded,
+            color: _P.historyBrown,
+            builder: (_) => const HistoricalAnalyticsScreen()),
+        _Tile(
+            label: 'Export',
+            icon: Icons.upload_file_rounded,
+            color: _P.exportSteel,
+            builder: (_) => const ExportScreen()),
+        _Tile(
+            label: 'Settings',
+            icon: Icons.tune_rounded,
+            color: _P.settingsGray,
+            builder: (_) => const SettingsScreen()),
+      ];
 
   late final List<_Tile> _allTiles = [
-    ..._monitoringTiles, ..._forecastTiles,
-    ..._alertsTiles, ..._communityTiles, ..._analyticsTiles,
+    ..._monitoringTiles,
+    ..._forecastTiles,
+    ..._alertsTiles,
+    ..._communityTiles,
+    ..._analyticsTiles,
   ];
 
-  List<_Tile> get _filteredTiles => _query.isEmpty
-      ? _allTiles
-      : _allTiles.where((t) =>
-          t.label.toLowerCase().contains(_query.toLowerCase())).toList();
-
   void _open(BuildContext ctx, _Tile tile) {
-    Navigator.push(ctx, MaterialPageRoute(
-      builder: tile.builder,
-      settings: RouteSettings(name: tile.label),
-    ));
+    Navigator.push(
+        ctx,
+        MaterialPageRoute(
+          builder: tile.builder,
+          settings: RouteSettings(name: tile.label),
+        ));
   }
 
   @override
   Widget build(BuildContext context) {
-    final liveAsync  = ref.watch(biharLiveProvider);
-    final merged     = ref.watch(mergedStationsProvider);
+    final liveAsync = ref.watch(biharLiveProvider);
+    final merged = ref.watch(mergedStationsProvider);
     final badgeCount = ref.watch(alertsBadgeProvider);
-    final t          = RiverColors.of(context);
+    final t = RiverColors.of(context);
     return Scaffold(
       backgroundColor: t.scaffoldBg,
       appBar: _buildAppBar(t, badgeCount),
       body: Stack(
         children: [
           liveAsync.when(
-            loading: () => Center(child: CircularProgressIndicator(color: t.accent)),
-            error:   (e, _) => _errorView(context, e, t),
-            data:    (live) => _buildBody(context, live, t, merged),
+            loading: () =>
+                Center(child: CircularProgressIndicator(color: t.accent)),
+            error: (e, _) => _errorView(context, e, t),
+            data: (live) => _buildBody(context, live, t, merged),
           ),
           Positioned(
-            right: 0, top: 0, bottom: 0,
+            right: 0,
+            top: 0,
+            bottom: 0,
             child: Center(
               child: GestureDetector(
                 onTap: () => Navigator.push(context,
@@ -180,20 +264,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
                     color: const Color(0xFFE53935),
-                    borderRadius: const BorderRadius.horizontal(left: Radius.circular(10)),
+                    borderRadius: const BorderRadius.horizontal(
+                        left: Radius.circular(10)),
                     boxShadow: [
                       BoxShadow(
                         color: const Color(0xFFE53935).withValues(alpha: 0.45),
-                        blurRadius: 12, offset: const Offset(-2, 0),
+                        blurRadius: 12,
+                        offset: const Offset(-2, 0),
                       ),
                     ],
                   ),
                   child: RotatedBox(
                     quarterTurns: 3,
-                    child: const Text('SOS', style: TextStyle(
-                      color: Colors.white, fontSize: 11,
-                      fontWeight: FontWeight.w900, letterSpacing: 1.5,
-                    )),
+                    child: const Text('SOS',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.5,
+                        )),
                   ),
                 ),
               ),
@@ -212,18 +301,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
         children: [
           ShaderMask(
             shaderCallback: (r) =>
-                LinearGradient(colors: [t.accent, t.metricColor]).createShader(r),
-            child: const Icon(Icons.water_rounded, color: Colors.white, size: 22),
+                LinearGradient(colors: [t.accent, t.metricColor])
+                    .createShader(r),
+            child:
+                const Icon(Icons.water_rounded, color: Colors.white, size: 22),
           ),
           const SizedBox(width: 8),
           ShaderMask(
             shaderCallback: (r) => LinearGradient(
-              colors: [t.textPrimary, t.accent], stops: const [0.5, 1.0],
+              colors: [t.textPrimary, t.accent],
+              stops: const [0.5, 1.0],
             ).createShader(r),
-            child: const Text('OpsFlood Bihar', style: TextStyle(
-              color: Colors.white, fontWeight: FontWeight.w800,
-              fontSize: 18, letterSpacing: -0.3,
-            )),
+            child: const Text('OpsFlood Bihar',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 18,
+                  letterSpacing: -0.3,
+                )),
           ),
         ],
       ),
@@ -282,8 +377,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               children: [
                 Icon(Icons.cloud_off_rounded, size: 56, color: t.textSecondary),
                 const SizedBox(height: 16),
-                Text('Could not load live data', style: TextStyle(
-                  color: t.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
+                Text('Could not load live data',
+                    style: TextStyle(
+                        color: t.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700)),
                 const SizedBox(height: 8),
                 Text('Check your connection and try again.',
                     style: TextStyle(color: t.textSecondary, fontSize: 13),
@@ -291,7 +389,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 const SizedBox(height: 20),
                 Td3Button(
                   label: 'Try again',
-                  icon:  Icons.refresh_rounded,
+                  icon: Icons.refresh_rounded,
                   onTap: () => ref.invalidate(biharLiveProvider),
                 ),
               ],
@@ -302,7 +400,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     );
   }
 
-  Widget _buildBody(BuildContext ctx, BiharLiveState live, RiverColors t, List<dynamic> merged) {
+  Widget _buildBody(BuildContext ctx, BiharLiveState live, RiverColors t,
+      List<dynamic> merged) {
     return refreshIndicator(
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -311,64 +410,79 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
               child: SummaryStrip(
-                critical:   merged.where((s) => s.dangerClass.index >= 3).length,
-                severe:     merged.where((s) => s.dangerClass.index == 2).length,
-                warning:    merged.where((s) => s.dangerClass.index == 1).length,
-                safe:       merged.where((s) => s.dangerClass == DangerClass.normal && s.current > 0).length,
-                noData:     merged.where((s) => s.current == 0).length,
+                critical: merged.where((s) => s.dangerClass.index >= 3).length,
+                severe: merged.where((s) => s.dangerClass.index == 2).length,
+                warning: merged.where((s) => s.dangerClass.index == 1).length,
+                safe: merged
+                    .where((s) =>
+                        s.dangerClass == DangerClass.normal && s.current > 0)
+                    .length,
+                noData: merged.where((s) => s.current == 0).length,
                 lastUpdate: lastFetchedLabel,
               ),
             ),
           ),
-
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
             sliver: SliverGrid.builder(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2, crossAxisSpacing: 10,
-                mainAxisSpacing: 10, childAspectRatio: 2.6,
+                crossAxisCount: 2,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+                childAspectRatio: 2.6,
               ),
               itemCount: 4,
               itemBuilder: (_, i) => [
                 Td3StatTile(
                   icon: Icons.crisis_alert_rounded,
-                  value: '${merged.where((s) => s.dangerClass.index >= 3).length}',
-                  label: 'Critical', valueColor: _P.alertRed,
-                  onTap: () => Navigator.push(ctx, MaterialPageRoute(builder: (_) => const AlertsScreen())),
+                  value:
+                      '${merged.where((s) => s.dangerClass.index >= 3).length}',
+                  label: 'Critical',
+                  valueColor: _P.alertRed,
+                  onTap: () => Navigator.push(ctx,
+                      MaterialPageRoute(builder: (_) => const AlertsScreen())),
                 ),
                 Td3StatTile(
                   icon: Icons.warning_amber_rounded,
-                  value: '${merged.where((s) => s.dangerClass.index == 1 || s.dangerClass.index == 2).length}',
-                  label: 'Warning', valueColor: _P.evacAmber,
-                  onTap: () => Navigator.push(ctx, MaterialPageRoute(builder: (_) => const AlertsScreen())),
+                  value:
+                      '${merged.where((s) => s.dangerClass.index == 1 || s.dangerClass.index == 2).length}',
+                  label: 'Warning',
+                  valueColor: _P.evacAmber,
+                  onTap: () => Navigator.push(ctx,
+                      MaterialPageRoute(builder: (_) => const AlertsScreen())),
                 ),
                 Td3StatTile(
                   icon: Icons.check_circle_outline_rounded,
-                  value: '${merged.where((s) => s.dangerClass == DangerClass.normal && s.current > 0).length}',
-                  label: 'Safe', valueColor: _P.communityGreen,
+                  value:
+                      '${merged.where((s) => s.dangerClass == DangerClass.normal && s.current > 0).length}',
+                  label: 'Safe',
+                  valueColor: _P.communityGreen,
                 ),
                 Td3StatTile(
                   icon: Icons.sensors_off_rounded,
                   value: '${merged.where((s) => s.current == 0).length}',
-                  label: 'No Data', valueColor: _P.layerSlate,
+                  label: 'No Data',
+                  valueColor: _P.layerSlate,
                 ),
               ][i],
             ),
           ),
-
           _riskForecastStrip(ctx, t),
-
-          _sectionHeader(ctx, t, 'Monitoring & Maps',   Icons.radar_rounded,         _P.riverBlue),
+          _sectionHeader(
+              ctx, t, 'Monitoring & Maps', Icons.radar_rounded, _P.riverBlue),
           _tileGrid(ctx, t, _monitoringTiles),
-          _sectionHeader(ctx, t, 'Forecast & AI',       Icons.psychology_rounded,    _P.aiViolet),
+          _sectionHeader(
+              ctx, t, 'Forecast & AI', Icons.psychology_rounded, _P.aiViolet),
           _tileGrid(ctx, t, _forecastTiles),
-          _sectionHeader(ctx, t, 'Alerts & Safety',     Icons.crisis_alert_rounded,  _P.alertRed),
+          _sectionHeader(ctx, t, 'Alerts & Safety', Icons.crisis_alert_rounded,
+              _P.alertRed),
           _tileGrid(ctx, t, _alertsTiles),
-          _sectionHeader(ctx, t, 'Community',           Icons.groups_rounded,        _P.communityGreen),
+          _sectionHeader(
+              ctx, t, 'Community', Icons.groups_rounded, _P.communityGreen),
           _tileGrid(ctx, t, _communityTiles),
-          _sectionHeader(ctx, t, 'Analytics & Tools',   Icons.area_chart_rounded,    _P.analyticsBlue),
+          _sectionHeader(ctx, t, 'Analytics & Tools', Icons.area_chart_rounded,
+              _P.analyticsBlue),
           _tileGrid(ctx, t, _analyticsTiles),
-
           const SliverToBoxAdapter(child: SizedBox(height: 96)),
         ],
       ),
@@ -378,7 +492,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   // v10.3 — reads filteredBulkPredictionsProvider (honours baseline toggle)
   Widget _riskForecastStrip(BuildContext ctx, RiverColors t) {
     final preds = ref.watch(filteredBulkPredictionsProvider).take(5).toList();
-    if (preds.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+    if (preds.isEmpty)
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
     return SliverToBoxAdapter(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -387,27 +502,39 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
             child: Row(children: [
               Container(
-                width: 30, height: 30,
+                width: 30,
+                height: 30,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(colors: [
                     _P.aiViolet.withValues(alpha: 0.28),
                     _P.aiViolet.withValues(alpha: 0.10),
                   ]),
                   borderRadius: BorderRadius.circular(9),
-                  border: Border.all(color: _P.aiViolet.withValues(alpha: 0.30), width: 1),
+                  border: Border.all(
+                      color: _P.aiViolet.withValues(alpha: 0.30), width: 1),
                 ),
-                child: Center(child: Icon(Icons.auto_awesome_rounded, color: _P.aiViolet, size: 16)),
+                child: Center(
+                    child: Icon(Icons.auto_awesome_rounded,
+                        color: _P.aiViolet, size: 16)),
               ),
               const SizedBox(width: 9),
-              Text('RISK FORECAST', style: TextStyle(
-                  color: _P.aiViolet, fontSize: 11,
-                  fontWeight: FontWeight.w800, letterSpacing: 1.4)),
+              Text('RISK FORECAST',
+                  style: TextStyle(
+                      color: _P.aiViolet,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.4)),
               const Spacer(),
               GestureDetector(
-                onTap: () => Navigator.push(ctx,
-                    MaterialPageRoute(builder: (_) => const RainfallForecastScreen())),
-                child: Text('See all', style: TextStyle(
-                    color: t.accent, fontSize: 11, fontWeight: FontWeight.w600)),
+                onTap: () => Navigator.push(
+                    ctx,
+                    MaterialPageRoute(
+                        builder: (_) => const RainfallForecastScreen())),
+                child: Text('See all',
+                    style: TextStyle(
+                        color: t.accent,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600)),
               ),
             ]),
           ),
@@ -420,12 +547,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               itemCount: preds.length,
               separatorBuilder: (_, __) => const SizedBox(width: 10),
               itemBuilder: (_, i) => RepaintBoundary(
-                child: _RiskCard(pred: preds[i], onTap: () {
-                  Navigator.push(ctx, MaterialPageRoute(
-                    builder: (_) => CityDetailScreen(
-                        cityName: preds[i].station.split(' (').first),
-                  ));
-                }),
+                child: _RiskCard(
+                    pred: preds[i],
+                    onTap: () {
+                      Navigator.push(
+                          ctx,
+                          MaterialPageRoute(
+                            builder: (_) => CityDetailScreen(
+                                cityName: preds[i].station.split(' (').first),
+                          ));
+                    }),
               ),
             ),
           ),
@@ -434,8 +565,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     );
   }
 
-  Widget _sectionHeader(BuildContext ctx, RiverColors t,
-      String label, IconData icon, Color color) {
+  Widget _sectionHeader(BuildContext ctx, RiverColors t, String label,
+      IconData icon, Color color) {
     return SliverToBoxAdapter(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 18, 16, 6),
@@ -443,19 +574,29 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
-              width: 30, height: 30,
+              width: 30,
+              height: 30,
               decoration: BoxDecoration(
-                gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight,
-                  colors: [color.withValues(alpha: 0.28), color.withValues(alpha: 0.10)]),
+                gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      color.withValues(alpha: 0.28),
+                      color.withValues(alpha: 0.10)
+                    ]),
                 borderRadius: BorderRadius.circular(9),
-                border: Border.all(color: color.withValues(alpha: 0.30), width: 1),
+                border:
+                    Border.all(color: color.withValues(alpha: 0.30), width: 1),
               ),
               child: Center(child: Icon(icon, color: color, size: 16)),
             ),
             const SizedBox(width: 9),
-            Text(label.toUpperCase(), style: TextStyle(
-                color: color, fontSize: 11,
-                fontWeight: FontWeight.w800, letterSpacing: 1.4)),
+            Text(label.toUpperCase(),
+                style: TextStyle(
+                    color: color,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.4)),
           ],
         ),
       ),
@@ -467,8 +608,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
       sliver: SliverGrid.builder(
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3, crossAxisSpacing: 10,
-          mainAxisSpacing: 10, childAspectRatio: 1.05,
+          crossAxisCount: 3,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
+          childAspectRatio: 1.05,
         ),
         itemCount: tiles.length,
         itemBuilder: (_, i) => _LauncherTile(
@@ -488,7 +631,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (sheetCtx) => _SearchSheet(
         tiles: _allTiles,
-        onOpen: (tile) { Navigator.pop(sheetCtx); _open(ctx, tile); },
+        onOpen: (tile) {
+          Navigator.pop(sheetCtx);
+          _open(ctx, tile);
+        },
       ),
     );
   }
@@ -496,7 +642,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
 
 // ── _LauncherTile ────────────────────────────────────────────────────────────────
 class _LauncherTile extends StatefulWidget {
-  final _Tile        tile;
+  final _Tile tile;
   final VoidCallback onTap;
   const _LauncherTile({required this.tile, required this.onTap});
   @override
@@ -510,48 +656,57 @@ class _LauncherTileState extends State<_LauncherTile>
     duration: const Duration(milliseconds: 80),
     reverseDuration: const Duration(milliseconds: 180),
   );
-  late final Animation<double> _scale =
-      Tween(begin: 1.0, end: 0.92).animate(
-          CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+  late final Animation<double> _scale = Tween(begin: 1.0, end: 0.92)
+      .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
 
   @override
-  void dispose() { _ctrl.dispose(); super.dispose(); }
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final t    = RiverColors.of(context);
+    final t = RiverColors.of(context);
     final tile = widget.tile;
-    final c    = tile.color;
+    final c = tile.color;
     return GestureDetector(
-      onTapDown:   (_) => _ctrl.forward(),
-      onTapUp:     (_) { _ctrl.reverse(); widget.onTap(); },
-      onTapCancel: ()  => _ctrl.reverse(),
+      onTapDown: (_) => _ctrl.forward(),
+      onTapUp: (_) {
+        _ctrl.reverse();
+        widget.onTap();
+      },
+      onTapCancel: () => _ctrl.reverse(),
       child: AnimatedBuilder(
         animation: _scale,
         builder: (_, child) =>
             Transform.scale(scale: _scale.value, child: child),
         child: Td3Card(
           accentColor: c,
-          elevation:   Td3.elevMid,
+          elevation: Td3.elevMid,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
             child: Column(
-              mainAxisAlignment:  MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisSize: MainAxisSize.max,
               children: [
                 Container(
-                  width: 46, height: 46,
+                  width: 46,
+                  height: 46,
                   decoration: BoxDecoration(
                     gradient: RadialGradient(colors: [
                       c.withValues(alpha: 0.32),
                       c.withValues(alpha: 0.08),
                     ]),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: c.withValues(alpha: 0.35), width: 1),
+                    border:
+                        Border.all(color: c.withValues(alpha: 0.35), width: 1),
                     boxShadow: [
-                      BoxShadow(color: c.withValues(alpha: 0.22),
-                          blurRadius: 10, offset: const Offset(0, 3)),
+                      BoxShadow(
+                          color: c.withValues(alpha: 0.22),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3)),
                     ],
                   ),
                   child: Center(child: Icon(tile.icon, color: c, size: 24)),
@@ -560,11 +715,14 @@ class _LauncherTileState extends State<_LauncherTile>
                 Text(
                   tile.label,
                   style: TextStyle(
-                    color: t.textPrimary, fontSize: 11,
-                    fontWeight: FontWeight.w600, height: 1.25,
+                    color: t.textPrimary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    height: 1.25,
                   ),
                   textAlign: TextAlign.center,
-                  maxLines: 2, overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 if (tile.badge != null) ...[
                   const SizedBox(height: 4),
@@ -581,7 +739,7 @@ class _LauncherTileState extends State<_LauncherTile>
 
 // ── _SearchSheet ─────────────────────────────────────────────────────────────────
 class _SearchSheet extends StatefulWidget {
-  final List<_Tile>          tiles;
+  final List<_Tile> tiles;
   final void Function(_Tile) onOpen;
   const _SearchSheet({required this.tiles, required this.onOpen});
   @override
@@ -592,8 +750,9 @@ class _SearchSheetState extends State<_SearchSheet> {
   String _q = '';
   List<_Tile> get _results => _q.isEmpty
       ? widget.tiles
-      : widget.tiles.where((t) =>
-          t.label.toLowerCase().contains(_q.toLowerCase())).toList();
+      : widget.tiles
+          .where((t) => t.label.toLowerCase().contains(_q.toLowerCase()))
+          .toList();
 
   @override
   Widget build(BuildContext context) {
@@ -601,49 +760,54 @@ class _SearchSheetState extends State<_SearchSheet> {
     return DraggableScrollableSheet(
       expand: false,
       initialChildSize: 0.65,
-      minChildSize:     0.4,
-      maxChildSize:     0.92,
+      minChildSize: 0.4,
+      maxChildSize: 0.92,
       builder: (_, sc) => Column(
         children: [
           Container(
             margin: const EdgeInsets.symmetric(vertical: 8),
-            width: 36, height: 4,
+            width: 36,
+            height: 4,
             decoration: BoxDecoration(
                 color: t.stroke, borderRadius: BorderRadius.circular(2)),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
             child: Td3InputField(
-              label:     'Search screens',
-              icon:      Icons.search_rounded,
+              label: 'Search screens',
+              icon: Icons.search_rounded,
               onChanged: (v) => setState(() => _q = v),
             ),
           ),
           Expanded(
             child: ListView.separated(
-              controller:  sc,
-              padding:     const EdgeInsets.fromLTRB(16, 0, 16, 24),
-              itemCount:   _results.length,
+              controller: sc,
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+              itemCount: _results.length,
               separatorBuilder: (_, __) => const SizedBox(height: 8),
               itemBuilder: (_, i) {
                 final tile = _results[i];
-                return RepaintBoundary(child: Td3Card(
+                return RepaintBoundary(
+                    child: Td3Card(
                   accentColor: tile.color,
-                  elevation:   Td3.elevLow,
-                  onTap:       () => widget.onOpen(tile),
+                  elevation: Td3.elevLow,
+                  onTap: () => widget.onOpen(tile),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        AppIconBox(icon: tile.icon, color: tile.color, size: 38),
+                        AppIconBox(
+                            icon: tile.icon, color: tile.color, size: 38),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: Text(tile.label, style: TextStyle(
-                            color: t.textPrimary,
-                            fontWeight: FontWeight.w600, fontSize: 14,
-                          )),
+                          child: Text(tile.label,
+                              style: TextStyle(
+                                color: t.textPrimary,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              )),
                         ),
                         Icon(Icons.chevron_right_rounded,
                             color: t.textSecondary, size: 20),
@@ -663,22 +827,26 @@ class _SearchSheetState extends State<_SearchSheet> {
 // ── _RiskCard ────────────────────────────────────────────────────────────────────
 class _RiskCard extends StatelessWidget {
   final FloodPrediction pred;
-  final VoidCallback    onTap;
+  final VoidCallback onTap;
   const _RiskCard({required this.pred, required this.onTap});
 
   Color _sevColor() {
     switch (pred.severity.toUpperCase()) {
-      case 'CRITICAL': return const Color(0xFFE53935);
-      case 'SEVERE':   return AppPalette.severe;
-      case 'MODERATE': return const Color(0xFFFDD835);
-      default:         return const Color(0xFF43A047);
+      case 'CRITICAL':
+        return const Color(0xFFE53935);
+      case 'SEVERE':
+        return AppPalette.severe;
+      case 'MODERATE':
+        return const Color(0xFFFDD835);
+      default:
+        return const Color(0xFF43A047);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final t   = RiverColors.of(context);
-    final c   = _sevColor();
+    final t = RiverColors.of(context);
+    final c = _sevColor();
     final bar = (pred.riskScore / 100).clamp(0.0, 1.0);
     return GestureDetector(
       onTap: onTap,
@@ -697,16 +865,19 @@ class _RiskCard extends StatelessWidget {
             Row(children: [
               Flexible(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: c.withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: c.withValues(alpha: 0.4)),
                   ),
                   child: Text(pred.severity,
-                      style: TextStyle(color: c, fontSize: 9,
-                          fontWeight: FontWeight.w900, letterSpacing: 0.4),
+                      style: TextStyle(
+                          color: c,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.4),
                       overflow: TextOverflow.ellipsis),
                 ),
               ),
@@ -716,9 +887,12 @@ class _RiskCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               pred.station.split(' (').first,
-              style: TextStyle(color: t.textPrimary, fontSize: 11,
+              style: TextStyle(
+                  color: t.textPrimary,
+                  fontSize: 11,
                   fontWeight: FontWeight.w800),
-              maxLines: 1, overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 2),
             Text('24h: ${pred.predicted24h.toStringAsFixed(2)} m',
@@ -727,15 +901,16 @@ class _RiskCard extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
-                value: bar, minHeight: 4,
+                value: bar,
+                minHeight: 4,
                 backgroundColor: c.withValues(alpha: 0.15),
                 valueColor: AlwaysStoppedAnimation<Color>(c),
               ),
             ),
             const SizedBox(height: 3),
             Text('Risk: ${pred.riskScore.toInt()}',
-                style: TextStyle(color: c, fontSize: 9,
-                    fontWeight: FontWeight.w700)),
+                style: TextStyle(
+                    color: c, fontSize: 9, fontWeight: FontWeight.w700)),
           ],
         ),
       ),

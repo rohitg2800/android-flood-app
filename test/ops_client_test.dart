@@ -31,7 +31,8 @@ class _CycleClient extends http.BaseClient {
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
-    final res = responses[calls < responses.length ? calls : responses.length - 1];
+    final res =
+        responses[calls < responses.length ? calls : responses.length - 1];
     calls++;
     return http.StreamedResponse(
       Stream.value(res.bodyBytes),
@@ -44,7 +45,8 @@ class _CycleClient extends http.BaseClient {
 void main() {
   // Reset singleton before every test
   setUp(() {
-    OpsClient.overrideForTesting(http.Client()); // real client, will be replaced per-test
+    OpsClient.overrideForTesting(
+        http.Client()); // real client, will be replaced per-test
   });
 
   // ── 1. Happy path ──────────────────────────────────────────────────────────
@@ -53,7 +55,7 @@ void main() {
       OpsClient.overrideForTesting(_fixed(200, {'status': 'ok', 'value': 42}));
       final res = await OpsClient.instance.get('/health');
       expect(res['status'], equals('ok'));
-      expect(res['value'],  equals(42));
+      expect(res['value'], equals(42));
     });
 
     test('POST 200 returns parsed body', () async {
@@ -165,8 +167,8 @@ void main() {
         captured = req.url;
         return http.Response(jsonEncode({'status': 'ok'}), 200);
       }));
-      await OpsClient.instance
-          .get('/api/live-telemetry', query: {'state': 'Tamil Nadu', 'limit': '10'});
+      await OpsClient.instance.get('/api/live-telemetry',
+          query: {'state': 'Tamil Nadu', 'limit': '10'});
       expect(captured, isNotNull);
       expect(captured!.queryParameters['state'], equals('Tamil Nadu'));
       expect(captured!.queryParameters['limit'], equals('10'));

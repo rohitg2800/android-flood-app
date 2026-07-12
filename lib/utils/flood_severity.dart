@@ -16,50 +16,71 @@ enum FloodSeverity {
 
   String get label {
     switch (this) {
-      case FloodSeverity.normal:  return 'Normal';
-      case FloodSeverity.watch:   return 'Watch';
-      case FloodSeverity.warning: return 'Warning';
-      case FloodSeverity.danger:  return 'Danger';
-      case FloodSeverity.extreme: return 'Extreme';
+      case FloodSeverity.normal:
+        return 'Normal';
+      case FloodSeverity.watch:
+        return 'Watch';
+      case FloodSeverity.warning:
+        return 'Warning';
+      case FloodSeverity.danger:
+        return 'Danger';
+      case FloodSeverity.extreme:
+        return 'Extreme';
     }
   }
 
   String get shortLabel {
     switch (this) {
-      case FloodSeverity.normal:  return 'NRM';
-      case FloodSeverity.watch:   return 'WCH';
-      case FloodSeverity.warning: return 'WRN';
-      case FloodSeverity.danger:  return 'DNG';
-      case FloodSeverity.extreme: return 'EXT';
+      case FloodSeverity.normal:
+        return 'NRM';
+      case FloodSeverity.watch:
+        return 'WCH';
+      case FloodSeverity.warning:
+        return 'WRN';
+      case FloodSeverity.danger:
+        return 'DNG';
+      case FloodSeverity.extreme:
+        return 'EXT';
     }
   }
 
   Color get color {
     switch (this) {
-      case FloodSeverity.normal:  return AppPalette.safe;
-      case FloodSeverity.watch:   return AppPalette.cyan;
-      case FloodSeverity.warning: return AppPalette.warning;
-      case FloodSeverity.danger:  return AppPalette.danger;
-      case FloodSeverity.extreme: return AppPalette.critical;
+      case FloodSeverity.normal:
+        return AppPalette.safe;
+      case FloodSeverity.watch:
+        return AppPalette.cyan;
+      case FloodSeverity.warning:
+        return AppPalette.warning;
+      case FloodSeverity.danger:
+        return AppPalette.danger;
+      case FloodSeverity.extreme:
+        return AppPalette.critical;
     }
   }
 
   Color get glowColor {
     switch (this) {
-      case FloodSeverity.normal:  return AppPalette.safeGlow;
-      case FloodSeverity.watch:   return AppPalette.cyanGlow;
-      case FloodSeverity.warning: return AppPalette.warnGlow;
-      case FloodSeverity.danger:  return AppPalette.dangerGlow;
-      case FloodSeverity.extreme: return AppPalette.critGlow;
+      case FloodSeverity.normal:
+        return AppPalette.safeGlow;
+      case FloodSeverity.watch:
+        return AppPalette.cyanGlow;
+      case FloodSeverity.warning:
+        return AppPalette.warnGlow;
+      case FloodSeverity.danger:
+        return AppPalette.dangerGlow;
+      case FloodSeverity.extreme:
+        return AppPalette.critGlow;
     }
   }
 
   bool get requiresAction => index >= FloodSeverity.warning.index;
-  bool get isCritical     => index >= FloodSeverity.danger.index;
+  bool get isCritical => index >= FloodSeverity.danger.index;
 
-  static FloodSeverity fromLevel(double current, double warning, double danger) {
+  static FloodSeverity fromLevel(
+      double current, double warning, double danger) {
     if (current >= danger * 1.15) return FloodSeverity.extreme;
-    if (current >= danger)        return FloodSeverity.danger;
+    if (current >= danger) return FloodSeverity.danger;
     if (current >= warning * 1.1) return FloodSeverity.warning;
     if (current >= warning * 0.9) return FloodSeverity.watch;
     return FloodSeverity.normal;
@@ -68,15 +89,21 @@ enum FloodSeverity {
   static FloodSeverity fromString(String? s) {
     switch ((s ?? '').toUpperCase()) {
       case 'NORMAL':
-      case 'SAFE':     return FloodSeverity.normal;
-      case 'WATCH':    return FloodSeverity.watch;
+      case 'SAFE':
+        return FloodSeverity.normal;
+      case 'WATCH':
+        return FloodSeverity.watch;
       case 'WARNING':
-      case 'WARN':     return FloodSeverity.warning;
+      case 'WARN':
+        return FloodSeverity.warning;
       case 'DANGER':
-      case 'FLOOD':    return FloodSeverity.danger;
+      case 'FLOOD':
+        return FloodSeverity.danger;
       case 'EXTREME':
-      case 'CRITICAL': return FloodSeverity.extreme;
-      default:         return FloodSeverity.normal;
+      case 'CRITICAL':
+        return FloodSeverity.extreme;
+      default:
+        return FloodSeverity.normal;
     }
   }
 }
@@ -85,10 +112,10 @@ enum FloodSeverity {
 class FloodSeverityColor {
   const FloodSeverityColor._();
 
-  static const Color normal  = AppPalette.safe;
-  static const Color watch   = AppPalette.cyan;
+  static const Color normal = AppPalette.safe;
+  static const Color watch = AppPalette.cyan;
   static const Color warning = AppPalette.warning;
-  static const Color danger  = AppPalette.danger;
+  static const Color danger = AppPalette.danger;
   static const Color extreme = AppPalette.critical;
   // Offline alias — used by legacy callers
   static const Color offline = AppPalette.textGrey;

@@ -129,13 +129,15 @@ class _EvacuationRoutesScreenState extends State<EvacuationRoutesScreen>
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: t.textSecondary.withOpacity(0.3)),
+                  borderSide:
+                      BorderSide(color: t.textSecondary.withValues(alpha: 0.3)),
                 ),
                 border: const OutlineInputBorder(),
               ),
               items: districts
-                  .map((d) =>
-                      DropdownMenuItem(value: d, child: Text(d, overflow: TextOverflow.ellipsis)))
+                  .map((d) => DropdownMenuItem(
+                      value: d,
+                      child: Text(d, overflow: TextOverflow.ellipsis)))
                   .toList(),
               onChanged: (v) => setState(() => _selectedDistrict = v ?? 'All'),
             ),
@@ -153,7 +155,8 @@ class _EvacuationRoutesScreenState extends State<EvacuationRoutesScreen>
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: t.textSecondary.withOpacity(0.3)),
+                  borderSide:
+                      BorderSide(color: t.textSecondary.withValues(alpha: 0.3)),
                 ),
                 border: const OutlineInputBorder(),
               ),
@@ -208,10 +211,14 @@ class _EvacuationRoutesScreenState extends State<EvacuationRoutesScreen>
 
   Color _riskColor(String risk) {
     switch (risk) {
-      case 'HIGH':   return Colors.red;
-      case 'MEDIUM': return Colors.orange;
-      case 'LOW':    return Colors.green;
-      default:       return Colors.grey;
+      case 'HIGH':
+        return Colors.red;
+      case 'MEDIUM':
+        return Colors.orange;
+      case 'LOW':
+        return Colors.green;
+      default:
+        return Colors.grey;
     }
   }
 
@@ -247,9 +254,7 @@ class _DistrictRoutesCard extends StatelessWidget {
         title: Text(
           district.district,
           style: TextStyle(
-              color: t.textPrimary,
-              fontWeight: FontWeight.bold,
-              fontSize: 15),
+              color: t.textPrimary, fontWeight: FontWeight.bold, fontSize: 15),
         ),
         subtitle: Text(
           '${district.division} Division · ${district.routes.length} route(s)',
@@ -297,8 +302,8 @@ class _RouteDetailTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: route.isFloodProne
-              ? Colors.red.withOpacity(0.4)
-              : Colors.green.withOpacity(0.3),
+              ? Colors.red.withValues(alpha: 0.4)
+              : Colors.green.withValues(alpha: 0.3),
           width: 1.5,
         ),
       ),
@@ -346,26 +351,24 @@ class _RouteDetailTile extends StatelessWidget {
             route.description,
             style: TextStyle(color: t.textSecondary, fontSize: 12, height: 1.4),
           ),
-          if (route.waypoints.isNotEmpty) ...
-            [
-              const SizedBox(height: 6),
-              Wrap(
-                spacing: 6,
-                runSpacing: 4,
-                children: route.waypoints
-                    .map((wp) => Chip(
-                          label: Text(wp,
-                              style: const TextStyle(
-                                  fontSize: 11, color: Colors.white)),
-                          backgroundColor: Colors.blueGrey.shade700,
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 0),
-                        ))
-                    .toList(),
-              ),
-            ],
+          if (route.waypoints.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: route.waypoints
+                  .map((wp) => Chip(
+                        label: Text(wp,
+                            style: const TextStyle(
+                                fontSize: 11, color: Colors.white)),
+                        backgroundColor: Colors.blueGrey.shade700,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 0),
+                      ))
+                  .toList(),
+            ),
+          ],
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
@@ -389,8 +392,10 @@ class _RouteDetailTile extends StatelessWidget {
 
   Future<void> _openMap() async {
     final query = Uri.encodeComponent('${route.from}, Bihar India');
-    final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$query');
-    if (await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
+    final uri =
+        Uri.parse('https://www.google.com/maps/search/?api=1&query=$query');
+    if (await canLaunchUrl(uri))
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   Future<void> _share() async {
@@ -429,9 +434,7 @@ class _DistrictSheltersCard extends StatelessWidget {
         title: Text(
           district.district,
           style: TextStyle(
-              color: t.textPrimary,
-              fontWeight: FontWeight.bold,
-              fontSize: 15),
+              color: t.textPrimary, fontWeight: FontWeight.bold, fontSize: 15),
         ),
         subtitle: Text(
           '${district.shelters.length} shelter(s) · DM: ${district.dmPhone}',
@@ -472,7 +475,8 @@ class _ShelterTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: t.scaffoldBg,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.blueAccent.withOpacity(0.3), width: 1.2),
+        border: Border.all(
+            color: Colors.blueAccent.withValues(alpha: 0.3), width: 1.2),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -518,7 +522,8 @@ class _ShelterTile extends StatelessWidget {
                 onPressed: () => _call(shelter.phone),
               ),
               IconButton(
-                icon: const Icon(Icons.directions, color: Colors.blueAccent, size: 20),
+                icon: const Icon(Icons.directions,
+                    color: Colors.blueAccent, size: 20),
                 tooltip: 'Navigate',
                 onPressed: () => _navigate(),
               ),
@@ -537,7 +542,8 @@ class _ShelterTile extends StatelessWidget {
   Future<void> _navigate() async {
     final uri = Uri.parse(
         'https://www.google.com/maps/dir/?api=1&destination=${shelter.lat},${shelter.lng}');
-    if (await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (await canLaunchUrl(uri))
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 }
 
@@ -552,24 +558,33 @@ class _RiskBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     Color color;
     switch (risk) {
-      case 'HIGH':   color = Colors.red;    break;
-      case 'MEDIUM': color = Colors.orange; break;
-      default:       color = Colors.green;
+      case 'HIGH':
+        color = Colors.red;
+        break;
+      case 'MEDIUM':
+        color = Colors.orange;
+        break;
+      default:
+        color = Colors.green;
     }
     return Container(
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.6), width: 1.5),
+        border: Border.all(color: color.withValues(alpha: 0.6), width: 1.5),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.water, color: color, size: 16),
           Text(
-            risk == 'HIGH' ? 'H' : risk == 'MEDIUM' ? 'M' : 'L',
+            risk == 'HIGH'
+                ? 'H'
+                : risk == 'MEDIUM'
+                    ? 'M'
+                    : 'L',
             style: TextStyle(
                 color: color, fontSize: 10, fontWeight: FontWeight.bold),
           ),

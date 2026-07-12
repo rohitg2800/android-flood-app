@@ -15,7 +15,7 @@ class ThresholdAlertService {
 
   final LiveFetchEngine _engine = LiveFetchEngine();
   Timer? _timer;
-  bool   _running = false;
+  bool _running = false;
 
   static const _checkInterval = Duration(minutes: 10);
 
@@ -41,7 +41,7 @@ class ThresholdAlertService {
 
   void stop() {
     _timer?.cancel();
-    _timer   = null;
+    _timer = null;
     _running = false;
     if (kDebugMode) debugPrint('[ThresholdAlertService] stopped');
   }
@@ -62,14 +62,14 @@ class ThresholdAlertService {
       final raw = _engine.criticalAlerts;
       final alerts = raw
           .map((m) => AlertEvaluator.fromDischarge(
-                cityId:           (m['city_id'] ?? m['city'] ?? '').toString(),
-                cityName:         (m['city']    ?? '').toString(),
-                state:            (m['state']   ?? '').toString(),
-                river:            (m['river']   ?? '').toString(),
-                dischargeM3s:     (m['value']   as num? ?? 0).toDouble(),
+                cityId: (m['city_id'] ?? m['city'] ?? '').toString(),
+                cityName: (m['city'] ?? '').toString(),
+                state: (m['state'] ?? '').toString(),
+                river: (m['river'] ?? '').toString(),
+                dischargeM3s: (m['value'] as num? ?? 0).toDouble(),
                 warningDischarge: (m['warning'] as num? ?? 0).toDouble(),
-                dangerDischarge:  (m['danger']  as num? ?? 0).toDouble(),
-                hflDischarge:     (m['hfl']     as num? ?? 0).toDouble(),
+                dangerDischarge: (m['danger'] as num? ?? 0).toDouble(),
+                hflDischarge: (m['hfl'] as num? ?? 0).toDouble(),
               ))
           .whereType<ThresholdAlert>()
           .toList();

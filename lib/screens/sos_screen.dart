@@ -12,6 +12,7 @@ import 'dart:math' as math;
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:equinox_flood/core/theme/river_theme.dart' as core_theme;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -164,13 +165,16 @@ class _SosScreenState extends ConsumerState<SosScreen>
             Expanded(
               child: ListView.builder(
                 controller: sc,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 itemCount: districts.length,
                 itemBuilder: (_, i) {
                   final d = districts[i];
                   final label = d
                       .split(' ')
-                      .map((w) => w.isEmpty ? '' : '${w[0].toUpperCase()}${w.substring(1)}')
+                      .map((w) => w.isEmpty
+                          ? ''
+                          : '${w[0].toUpperCase()}${w.substring(1)}')
                       .join(' ');
                   return Container(
                     margin: const EdgeInsets.only(bottom: 6),
@@ -187,7 +191,8 @@ class _SosScreenState extends ConsumerState<SosScreen>
                           fontSize: 14,
                         ),
                       ),
-                      trailing: Icon(Icons.chevron_right_rounded, color: t.textSecondary),
+                      trailing: Icon(Icons.chevron_right_rounded,
+                          color: t.textSecondary),
                       onTap: () {
                         ref.read(_selectedDistrictProvider.notifier).state = d;
                         Navigator.pop(context);
@@ -215,12 +220,10 @@ class _SosScreenState extends ConsumerState<SosScreen>
         ? contactsForDistrict(detectedDistrict)
         : <EmergencyContact>[];
 
-    final districtLabel = detectedDistrict != null
-        ? detectedDistrict
-            .split(' ')
-            .map((w) => '${w[0].toUpperCase()}${w.substring(1)}')
-            .join(' ')
-        : null;
+    final districtLabel = detectedDistrict
+        ?.split(' ')
+        .map((w) => '${w[0].toUpperCase()}${w.substring(1)}')
+        .join(' ');
 
     if (state.phase == SosPhase.idle && !_pulse.isAnimating) {
       _pulse.repeat(reverse: true);
@@ -237,7 +240,7 @@ class _SosScreenState extends ConsumerState<SosScreen>
             expandedHeight: 244,
             pinned: true,
             stretch: true,
-            backgroundColor: const Color(0xFF1A0A0A),
+            backgroundColor: const Color(0xFF0D0608),
             foregroundColor: Colors.white,
             actions: [
               IconButton(
@@ -245,7 +248,8 @@ class _SosScreenState extends ConsumerState<SosScreen>
                 tooltip: 'Select District',
                 onPressed: () => _showDistrictPicker(context, t),
               ),
-              if (state.phase == SosPhase.sent || state.phase == SosPhase.failed)
+              if (state.phase == SosPhase.sent ||
+                  state.phase == SosPhase.failed)
                 TextButton(
                   onPressed: () {
                     ref.read(sosProvider.notifier).reset();
@@ -284,7 +288,8 @@ class _SosScreenState extends ConsumerState<SosScreen>
                       right: 0,
                       child: Container(
                         color: Colors.orange.shade800,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 6),
                         child: const Row(
                           children: [
                             Icon(Icons.wifi_off, color: Colors.white, size: 14),
@@ -345,7 +350,8 @@ class _SosScreenState extends ConsumerState<SosScreen>
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 _StatusCard(state: state),
-                if (state.phase == SosPhase.sent || state.phase == SosPhase.failed)
+                if (state.phase == SosPhase.sent ||
+                    state.phase == SosPhase.failed)
                   const SizedBox(height: 18),
                 if (districtContacts.isNotEmpty) ...[
                   _SectionHeader(
@@ -407,7 +413,8 @@ class _DistrictPromptCard extends StatelessWidget {
                 color: t.accent.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(Icons.location_city_rounded, color: t.accent, size: 20),
+              child:
+                  Icon(Icons.location_city_rounded, color: t.accent, size: 20),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -478,7 +485,8 @@ class _SectionHeader extends StatelessWidget {
   final IconData icon;
   final Color color;
   final String label;
-  const _SectionHeader({required this.icon, required this.color, required this.label});
+  const _SectionHeader(
+      {required this.icon, required this.color, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -603,7 +611,8 @@ class _ButtonContent extends StatelessWidget {
         return const Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.check_circle_rounded, color: Color(0xFF4CAF50), size: 50),
+            Icon(Icons.check_circle_rounded,
+                color: Color(0xFF4CAF50), size: 50),
             SizedBox(height: 4),
             Text(
               'SENT',
@@ -724,12 +733,10 @@ class _StatusCard extends ConsumerWidget {
     final t = RiverColors.of(context);
 
     if (state.phase == SosPhase.sent) {
-      final distLabel = state.district != null
-          ? state.district!
-              .split(' ')
-              .map((w) => '${w[0].toUpperCase()}${w.substring(1)}')
-              .join(' ')
-          : null;
+      final distLabel = state.district
+          ?.split(' ')
+          .map((w) => '${w[0].toUpperCase()}${w.substring(1)}')
+          .join(' ');
       return Container(
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(18),
@@ -809,7 +816,8 @@ class _StatusCard extends ConsumerWidget {
                 color: const Color(0xFFFF3B30).withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.error_rounded, color: Color(0xFFFF3B30), size: 26),
+              child: const Icon(Icons.error_rounded,
+                  color: Color(0xFFFF3B30), size: 26),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -854,7 +862,8 @@ class _ContactCard extends ConsumerWidget {
       decoration: BoxDecoration(
         color: t.cardBg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: t.riverDanger.withValues(alpha: 0.15), width: 1),
+        border:
+            Border.all(color: t.riverDanger.withValues(alpha: 0.15), width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.18),
@@ -872,7 +881,8 @@ class _ContactCard extends ConsumerWidget {
               color: t.riverDanger.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(Icons.phone_in_talk_rounded, color: t.riverDanger, size: 18),
+            child: Icon(Icons.phone_in_talk_rounded,
+                color: t.riverDanger, size: 18),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -907,7 +917,8 @@ class _ContactCard extends ConsumerWidget {
           FilledButton(
             onPressed: () async {
               HapticFeedback.selectionClick();
-              final ok = await ref.read(sosProvider.notifier).callContact(contact);
+              final ok =
+                  await ref.read(sosProvider.notifier).callContact(contact);
               if (!ok && context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -926,8 +937,10 @@ class _ContactCard extends ConsumerWidget {
               foregroundColor: Colors.white,
               minimumSize: const Size(60, 36),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+              textStyle:
+                  const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
             ),
             child: const Text('Call'),
           ),

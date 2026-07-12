@@ -7,14 +7,14 @@ library;
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'backend_sync_service.dart';        // ← NEW v2.0
+import 'backend_sync_service.dart'; // ← NEW v2.0
 import 'rtdas_threshold_scraper.dart';
 import 'threshold_override_store.dart';
 
 class RtdasThresholdSyncService {
-  static const _syncInterval      = Duration(hours: 6);
-  static const _staleHoursGuard   = 18.0;
-  static const _syncSentinelKey   = '__last_full_sync__';
+  static const _syncInterval = Duration(hours: 6);
+  static const _staleHoursGuard = 18.0;
+  static const _syncSentinelKey = '__last_full_sync__';
 
   static RtdasThresholdSyncService? _instance;
   static RtdasThresholdSyncService get instance =>
@@ -22,11 +22,11 @@ class RtdasThresholdSyncService {
   RtdasThresholdSyncService._();
 
   final _scraper = RtdasThresholdScraper();
-  final _store   = ThresholdOverrideStore.instance;
+  final _store = ThresholdOverrideStore.instance;
 
-  Timer?  _timer;
-  bool    _syncing = false;
-  bool    _started = false;
+  Timer? _timer;
+  bool _syncing = false;
+  bool _started = false;
 
   final updatedCount = ValueNotifier<int>(0);
 
@@ -71,22 +71,27 @@ class RtdasThresholdSyncService {
       int skipped = 0;
 
       for (final row in rows) {
-        final key      = _norm(row.station);
+        final key = _norm(row.station);
         final existing = _store.get(key);
 
-        final dlSame  = existing?.dl  == row.dangerLevel;
-        final wlSame  = existing?.wl  == row.warningLevel;
+        final dlSame = existing?.dl == row.dangerLevel;
+        final wlSame = existing?.wl == row.warningLevel;
         final hflSame = existing?.hfl == row.hfl;
 
-        if (dlSame && wlSame && hflSame) { skipped++; continue; }
+        if (dlSame && wlSame && hflSame) {
+          skipped++;
+          continue;
+        }
 
-        _store.put(key, ThresholdEntry(
-          wl:        row.warningLevel,
-          dl:        row.dangerLevel,
-          hfl:       row.hfl,
-          source:    'RTDAS/${row.maintainedBy ?? "WRD"}',
-          fetchedAt: DateTime.now(),
-        ));
+        _store.put(
+            key,
+            ThresholdEntry(
+              wl: row.warningLevel,
+              dl: row.dangerLevel,
+              hfl: row.hfl,
+              source: 'RTDAS/${row.maintainedBy ?? "WRD"}',
+              fetchedAt: DateTime.now(),
+            ));
         changed++;
 
         if (kDebugMode) {
@@ -95,8 +100,8 @@ class RtdasThresholdSyncService {
         }
       }
 
-      _store.put(_syncSentinelKey, ThresholdEntry(
-        source: 'sentinel', fetchedAt: DateTime.now()));
+      _store.put(_syncSentinelKey,
+          ThresholdEntry(source: 'sentinel', fetchedAt: DateTime.now()));
       await _store.save();
       updatedCount.value += changed;
 
@@ -106,7 +111,6 @@ class RtdasThresholdSyncService {
       // ── v2.0: push to backend ────────────────────────────────────────────────
       // Fire-and-forget — non-blocking, non-crashing.
       unawaited(BackendSyncService.instance.pushRtdasThresholds(rows));
-
     } catch (e, st) {
       debugPrint('[RtdasSync] ERROR during sync: $e\n$st');
     } finally {

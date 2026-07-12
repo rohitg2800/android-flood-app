@@ -8,6 +8,13 @@ environment:
 
 dependencies:
   html: ^0.15.4
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.9.0
+  flutter_tts: ^4.0.2
+  vibration: ^3.2.0
+
+  postgres: ^3.5.3
+  flutter_secure_storage: ^9.0.0
 
   flutter:
     sdk: flutter
@@ -43,6 +50,10 @@ dependencies:
 
   # Storage & prefs
   shared_preferences: ^2.3.0
+
+  # Routing
+  go_router: ^14.2.0
+
 
   # i18n
   intl: ^0.20.2
@@ -95,8 +106,15 @@ dependencies:
   home_widget: ^0.9.3
   firebase_crashlytics: ^4.3.10
   firebase_core: ^3.15.2
+  dio: ^5.10.0
+  path: ^1.9.1
+  flutter_bloc: ^9.1.1
 
 dev_dependencies:
+  json_serializable: ^6.7.1
+  freezed: ^2.4.7
+
+
   flutter_test:
     sdk: flutter
 

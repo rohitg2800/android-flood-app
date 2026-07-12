@@ -1,12 +1,8 @@
-// lib/widgets/watch_station_button.dart  v2
-// Fixed:
-//   AlertSubscription requires riverName (was missing)
-//   radiusKm param → notifyRadiusKm
-//   stationId/cityName/dangerLevel/warningLevel are now widget fields (no change)
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/subscription_provider.dart';
+
 import '../models/alert_subscription.dart';
+import '../providers/subscription_provider.dart';
 import '../screens/alert_settings_screen.dart';
 import '../theme/river_theme.dart';
 
@@ -27,22 +23,24 @@ class WatchStationButton extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<WatchStationButton> createState() =>
-      _WatchStationButtonState();
+  ConsumerState<WatchStationButton> createState() => _WatchStationButtonState();
 }
 
 class _WatchStationButtonState extends ConsumerState<WatchStationButton>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ac;
-  late final Animation<double>   _scale;
+  late final Animation<double> _scale;
 
   @override
   void initState() {
     super.initState();
-    _ac    = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 220));
-    _scale = Tween<double>(begin: 1.0, end: 1.3)
-        .animate(CurvedAnimation(parent: _ac, curve: Curves.elasticOut));
+    _ac = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 220),
+    );
+    _scale = Tween<double>(begin: 1.0, end: 1.3).animate(
+      CurvedAnimation(parent: _ac, curve: Curves.elasticOut),
+    );
   }
 
   @override
@@ -54,7 +52,7 @@ class _WatchStationButtonState extends ConsumerState<WatchStationButton>
   @override
   Widget build(BuildContext context) {
     final watching = ref.watch(isWatchedProvider(widget.stationId));
-    final t        = RiverColors.of(context);
+    final t = RiverColors.of(context);
 
     return AnimatedBuilder(
       animation: _scale,
@@ -78,26 +76,28 @@ class _WatchStationButtonState extends ConsumerState<WatchStationButton>
     _ac.forward().then((_) => _ac.reverse());
 
     if (!watching) {
-      await ref.read(subscriptionProvider.notifier).subscribe(
-        AlertSubscription(
-          stationId:     widget.stationId,
-          cityName:      widget.cityName,
-          riverName:     widget.riverName,   // was missing
-          notifyRadiusKm: 50.0,              // correct field name
-          createdAt:     DateTime.now(),
-        ),
-      );
+      ref.read(subscriptionProvider.notifier).subscribe(
+            AlertSubscription(
+              stationId: widget.stationId,
+              cityName: widget.cityName,
+              riverName: widget.riverName,
+              notifyRadiusKm: 50.0,
+              createdAt: DateTime.now(),
+            ),
+          );
     }
 
-    if (ctx.mounted) {
-      await Navigator.of(ctx).push(MaterialPageRoute(
+    if (!ctx.mounted) return;
+
+    await Navigator.of(ctx).push(
+      MaterialPageRoute(
         builder: (_) => AlertSettingsScreen(
-          stationId:    widget.stationId,
-          cityName:     widget.cityName,
-          dangerLevel:  widget.dangerLevel,
+          stationId: widget.stationId,
+          cityName: widget.cityName,
+          dangerLevel: widget.dangerLevel,
           warningLevel: widget.warningLevel,
         ),
-      ));
-    }
+      ),
+    );
   }
 }

@@ -1,6 +1,7 @@
 // lib/services/ai_prediction_background_service.dart
 // Fixed: ExistingWorkPolicy → ExistingPeriodicWorkPolicy
 library;
+
 import '../config/app_config.dart';
 
 import 'dart:convert';
@@ -12,12 +13,12 @@ import 'ops_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 
-const _kTaskName       = 'aiPredictionPoll';
+const _kTaskName = 'aiPredictionPoll';
 const _kTaskUniqueName = 'ai_prediction_periodic';
-const _kChannelId      = 'ai_flood_bg';
-const _kChannelName    = 'AI Flood Monitor';
-const _kAlertBaseId    = 9100;
-const _kPrefKey        = 'ai_bg_last_severity';
+const _kChannelId = 'ai_flood_bg';
+const _kChannelName = 'AI Flood Monitor';
+const _kAlertBaseId = 9100;
+const _kPrefKey = 'ai_bg_last_severity';
 
 @pragma('vm:entry-point')
 void aiPredictionCallbackDispatcher() {
@@ -49,13 +50,13 @@ class AiPredictionBgService {
     await Workmanager().registerPeriodicTask(
       _kTaskUniqueName,
       _kTaskName,
-      frequency:          Duration(minutes: kPollIntervalMinutes),
+      frequency: Duration(minutes: kPollIntervalMinutes),
       existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
       constraints: Constraints(
-        networkType:           NetworkType.connected,
+        networkType: NetworkType.connected,
         requiresBatteryNotLow: false,
       ),
-      backoffPolicy:      BackoffPolicy.exponential,
+      backoffPolicy: BackoffPolicy.exponential,
       backoffPolicyDelay: const Duration(minutes: 5),
     );
     debugPrint('[AiBg] periodic poll registered ($kPollIntervalMinutes min)');
@@ -76,17 +77,17 @@ final _notif = FlutterLocalNotificationsPlugin();
 
 Future<void> _initNotifications() async {
   const android = AndroidInitializationSettings('@mipmap/ic_launcher');
-  const ios     = DarwinInitializationSettings();
+  const ios = DarwinInitializationSettings();
   await _notif.initialize(
     const InitializationSettings(android: android, iOS: ios),
   );
   const channel = AndroidNotificationChannel(
     _kChannelId,
     _kChannelName,
-    description:      'Live AI flood severity alerts',
-    importance:       Importance.high,
-    playSound:        true,
-    enableVibration:  true,
+    description: 'Live AI flood severity alerts',
+    importance: Importance.high,
+    playSound: true,
+    enableVibration: true,
   );
   await _notif
       .resolvePlatformSpecificImplementation<
@@ -95,36 +96,65 @@ Future<void> _initNotifications() async {
 }
 
 Future<void> _showAlert({
-  required int    id,
+  required int id,
   required String title,
   required String body,
   bool highPriority = false,
 }) async {
   await _notif.show(
-    id, title, body,
+    id,
+    title,
+    body,
     NotificationDetails(
       android: AndroidNotificationDetails(
-        _kChannelId, _kChannelName,
-        importance:       highPriority ? Importance.high : Importance.defaultImportance,
-        priority:         highPriority ? Priority.high   : Priority.defaultPriority,
-        icon:             '@mipmap/ic_launcher',
+        _kChannelId,
+        _kChannelName,
+        importance:
+            highPriority ? Importance.high : Importance.defaultImportance,
+        priority: highPriority ? Priority.high : Priority.defaultPriority,
+        icon: '@mipmap/ic_launcher',
         styleInformation: BigTextStyleInformation(body),
       ),
       iOS: const DarwinNotificationDetails(
-        presentAlert: true, presentSound: true,
+        presentAlert: true,
+        presentSound: true,
       ),
     ),
   );
 }
 
 const List<String> _kSeedStations = [
-  'Gandhighat', 'Hathidah', 'Digha Ghat', 'Gandhi Setu',
-  'Munger', 'Bhagalpur', 'Sultanganj', 'Kahalgaon', 'Farakka',
-  'Birpur', 'Baltara', 'Rosera', 'Benibad', 'Hayaghat',
-  'Khagaria', 'Minapur', 'Lalganj', 'Bettiah', 'Bagaha',
-  'Valmikinagar', 'Triveni', 'Banmankhi', 'Purnea', 'Forbesganj',
-  'Araria', 'Sitamarhi', 'Muzaffarpur', 'Motihari',
-  'Darbhanga', 'Samastipur', 'Patna',
+  'Gandhighat',
+  'Hathidah',
+  'Digha Ghat',
+  'Gandhi Setu',
+  'Munger',
+  'Bhagalpur',
+  'Sultanganj',
+  'Kahalgaon',
+  'Farakka',
+  'Birpur',
+  'Baltara',
+  'Rosera',
+  'Benibad',
+  'Hayaghat',
+  'Khagaria',
+  'Minapur',
+  'Lalganj',
+  'Bettiah',
+  'Bagaha',
+  'Valmikinagar',
+  'Triveni',
+  'Banmankhi',
+  'Purnea',
+  'Forbesganj',
+  'Araria',
+  'Sitamarhi',
+  'Muzaffarpur',
+  'Motihari',
+  'Darbhanga',
+  'Samastipur',
+  'Patna',
 ];
 
 Future<void> _pollAll() async {
@@ -153,13 +183,11 @@ Future<void> _pollAll() async {
         if (newSev != 'LOW') {
           final gap = (pred['dangerLevel']! - pred['currentLevel']!).abs();
           await _showAlert(
-            id:           _kAlertBaseId + i,
-            title:        '\u26a0 $site \u2014 $newSev',
-            body:         '${_sevEmoji(newSev)} '
-                          '${oldSev == null ? 'First reading' : 'Escalated $oldSev \u2192 $newSev'}. '
-                          '${gap < 0.5
-                              ? 'Only ${gap.toStringAsFixed(2)} m to danger!'
-                              : 'Gap: ${gap.toStringAsFixed(2)} m'}',
+            id: _kAlertBaseId + i,
+            title: '\u26a0 $site \u2014 $newSev',
+            body: '${_sevEmoji(newSev)} '
+                '${oldSev == null ? 'First reading' : 'Escalated $oldSev \u2192 $newSev'}. '
+                '${gap < 0.5 ? 'Only ${gap.toStringAsFixed(2)} m to danger!' : 'Gap: ${gap.toStringAsFixed(2)} m'}',
             highPriority: newSev == 'CRITICAL' || newSev == 'SEVERE',
           );
           alertsFired++;
@@ -175,7 +203,8 @@ Future<void> _pollAll() async {
   }
 
   await prefs.setString(_kPrefKey, jsonEncode(lastSeverity));
-  debugPrint('[AiBg] done — $alertsFired alert(s) fired, ${stations.length} stations polled');
+  debugPrint(
+      '[AiBg] done — $alertsFired alert(s) fired, ${stations.length} stations polled');
 }
 
 Future<List<dynamic>?> _cwcGet() async {
@@ -205,7 +234,7 @@ Future<Map<String, double>?> _fetchPrediction(String station) async {
     if (j != null) {
       return {
         'currentLevel': (j['current_level'] as num).toDouble(),
-        'dangerLevel':  (j['danger_level']  as num).toDouble(),
+        'dangerLevel': (j['danger_level'] as num).toDouble(),
       };
     }
   } catch (_) {}
@@ -213,9 +242,7 @@ Future<Map<String, double>?> _fetchPrediction(String station) async {
   try {
     final list = await _cwcGet();
     if (list != null) {
-      final match = list
-          .cast<Map<String, dynamic>?>()
-          .firstWhere(
+      final match = list.cast<Map<String, dynamic>?>().firstWhere(
             (e) => (e?['site'] as String? ?? '')
                 .toLowerCase()
                 .contains(station.toLowerCase()),
@@ -224,7 +251,7 @@ Future<Map<String, double>?> _fetchPrediction(String station) async {
       if (match != null) {
         return {
           'currentLevel': (match['current_level'] as num?)?.toDouble() ?? 0,
-          'dangerLevel':  (match['danger_level']  as num?)?.toDouble() ?? 1,
+          'dangerLevel': (match['danger_level'] as num?)?.toDouble() ?? 1,
         };
       }
     }
@@ -242,15 +269,15 @@ String _severity(double level, double danger) {
 }
 
 int _sevRank(String s) => switch (s) {
-  'CRITICAL' => 3,
-  'SEVERE'   => 2,
-  'MODERATE' => 1,
-  _          => 0,
-};
+      'CRITICAL' => 3,
+      'SEVERE' => 2,
+      'MODERATE' => 1,
+      _ => 0,
+    };
 
 String _sevEmoji(String s) => switch (s) {
-  'CRITICAL' => '\ud83d\udd34',
-  'SEVERE'   => '\ud83d\udfe0',
-  'MODERATE' => '\ud83d\udfe1',
-  _          => '\ud83d\udfe2',
-};
+      'CRITICAL' => '\ud83d\udd34',
+      'SEVERE' => '\ud83d\udfe0',
+      'MODERATE' => '\ud83d\udfe1',
+      _ => '\ud83d\udfe2',
+    };
