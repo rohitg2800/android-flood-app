@@ -46,6 +46,7 @@ class _NotificationWatcherNotifier extends Notifier<void> {
             level: pred.currentLevel,
           );
         }
+        continue;
       }
     }
   }
@@ -53,5 +54,5 @@ class _NotificationWatcherNotifier extends Notifier<void> {
 
 final notificationWatcherProvider =
     NotifierProvider<_NotificationWatcherNotifier, void>(
-  _NotificationWatcherNotifier.new,
-);
+      _NotificationWatcherNotifier.new,
+    );
