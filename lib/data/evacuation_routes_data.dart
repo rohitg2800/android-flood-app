@@ -70,7 +70,6 @@ class DistrictEvacuationInfo {
 
 class EvacuationRoutesData {
   static const List<DistrictEvacuationInfo> districts = [
-
     // ------------------------------------------------------------------ PATNA
     DistrictEvacuationInfo(
       district: 'Patna',
@@ -87,7 +86,8 @@ class EvacuationRoutesData {
           to: 'Patna Sahib Relief Camp',
           highway: 'NH-19 / Ashok Rajpath',
           distanceKm: 12.0,
-          description: 'Move east along Ashok Rajpath away from Ganga embankment. Avoid underpasses during peak flood.',
+          description:
+              'Move east along Ashok Rajpath away from Ganga embankment. Avoid underpasses during peak flood.',
           waypoints: ['Gandhi Maidan', 'Rajendra Nagar', 'Patna Sahib'],
           isFloodProne: true,
         ),
@@ -97,7 +97,8 @@ class EvacuationRoutesData {
           to: 'Khagaul Higher Ground',
           highway: 'NH-30',
           distanceKm: 8.5,
-          description: 'South towards NH-30 then west to Khagaul. Recommended for Danapur & Phulwari areas.',
+          description:
+              'South towards NH-30 then west to Khagaul. Recommended for Danapur & Phulwari areas.',
           waypoints: ['Danapur', 'Khagaul'],
           isFloodProne: false,
         ),
@@ -138,7 +139,8 @@ class EvacuationRoutesData {
           to: 'Bihar Sharif Town',
           highway: 'NH-20',
           distanceKm: 20.0,
-          description: 'North-east on NH-20 to Bihar Sharif. Harnaut and Asthawan blocks face Panchane overflow.',
+          description:
+              'North-east on NH-20 to Bihar Sharif. Harnaut and Asthawan blocks face Panchane overflow.',
           waypoints: ['Harnaut', 'Asthawan', 'Bihar Sharif'],
           isFloodProne: true,
         ),
@@ -148,7 +150,8 @@ class EvacuationRoutesData {
           to: 'Nalanda (Bada Gaon)',
           highway: 'SH-78',
           distanceKm: 14.0,
-          description: 'North-west on SH-78. Rajgir sits on hills and serves as an alternate high-ground refuge.',
+          description:
+              'North-west on SH-78. Rajgir sits on hills and serves as an alternate high-ground refuge.',
           waypoints: ['Rajgir', 'Silao', 'Nalanda'],
           isFloodProne: false,
         ),
@@ -189,7 +192,8 @@ class EvacuationRoutesData {
           to: 'Ara Town',
           highway: 'NH-30',
           distanceKm: 38.0,
-          description: 'East on NH-30 to Ara. Piro, Jagdishpur, Sandesh blocks severely flood from Ganga back-water.',
+          description:
+              'East on NH-30 to Ara. Piro, Jagdishpur, Sandesh blocks severely flood from Ganga back-water.',
           waypoints: ['Piro', 'Jagdishpur', 'Sandesh', 'Ara'],
           isFloodProne: true,
         ),
@@ -199,7 +203,8 @@ class EvacuationRoutesData {
           to: 'Ara via SH-5',
           highway: 'SH-5',
           distanceKm: 22.0,
-          description: 'East on SH-5. Son river doab floods during heavy upstream rainfall.',
+          description:
+              'East on SH-5. Son river doab floods during heavy upstream rainfall.',
           waypoints: ['Shahpur', 'Barhara', 'Ara'],
           isFloodProne: false,
         ),
@@ -240,7 +245,8 @@ class EvacuationRoutesData {
           to: 'Buxar Town',
           highway: 'NH-19',
           distanceKm: 18.0,
-          description: 'East on NH-19 to Buxar. Chausa and Nawanagar are directly flood-exposed from Ganga.',
+          description:
+              'East on NH-19 to Buxar. Chausa and Nawanagar are directly flood-exposed from Ganga.',
           waypoints: ['Chausa', 'Nawanagar', 'Buxar'],
           isFloodProne: true,
         ),
@@ -250,7 +256,8 @@ class EvacuationRoutesData {
           to: 'Arrah via NH-30',
           highway: 'NH-30',
           distanceKm: 55.0,
-          description: 'South-east on NH-30. Used when Buxar town itself is inundated.',
+          description:
+              'South-east on NH-30. Used when Buxar town itself is inundated.',
           waypoints: ['Dumraon', 'Rajpur', 'Arrah'],
           isFloodProne: false,
         ),
@@ -291,7 +298,8 @@ class EvacuationRoutesData {
           to: 'Sasaram Town',
           highway: 'NH-2 (GT Road)',
           distanceKm: 25.0,
-          description: 'North on NH-2 to Sasaram. Son river flooding affects Bikramganj, Nokha, Dinara.',
+          description:
+              'North on NH-2 to Sasaram. Son river flooding affects Bikramganj, Nokha, Dinara.',
           waypoints: ['Bikramganj', 'Nokha', 'Sasaram'],
           isFloodProne: true,
         ),
@@ -301,7 +309,8 @@ class EvacuationRoutesData {
           to: 'Aurangabad via SH-7',
           highway: 'SH-7',
           distanceKm: 50.0,
-          description: 'South-west via SH-7 to Aurangabad as alternate safe zone.',
+          description:
+              'South-west via SH-7 to Aurangabad as alternate safe zone.',
           waypoints: ['Dehri', 'Obra', 'Aurangabad'],
           isFloodProne: false,
         ),
@@ -342,7 +351,8 @@ class EvacuationRoutesData {
           to: 'Bhabua Town',
           highway: 'NH-2',
           distanceKm: 30.0,
-          description: 'East on NH-2 to Bhabua. Karamnasa and Son confluence area floods during monsoon peaks.',
+          description:
+              'East on NH-2 to Bhabua. Karamnasa and Son confluence area floods during monsoon peaks.',
           waypoints: ['Mohania', 'Ramgarh', 'Bhabua'],
           isFloodProne: true,
         ),
@@ -352,7 +362,8 @@ class EvacuationRoutesData {
           to: 'Sasaram (Rohtas)',
           highway: 'NH-2',
           distanceKm: 55.0,
-          description: 'East on NH-2 to Sasaram for extended high-ground refuge.',
+          description:
+              'East on NH-2 to Sasaram for extended high-ground refuge.',
           waypoints: ['Bhabua', 'Mohania', 'Sasaram'],
           isFloodProne: false,
         ),
@@ -393,7 +404,8 @@ class EvacuationRoutesData {
           to: 'Gaya City',
           highway: 'NH-82',
           distanceKm: 12.0,
-          description: 'North on NH-82 to Gaya. Falgu river flooding affects Bodhgaya and Dobhi.',
+          description:
+              'North on NH-82 to Gaya. Falgu river flooding affects Bodhgaya and Dobhi.',
           waypoints: ['Bodhgaya', 'Dobhi', 'Gaya'],
           isFloodProne: true,
         ),
@@ -444,7 +456,8 @@ class EvacuationRoutesData {
           to: 'Aurangabad Town',
           highway: 'NH-2',
           distanceKm: 30.0,
-          description: 'West on NH-2 to Aurangabad. Rafiganj block faces Son river flooding.',
+          description:
+              'West on NH-2 to Aurangabad. Rafiganj block faces Son river flooding.',
           waypoints: ['Rafiganj', 'Obra', 'Aurangabad'],
           isFloodProne: true,
         ),
@@ -454,7 +467,8 @@ class EvacuationRoutesData {
           to: 'Gaya via NH-82',
           highway: 'NH-82',
           distanceKm: 55.0,
-          description: 'East to Gaya for extended safe ground during Son or Morhar flash floods.',
+          description:
+              'East to Gaya for extended safe ground during Son or Morhar flash floods.',
           waypoints: ['Aurangabad', 'Sherghati', 'Gaya'],
           isFloodProne: false,
         ),
@@ -495,7 +509,8 @@ class EvacuationRoutesData {
           to: 'Warisaliganj',
           highway: 'SH-78',
           distanceKm: 20.0,
-          description: 'North on SH-78 to Warisaliganj. Sakri and Tilaiya streams flood during heavy monsoon.',
+          description:
+              'North on SH-78 to Warisaliganj. Sakri and Tilaiya streams flood during heavy monsoon.',
           waypoints: ['Nawada', 'Rajauli', 'Warisaliganj'],
           isFloodProne: false,
         ),
@@ -546,7 +561,8 @@ class EvacuationRoutesData {
           to: 'Jehanabad Town',
           highway: 'SH-9',
           distanceKm: 30.0,
-          description: 'North on SH-9 to Jehanabad. Son river backwater flooding affects Arwal and Kaler.',
+          description:
+              'North on SH-9 to Jehanabad. Son river backwater flooding affects Arwal and Kaler.',
           waypoints: ['Arwal', 'Kaler', 'Jehanabad'],
           isFloodProne: true,
         ),
@@ -597,7 +613,8 @@ class EvacuationRoutesData {
           to: 'Patna via NH-110',
           highway: 'NH-110',
           distanceKm: 45.0,
-          description: 'North on NH-110 to Patna. Morhar overflow is primary risk in Jehanabad and Hulasganj.',
+          description:
+              'North on NH-110 to Patna. Morhar overflow is primary risk in Jehanabad and Hulasganj.',
           waypoints: ['Jehanabad', 'Makhdumpur', 'Patna'],
           isFloodProne: true,
         ),
@@ -648,7 +665,8 @@ class EvacuationRoutesData {
           to: 'Muzaffarpur via NH-57',
           highway: 'NH-57',
           distanceKm: 30.0,
-          description: 'North on NH-57 to Muzaffarpur. Doab region floods severely during Ganga-Gandak peak.',
+          description:
+              'North on NH-57 to Muzaffarpur. Doab region floods severely during Ganga-Gandak peak.',
           waypoints: ['Hajipur', 'Lalganj', 'Muzaffarpur'],
           isFloodProne: true,
         ),
@@ -699,7 +717,8 @@ class EvacuationRoutesData {
           to: 'Muzaffarpur Town',
           highway: 'SH-74',
           distanceKm: 18.0,
-          description: 'South on SH-74 to Muzaffarpur urban area. Katra and Aurai blocks face highest inundation risk.',
+          description:
+              'South on SH-74 to Muzaffarpur urban area. Katra and Aurai blocks face highest inundation risk.',
           waypoints: ['Katra', 'Aurai', 'Muzaffarpur'],
           isFloodProne: true,
         ),
@@ -709,7 +728,8 @@ class EvacuationRoutesData {
           to: 'Muzaffarpur via Sheohar',
           highway: 'NH-77',
           distanceKm: 55.0,
-          description: 'For northern Muzaffarpur blocks, move via Sheohar on NH-77.',
+          description:
+              'For northern Muzaffarpur blocks, move via Sheohar on NH-77.',
           waypoints: ['Sheohar', 'Dholi', 'Muzaffarpur'],
           isFloodProne: false,
         ),
@@ -750,7 +770,8 @@ class EvacuationRoutesData {
           to: 'Sitamarhi Town',
           highway: 'NH-77',
           distanceKm: 25.0,
-          description: 'South on NH-77 to Sitamarhi town. Bagmati and Lakhandei overflow is primary threat.',
+          description:
+              'South on NH-77 to Sitamarhi town. Bagmati and Lakhandei overflow is primary threat.',
           waypoints: ['Runnisaidpur', 'Pupri', 'Sitamarhi'],
           isFloodProne: true,
         ),
@@ -760,7 +781,8 @@ class EvacuationRoutesData {
           to: 'Muzaffarpur via NH-77',
           highway: 'NH-77',
           distanceKm: 65.0,
-          description: 'South on NH-77 all the way to Muzaffarpur during extreme Bagmati flooding.',
+          description:
+              'South on NH-77 all the way to Muzaffarpur during extreme Bagmati flooding.',
           waypoints: ['Sitamarhi', 'Dholi', 'Muzaffarpur'],
           isFloodProne: false,
         ),
@@ -801,7 +823,8 @@ class EvacuationRoutesData {
           to: 'Muzaffarpur via NH-77',
           highway: 'NH-77',
           distanceKm: 45.0,
-          description: 'South on NH-77 to Muzaffarpur. Sheohar is among Bihar\'s smallest and most flood-prone districts.',
+          description:
+              'South on NH-77 to Muzaffarpur. Sheohar is among Bihar\'s smallest and most flood-prone districts.',
           waypoints: ['Sheohar', 'Pipra', 'Dholi', 'Muzaffarpur'],
           isFloodProne: true,
         ),
@@ -811,7 +834,8 @@ class EvacuationRoutesData {
           to: 'Sitamarhi via SH-74',
           highway: 'SH-74',
           distanceKm: 22.0,
-          description: 'East to Sitamarhi as alternate refuge when western roads are inundated.',
+          description:
+              'East to Sitamarhi as alternate refuge when western roads are inundated.',
           waypoints: ['Purnahiya', 'Tariyani', 'Sitamarhi'],
           isFloodProne: false,
         ),
@@ -852,7 +876,8 @@ class EvacuationRoutesData {
           to: 'Bettiah Town',
           highway: 'NH-727',
           distanceKm: 40.0,
-          description: 'South-east on NH-727 to Bettiah. Bagaha and Gaunaha blocks face severe Gandak flooding.',
+          description:
+              'South-east on NH-727 to Bettiah. Bagaha and Gaunaha blocks face severe Gandak flooding.',
           waypoints: ['Bagaha', 'Gaunaha', 'Narkatiaganj', 'Bettiah'],
           isFloodProne: true,
         ),
@@ -862,7 +887,8 @@ class EvacuationRoutesData {
           to: 'Bettiah via SH-73',
           highway: 'SH-73',
           distanceKm: 55.0,
-          description: 'South-east via SH-73. Ramnagar forests and Valmiki Tiger Reserve border face flash flood risk.',
+          description:
+              'South-east via SH-73. Ramnagar forests and Valmiki Tiger Reserve border face flash flood risk.',
           waypoints: ['Ramnagar', 'Chanpatia', 'Bettiah'],
           isFloodProne: false,
         ),
@@ -903,7 +929,8 @@ class EvacuationRoutesData {
           to: 'Motihari Town',
           highway: 'NH-28',
           distanceKm: 25.0,
-          description: 'South on NH-28 to Motihari. Areraj, Chiraiya and Dhaka blocks face severe Burhi Gandak flooding.',
+          description:
+              'South on NH-28 to Motihari. Areraj, Chiraiya and Dhaka blocks face severe Burhi Gandak flooding.',
           waypoints: ['Areraj', 'Chiraiya', 'Motihari'],
           isFloodProne: true,
         ),
@@ -913,7 +940,8 @@ class EvacuationRoutesData {
           to: 'Motihari via NH-28',
           highway: 'NH-28',
           distanceKm: 45.0,
-          description: 'South on NH-28. Raxaul and Adapur border blocks flood when Nepal releases excess water.',
+          description:
+              'South on NH-28. Raxaul and Adapur border blocks flood when Nepal releases excess water.',
           waypoints: ['Raxaul', 'Adapur', 'Motihari'],
           isFloodProne: false,
         ),
@@ -954,7 +982,8 @@ class EvacuationRoutesData {
           to: 'Darbhanga Town',
           highway: 'NH-57',
           distanceKm: 22.0,
-          description: 'Head south on NH-57 toward Darbhanga town which sits on higher ground. Avoid Kamla riverbanks.',
+          description:
+              'Head south on NH-57 toward Darbhanga town which sits on higher ground. Avoid Kamla riverbanks.',
           waypoints: ['Baheri', 'Tardih', 'Darbhanga'],
           isFloodProne: true,
         ),
@@ -964,7 +993,8 @@ class EvacuationRoutesData {
           to: 'Samastipur (Safe Zone)',
           highway: 'NH-57 South',
           distanceKm: 35.0,
-          description: 'Move south-east to Samastipur for high-risk Kamla-Bagmati inundation events.',
+          description:
+              'Move south-east to Samastipur for high-risk Kamla-Bagmati inundation events.',
           waypoints: ['Hayaghat', 'Samastipur'],
           isFloodProne: false,
         ),
@@ -1005,7 +1035,8 @@ class EvacuationRoutesData {
           to: 'Madhubani Town',
           highway: 'NH-57',
           distanceKm: 28.0,
-          description: 'South on NH-57. Jhanjharpur and Phulparas are highest-risk blocks.',
+          description:
+              'South on NH-57. Jhanjharpur and Phulparas are highest-risk blocks.',
           waypoints: ['Jhanjharpur', 'Phulparas', 'Madhubani'],
           isFloodProne: true,
         ),
@@ -1015,7 +1046,8 @@ class EvacuationRoutesData {
           to: 'Darbhanga via NH-57',
           highway: 'NH-57',
           distanceKm: 45.0,
-          description: 'South-west to Darbhanga as alternate safe zone during extreme flooding.',
+          description:
+              'South-west to Darbhanga as alternate safe zone during extreme flooding.',
           waypoints: ['Madhubani', 'Benipatti', 'Darbhanga'],
           isFloodProne: false,
         ),
@@ -1056,7 +1088,8 @@ class EvacuationRoutesData {
           to: 'Samastipur Town',
           highway: 'NH-28',
           distanceKm: 30.0,
-          description: 'South on NH-28 to Samastipur. Avoid low-lying Balan and Bagmati flood corridors.',
+          description:
+              'South on NH-28 to Samastipur. Avoid low-lying Balan and Bagmati flood corridors.',
           waypoints: ['Rosera', 'Tajpur', 'Samastipur'],
           isFloodProne: false,
         ),
@@ -1066,7 +1099,8 @@ class EvacuationRoutesData {
           to: 'Patna via NH-28',
           highway: 'NH-28',
           distanceKm: 70.0,
-          description: 'South-west on NH-28 to Patna for large-scale displacement.',
+          description:
+              'South-west on NH-28 to Patna for large-scale displacement.',
           waypoints: ['Dalsinghsarai', 'Barauni', 'Patna'],
           isFloodProne: false,
         ),
@@ -1107,7 +1141,8 @@ class EvacuationRoutesData {
           to: 'Begusarai Town',
           highway: 'NH-28',
           distanceKm: 20.0,
-          description: 'East on NH-28 to Begusarai. Teghra and Sahebpur Kamal face Burhi Gandak flooding.',
+          description:
+              'East on NH-28 to Begusarai. Teghra and Sahebpur Kamal face Burhi Gandak flooding.',
           waypoints: ['Teghra', 'Sahebpur Kamal', 'Begusarai'],
           isFloodProne: true,
         ),
@@ -1117,7 +1152,8 @@ class EvacuationRoutesData {
           to: 'Munger via NH-80',
           highway: 'NH-80',
           distanceKm: 45.0,
-          description: 'South-east on NH-80 to Munger as alternate higher-ground refuge.',
+          description:
+              'South-east on NH-80 to Munger as alternate higher-ground refuge.',
           waypoints: ['Begusarai', 'Khagaria', 'Munger'],
           isFloodProne: false,
         ),
@@ -1158,7 +1194,8 @@ class EvacuationRoutesData {
           to: 'Khagaria Town',
           highway: 'NH-107',
           distanceKm: 18.0,
-          description: 'South-west on NH-107 to Khagaria. Mansi and Alauli blocks face extreme Kosi flooding.',
+          description:
+              'South-west on NH-107 to Khagaria. Mansi and Alauli blocks face extreme Kosi flooding.',
           waypoints: ['Mansi', 'Alauli', 'Khagaria'],
           isFloodProne: true,
         ),
@@ -1168,7 +1205,8 @@ class EvacuationRoutesData {
           to: 'Munger via NH-80',
           highway: 'NH-80',
           distanceKm: 55.0,
-          description: 'South on NH-80 to Munger hill zone for large-scale displacement.',
+          description:
+              'South on NH-80 to Munger hill zone for large-scale displacement.',
           waypoints: ['Khagaria', 'Begusarai', 'Munger'],
           isFloodProne: false,
         ),
@@ -1209,7 +1247,8 @@ class EvacuationRoutesData {
           to: 'Munger Town',
           highway: 'NH-80',
           distanceKm: 12.0,
-          description: 'West on NH-80 to Munger fort hillock area. Jamalpur and Tarapur face Ganga flooding.',
+          description:
+              'West on NH-80 to Munger fort hillock area. Jamalpur and Tarapur face Ganga flooding.',
           waypoints: ['Jamalpur', 'Munger'],
           isFloodProne: true,
         ),
@@ -1219,7 +1258,8 @@ class EvacuationRoutesData {
           to: 'Bhagalpur via NH-80',
           highway: 'NH-80',
           distanceKm: 60.0,
-          description: 'East on NH-80 to Bhagalpur during extreme Ganga flooding of Munger.',
+          description:
+              'East on NH-80 to Bhagalpur during extreme Ganga flooding of Munger.',
           waypoints: ['Munger', 'Sultanganj', 'Bhagalpur'],
           isFloodProne: false,
         ),
@@ -1260,7 +1300,8 @@ class EvacuationRoutesData {
           to: 'Sheikhpura via NH-80',
           highway: 'NH-80',
           distanceKm: 22.0,
-          description: 'West on NH-80 to Sheikhpura higher ground. Kiul river flooding is primary risk.',
+          description:
+              'West on NH-80 to Sheikhpura higher ground. Kiul river flooding is primary risk.',
           waypoints: ['Lakhisarai', 'Halsi', 'Sheikhpura'],
           isFloodProne: true,
         ),
@@ -1311,7 +1352,8 @@ class EvacuationRoutesData {
           to: 'Nalanda via NH-20',
           highway: 'NH-20',
           distanceKm: 30.0,
-          description: 'West on NH-20 to Nalanda/Bihar Sharif. Sheikhpura faces seasonal inundation from Kiul.',
+          description:
+              'West on NH-20 to Nalanda/Bihar Sharif. Sheikhpura faces seasonal inundation from Kiul.',
           waypoints: ['Sheikhpura', 'Barbigha', 'Bihar Sharif'],
           isFloodProne: false,
         ),
@@ -1362,7 +1404,8 @@ class EvacuationRoutesData {
           to: 'Jamui Town',
           highway: 'NH-80',
           distanceKm: 25.0,
-          description: 'North on NH-80 to Jamui. Jhajha and Sono blocks face Kiul river flooding.',
+          description:
+              'North on NH-80 to Jamui. Jhajha and Sono blocks face Kiul river flooding.',
           waypoints: ['Jhajha', 'Sono', 'Jamui'],
           isFloodProne: true,
         ),
@@ -1413,7 +1456,8 @@ class EvacuationRoutesData {
           to: 'Bhagalpur Town',
           highway: 'NH-131A',
           distanceKm: 30.0,
-          description: 'Move west-south on NH-131A toward Bhagalpur town away from Kosi-Ganga flood zone.',
+          description:
+              'Move west-south on NH-131A toward Bhagalpur town away from Kosi-Ganga flood zone.',
           waypoints: ['Naugachia', 'Goradih', 'Bhagalpur'],
           isFloodProne: true,
         ),
@@ -1423,7 +1467,8 @@ class EvacuationRoutesData {
           to: 'Bhagalpur via NH-80',
           highway: 'NH-80',
           distanceKm: 38.0,
-          description: 'West on NH-80 to Bhagalpur. Kahalgaon power plant area faces Ganga spill flooding.',
+          description:
+              'West on NH-80 to Bhagalpur. Kahalgaon power plant area faces Ganga spill flooding.',
           waypoints: ['Kahalgaon', 'Sultanganj', 'Bhagalpur'],
           isFloodProne: false,
         ),
@@ -1464,7 +1509,8 @@ class EvacuationRoutesData {
           to: 'Banka Town',
           highway: 'SH-91',
           distanceKm: 25.0,
-          description: 'North on SH-91. Chandan river floods Amarpur and Katoria blocks frequently.',
+          description:
+              'North on SH-91. Chandan river floods Amarpur and Katoria blocks frequently.',
           waypoints: ['Amarpur', 'Katoria', 'Banka'],
           isFloodProne: true,
         ),
@@ -1515,7 +1561,8 @@ class EvacuationRoutesData {
           to: 'Supaul Town',
           highway: 'SH-75',
           distanceKm: 20.0,
-          description: 'Move south-east away from Kosi barrage area. Birpur is at extreme flood risk.',
+          description:
+              'Move south-east away from Kosi barrage area. Birpur is at extreme flood risk.',
           waypoints: ['Birpur', 'Triveniganj', 'Supaul'],
           isFloodProne: true,
         ),
@@ -1566,7 +1613,8 @@ class EvacuationRoutesData {
           to: 'Saharsa Town',
           highway: 'NH-107',
           distanceKm: 22.0,
-          description: 'West on NH-107 to Saharsa. Salkhua and Simri Bakhtiarpur face extreme Kosi inundation.',
+          description:
+              'West on NH-107 to Saharsa. Salkhua and Simri Bakhtiarpur face extreme Kosi inundation.',
           waypoints: ['Salkhua', 'Simri Bakhtiarpur', 'Saharsa'],
           isFloodProne: true,
         ),
@@ -1617,7 +1665,8 @@ class EvacuationRoutesData {
           to: 'Madhepura Town',
           highway: 'NH-107',
           distanceKm: 25.0,
-          description: 'West on NH-107 to Madhepura. Murliganj and Gwalpara blocks flood heavily from Kosi.',
+          description:
+              'West on NH-107 to Madhepura. Murliganj and Gwalpara blocks flood heavily from Kosi.',
           waypoints: ['Murliganj', 'Gwalpara', 'Madhepura'],
           isFloodProne: true,
         ),
@@ -1627,7 +1676,8 @@ class EvacuationRoutesData {
           to: 'Supaul via NH-107',
           highway: 'NH-107',
           distanceKm: 40.0,
-          description: 'North-west on NH-107 to Supaul for large-scale Kosi displacement.',
+          description:
+              'North-west on NH-107 to Supaul for large-scale Kosi displacement.',
           waypoints: ['Madhepura', 'Nirmali', 'Supaul'],
           isFloodProne: false,
         ),
@@ -1668,7 +1718,8 @@ class EvacuationRoutesData {
           to: 'Araria Town',
           highway: 'NH-57',
           distanceKm: 30.0,
-          description: 'South on NH-57. Bakra and Bharbharia rivers pose high threat in northern Araria.',
+          description:
+              'South on NH-57. Bakra and Bharbharia rivers pose high threat in northern Araria.',
           waypoints: ['Jokihat', 'Raniganj', 'Araria'],
           isFloodProne: true,
         ),
@@ -1719,7 +1770,8 @@ class EvacuationRoutesData {
           to: 'Kishanganj Town',
           highway: 'NH-31',
           distanceKm: 22.0,
-          description: 'South-west on NH-31. Mahananda and Kankai overflow is primary risk.',
+          description:
+              'South-west on NH-31. Mahananda and Kankai overflow is primary risk.',
           waypoints: ['Thakurganj', 'Bahadurganj', 'Kishanganj'],
           isFloodProne: false,
         ),
@@ -1770,7 +1822,8 @@ class EvacuationRoutesData {
           to: 'Purnea Town',
           highway: 'NH-31',
           distanceKm: 25.0,
-          description: 'South on NH-31 toward Purnea town. Kasba, Banmankhi blocks have high Mahananda risk.',
+          description:
+              'South on NH-31 toward Purnea town. Kasba, Banmankhi blocks have high Mahananda risk.',
           waypoints: ['Kasba', 'Banmankhi', 'Purnea'],
           isFloodProne: false,
         ),
@@ -1780,7 +1833,8 @@ class EvacuationRoutesData {
           to: 'Purnea via SH-57',
           highway: 'SH-57',
           distanceKm: 35.0,
-          description: 'South-west on SH-57. Rupauli and Baisi face Saura and Kosi spill flooding.',
+          description:
+              'South-west on SH-57. Rupauli and Baisi face Saura and Kosi spill flooding.',
           waypoints: ['Rupauli', 'Baisi', 'Purnea'],
           isFloodProne: true,
         ),
@@ -1821,7 +1875,8 @@ class EvacuationRoutesData {
           to: 'Katihar Town',
           highway: 'NH-31',
           distanceKm: 45.0,
-          description: 'West on NH-31 to Katihar. Manihari and Amdabad blocks face severe inundation from Ganga & Mahananda.',
+          description:
+              'West on NH-31 to Katihar. Manihari and Amdabad blocks face severe inundation from Ganga & Mahananda.',
           waypoints: ['Manihari', 'Barari', 'Katihar'],
           isFloodProne: true,
         ),
@@ -1872,7 +1927,8 @@ class EvacuationRoutesData {
           to: 'Chhapra Town',
           highway: 'NH-19',
           distanceKm: 35.0,
-          description: 'East on NH-19 away from Ghaghra-Ganga confluence. Revelganj, Manjhi, Marhaura are high-risk.',
+          description:
+              'East on NH-19 away from Ghaghra-Ganga confluence. Revelganj, Manjhi, Marhaura are high-risk.',
           waypoints: ['Revelganj', 'Marhaura', 'Chhapra'],
           isFloodProne: true,
         ),
@@ -1882,7 +1938,8 @@ class EvacuationRoutesData {
           to: 'Patna via NH-19',
           highway: 'NH-19',
           distanceKm: 25.0,
-          description: 'East across the Ganga-Gandak confluence to Patna during extreme flooding.',
+          description:
+              'East across the Ganga-Gandak confluence to Patna during extreme flooding.',
           waypoints: ['Sonepur', 'Hajipur', 'Patna'],
           isFloodProne: false,
         ),
@@ -1923,7 +1980,8 @@ class EvacuationRoutesData {
           to: 'Siwan Town',
           highway: 'NH-727A',
           distanceKm: 30.0,
-          description: 'South-east on NH-727A to Siwan town. Maharajganj and Guthni blocks flood severely from Gandak.',
+          description:
+              'South-east on NH-727A to Siwan town. Maharajganj and Guthni blocks flood severely from Gandak.',
           waypoints: ['Maharajganj', 'Guthni', 'Siwan'],
           isFloodProne: true,
         ),
@@ -1933,7 +1991,8 @@ class EvacuationRoutesData {
           to: 'Chhapra via NH-19',
           highway: 'NH-19',
           distanceKm: 45.0,
-          description: 'East on NH-19 to Chhapra for major displacement events.',
+          description:
+              'East on NH-19 to Chhapra for major displacement events.',
           waypoints: ['Siwan', 'Masrakh', 'Chhapra'],
           isFloodProne: false,
         ),
@@ -1974,7 +2033,8 @@ class EvacuationRoutesData {
           to: 'Gopalganj Town',
           highway: 'NH-28A',
           distanceKm: 40.0,
-          description: 'East toward Gopalganj on NH-28A. Gandak and Ghaghra overflow threat is primary.',
+          description:
+              'East toward Gopalganj on NH-28A. Gandak and Ghaghra overflow threat is primary.',
           waypoints: ['Hathua', 'Kataiya', 'Gopalganj'],
           isFloodProne: true,
         ),
@@ -1984,7 +2044,8 @@ class EvacuationRoutesData {
           to: 'Muzaffarpur via NH-28',
           highway: 'NH-28',
           distanceKm: 65.0,
-          description: 'East on NH-28 to Muzaffarpur as alternate large-scale refuge.',
+          description:
+              'East on NH-28 to Muzaffarpur as alternate large-scale refuge.',
           waypoints: ['Gopalganj', 'Bettiah', 'Muzaffarpur'],
           isFloodProne: false,
         ),
@@ -2011,7 +2072,6 @@ class EvacuationRoutesData {
 
     // --------------------------------------------------------------- DARBHANGA (already covered above)
     // --------------------------------------------------------------- SAMASTIPUR (already covered above)
-
   ];
 
   static List<String> get districtNames =>
@@ -2030,8 +2090,8 @@ class EvacuationRoutesData {
   static List<DistrictEvacuationInfo> byRisk(String risk) =>
       districts.where((d) => d.floodRisk == risk).toList();
 
-  static int get totalShelterCapacity =>
-      districts.fold(0, (sum, d) => sum + d.shelters.fold(0, (s, sh) => s + sh.capacity));
+  static int get totalShelterCapacity => districts.fold(
+      0, (sum, d) => sum + d.shelters.fold(0, (s, sh) => s + sh.capacity));
 
   static int get highRiskCount =>
       districts.where((d) => d.floodRisk == 'HIGH').length;

@@ -38,8 +38,8 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
   void _loadAd() {
     final ad = BannerAd(
       adUnitId: kAdUnitId,
-      size:     AdSize.banner,   // 320×50 — non-intrusive
-      request:  const AdRequest(),
+      size: AdSize.banner, // 320×50 — non-intrusive
+      request: const AdRequest(),
       listener: BannerAdListener(
         onAdLoaded: (_) {
           if (mounted) setState(() => _isLoaded = true);
@@ -67,12 +67,12 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color:        AppPalette.abyss2,
+        color: AppPalette.abyss2,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppPalette.abyssStroke),
       ),
       clipBehavior: Clip.hardEdge,
-      width:  _ad!.size.width.toDouble(),
+      width: _ad!.size.width.toDouble(),
       height: _ad!.size.height.toDouble(),
       child: AdWidget(ad: _ad!),
     );

@@ -36,8 +36,8 @@ class CwcStationDetailScreen extends StatelessWidget {
       station.site.toLowerCase().contains('birpur');
 
   Color get _statusColor {
-    if (station.isDanger)   return AppPalette.critical;
-    if (station.isWarning)  return AppPalette.danger;
+    if (station.isDanger) return AppPalette.critical;
+    if (station.isWarning) return AppPalette.danger;
     if (station.isElevated) return AppPalette.amber;
     return AppPalette.safe;
   }
@@ -50,9 +50,9 @@ class CwcStationDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = _statusColor;
-    final bp    = birpurReading;
-    final isStale = bp != null &&
-        DateTime.now().difference(bp.observedAt).inHours >= 2;
+    final bp = birpurReading;
+    final isStale =
+        bp != null && DateTime.now().difference(bp.observedAt).inHours >= 2;
 
     return Scaffold(
       backgroundColor: AppPalette.abyss0,
@@ -73,8 +73,7 @@ class CwcStationDetailScreen extends StatelessWidget {
             ),
             Text(
               '${station.river}  ·  Bihar CWC',
-              style: const TextStyle(
-                  fontSize: 11, color: AppPalette.textGrey),
+              style: const TextStyle(fontSize: 11, color: AppPalette.textGrey),
             ),
           ],
         ),
@@ -95,15 +94,14 @@ class CwcStationDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             // ── Hero arc gauge ────────────────────────────────────────────
             Center(
               child: _HeroGauge(
                 percent: _riskPct,
-                color:   color,
-                label:   station.statusLabel,
-                level:   station.currentLevel,
-                danger:  station.dangerLevel,
+                color: color,
+                label: station.statusLabel,
+                level: station.currentLevel,
+                danger: station.dangerLevel,
               ),
             ),
             const SizedBox(height: 20),
@@ -118,8 +116,8 @@ class CwcStationDetailScreen extends StatelessWidget {
             _RiskBar(
               current: station.currentLevel,
               warning: station.dangerLevel * 0.97,
-              danger:  station.dangerLevel,
-              color:   color,
+              danger: station.dangerLevel,
+              color: color,
             ),
             const SizedBox(height: 20),
 
@@ -163,46 +161,44 @@ class CwcStationDetailScreen extends StatelessWidget {
 
 class _EmergencyContactsCard extends StatefulWidget {
   final String stationName;
-  final Color  statusColor;
+  final Color statusColor;
   const _EmergencyContactsCard({
     required this.stationName,
     required this.statusColor,
   });
 
   @override
-  State<_EmergencyContactsCard> createState() =>
-      _EmergencyContactsCardState();
+  State<_EmergencyContactsCard> createState() => _EmergencyContactsCardState();
 }
 
-class _EmergencyContactsCardState
-    extends State<_EmergencyContactsCard> {
+class _EmergencyContactsCardState extends State<_EmergencyContactsCard> {
   final _svc = EmergencyContactService();
   late Future<List<EmergencyContact>> _future;
 
   // Category → icon map
   static IconData _iconFor(String cat) {
     final c = cat.toLowerCase();
-    if (c.contains('ndrf'))   return Icons.shield_rounded;
-    if (c.contains('sdrf'))   return Icons.local_police_rounded;
-    if (c.contains('ndma'))   return Icons.crisis_alert_rounded;
-    if (c.contains('cwc'))    return Icons.water_rounded;
-    if (c.contains('dist'))   return Icons.account_balance_rounded;
+    if (c.contains('ndrf')) return Icons.shield_rounded;
+    if (c.contains('sdrf')) return Icons.local_police_rounded;
+    if (c.contains('ndma')) return Icons.crisis_alert_rounded;
+    if (c.contains('cwc')) return Icons.water_rounded;
+    if (c.contains('dist')) return Icons.account_balance_rounded;
     if (c.contains('barrage')) return Icons.water_damage_rounded;
-    if (c.contains('medic'))  return Icons.local_hospital_rounded;
-    if (c.contains('fire'))   return Icons.local_fire_department_rounded;
+    if (c.contains('medic')) return Icons.local_hospital_rounded;
+    if (c.contains('fire')) return Icons.local_fire_department_rounded;
     return Icons.phone_in_talk_rounded;
   }
 
   // Category → accent colour
   Color _colorFor(String cat) {
     final c = cat.toLowerCase();
-    if (c.contains('ndrf'))   return AppPalette.cyan;
-    if (c.contains('sdrf'))   return AppPalette.amber;
-    if (c.contains('ndma'))   return AppPalette.critical;
-    if (c.contains('cwc'))    return AppPalette.safe;
-    if (c.contains('dist'))   return AppPalette.gold;
+    if (c.contains('ndrf')) return AppPalette.cyan;
+    if (c.contains('sdrf')) return AppPalette.amber;
+    if (c.contains('ndma')) return AppPalette.critical;
+    if (c.contains('cwc')) return AppPalette.safe;
+    if (c.contains('dist')) return AppPalette.gold;
     if (c.contains('barrage')) return AppPalette.danger;
-    if (c.contains('medic'))  return AppPalette.safe;
+    if (c.contains('medic')) return AppPalette.safe;
     return AppPalette.textGrey;
   }
 
@@ -241,8 +237,7 @@ class _EmergencyContactsCardState
         }
 
         // Sort: SOS first, then by category
-        final sorted = [...contacts]
-          ..sort((a, b) {
+        final sorted = [...contacts]..sort((a, b) {
             if (a.isSOS && !b.isSOS) return -1;
             if (!a.isSOS && b.isSOS) return 1;
             return a.category.compareTo(b.category);
@@ -250,9 +245,8 @@ class _EmergencyContactsCardState
 
         // Resolve district label for header
         final district = _svc.districtForStation(widget.stationName);
-        final headerLabel = district != null
-            ? '$district District'
-            : 'All Bihar';
+        final headerLabel =
+            district != null ? '$district District' : 'All Bihar';
 
         return Container(
           decoration: BoxDecoration(
@@ -267,8 +261,7 @@ class _EmergencyContactsCardState
             children: [
               // Header
               Padding(
-                padding:
-                    const EdgeInsets.fromLTRB(14, 12, 14, 0),
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
                 child: Row(children: [
                   Icon(Icons.location_on_rounded,
                       size: 13, color: widget.statusColor),
@@ -293,7 +286,10 @@ class _EmergencyContactsCardState
               ),
               const SizedBox(height: 8),
               const Divider(
-                  color: AppPalette.abyss2, height: 1, indent: 14, endIndent: 14),
+                  color: AppPalette.abyss2,
+                  height: 1,
+                  indent: 14,
+                  endIndent: 14),
 
               // Contact rows
               ListView.separated(
@@ -301,8 +297,10 @@ class _EmergencyContactsCardState
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: sorted.length,
                 separatorBuilder: (_, __) => const Divider(
-                    color: AppPalette.abyss2, height: 1,
-                    indent: 14, endIndent: 14),
+                    color: AppPalette.abyss2,
+                    height: 1,
+                    indent: 14,
+                    endIndent: 14),
                 itemBuilder: (_, i) {
                   final c = sorted[i];
                   final accent = _colorFor(c.category);
@@ -331,8 +329,7 @@ class _EmergencyContactsCardState
               color: AppPalette.textGrey, size: 18),
           SizedBox(width: 10),
           Text('No contacts available for this station.',
-              style: TextStyle(
-                  color: AppPalette.textGrey, fontSize: 12)),
+              style: TextStyle(color: AppPalette.textGrey, fontSize: 12)),
         ]),
       );
 }
@@ -341,8 +338,8 @@ class _EmergencyContactsCardState
 
 class _ContactRow extends StatelessWidget {
   final EmergencyContact contact;
-  final Color            accent;
-  final IconData         icon;
+  final Color accent;
+  final IconData icon;
   const _ContactRow({
     required this.contact,
     required this.accent,
@@ -375,8 +372,7 @@ class _ContactRow extends StatelessWidget {
       onLongPress: () => _copyNumber(context),
       borderRadius: BorderRadius.circular(0),
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-            horizontal: 14, vertical: 11),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
         child: Row(children: [
           // Category icon bubble
           Container(
@@ -385,8 +381,7 @@ class _ContactRow extends StatelessWidget {
             decoration: BoxDecoration(
               color: accent.withValues(alpha: 0.12),
               shape: BoxShape.circle,
-              border: Border.all(
-                  color: accent.withValues(alpha: 0.30)),
+              border: Border.all(color: accent.withValues(alpha: 0.30)),
             ),
             child: Icon(icon, color: accent, size: 16),
           ),
@@ -417,12 +412,10 @@ class _ContactRow extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 5, vertical: 1),
                       decoration: BoxDecoration(
-                        color: AppPalette.critical
-                            .withValues(alpha: 0.15),
+                        color: AppPalette.critical.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(4),
                         border: Border.all(
-                            color: AppPalette.critical
-                                .withValues(alpha: 0.35)),
+                            color: AppPalette.critical.withValues(alpha: 0.35)),
                       ),
                       child: const Text('SOS',
                           style: TextStyle(
@@ -476,19 +469,16 @@ class _ContactRow extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: accent.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                      color: accent.withValues(alpha: 0.35)),
+                  border: Border.all(color: accent.withValues(alpha: 0.35)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.call_rounded,
-                        color: accent, size: 10),
+                    Icon(Icons.call_rounded, color: accent, size: 10),
                     const SizedBox(width: 3),
                     Text('CALL',
                         style: TextStyle(
@@ -512,7 +502,7 @@ class _ContactRow extends StatelessWidget {
 
 class _HeroGauge extends StatelessWidget {
   final double percent, danger, level;
-  final Color  color;
+  final Color color;
   final String label;
   const _HeroGauge({
     required this.percent,
@@ -526,7 +516,8 @@ class _HeroGauge extends StatelessWidget {
   Widget build(BuildContext context) {
     const size = 180.0;
     return SizedBox(
-      width: size, height: size,
+      width: size,
+      height: size,
       child: Stack(
         alignment: Alignment.center,
         children: [
@@ -547,17 +538,15 @@ class _HeroGauge extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               const Text('of danger level',
-                  style: TextStyle(
-                      color: AppPalette.textGrey, fontSize: 10)),
+                  style: TextStyle(color: AppPalette.textGrey, fontSize: 10)),
               const SizedBox(height: 6),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 3),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(20),
-                  border:
-                      Border.all(color: color.withValues(alpha: 0.40)),
+                  border: Border.all(color: color.withValues(alpha: 0.40)),
                 ),
                 child: Text(label,
                     style: TextStyle(
@@ -576,7 +565,7 @@ class _HeroGauge extends StatelessWidget {
 
 class _ArcPainter extends CustomPainter {
   final double percent;
-  final Color  color;
+  final Color color;
   static const _start = math.pi * 0.75;
   static const _sweep = math.pi * 1.5;
   const _ArcPainter({required this.percent, required this.color});
@@ -584,32 +573,39 @@ class _ArcPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final cx = size.width / 2, cy = size.height / 2;
-    final r  = size.width / 2 - 12;
+    final r = size.width / 2 - 12;
     final rect = Rect.fromCircle(center: Offset(cx, cy), radius: r);
-    canvas.drawArc(rect, _start, _sweep, false,
+    canvas.drawArc(
+        rect,
+        _start,
+        _sweep,
+        false,
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = 14
           ..strokeCap = StrokeCap.round
           ..color = AppPalette.abyss2);
     if (percent > 0) {
-      canvas.drawArc(rect, _start, _sweep * percent.clamp(0, 1), false,
+      canvas.drawArc(
+          rect,
+          _start,
+          _sweep * percent.clamp(0, 1),
+          false,
           Paint()
             ..style = PaintingStyle.stroke
             ..strokeWidth = 14
             ..strokeCap = StrokeCap.round
             ..shader = SweepGradient(
               startAngle: _start,
-              endAngle:   _start + _sweep,
+              endAngle: _start + _sweep,
               colors: [color.withValues(alpha: 0.4), color],
             ).createShader(rect));
     }
     final wAngle = _start + _sweep * 0.97;
     canvas.drawLine(
-      Offset(cx + (r - 14) * math.cos(wAngle),
-             cy + (r - 14) * math.sin(wAngle)),
-      Offset(cx + (r + 4)  * math.cos(wAngle),
-             cy + (r + 4)  * math.sin(wAngle)),
+      Offset(
+          cx + (r - 14) * math.cos(wAngle), cy + (r - 14) * math.sin(wAngle)),
+      Offset(cx + (r + 4) * math.cos(wAngle), cy + (r + 4) * math.sin(wAngle)),
       Paint()
         ..color = AppPalette.warning
         ..strokeWidth = 3
@@ -618,15 +614,14 @@ class _ArcPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_ArcPainter o) =>
-      o.percent != percent || o.color != color;
+  bool shouldRepaint(_ArcPainter o) => o.percent != percent || o.color != color;
 }
 
 // ─── Level Grid ─────────────────────────────────────────────────────────────────
 
 class _LevelGrid extends StatelessWidget {
-  final CwcStation         station;
-  final Color              color;
+  final CwcStation station;
+  final Color color;
   final KosiBirpurReading? bp;
   const _LevelGrid(
       {required this.station, required this.color, required this.bp});
@@ -634,18 +629,21 @@ class _LevelGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gap = station.dangerLevel - station.currentLevel;
-    final gapColor =
-        station.isDanger ? AppPalette.critical : AppPalette.safe;
+    final gapColor = station.isDanger ? AppPalette.critical : AppPalette.safe;
 
     return Column(children: [
       Row(children: [
-        _Tile(label: 'Current Level',
+        _Tile(
+            label: 'Current Level',
             value: '${station.currentLevel.toStringAsFixed(2)} m',
-            color: color, icon: Icons.height_rounded),
+            color: color,
+            icon: Icons.height_rounded),
         const SizedBox(width: 8),
-        _Tile(label: 'Danger Level',
+        _Tile(
+            label: 'Danger Level',
             value: '${station.dangerLevel.toStringAsFixed(2)} m',
-            color: AppPalette.danger, icon: Icons.warning_amber_rounded),
+            color: AppPalette.danger,
+            icon: Icons.warning_amber_rounded),
       ]),
       const SizedBox(height: 8),
       Row(children: [
@@ -660,8 +658,7 @@ class _LevelGrid extends StatelessWidget {
         bp?.dischargeCumecs != null
             ? _Tile(
                 label: 'Discharge',
-                value:
-                    '${bp!.dischargeCumecs!.toStringAsFixed(0)} m³/s',
+                value: '${bp!.dischargeCumecs!.toStringAsFixed(0)} m³/s',
                 color: AppPalette.cyan,
                 icon: Icons.water_rounded)
             : _Tile(
@@ -682,8 +679,7 @@ class _LevelGrid extends StatelessWidget {
           const SizedBox(width: 8),
           _Tile(
               label: 'Danger Discharge',
-              value:
-                  '${kBirpurDangerDischarge.toStringAsFixed(0)} m³/s',
+              value: '${kBirpurDangerDischarge.toStringAsFixed(0)} m³/s',
               color: AppPalette.danger,
               icon: Icons.stream_rounded),
         ]),
@@ -693,8 +689,8 @@ class _LevelGrid extends StatelessWidget {
 }
 
 class _Tile extends StatelessWidget {
-  final String   label, value;
-  final Color    color;
+  final String label, value;
+  final Color color;
   final IconData icon;
   const _Tile(
       {required this.label,
@@ -740,7 +736,7 @@ class _Tile extends StatelessWidget {
 
 class _RiskBar extends StatelessWidget {
   final double current, warning, danger;
-  final Color  color;
+  final Color color;
   const _RiskBar(
       {required this.current,
       required this.warning,
@@ -749,7 +745,7 @@ class _RiskBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pct  = danger > 0 ? (current / danger).clamp(0.0, 1.0) : 0.0;
+    final pct = danger > 0 ? (current / danger).clamp(0.0, 1.0) : 0.0;
     final wPct = danger > 0 ? (warning / danger).clamp(0.0, 1.0) : 0.65;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -778,7 +774,8 @@ class _RiskBar extends StatelessWidget {
               left: box.maxWidth * wPct - 1.5,
               top: -4,
               child: Container(
-                width: 3, height: 24,
+                width: 3,
+                height: 24,
                 decoration: BoxDecoration(
                   color: AppPalette.warning,
                   borderRadius: BorderRadius.circular(2),
@@ -793,14 +790,11 @@ class _RiskBar extends StatelessWidget {
           children: [
             Text('${current.toStringAsFixed(2)} m',
                 style: TextStyle(
-                    color: color, fontSize: 11,
-                    fontWeight: FontWeight.w700)),
+                    color: color, fontSize: 11, fontWeight: FontWeight.w700)),
             Text('⚠ ${warning.toStringAsFixed(2)} m',
-                style: TextStyle(
-                    color: AppPalette.warning, fontSize: 11)),
+                style: TextStyle(color: AppPalette.warning, fontSize: 11)),
             Text('🔴 ${danger.toStringAsFixed(2)} m',
-                style: TextStyle(
-                    color: AppPalette.danger, fontSize: 11)),
+                style: TextStyle(color: AppPalette.danger, fontSize: 11)),
           ],
         ),
       ],
@@ -813,7 +807,7 @@ class _RiskBar extends StatelessWidget {
 class _BirpurLiveCard extends StatelessWidget {
   final KosiBirpurReading bp;
   final Color color;
-  final bool  isStale;
+  final bool isStale;
   const _BirpurLiveCard(
       {required this.bp, required this.color, required this.isStale});
 
@@ -834,36 +828,33 @@ class _BirpurLiveCard extends StatelessWidget {
               const SizedBox(width: 6),
               Text('Live Kosi @ Birpur Barrage',
                   style: TextStyle(
-                      color: color,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800)),
+                      color: color, fontSize: 12, fontWeight: FontWeight.w800)),
               const Spacer(),
               isStale
                   ? _pill('STALE', AppPalette.amber)
-                  : _pill(
-                      DateFormat('dd MMM · HH:mm').format(bp.observedAt),
+                  : _pill(DateFormat('dd MMM · HH:mm').format(bp.observedAt),
                       AppPalette.safe),
             ]),
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _LiveStat(icon: Icons.height_rounded,
+                _LiveStat(
+                    icon: Icons.height_rounded,
                     label: 'Water Level',
                     value: '${bp.levelM.toStringAsFixed(2)} m',
                     color: color),
                 if (bp.dischargeCumecs != null)
-                  _LiveStat(icon: Icons.water_rounded,
+                  _LiveStat(
+                      icon: Icons.water_rounded,
                       label: 'Discharge',
-                      value:
-                          '${bp.dischargeCumecs!.toStringAsFixed(0)} m³/s',
+                      value: '${bp.dischargeCumecs!.toStringAsFixed(0)} m³/s',
                       color: AppPalette.cyan),
-                _LiveStat(icon: Icons.trending_down_rounded,
+                _LiveStat(
+                    icon: Icons.trending_down_rounded,
                     label: 'Gap to Danger',
                     value: '${bp.gap.toStringAsFixed(2)} m',
-                    color: bp.isDanger
-                        ? AppPalette.critical
-                        : AppPalette.safe),
+                    color: bp.isDanger ? AppPalette.critical : AppPalette.safe),
               ],
             ),
             const SizedBox(height: 12),
@@ -876,20 +867,24 @@ class _BirpurLiveCard extends StatelessWidget {
               child: Column(children: [
                 _ThreshRow('Source', bp.source, AppPalette.textGrey),
                 const SizedBox(height: 6),
-                _ThreshRow('Warning threshold',
+                _ThreshRow(
+                    'Warning threshold',
                     '${bp.warningLevel.toStringAsFixed(2)} m',
                     AppPalette.amber),
                 const SizedBox(height: 6),
-                _ThreshRow('Danger threshold',
+                _ThreshRow(
+                    'Danger threshold',
                     '${bp.dangerLevel.toStringAsFixed(2)} m',
                     AppPalette.danger),
                 if (bp.dischargeCumecs != null) ...[
                   const SizedBox(height: 6),
-                  _ThreshRow('Warning discharge',
+                  _ThreshRow(
+                      'Warning discharge',
                       '${kBirpurWarningDischarge.toStringAsFixed(0)} m³/s',
                       AppPalette.amber),
                   const SizedBox(height: 6),
-                  _ThreshRow('Danger discharge',
+                  _ThreshRow(
+                      'Danger discharge',
                       '${kBirpurDangerDischarge.toStringAsFixed(0)} m³/s',
                       AppPalette.danger),
                 ],
@@ -917,8 +912,8 @@ class _BirpurLiveCard extends StatelessWidget {
 
 class _LiveStat extends StatelessWidget {
   final IconData icon;
-  final String   label, value;
-  final Color    color;
+  final String label, value;
+  final Color color;
   const _LiveStat(
       {required this.icon,
       required this.label,
@@ -930,31 +925,25 @@ class _LiveStat extends StatelessWidget {
         const SizedBox(height: 4),
         Text(value,
             style: TextStyle(
-                color: color,
-                fontSize: 13,
-                fontWeight: FontWeight.w800)),
+                color: color, fontSize: 13, fontWeight: FontWeight.w800)),
         Text(label,
-            style: const TextStyle(
-                color: AppPalette.textGrey, fontSize: 9)),
+            style: const TextStyle(color: AppPalette.textGrey, fontSize: 9)),
       ]);
 }
 
 class _ThreshRow extends StatelessWidget {
   final String label, value;
-  final Color  color;
+  final Color color;
   const _ThreshRow(this.label, this.value, this.color);
   @override
   Widget build(BuildContext context) => Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label,
-              style: const TextStyle(
-                  color: AppPalette.textGrey, fontSize: 11)),
+              style: const TextStyle(color: AppPalette.textGrey, fontSize: 11)),
           Text(value,
               style: TextStyle(
-                  color: color,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700)),
+                  color: color, fontSize: 11, fontWeight: FontWeight.w700)),
         ],
       );
 }
@@ -963,7 +952,7 @@ class _ThreshRow extends StatelessWidget {
 
 class _MetaCard extends StatelessWidget {
   final CwcStation station;
-  final Color      color;
+  final Color color;
   const _MetaCard({required this.station, required this.color});
 
   @override
@@ -983,12 +972,11 @@ class _MetaCard extends StatelessWidget {
           _Row(Icons.business_outlined, 'Authority', 'CWC', color),
           const Divider(color: AppPalette.abyss2, height: 14),
           _Row(Icons.access_time_rounded, 'Data as of',
-              DateFormat('dd MMM yyyy HH:mm').format(station.fetchedAt),
-              color),
+              DateFormat('dd MMM yyyy HH:mm').format(station.fetchedAt), color),
           if (station.source.isNotEmpty) ...[
             const Divider(color: AppPalette.abyss2, height: 14),
-            _Row(Icons.cloud_download_outlined, 'Live source',
-                station.source, color),
+            _Row(Icons.cloud_download_outlined, 'Live source', station.source,
+                color),
           ],
         ]),
       );
@@ -996,16 +984,15 @@ class _MetaCard extends StatelessWidget {
 
 class _Row extends StatelessWidget {
   final IconData icon;
-  final String   label, value;
-  final Color    color;
+  final String label, value;
+  final Color color;
   const _Row(this.icon, this.label, this.value, this.color);
   @override
   Widget build(BuildContext context) => Row(children: [
         Icon(icon, size: 14, color: color.withValues(alpha: 0.75)),
         const SizedBox(width: 8),
         Text(label,
-            style: const TextStyle(
-                color: AppPalette.textGrey, fontSize: 11)),
+            style: const TextStyle(color: AppPalette.textGrey, fontSize: 11)),
         const Spacer(),
         Text(value,
             style: const TextStyle(
@@ -1019,17 +1006,17 @@ class _Row extends StatelessWidget {
 
 class _StatusTimeline extends StatelessWidget {
   final CwcStation station;
-  final Color      color;
+  final Color color;
   const _StatusTimeline({required this.station, required this.color});
 
   @override
   Widget build(BuildContext context) {
     final items = [
-      _TLItem('Normal',  AppPalette.safe,
+      _TLItem('Normal', AppPalette.safe,
           !station.isElevated && !station.isWarning && !station.isDanger),
-      _TLItem('Watch',   AppPalette.amber,    station.isElevated),
-      _TLItem('Warning', AppPalette.warning,  station.isWarning),
-      _TLItem('Danger',  AppPalette.critical, station.isDanger),
+      _TLItem('Watch', AppPalette.amber, station.isElevated),
+      _TLItem('Warning', AppPalette.warning, station.isWarning),
+      _TLItem('Danger', AppPalette.critical, station.isDanger),
     ];
     return Container(
       padding: const EdgeInsets.all(14),
@@ -1038,17 +1025,15 @@ class _StatusTimeline extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: color.withValues(alpha: 0.15)),
       ),
-      child: Column(
-          children:
-              items.map((i) => _TimelineRow(item: i)).toList()),
+      child: Column(children: items.map((i) => _TimelineRow(item: i)).toList()),
     );
   }
 }
 
 class _TLItem {
   final String label;
-  final Color  color;
-  final bool   active;
+  final Color color;
+  final bool active;
   const _TLItem(this.label, this.color, this.active);
 }
 
@@ -1060,16 +1045,15 @@ class _TimelineRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 5),
         child: Row(children: [
           Container(
-            width: 10, height: 10,
+            width: 10,
+            height: 10,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: item.active
-                  ? item.color
-                  : item.color.withValues(alpha: 0.20),
+              color:
+                  item.active ? item.color : item.color.withValues(alpha: 0.20),
               border: item.active
                   ? Border.all(
-                      color: item.color.withValues(alpha: 0.60),
-                      width: 2)
+                      color: item.color.withValues(alpha: 0.60), width: 2)
                   : null,
             ),
           ),
@@ -1078,14 +1062,11 @@ class _TimelineRow extends StatelessWidget {
               style: TextStyle(
                   color: item.active ? item.color : AppPalette.textGrey,
                   fontSize: 12,
-                  fontWeight: item.active
-                      ? FontWeight.w800
-                      : FontWeight.w400)),
+                  fontWeight: item.active ? FontWeight.w800 : FontWeight.w400)),
           if (item.active) ...[
             const SizedBox(width: 6),
             Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 7, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
               decoration: BoxDecoration(
                 color: item.color.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(20),
@@ -1121,12 +1102,11 @@ class _SectionTitle extends StatelessWidget {
 
 class _StatusBadge extends StatelessWidget {
   final String label;
-  final Color  color;
+  final Color color;
   const _StatusBadge({required this.label, required this.color});
   @override
   Widget build(BuildContext context) => Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(8),
@@ -1134,24 +1114,21 @@ class _StatusBadge extends StatelessWidget {
         ),
         child: Text(label,
             style: TextStyle(
-                color: color,
-                fontSize: 11,
-                fontWeight: FontWeight.w800)),
+                color: color, fontSize: 11, fontWeight: FontWeight.w800)),
       );
 }
 
 class _SourceBadge extends StatelessWidget {
   final String source;
-  final bool   isStale;
+  final bool isStale;
   const _SourceBadge({required this.source, required this.isStale});
 
   static Color _accentFor(String src) {
     final s = src.toLowerCase();
-    if (s.contains('beams'))          return AppPalette.gold;
-    if (s.contains('cwc') ||
-        s.contains('ffs') ||
-        s.contains('wris'))           return AppPalette.cyan;
-    if (s.contains('befiqr'))         return AppPalette.safe;
+    if (s.contains('beams')) return AppPalette.gold;
+    if (s.contains('cwc') || s.contains('ffs') || s.contains('wris'))
+      return AppPalette.cyan;
+    if (s.contains('befiqr')) return AppPalette.safe;
     return AppPalette.textGrey;
   }
 
@@ -1159,8 +1136,7 @@ class _SourceBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final Color c = isStale ? AppPalette.amber : _accentFor(source);
     return Container(
-      padding:
-          const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: c.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),

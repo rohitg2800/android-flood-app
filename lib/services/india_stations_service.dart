@@ -69,9 +69,9 @@ class IndiaStationsService {
   Future<List<FloodData>?> _fetchFrom(String urlStr) async {
     try {
       final uri = Uri.parse(urlStr);
-      final res = await _client
-          .get(uri, headers: {'Accept': 'application/json'})
-          .timeout(const Duration(seconds: 30));
+      final res = await _client.get(uri, headers: {
+        'Accept': 'application/json'
+      }).timeout(const Duration(seconds: 30));
 
       if (res.statusCode != 200) {
         debugPrint('[IndiaStations] HTTP ${res.statusCode} from $urlStr');
@@ -127,8 +127,8 @@ class IndiaStationsService {
         coords[k] = {'lat': lat, 'lon': lon};
       }
       await Future.wait(
-        coords.entries.map((e) =>
-            _ensureGloFas(e.key, e.value['lat']!, e.value['lon']!)),
+        coords.entries
+            .map((e) => _ensureGloFas(e.key, e.value['lat']!, e.value['lon']!)),
         eagerError: false,
       );
 
@@ -159,7 +159,7 @@ class IndiaStationsService {
       final res = await _client.get(uri).timeout(const Duration(seconds: 10));
       if (res.statusCode != 200) return;
       if (!_isJsonBody(res.body)) return;
-      final j    = jsonDecode(res.body) as Map<String, dynamic>;
+      final j = jsonDecode(res.body) as Map<String, dynamic>;
       final vals = _doubles((j['daily'] as Map?)?['river_discharge']);
       if (vals.isEmpty) return;
       _glofasCache[key] = _CE({'discharge': vals.last});
@@ -176,39 +176,44 @@ class IndiaStationsService {
   // ── FloodData builder ────────────────────────────────────────────────────
 
   FloodData? _toFloodData(Map raw) {
-    final city  = raw['city']?.toString() ?? raw['station_name']?.toString() ?? raw['station']?.toString() ?? '';
-    final state = raw['state']?.toString() ?? raw['state_name']?.toString() ?? '';
+    final city = raw['city']?.toString() ??
+        raw['station_name']?.toString() ??
+        raw['station']?.toString() ??
+        '';
+    final state =
+        raw['state']?.toString() ?? raw['state_name']?.toString() ?? '';
     if (city.isEmpty || state.isEmpty || !_isBihar(state)) return null;
 
     final current = _d(raw['current_level'] ?? raw['river_level']) ?? 0.0;
     if (current == 0.0) return null; // hide UNKNOWN stations
-    final danger  = _d(raw['danger_level'])  ?? 0.0;
+    final danger = _d(raw['danger_level']) ?? 0.0;
     final warning = _d(raw['warning_level']) ?? 0.0;
-    final flow    = _d(raw['flow_rate'] ?? raw['river_discharge'])
-                 ?? _glofasFlow(raw['latitude'] ?? raw['lat'],
-                                raw['longitude'] ?? raw['lon']);
-    final rain    = _d(raw['rainfall_24h']) ?? 0.0;
+    final flow = _d(raw['flow_rate'] ?? raw['river_discharge']) ??
+        _glofasFlow(
+            raw['latitude'] ?? raw['lat'], raw['longitude'] ?? raw['lon']);
+    final rain = _d(raw['rainfall_24h']) ?? 0.0;
 
     return FloodData(
-      stationId:     raw['station_id']?.toString() ?? '',
-      stationName:   city,
-      river:         raw['river_name']?.toString() ?? raw['river']?.toString() ?? '',
-      city:          city,
-      district:      raw['district']?.toString() ?? '',
-      state:         state,
-      riverName:     raw['river_name']?.toString() ?? raw['river']?.toString(),
-      currentLevel:  current,
-      warningLevel:  warning,
-      dangerLevel:   danger,
+      stationId: raw['station_id']?.toString() ?? '',
+      stationName: city,
+      river: raw['river_name']?.toString() ?? raw['river']?.toString() ?? '',
+      city: city,
+      district: raw['district']?.toString() ?? '',
+      state: state,
+      riverName: raw['river_name']?.toString() ?? raw['river']?.toString(),
+      currentLevel: current,
+      warningLevel: warning,
+      dangerLevel: danger,
       imdRainfallMm: rain,
-      flowRate:      flow,
-      lastUpdated:   DateTime.now(),
+      flowRate: flow,
+      lastUpdated: DateTime.now(),
     );
   }
 
   double? _d(dynamic v) {
     if (v == null) return null;
-    return double.tryParse(v.toString().trim()) ?? (v is num ? v.toDouble() : null);
+    return double.tryParse(v.toString().trim()) ??
+        (v is num ? v.toDouble() : null);
   }
 
   List<double> _doubles(dynamic raw) {

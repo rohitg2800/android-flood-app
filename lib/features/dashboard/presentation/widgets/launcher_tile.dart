@@ -12,7 +12,8 @@ class LauncherTile extends StatefulWidget {
   State<LauncherTile> createState() => _LauncherTileState();
 }
 
-class _LauncherTileState extends State<LauncherTile> with SingleTickerProviderStateMixin {
+class _LauncherTileState extends State<LauncherTile>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
   late final Animation<double> _scale;
 
@@ -30,7 +31,10 @@ class _LauncherTileState extends State<LauncherTile> with SingleTickerProviderSt
   }
 
   @override
-  void dispose() { _ctrl.dispose(); super.dispose(); }
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   void _onTap() {
     HapticFeedback.lightImpact();
@@ -39,12 +43,15 @@ class _LauncherTileState extends State<LauncherTile> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
-    final c     = core_theme.RiverTheme.of(context).colors;
+    final c = core_theme.RiverTheme.of(context).colors;
     final color = widget.tile.color;
     return GestureDetector(
-      onTapDown:   (_) => _ctrl.forward(),
-      onTapUp:     (_) { _ctrl.reverse(); _onTap(); },
-      onTapCancel: ()  => _ctrl.reverse(),
+      onTapDown: (_) => _ctrl.forward(),
+      onTapUp: (_) {
+        _ctrl.reverse();
+        _onTap();
+      },
+      onTapCancel: () => _ctrl.reverse(),
       child: ScaleTransition(
         scale: _scale,
         child: Container(
@@ -58,7 +65,8 @@ class _LauncherTileState extends State<LauncherTile> with SingleTickerProviderSt
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 40, height: 40,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
@@ -70,14 +78,15 @@ class _LauncherTileState extends State<LauncherTile> with SingleTickerProviderSt
               Text(
                 widget.tile.label,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: c.textPrimary, fontWeight: FontWeight.w600),
+                    color: c.textPrimary, fontWeight: FontWeight.w600),
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
               if (widget.tile.badge != null) ...[
                 const SizedBox(height: 4),
-                OpsBadge(label: widget.tile.badge!, variant: OpsBadgeVariant.danger),
+                OpsBadge(
+                    label: widget.tile.badge!, variant: OpsBadgeVariant.danger),
               ],
             ],
           ),

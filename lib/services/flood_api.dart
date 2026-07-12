@@ -36,14 +36,13 @@ class FloodApi {
 
   final _c = OpsClient.instance;
 
-
   // ── Health (only used by predict path, not polling) ───────────────────────
   // FIX: pass path-only string, NOT AppConfig.epHealth (full URL).
   // OpsClient._buildUri() prepends baseUrl — passing a full URL doubled it → 404.
-  Future<Map<String, dynamic>> healthCheck({bool coldStart = false}) =>
-      _c.get(
+  Future<Map<String, dynamic>> healthCheck({bool coldStart = false}) => _c.get(
         '/health',
-        timeout: coldStart ? AppConfig.coldStartTimeout : AppConfig.healthTimeout,
+        timeout:
+            coldStart ? AppConfig.coldStartTimeout : AppConfig.healthTimeout,
       );
 
   // ── Prediction (ML inference) ─────────────────────────────────────────────
@@ -54,32 +53,37 @@ class FloodApi {
   // ── STUBBED — backend endpoints that no longer exist ─────────────────────
   // Return empty but valid payloads so callers don't crash or retry.
 
-  Future<Map<String, dynamic>> allTelemetry({int limit = 1000}) async => _kEmpty;
+  Future<Map<String, dynamic>> allTelemetry({int limit = 1000}) async =>
+      _kEmpty;
 
-  Future<Map<String, dynamic>> telemetryByState(
-    String state, {String? station, int limit = 50}) async => _kEmpty;
+  Future<Map<String, dynamic>> telemetryByState(String state,
+          {String? station, int limit = 50}) async =>
+      _kEmpty;
 
   Future<Map<String, dynamic>> allLevels({int limit = 200}) async => _kEmpty;
 
-  Future<Map<String, dynamic>> levelsByState(
-    String state, {int limit = 200}) async => _kEmpty;
+  Future<Map<String, dynamic>> levelsByState(String state,
+          {int limit = 200}) async =>
+      _kEmpty;
 
-
-  Future<Map<String, dynamic>> cwcForecast({
-    required String city, required String state}) async => _kEmpty;
+  Future<Map<String, dynamic>> cwcForecast(
+          {required String city, required String state}) async =>
+      _kEmpty;
 
   Future<Map<String, dynamic>> cwcStations() async => _kEmpty;
 
   Future<Map<String, dynamic>> reservoirLevels(String state) async => _kEmpty;
 
-  Future<Map<String, dynamic>> pipelineFeatures({
-    required String state, String? station}) async => _kEmpty;
+  Future<Map<String, dynamic>> pipelineFeatures(
+          {required String state, String? station}) async =>
+      _kEmpty;
 
   Future<Map<String, dynamic>> pipelineManifest() async => _kEmpty;
 
   Future<Map<String, dynamic>> stateSeverity() async => _kEmpty;
 
-  Future<Map<String, dynamic>> stateSeverityEntry(String state) async => _kEmpty;
+  Future<Map<String, dynamic>> stateSeverityEntry(String state) async =>
+      _kEmpty;
 
   Future<Map<String, dynamic>> triggerIngestion() async => _kEmpty;
 
@@ -101,11 +105,11 @@ class FloodApi {
       );
       final geoRes = await http.get(geoUri).timeout(const Duration(seconds: 8));
       if (geoRes.statusCode != 200) return _kEmpty;
-      final geoBody  = jsonDecode(geoRes.body) as Map<String, dynamic>;
-      final results  = geoBody['results'] as List?;
+      final geoBody = jsonDecode(geoRes.body) as Map<String, dynamic>;
+      final results = geoBody['results'] as List?;
       if (results == null || results.isEmpty) return _kEmpty;
-      final r   = results.first as Map<String, dynamic>;
-      final lat = r['latitude']  as num;
+      final r = results.first as Map<String, dynamic>;
+      final lat = r['latitude'] as num;
       final lon = r['longitude'] as num;
 
       final wxUri = Uri.parse(
@@ -133,8 +137,8 @@ class FloodApi {
       final geoBody = jsonDecode(geoRes.body) as Map<String, dynamic>;
       final results = geoBody['results'] as List?;
       if (results == null || results.isEmpty) return _kEmpty;
-      final r   = results.first as Map<String, dynamic>;
-      final lat = r['latitude']  as num;
+      final r = results.first as Map<String, dynamic>;
+      final lat = r['latitude'] as num;
       final lon = r['longitude'] as num;
 
       final fxUri = Uri.parse(
@@ -165,7 +169,10 @@ class FloodApi {
       if (res.statusCode != 200) return [];
       final body = jsonDecode(res.body);
       final list = (body is List) ? body : (body['data'] as List? ?? []);
-      return list.whereType<Map<String, dynamic>>().map(FloodStation.fromJson).toList();
+      return list
+          .whereType<Map<String, dynamic>>()
+          .map(FloodStation.fromJson)
+          .toList();
     } catch (_) {
       return [];
     }
@@ -181,7 +188,10 @@ class FloodApi {
       if (res.statusCode != 200) return [];
       final body = jsonDecode(res.body);
       final list = (body is List) ? body : (body['data'] as List? ?? []);
-      return list.whereType<Map<String, dynamic>>().map(FloodStation.fromJson).toList();
+      return list
+          .whereType<Map<String, dynamic>>()
+          .map(FloodStation.fromJson)
+          .toList();
     } catch (_) {
       return [];
     }
@@ -215,7 +225,10 @@ class FloodApi {
       if (res.statusCode != 200) return [];
       final body = jsonDecode(res.body);
       final list = (body is List) ? body : (body['data'] as List? ?? []);
-      return list.whereType<Map<String, dynamic>>().map(FloodStation.fromJson).toList();
+      return list
+          .whereType<Map<String, dynamic>>()
+          .map(FloodStation.fromJson)
+          .toList();
     } catch (_) {
       return [];
     }
@@ -224,5 +237,4 @@ class FloodApi {
   // ═══════════════════════════════════════════════════════════════
   // LIVE LEVELS — GloFAS 261-city feed (Task 1 — June 2026)
   // ═══════════════════════════════════════════════════════════════
-
 }

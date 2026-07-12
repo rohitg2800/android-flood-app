@@ -25,8 +25,7 @@ class OpenMeteoUrls {
   static const _base = 'https://api.open-meteo.com/v1';
 
   /// Current conditions + 48h hourly precipitation, soil moisture & wind.
-  static String weather(double lat, double lon) =>
-      '$_base/forecast'
+  static String weather(double lat, double lon) => '$_base/forecast'
       '?latitude=$lat&longitude=$lon'
       '&current=temperature_2m,relative_humidity_2m,precipitation,rain,'
       'windspeed_10m,winddirection_10m,weathercode,surface_pressure'
@@ -40,8 +39,7 @@ class OpenMeteoUrls {
       '&timezone=Asia%2FKolkata';
 
   /// 7-day hourly precipitation sum (for 7-day rainfall accumulation chart).
-  static String precipitation7d(double lat, double lon) =>
-      '$_base/forecast'
+  static String precipitation7d(double lat, double lon) => '$_base/forecast'
       '?latitude=$lat&longitude=$lon'
       '&daily=precipitation_sum,rain_sum'
       '&forecast_days=7'
@@ -68,8 +66,7 @@ class GloFasUrls {
 
   /// Standard 16-day discharge forecast + 14 days of history.
   /// Use this as the primary river level source.
-  static String discharge(double lat, double lon) =>
-      '$_base'
+  static String discharge(double lat, double lon) => '$_base'
       '?latitude=$lat&longitude=$lon'
       '&daily=river_discharge'
       '&forecast_days=16'
@@ -78,8 +75,7 @@ class GloFasUrls {
   /// Return-period discharge thresholds for a location.
   /// Returns river_discharge_return_period_2, _5, _20 (all in m³/s).
   /// Call ONCE per city on first poll; cache for the session.
-  static String returnPeriods(double lat, double lon) =>
-      '$_base'
+  static String returnPeriods(double lat, double lon) => '$_base'
       '?latitude=$lat&longitude=$lon'
       '&daily=river_discharge_return_period_2,'
       'river_discharge_return_period_5,'
@@ -88,16 +84,14 @@ class GloFasUrls {
 
   /// Ensemble spread (min / mean / max) for uncertainty ribbon.
   /// Only call when user opens detailed city view — heavier payload.
-  static String dischargeEnsemble(double lat, double lon) =>
-      '$_base'
+  static String dischargeEnsemble(double lat, double lon) => '$_base'
       '?latitude=$lat&longitude=$lon'
       '&daily=river_discharge_mean,river_discharge_max,river_discharge_min'
       '&forecast_days=16'
       '&past_days=14';
 
   /// Quick 7-day look-ahead for dashboard card sparklines.
-  static String discharge7d(double lat, double lon) =>
-      '$_base'
+  static String discharge7d(double lat, double lon) => '$_base'
       '?latitude=$lat&longitude=$lon'
       '&daily=river_discharge'
       '&forecast_days=7'
@@ -171,9 +165,12 @@ class CwcProxyUrls {
 class OpsFloodUrls {
   OpsFloodUrls._();
 
-  static String get predict        => '${AppConfig.baseUrl}${AppConfig.epPredict}';
-  static String get health         => '${AppConfig.baseUrl}${AppConfig.epHealth}';
-  static String get liveTelemetry  => '${AppConfig.baseUrl}${AppConfig.epLiveTelemetry}';
-  static String get liveLevels     => '${AppConfig.baseUrl}${AppConfig.epLiveLevels}';
-  static String get criticalAlerts => '${AppConfig.baseUrl}${AppConfig.epCriticalAlerts}';
+  static String get predict => '${AppConfig.baseUrl}${AppConfig.epPredict}';
+  static String get health => '${AppConfig.baseUrl}${AppConfig.epHealth}';
+  static String get liveTelemetry =>
+      '${AppConfig.baseUrl}${AppConfig.epLiveTelemetry}';
+  static String get liveLevels =>
+      '${AppConfig.baseUrl}${AppConfig.epLiveLevels}';
+  static String get criticalAlerts =>
+      '${AppConfig.baseUrl}${AppConfig.epCriticalAlerts}';
 }

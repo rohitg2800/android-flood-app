@@ -25,11 +25,11 @@ import 'package:intl/intl.dart';
 enum NewsSeverity { critical, high, moderate, info }
 
 class NewsItem {
-  final String       title;
-  final String       summary;
-  final String       url;
-  final String       source;
-  final DateTime     publishedAt;
+  final String title;
+  final String summary;
+  final String url;
+  final String source;
+  final DateTime publishedAt;
   final NewsSeverity severity;
 
   const NewsItem({
@@ -50,15 +50,15 @@ class NewsItem {
 }
 
 class NewsFilter {
-  final String            language;
-  final int               days;
-  final Set<String>       sources;
+  final String language;
+  final int days;
+  final Set<String> sources;
   final Set<NewsSeverity> severities;
 
   const NewsFilter({
-    this.language   = "en",
-    this.days       = 7,
-    this.sources    = const {},
+    this.language = "en",
+    this.days = 7,
+    this.sources = const {},
     this.severities = const {},
   });
 
@@ -69,15 +69,15 @@ class NewsFilter {
     Set<NewsSeverity>? severities,
   }) =>
       NewsFilter(
-        language:   language   ?? this.language,
-        days:       days       ?? this.days,
-        sources:    sources    ?? this.sources,
+        language: language ?? this.language,
+        days: days ?? this.days,
+        sources: sources ?? this.sources,
         severities: severities ?? this.severities,
       );
 }
 
 class NewsService {
-  static const _timeout  = Duration(seconds: 14);
+  static const _timeout = Duration(seconds: 14);
   static const _kMaxDays = 7;
 
   // ── Bihar keyword whitelist ───────────────────────────────────────────────────────
@@ -98,9 +98,21 @@ class NewsService {
   ];
 
   static const _kFloodWords = [
-    'flood', 'rain', 'cyclone', 'inundation', 'disaster',
-    'relief', 'storm', 'deluge', 'landslide', 'cloudburst',
-    'alert', 'warning', 'advisory', 'evacuat', 'surge',
+    'flood',
+    'rain',
+    'cyclone',
+    'inundation',
+    'disaster',
+    'relief',
+    'storm',
+    'deluge',
+    'landslide',
+    'cloudburst',
+    'alert',
+    'warning',
+    'advisory',
+    'evacuat',
+    'surge',
   ];
 
   // ── Bihar relevance check ──────────────────────────────────────────────────────
@@ -149,9 +161,11 @@ class NewsService {
   static List<NewsItem> applyFilter(List<NewsItem> all, NewsFilter f) {
     final cutoff = DateTime.now().subtract(Duration(days: f.days));
     return all.where((item) {
-      if (item.publishedAt.isBefore(cutoff))                              return false;
-      if (f.sources.isNotEmpty    && !f.sources.contains(item.source))   return false;
-      if (f.severities.isNotEmpty && !f.severities.contains(item.severity)) return false;
+      if (item.publishedAt.isBefore(cutoff)) return false;
+      if (f.sources.isNotEmpty && !f.sources.contains(item.source))
+        return false;
+      if (f.severities.isNotEmpty && !f.severities.contains(item.severity))
+        return false;
       return true;
     }).toList();
   }
@@ -167,7 +181,8 @@ class NewsService {
 
   // ── IMD Nowcast RSS ──────────────────────────────────────────────────────
   Future<List<NewsItem>> _tryImdNowcastRss() async {
-    const url = 'https://mausam.imd.gov.in/imd_latest/contents/dist_nowcast_rss.php';
+    const url =
+        'https://mausam.imd.gov.in/imd_latest/contents/dist_nowcast_rss.php';
     try {
       final resp = await http.get(Uri.parse(url), headers: {
         'User-Agent': 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36',
@@ -177,20 +192,23 @@ class NewsService {
         final all = _parseRss(resp.body, 'IMD');
         return all.where((i) => _isBihar(i.title + i.summary)).toList();
       }
-    } catch (e) { debugPrint('[NewsService] IMD-Nowcast: $e'); }
+    } catch (e) {
+      debugPrint('[NewsService] IMD-Nowcast: $e');
+    }
     return [];
   }
 
   // ── A: Bihar FMIS Daily Flood Bulletin ──────────────────────────────────
   Future<List<NewsItem>> _tryBiharFmis() async {
-    const url = 'https://www.fmiscwrdbihar.gov.in/Load_FMIS_Site/Daily_FloodBulletin.html';
+    const url =
+        'https://www.fmiscwrdbihar.gov.in/Load_FMIS_Site/Daily_FloodBulletin.html';
     try {
       final resp = await http.get(Uri.parse(url), headers: {
         'User-Agent': 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36',
         'Accept': 'text/html,*/*',
       }).timeout(_timeout);
       if (resp.statusCode == 200) {
-        final doc   = html_parser.parse(resp.body);
+        final doc = html_parser.parse(resp.body);
         final items = <NewsItem>[];
         for (final a in doc.querySelectorAll('a')) {
           final href = a.attributes['href'] ?? '';
@@ -198,21 +216,27 @@ class NewsService {
           if (href.isEmpty || text.isEmpty) continue;
           final lhref = href.toLowerCase();
           if (!lhref.contains('.pdf') && !lhref.contains('bulletin')) continue;
-          final fullUrl = href.startsWith('http') ? href : 'https://www.fmiscwrdbihar.gov.in$href';
+          final fullUrl = href.startsWith('http')
+              ? href
+              : 'https://www.fmiscwrdbihar.gov.in$href';
           final pub = _parseDateFuzzy(text) ?? DateTime.now();
           items.add(NewsItem(
-            title:       'Bihar FMIS Flood Bulletin — ${DateFormat("dd MMM yyyy").format(pub)}',
-            summary:     'Official Bihar flood situation report. Covers Gandak, Kosi, Bagmati, Kamla & Mahananda river basins. Includes river levels, rainfall from Nepal catchments, and district-wise flood status. Tap to open PDF.',
-            url:         fullUrl,
-            source:      'CWC',
+            title:
+                'Bihar FMIS Flood Bulletin — ${DateFormat("dd MMM yyyy").format(pub)}',
+            summary:
+                'Official Bihar flood situation report. Covers Gandak, Kosi, Bagmati, Kamla & Mahananda river basins. Includes river levels, rainfall from Nepal catchments, and district-wise flood status. Tap to open PDF.',
+            url: fullUrl,
+            source: 'CWC',
             publishedAt: pub,
-            severity:    NewsSeverity.high,
+            severity: NewsSeverity.high,
           ));
         }
         final seen = <String>{};
         return items.where((i) => seen.add(i.dayKey)).take(7).toList();
       }
-    } catch (e) { debugPrint('[NewsService] BiharFMIS: $e'); }
+    } catch (e) {
+      debugPrint('[NewsService] BiharFMIS: $e');
+    }
     return [];
   }
 
@@ -225,28 +249,36 @@ class NewsService {
         'Accept': 'text/html,*/*',
       }).timeout(_timeout);
       if (resp.statusCode == 200) {
-        final doc   = html_parser.parse(resp.body);
+        final doc = html_parser.parse(resp.body);
         final items = <NewsItem>[];
         for (final row in doc.querySelectorAll('tr')) {
           final text = row.text.trim();
           if (text.length < 10 || !_isBihar(text)) continue;
-          final links   = row.querySelectorAll('a');
-          final href    = links.isNotEmpty ? (links.first.attributes['href'] ?? '') : '';
-          final fullUrl = href.startsWith('http') ? href
-              : (href.isNotEmpty ? 'https://aff.india-water.gov.in$href' : 'https://aff.india-water.gov.in');
-          final trunc = text.length > 300 ? '${text.substring(0, 297)}...' : text;
+          final links = row.querySelectorAll('a');
+          final href =
+              links.isNotEmpty ? (links.first.attributes['href'] ?? '') : '';
+          final fullUrl = href.startsWith('http')
+              ? href
+              : (href.isNotEmpty
+                  ? 'https://aff.india-water.gov.in$href'
+                  : 'https://aff.india-water.gov.in');
+          final trunc =
+              text.length > 300 ? '${text.substring(0, 297)}...' : text;
           items.add(NewsItem(
-            title:       'CWC 5-Day Flood Forecast — ${text.substring(0, text.length.clamp(0, 60))}',
-            summary:     trunc,
-            url:         fullUrl,
-            source:      'CWC',
+            title:
+                'CWC 5-Day Flood Forecast — ${text.substring(0, text.length.clamp(0, 60))}',
+            summary: trunc,
+            url: fullUrl,
+            source: 'CWC',
             publishedAt: DateTime.now(),
-            severity:    _severity(text),
+            severity: _severity(text),
           ));
         }
         return items.take(5).toList();
       }
-    } catch (e) { debugPrint('[NewsService] CWC-AFF: $e'); }
+    } catch (e) {
+      debugPrint('[NewsService] CWC-AFF: $e');
+    }
     return [];
   }
 
@@ -263,18 +295,22 @@ class NewsService {
         return all
             .where((i) => _isBihar(i.title + i.summary))
             .map((i) => NewsItem(
-                  title:       i.title,
-                  summary:     i.summary.isNotEmpty ? i.summary
-                               : 'GDACS flood event detected in Bihar/Ganga basin. Tap for full GDACS report.',
-                  url:         i.url,
-                  source:      'GDACS',
+                  title: i.title,
+                  summary: i.summary.isNotEmpty
+                      ? i.summary
+                      : 'GDACS flood event detected in Bihar/Ganga basin. Tap for full GDACS report.',
+                  url: i.url,
+                  source: 'GDACS',
                   publishedAt: i.publishedAt,
-                  severity:    i.severity.index < NewsSeverity.high.index
-                               ? NewsSeverity.high : i.severity,
+                  severity: i.severity.index < NewsSeverity.high.index
+                      ? NewsSeverity.high
+                      : i.severity,
                 ))
             .toList();
       }
-    } catch (e) { debugPrint('[NewsService] GDACS: $e'); }
+    } catch (e) {
+      debugPrint('[NewsService] GDACS: $e');
+    }
     return [];
   }
 
@@ -293,7 +329,9 @@ class NewsService {
           return _isBihar(t) && _kFloodWords.any(t.contains);
         }).toList();
       }
-    } catch (e) { debugPrint('[NewsService] PIB: $e'); }
+    } catch (e) {
+      debugPrint('[NewsService] PIB: $e');
+    }
     return [];
   }
 
@@ -312,7 +350,9 @@ class NewsService {
           return _isBihar(t) && _kFloodWords.any(t.contains);
         }).toList();
       }
-    } catch (e) { debugPrint('[NewsService] TheHindu: $e'); }
+    } catch (e) {
+      debugPrint('[NewsService] TheHindu: $e');
+    }
     return [];
   }
 
@@ -331,7 +371,9 @@ class NewsService {
           return _isBihar(t) && _kFloodWords.any(t.contains);
         }).toList();
       }
-    } catch (e) { debugPrint('[NewsService] NDTV: $e'); }
+    } catch (e) {
+      debugPrint('[NewsService] NDTV: $e');
+    }
     return [];
   }
 
@@ -340,38 +382,45 @@ class NewsService {
     try {
       final rx = RegExp(r'<item[^>]*>(.*?)</item>', dotAll: true);
       for (final m in rx.allMatches(xml)) {
-        final raw     = m.group(1)!;
-        final title   = _rxText(raw, 'title');
-        final desc    = _rxCdata(raw, 'description');
-        if (items.isEmpty) debugPrint('[RSS-RAW] first item raw: ${raw.substring(0, raw.length.clamp(0, 500))}');
-        final link    = _rxText(raw, 'link').isNotEmpty
-                        ? _rxText(raw, 'link') : _rxText(raw, 'guid');
+        final raw = m.group(1)!;
+        final title = _rxText(raw, 'title');
+        final desc = _rxCdata(raw, 'description');
+        if (items.isEmpty)
+          debugPrint(
+              '[RSS-RAW] first item raw: ${raw.substring(0, raw.length.clamp(0, 500))}');
+        final link = _rxText(raw, 'link').isNotEmpty
+            ? _rxText(raw, 'link')
+            : _rxText(raw, 'guid');
         final pubDate = _rxText(raw, 'pubDate').isNotEmpty
-                        ? _rxText(raw, 'pubDate') : _rxText(raw, 'sent');
-        final onset   = _rxText(raw, 'Onset');
+            ? _rxText(raw, 'pubDate')
+            : _rxText(raw, 'sent');
+        final onset = _rxText(raw, 'Onset');
         final expires = _rxText(raw, 'Expires');
         if (title.isEmpty) continue;
         final cleanDesc = html_parser.parse(desc).body?.text.trim() ?? desc;
         String summary = cleanDesc;
         if (onset.isNotEmpty && expires.isNotEmpty) {
-          final onsetDt   = DateTime.tryParse(onset);
+          final onsetDt = DateTime.tryParse(onset);
           final expiresDt = DateTime.tryParse(expires);
           if (onsetDt != null && expiresDt != null) {
             final fmt = DateFormat('HH:mm');
-            summary = 'Valid ${fmt.format(onsetDt.toLocal())}–${fmt.format(expiresDt.toLocal())}. $cleanDesc';
+            summary =
+                'Valid ${fmt.format(onsetDt.toLocal())}–${fmt.format(expiresDt.toLocal())}. $cleanDesc';
           }
         }
         final pub = _parseRfc2822(pubDate) ?? DateTime.now();
         items.add(NewsItem(
-          title:       title,
-          summary:     summary,
-          url:         link,
-          source:      source,
+          title: title,
+          summary: summary,
+          url: link,
+          source: source,
           publishedAt: pub,
-          severity:    _severity('$title $summary'),
+          severity: _severity('$title $summary'),
         ));
       }
-    } catch (e) { debugPrint('[NewsService] _parseRss($source): $e'); }
+    } catch (e) {
+      debugPrint('[NewsService] _parseRss($source): $e');
+    }
     return items;
   }
 
@@ -391,10 +440,12 @@ class NewsService {
 
   static DateTime? _parseRfc2822(String s) {
     if (s.isEmpty) return null;
-    try { return DateTime.parse(s); } catch (_) {}
+    try {
+      return DateTime.parse(s);
+    } catch (_) {}
     try {
       final clean = s.replaceAll(RegExp(r'\s+\(.*?\)$'), '').trim();
-      final fmt   = DateFormat('EEE, dd MMM yyyy HH:mm:ss Z', 'en_US');
+      final fmt = DateFormat('EEE, dd MMM yyyy HH:mm:ss Z', 'en_US');
       return fmt.parseUtc(clean);
     } catch (_) {}
     return null;
@@ -404,12 +455,16 @@ class NewsService {
     final patterns = [
       RegExp(r'(\d{1,2})[\-/](\d{1,2})[\-/](\d{4})'),
       RegExp(r'(\d{4})[\-/](\d{1,2})[\-/](\d{1,2})'),
-      RegExp(r'(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(\d{4})', caseSensitive: false),
+      RegExp(
+          r'(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+(\d{4})',
+          caseSensitive: false),
     ];
     for (final p in patterns) {
       final m = p.firstMatch(text);
       if (m != null) {
-        try { return DateTime.parse(m.group(0)!); } catch (_) {}
+        try {
+          return DateTime.parse(m.group(0)!);
+        } catch (_) {}
       }
     }
     return null;
@@ -417,9 +472,16 @@ class NewsService {
 
   static NewsSeverity _severity(String text) {
     final t = text.toLowerCase();
-    if (t.contains('red alert') || t.contains('extreme') || t.contains('catastroph')) return NewsSeverity.critical;
-    if (t.contains('orange alert') || t.contains('severe') || t.contains('heavy rain') || t.contains('flood warning')) return NewsSeverity.high;
-    if (t.contains('yellow alert') || t.contains('moderate') || t.contains('watch')) return NewsSeverity.moderate;
+    if (t.contains('red alert') ||
+        t.contains('extreme') ||
+        t.contains('catastroph')) return NewsSeverity.critical;
+    if (t.contains('orange alert') ||
+        t.contains('severe') ||
+        t.contains('heavy rain') ||
+        t.contains('flood warning')) return NewsSeverity.high;
+    if (t.contains('yellow alert') ||
+        t.contains('moderate') ||
+        t.contains('watch')) return NewsSeverity.moderate;
     return NewsSeverity.info;
   }
 }

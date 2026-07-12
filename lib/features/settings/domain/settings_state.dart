@@ -1,4 +1,5 @@
 enum AppTextScale { normal, large, extraLarge }
+
 enum AppAlertLevel { criticalOnly, criticalAndWatch, all }
 
 class SettingsState {
@@ -11,13 +12,13 @@ class SettingsState {
   final int quietHourEnd;
 
   const SettingsState({
-    this.highContrast     = false,
-    this.reducedMotion    = false,
-    this.textScale        = AppTextScale.normal,
-    this.alertLevel       = AppAlertLevel.criticalAndWatch,
+    this.highContrast = false,
+    this.reducedMotion = false,
+    this.textScale = AppTextScale.normal,
+    this.alertLevel = AppAlertLevel.criticalAndWatch,
     this.quietHoursEnabled = false,
-    this.quietHourStart   = 22,
-    this.quietHourEnd     = 7,
+    this.quietHourStart = 22,
+    this.quietHourEnd = 7,
   });
 
   SettingsState copyWith({
@@ -30,13 +31,13 @@ class SettingsState {
     int? quietHourEnd,
   }) {
     return SettingsState(
-      highContrast:      highContrast      ?? this.highContrast,
-      reducedMotion:     reducedMotion     ?? this.reducedMotion,
-      textScale:         textScale         ?? this.textScale,
-      alertLevel:        alertLevel        ?? this.alertLevel,
+      highContrast: highContrast ?? this.highContrast,
+      reducedMotion: reducedMotion ?? this.reducedMotion,
+      textScale: textScale ?? this.textScale,
+      alertLevel: alertLevel ?? this.alertLevel,
       quietHoursEnabled: quietHoursEnabled ?? this.quietHoursEnabled,
-      quietHourStart:    quietHourStart    ?? this.quietHourStart,
-      quietHourEnd:      quietHourEnd      ?? this.quietHourEnd,
+      quietHourStart: quietHourStart ?? this.quietHourStart,
+      quietHourEnd: quietHourEnd ?? this.quietHourEnd,
     );
   }
 }

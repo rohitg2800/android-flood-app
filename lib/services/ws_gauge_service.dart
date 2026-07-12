@@ -19,11 +19,11 @@ class WsGaugeService {
   WsGaugeService._();
   static final WsGaugeService instance = WsGaugeService._();
 
-  final _dataController   = StreamController<List<FloodData>>.broadcast();
+  final _dataController = StreamController<List<FloodData>>.broadcast();
   final _statusController = StreamController<WsStatus>.broadcast();
 
-  Stream<List<FloodData>> get stream       => _dataController.stream;
-  Stream<WsStatus>        get statusStream => _statusController.stream;
+  Stream<List<FloodData>> get stream => _dataController.stream;
+  Stream<WsStatus> get statusStream => _statusController.stream;
 
   WsStatus _status = WsStatus.offline;
   WsStatus get currentStatus => _status;
@@ -34,14 +34,14 @@ class WsGaugeService {
   Timer? _fallbackTimer;
   Timer? _pingTimer;
   Timer? _httpPollTimer;
-  int   _retryCount = 0;
-  bool  _disposed   = false;
+  int _retryCount = 0;
+  bool _disposed = false;
   DateTime? _lastDataAt;
 
-  static const _maxRetry      = 6;
-  static const _pingInterval  = Duration(seconds: 20);
+  static const _maxRetry = 6;
+  static const _pingInterval = Duration(seconds: 20);
   static const _fallbackDelay = Duration(seconds: 30);
-  static const _fallbackPoll  = Duration(seconds: 60);
+  static const _fallbackPoll = Duration(seconds: 60);
 
   // ── URL helpers ─────────────────────────────────────────────────────────────────
 
@@ -60,8 +60,8 @@ class WsGaugeService {
     // Rebuild without fragment (paranoia)
     return Uri(
       scheme: uri.scheme,
-      host:   uri.host,
-      port:   uri.hasPort ? uri.port : null,
+      host: uri.host,
+      port: uri.hasPort ? uri.port : null,
       // no path, no fragment
     );
   }
@@ -71,9 +71,9 @@ class WsGaugeService {
     final wsScheme = base.scheme == 'https' ? 'wss' : 'ws';
     return Uri(
       scheme: wsScheme,
-      host:   base.host,
-      port:   base.hasPort ? base.port : null,
-      path:   '/ws/gauges',
+      host: base.host,
+      port: base.hasPort ? base.port : null,
+      path: '/ws/gauges',
     );
   }
 
@@ -81,9 +81,9 @@ class WsGaugeService {
     final base = _parseBase();
     return Uri(
       scheme: base.scheme,
-      host:   base.host,
-      port:   base.hasPort ? base.port : null,
-      path:   '/api/live-levels',
+      host: base.host,
+      port: base.hasPort ? base.port : null,
+      path: '/api/live-levels',
     );
   }
 
@@ -175,7 +175,8 @@ class WsGaugeService {
     _channel?.sink.close();
 
     final delay = Duration(seconds: _backoffSeconds());
-    debugPrint('[WS] reconnecting in ${delay.inSeconds}s (attempt $_retryCount)');
+    debugPrint(
+        '[WS] reconnecting in ${delay.inSeconds}s (attempt $_retryCount)');
     _retryCount = (_retryCount + 1).clamp(0, _maxRetry);
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(delay, _connect);
@@ -207,9 +208,8 @@ class WsGaugeService {
   Future<void> _httpPoll() async {
     if (_disposed) return;
     try {
-      final resp = await http
-          .get(_httpUri)
-          .timeout(const Duration(seconds: 15));
+      final resp =
+          await http.get(_httpUri).timeout(const Duration(seconds: 15));
       if (resp.statusCode == 200) {
         final decoded = jsonDecode(resp.body);
         List<dynamic> list;

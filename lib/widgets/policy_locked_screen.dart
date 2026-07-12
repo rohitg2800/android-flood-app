@@ -25,8 +25,7 @@ class PolicyLockedScreen extends StatelessWidget {
                 'Access Restricted',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
-              if (reason != null) ...
-              [
+              if (reason != null) ...[
                 const SizedBox(height: 8),
                 Text(
                   reason!,

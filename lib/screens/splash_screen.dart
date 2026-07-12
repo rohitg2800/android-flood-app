@@ -31,10 +31,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     with TickerProviderStateMixin {
   late final AnimationController _ring;
   late final AnimationController _text;
-  late final Animation<double>    _ringScale;
-  late final Animation<double>    _ringOpacity;
-  late final Animation<double>    _textOpacity;
-  late final Animation<Offset>    _textSlide;
+  late final Animation<double> _ringScale;
+  late final Animation<double> _ringOpacity;
+  late final Animation<double> _textOpacity;
+  late final Animation<Offset> _textSlide;
 
   @override
   void initState() {
@@ -45,18 +45,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     _text = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 700));
 
-    _ringScale = Tween<double>(begin: 0.6, end: 1.0).animate(
-        CurvedAnimation(parent: _ring, curve: Curves.easeOutBack));
-    _ringOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(
-            parent: _ring,
-            curve: const Interval(0.0, 0.5, curve: Curves.easeIn)));
-    _textOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(parent: _text, curve: Curves.easeIn));
-    _textSlide = Tween<Offset>(
-            begin: const Offset(0, 0.25), end: Offset.zero)
-        .animate(
-            CurvedAnimation(parent: _text, curve: Curves.easeOutCubic));
+    _ringScale = Tween<double>(begin: 0.6, end: 1.0)
+        .animate(CurvedAnimation(parent: _ring, curve: Curves.easeOutBack));
+    _ringOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(
+        parent: _ring, curve: const Interval(0.0, 0.5, curve: Curves.easeIn)));
+    _textOpacity = Tween<double>(begin: 0.0, end: 1.0)
+        .animate(CurvedAnimation(parent: _text, curve: Curves.easeIn));
+    _textSlide = Tween<Offset>(begin: const Offset(0, 0.25), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _text, curve: Curves.easeOutCubic));
 
     _ring.forward().then((_) {
       _text.forward().then((_) {
@@ -185,10 +181,9 @@ class _LogoRingState extends State<_LogoRing>
   @override
   void initState() {
     super.initState();
-    _spin = AnimationController(
-        vsync: this,
-        duration: const Duration(seconds: 6))
-      ..repeat();
+    _spin =
+        AnimationController(vsync: this, duration: const Duration(seconds: 6))
+          ..repeat();
   }
 
   @override
@@ -226,10 +221,7 @@ class _LogoRingState extends State<_LogoRing>
               color: t.accent.withValues(alpha: 0.08),
               border: Border.all(
                   color: t.accent.withValues(alpha: 0.28), width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                    color: t.accentGlow, blurRadius: 32)
-              ],
+              boxShadow: [BoxShadow(color: t.accentGlow, blurRadius: 32)],
             ),
           ),
           // Centre icon
@@ -241,18 +233,18 @@ class _LogoRingState extends State<_LogoRing>
 }
 
 class _ArcPainter extends CustomPainter {
-  final Color  color;
+  final Color color;
   final double strokeWidth;
   const _ArcPainter({required this.color, required this.strokeWidth});
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color       = color.withValues(alpha: 0.55)
-      ..style       = PaintingStyle.stroke
+      ..color = color.withValues(alpha: 0.55)
+      ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
-      ..strokeCap   = StrokeCap.round;
-    const gap   = 0.25; // radians gap
+      ..strokeCap = StrokeCap.round;
+    const gap = 0.25; // radians gap
     const sweep = math.pi * 2 - gap * 2;
     canvas.drawArc(
       Rect.fromLTWH(0, 0, size.width, size.height),

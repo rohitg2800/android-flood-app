@@ -31,23 +31,23 @@ import 'package:flutter/material.dart';
 // ── public API ────────────────────────────────────────────────────────────────
 void showCriticalAlertOverlay(
   BuildContext context, {
-  required String        stationName,
-  required String        riverName,
-  required double        currentLevel,
-  required double        dangerLevel,
-  required String        district,
-  required VoidCallback  onViewMap,
-  required VoidCallback  onEvacuate,
+  required String stationName,
+  required String riverName,
+  required double currentLevel,
+  required double dangerLevel,
+  required String district,
+  required VoidCallback onViewMap,
+  required VoidCallback onEvacuate,
 }) {
   showCriticalAlertBanner(
     context,
-    stationName:  stationName,
-    riverName:    riverName,
+    stationName: stationName,
+    riverName: riverName,
     currentLevel: currentLevel,
-    dangerLevel:  dangerLevel,
-    district:     district,
-    onViewMap:    onViewMap,
-    onEvacuate:   onEvacuate,
+    dangerLevel: dangerLevel,
+    district: district,
+    onViewMap: onViewMap,
+    onEvacuate: onEvacuate,
   );
 }
 
@@ -56,13 +56,13 @@ OverlayEntry? _activeBannerEntry;
 
 void showCriticalAlertBanner(
   BuildContext context, {
-  required String        stationName,
-  required String        riverName,
-  required double        currentLevel,
-  required double        dangerLevel,
-  required String        district,
-  required VoidCallback  onViewMap,
-  required VoidCallback  onEvacuate,
+  required String stationName,
+  required String riverName,
+  required double currentLevel,
+  required double dangerLevel,
+  required String district,
+  required VoidCallback onViewMap,
+  required VoidCallback onEvacuate,
 }) {
   _activeBannerEntry?.remove();
   _activeBannerEntry = null;
@@ -72,8 +72,9 @@ void showCriticalAlertBanner(
 
   entry = OverlayEntry(
     builder: (overlayContext) {
-      final mq           = MediaQuery.of(overlayContext);
-      final bottomOffset = mq.padding.bottom + kBottomNavigationBarHeight + 12.0;
+      final mq = MediaQuery.of(overlayContext);
+      final bottomOffset =
+          mq.padding.bottom + kBottomNavigationBarHeight + 12.0;
 
       return Positioned.fill(
         child: Stack(
@@ -84,18 +85,24 @@ void showCriticalAlertBanner(
             ),
             // Glassy banner anchored above bottom-nav
             Positioned(
-              left:   0,
-              right:  0,
+              left: 0,
+              right: 0,
               bottom: bottomOffset,
               child: _CriticalBanner(
-                stationName:  stationName,
-                riverName:    riverName,
+                stationName: stationName,
+                riverName: riverName,
                 currentLevel: currentLevel,
-                dangerLevel:  dangerLevel,
-                district:     district,
-                onViewMap: () { _dismiss(entry); onViewMap(); },
-                onEvacuate: () { _dismiss(entry); onEvacuate(); },
-                onDismiss:  () => _dismiss(entry),
+                dangerLevel: dangerLevel,
+                district: district,
+                onViewMap: () {
+                  _dismiss(entry);
+                  onViewMap();
+                },
+                onEvacuate: () {
+                  _dismiss(entry);
+                  onEvacuate();
+                },
+                onDismiss: () => _dismiss(entry),
               ),
             ),
           ],
@@ -110,19 +117,21 @@ void showCriticalAlertBanner(
 
 void _dismiss(OverlayEntry entry) {
   if (_activeBannerEntry == entry) _activeBannerEntry = null;
-  try { entry.remove(); } catch (_) {}
+  try {
+    entry.remove();
+  } catch (_) {}
 }
 
 // ── Animated banner host ──────────────────────────────────────────────────────
 class _CriticalBanner extends StatefulWidget {
-  final String        stationName;
-  final String        riverName;
-  final double        currentLevel;
-  final double        dangerLevel;
-  final String        district;
-  final VoidCallback  onViewMap;
-  final VoidCallback  onEvacuate;
-  final VoidCallback  onDismiss;
+  final String stationName;
+  final String riverName;
+  final double currentLevel;
+  final double dangerLevel;
+  final String district;
+  final VoidCallback onViewMap;
+  final VoidCallback onEvacuate;
+  final VoidCallback onDismiss;
 
   const _CriticalBanner({
     required this.stationName,
@@ -143,8 +152,8 @@ class _CriticalBannerState extends State<_CriticalBanner>
     with TickerProviderStateMixin {
   late final AnimationController _slideCtrl;
   late final AnimationController _glowCtrl;
-  late final Animation<Offset>   _slide;
-  late final Animation<double>   _glow;
+  late final Animation<Offset> _slide;
+  late final Animation<double> _glow;
   Timer? _autoTimer;
 
   static const _autoDismiss = Duration(seconds: 12);
@@ -154,20 +163,20 @@ class _CriticalBannerState extends State<_CriticalBanner>
     super.initState();
 
     _slideCtrl = AnimationController(
-      vsync:    this,
+      vsync: this,
       duration: const Duration(milliseconds: 480),
     );
     // Dampened spring — snappy slide-in that settles quickly
     _slide = Tween<Offset>(
       begin: const Offset(0, 1.2),
-      end:   Offset.zero,
+      end: Offset.zero,
     ).animate(CurvedAnimation(
       parent: _slideCtrl,
-      curve:  Curves.easeOutBack,
+      curve: Curves.easeOutBack,
     ));
 
     _glowCtrl = AnimationController(
-      vsync:    this,
+      vsync: this,
       duration: const Duration(milliseconds: 900),
     )..repeat(reverse: true);
     _glow = Tween<double>(begin: 0.4, end: 1.0).animate(
@@ -205,15 +214,15 @@ class _CriticalBannerState extends State<_CriticalBanner>
           child: AnimatedBuilder(
             animation: _glow,
             builder: (_, child) => _GlassCard(
-              stationName:  widget.stationName,
-              riverName:    widget.riverName,
+              stationName: widget.stationName,
+              riverName: widget.riverName,
               currentLevel: widget.currentLevel,
-              dangerLevel:  widget.dangerLevel,
-              district:     widget.district,
+              dangerLevel: widget.dangerLevel,
+              district: widget.district,
               glowStrength: _glow.value,
-              onViewMap:    widget.onViewMap,
-              onEvacuate:   widget.onEvacuate,
-              onDismiss:    _animatedDismiss,
+              onViewMap: widget.onViewMap,
+              onEvacuate: widget.onEvacuate,
+              onDismiss: _animatedDismiss,
             ),
           ),
         ),
@@ -224,15 +233,15 @@ class _CriticalBannerState extends State<_CriticalBanner>
 
 // ── Glassmorphic card ─────────────────────────────────────────────────────────
 class _GlassCard extends StatelessWidget {
-  final String        stationName;
-  final String        riverName;
-  final double        currentLevel;
-  final double        dangerLevel;
-  final String        district;
-  final double        glowStrength;   // 0.4 … 1.0, drives border + shadow pulse
-  final VoidCallback  onViewMap;
-  final VoidCallback  onEvacuate;
-  final VoidCallback  onDismiss;
+  final String stationName;
+  final String riverName;
+  final double currentLevel;
+  final double dangerLevel;
+  final String district;
+  final double glowStrength; // 0.4 … 1.0, drives border + shadow pulse
+  final VoidCallback onViewMap;
+  final VoidCallback onEvacuate;
+  final VoidCallback onDismiss;
 
   const _GlassCard({
     required this.stationName,
@@ -248,12 +257,11 @@ class _GlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final aboveDl  = currentLevel - dangerLevel;
-    final isAbove  = aboveDl >= 0;
-    final accent   = isAbove ? const Color(0xFFFF1744) : const Color(0xFFFF6D00);
-    final fillPct  = (dangerLevel > 0
-        ? (currentLevel / dangerLevel).clamp(0.0, 1.5)
-        : 0.0);
+    final aboveDl = currentLevel - dangerLevel;
+    final isAbove = aboveDl >= 0;
+    final accent = isAbove ? const Color(0xFFFF1744) : const Color(0xFFFF6D00);
+    final fillPct =
+        (dangerLevel > 0 ? (currentLevel / dangerLevel).clamp(0.0, 1.5) : 0.0);
 
     // Glow shadow colour driven by animation
     final glowColor = accent.withValues(alpha: 0.55 * glowStrength);
@@ -280,7 +288,7 @@ class _GlassCard extends StatelessWidget {
                       Colors.black.withValues(alpha: 0.35),
                     ],
                     begin: Alignment.topLeft,
-                    end:   Alignment.bottomRight,
+                    end: Alignment.bottomRight,
                     stops: const [0.0, 0.45, 1.0],
                   ),
                 ),
@@ -294,14 +302,14 @@ class _GlassCard extends StatelessWidget {
                 border: Border.all(color: borderColor, width: 1.6),
                 boxShadow: [
                   BoxShadow(
-                    color:        glowColor,
-                    blurRadius:   28 * glowStrength,
-                    spreadRadius: 2  * glowStrength,
+                    color: glowColor,
+                    blurRadius: 28 * glowStrength,
+                    spreadRadius: 2 * glowStrength,
                   ),
                   BoxShadow(
-                    color:        accent.withValues(alpha: 0.12),
-                    blurRadius:   6,
-                    offset:       const Offset(0, 3),
+                    color: accent.withValues(alpha: 0.12),
+                    blurRadius: 6,
+                    offset: const Offset(0, 3),
                   ),
                 ],
               ),
@@ -314,7 +322,6 @@ class _GlassCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-
                   // Header row
                   Row(
                     children: [
@@ -323,13 +330,15 @@ class _GlassCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color:        accent.withValues(alpha: 0.22 * glowStrength + 0.08),
+                          color: accent.withValues(
+                              alpha: 0.22 * glowStrength + 0.08),
                           borderRadius: BorderRadius.circular(6),
-                          border:       Border.all(
+                          border: Border.all(
                               color: accent.withValues(alpha: 0.7), width: 1),
                           boxShadow: [
                             BoxShadow(
-                              color:      accent.withValues(alpha: 0.4 * glowStrength),
+                              color:
+                                  accent.withValues(alpha: 0.4 * glowStrength),
                               blurRadius: 8,
                             ),
                           ],
@@ -343,9 +352,9 @@ class _GlassCard extends StatelessWidget {
                             Text(
                               isAbove ? '⚠ CRITICAL' : '⚠ DANGER',
                               style: TextStyle(
-                                color:       accent,
-                                fontSize:    10,
-                                fontWeight:  FontWeight.w900,
+                                color: accent,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
                                 letterSpacing: 0.9,
                                 shadows: [
                                   Shadow(
@@ -363,12 +372,12 @@ class _GlassCard extends StatelessWidget {
                         child: Text(
                           stationName,
                           style: const TextStyle(
-                            color:      Colors.white,
-                            fontSize:   13,
+                            color: Colors.white,
+                            fontSize: 13,
                             fontWeight: FontWeight.w800,
                             shadows: [
                               Shadow(
-                                color:      Colors.black54,
+                                color: Colors.black54,
                                 blurRadius: 4,
                               ),
                             ],
@@ -381,7 +390,7 @@ class _GlassCard extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
-                            color:        Colors.white.withValues(alpha: 0.10),
+                            color: Colors.white.withValues(alpha: 0.10),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: const Icon(Icons.close_rounded,
@@ -397,8 +406,8 @@ class _GlassCard extends StatelessWidget {
                   Text(
                     '$riverName  ·  ${district.isNotEmpty ? district : "Bihar"}',
                     style: const TextStyle(
-                      color:      Colors.white70,
-                      fontSize:   11,
+                      color: Colors.white70,
+                      fontSize: 11,
                       shadows: [Shadow(color: Colors.black45, blurRadius: 3)],
                     ),
                   ),
@@ -413,11 +422,11 @@ class _GlassCard extends StatelessWidget {
                         TextSpan(
                           text: '${currentLevel.toStringAsFixed(2)} m  ',
                           style: TextStyle(
-                            color:      accent,
+                            color: accent,
                             fontWeight: FontWeight.w800,
                             shadows: [
                               Shadow(
-                                color:      accent.withValues(alpha: 0.7),
+                                color: accent.withValues(alpha: 0.7),
                                 blurRadius: 6,
                               ),
                             ],
@@ -429,8 +438,10 @@ class _GlassCard extends StatelessWidget {
                                   '${dangerLevel.toStringAsFixed(2)} m)'
                               : '(DL ${dangerLevel.toStringAsFixed(2)} m)',
                           style: const TextStyle(
-                            color:   Colors.white60,
-                            shadows: [Shadow(color: Colors.black38, blurRadius: 3)],
+                            color: Colors.white60,
+                            shadows: [
+                              Shadow(color: Colors.black38, blurRadius: 3)
+                            ],
                           ),
                         ),
                       ],
@@ -442,7 +453,7 @@ class _GlassCard extends StatelessWidget {
                   // Progress bar
                   _LevelBar(
                     fillFraction: fillPct,
-                    color:        accent,
+                    color: accent,
                     glowStrength: glowStrength,
                   ),
 
@@ -453,14 +464,14 @@ class _GlassCard extends StatelessWidget {
                     children: [
                       _GlassBtn(
                         label: 'View Map',
-                        icon:  Icons.map_outlined,
+                        icon: Icons.map_outlined,
                         color: const Color(0xFF29B6F6),
                         onTap: onViewMap,
                       ),
                       const SizedBox(width: 8),
                       _GlassBtn(
                         label: 'Evacuate',
-                        icon:  Icons.directions_run_rounded,
+                        icon: Icons.directions_run_rounded,
                         color: accent,
                         onTap: onEvacuate,
                       ),
@@ -487,7 +498,7 @@ class _GlassCard extends StatelessWidget {
 // ── Level progress bar ────────────────────────────────────────────────────────
 class _LevelBar extends StatelessWidget {
   final double fillFraction;
-  final Color  color;
+  final Color color;
   final double glowStrength;
 
   const _LevelBar({
@@ -511,8 +522,8 @@ class _LevelBar extends StatelessWidget {
             Text(
               '${(fillFraction * 100).toStringAsFixed(0)}%',
               style: TextStyle(
-                color:      color,
-                fontSize:   9,
+                color: color,
+                fontSize: 9,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -525,8 +536,8 @@ class _LevelBar extends StatelessWidget {
             children: [
               // Track
               Container(
-                height:     6,
-                color:      Colors.white.withValues(alpha: 0.12),
+                height: 6,
+                color: Colors.white.withValues(alpha: 0.12),
               ),
               // Fill
               FractionallySizedBox(
@@ -542,7 +553,7 @@ class _LevelBar extends StatelessWidget {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color:      color.withValues(alpha: 0.6 * glowStrength),
+                        color: color.withValues(alpha: 0.6 * glowStrength),
                         blurRadius: 6,
                       ),
                     ],
@@ -559,9 +570,9 @@ class _LevelBar extends StatelessWidget {
 
 // ── Glass action button ───────────────────────────────────────────────────────
 class _GlassBtn extends StatelessWidget {
-  final String       label;
-  final IconData     icon;
-  final Color        color;
+  final String label;
+  final IconData icon;
+  final Color color;
   final VoidCallback onTap;
 
   const _GlassBtn({
@@ -578,34 +589,34 @@ class _GlassBtn extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(9),
         child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-            decoration: BoxDecoration(
-              color:        color.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(9),
-              border:       Border.all(
-                  color: color.withValues(alpha: 0.55), width: 1.2),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, color: color, size: 13),
-                const SizedBox(width: 5),
-                Text(
-                  label,
-                  style: TextStyle(
-                    color:       color,
-                    fontSize:    11,
-                    fontWeight:  FontWeight.w700,
-                    shadows: [
-                      Shadow(
-                        color:      color.withValues(alpha: 0.5),
-                        blurRadius: 4,
-                      ),
-                    ],
-                  ),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.18),
+            borderRadius: BorderRadius.circular(9),
+            border:
+                Border.all(color: color.withValues(alpha: 0.55), width: 1.2),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: color, size: 13),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  shadows: [
+                    Shadow(
+                      color: color.withValues(alpha: 0.5),
+                      blurRadius: 4,
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -19,11 +19,13 @@ class NewsFeedScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = RiverColors.of(context);
-    final newsAsync  = ref.watch(liveNewsProvider);
-    final grouped    = ref.watch(filteredNewsProvider);
-    final countdown  = ref.watch(newsCountdownProvider).when(
-      data: (v) => v, loading: () => 60, error: (_, __) => 60,
-    );
+    final newsAsync = ref.watch(liveNewsProvider);
+    final grouped = ref.watch(filteredNewsProvider);
+    final countdown = ref.watch(newsCountdownProvider).when(
+          data: (v) => v,
+          loading: () => 60,
+          error: (_, __) => 60,
+        );
 
     final totalItems = grouped.values.fold(0, (s, l) => s + l.length);
 
@@ -36,7 +38,8 @@ class NewsFeedScreen extends ConsumerWidget {
         title: Row(
           children: [
             Container(
-              width: 30, height: 30,
+              width: 30,
+              height: 30,
               decoration: BoxDecoration(
                 color: t.accent.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
@@ -45,7 +48,10 @@ class NewsFeedScreen extends ConsumerWidget {
             ),
             const SizedBox(width: 10),
             Text('Flood News',
-              style: TextStyle(color: t.textPrimary, fontSize: 17, fontWeight: FontWeight.w700)),
+                style: TextStyle(
+                    color: t.textPrimary,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700)),
             const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
@@ -53,7 +59,11 @@ class NewsFeedScreen extends ConsumerWidget {
                 color: t.accent.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Text('$totalItems', style: TextStyle(color: t.accent, fontSize: 10, fontWeight: FontWeight.w700)),
+              child: Text('$totalItems',
+                  style: TextStyle(
+                      color: t.accent,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700)),
             ),
           ],
         ),
@@ -176,19 +186,22 @@ class _Timeline extends StatelessWidget {
 // ── Day header ─────────────────────────────────────────────────────────────────
 class _DayHeader extends StatelessWidget {
   final String dayKey; // yyyy-MM-dd
-  final int    count;
+  final int count;
   const _DayHeader({required this.dayKey, required this.count});
 
   String get _label {
     try {
-      final d    = DateTime.parse(dayKey);
-      final now  = DateTime.now();
+      final d = DateTime.parse(dayKey);
+      final now = DateTime.now();
       final diff = DateTime(now.year, now.month, now.day)
-          .difference(DateTime(d.year, d.month, d.day)).inDays;
+          .difference(DateTime(d.year, d.month, d.day))
+          .inDays;
       if (diff == 0) return 'TODAY  —  ${DateFormat('dd MMM').format(d)}';
       if (diff == 1) return 'YESTERDAY  —  ${DateFormat('dd MMM').format(d)}';
       return '${DateFormat('EEEE').format(d).toUpperCase()}  —  ${DateFormat('dd MMM').format(d)}';
-    } catch (_) { return dayKey; }
+    } catch (_) {
+      return dayKey;
+    }
   }
 
   @override
@@ -199,7 +212,8 @@ class _DayHeader extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 3, height: 14,
+            width: 3,
+            height: 14,
             decoration: BoxDecoration(
               color: t.accent,
               borderRadius: BorderRadius.circular(2),
@@ -228,8 +242,11 @@ class _DayHeader extends StatelessWidget {
                   color: t.accent, fontSize: 10, fontWeight: FontWeight.w700),
             ),
           ),
-          Expanded(child: Divider(
-            color: t.cardBgElevated, thickness: 1, indent: 8,
+          Expanded(
+              child: Divider(
+            color: t.cardBgElevated,
+            thickness: 1,
+            indent: 8,
           )),
         ],
       ),
@@ -243,29 +260,37 @@ class _NewsCard extends StatelessWidget {
   const _NewsCard({required this.item});
 
   static Map<String, Color> _kSourceColors(RiverColors t) => <String, Color>{
-    'IMD':   t.accent,
-    'NDMA':  AppPalette.danger,
-    'CWC':   AppPalette.safe,
-    'WRIS':  AppPalette.gold,
-    'GDACS': t.textSecondary,
-    'PIB':   t.accent,
-  };
+        'IMD': t.accent,
+        'NDMA': AppPalette.danger,
+        'CWC': AppPalette.safe,
+        'WRIS': AppPalette.gold,
+        'GDACS': t.textSecondary,
+        'PIB': t.accent,
+      };
 
   Color get _sevColor {
     switch (item.severity) {
-      case NewsSeverity.critical: return AppPalette.critical;
-      case NewsSeverity.high:     return AppPalette.danger;
-      case NewsSeverity.moderate: return AppPalette.warning;
-      case NewsSeverity.info:     return const Color(0xFF9E9E9E);
+      case NewsSeverity.critical:
+        return AppPalette.critical;
+      case NewsSeverity.high:
+        return AppPalette.danger;
+      case NewsSeverity.moderate:
+        return AppPalette.warning;
+      case NewsSeverity.info:
+        return const Color(0xFF9E9E9E);
     }
   }
 
   String get _sevLabel {
     switch (item.severity) {
-      case NewsSeverity.critical: return 'CRITICAL';
-      case NewsSeverity.high:     return 'HIGH';
-      case NewsSeverity.moderate: return 'MODERATE';
-      case NewsSeverity.info:     return 'INFO';
+      case NewsSeverity.critical:
+        return 'CRITICAL';
+      case NewsSeverity.high:
+        return 'HIGH';
+      case NewsSeverity.moderate:
+        return 'MODERATE';
+      case NewsSeverity.info:
+        return 'INFO';
     }
   }
 
@@ -274,91 +299,96 @@ class _NewsCard extends StatelessWidget {
     final t = RiverColors.of(context);
     final sevColor = _sevColor;
     final srcColor = _kSourceColors(t)[item.source] ?? t.textSecondary;
-    final timeStr  = _timeLabel(item.publishedAt);
+    final timeStr = _timeLabel(item.publishedAt);
 
     return Container(
-        margin: const EdgeInsets.only(bottom: 9),
-        padding: const EdgeInsets.all(13),
-        decoration: BoxDecoration(
-          color: t.cardBg,
-          borderRadius: BorderRadius.circular(13),
-          border: Border.all(color: sevColor.withValues(alpha: 0.20)),
-          gradient: LinearGradient(
-            colors: [
-              sevColor.withValues(alpha: 0.06),
-              t.cardBg,
-            ],
-            stops: const [0.0, 0.12],
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: srcColor.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: srcColor.withValues(alpha: 0.3), width: 0.7),
-                  ),
-                  child: Text(
-                    item.source,
-                    style: TextStyle(
-                        color: srcColor, fontSize: 9,
-                        fontWeight: FontWeight.w800, letterSpacing: 0.4),
-                  ),
-                ),
-                const SizedBox(width: 5),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: sevColor.withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    _sevLabel,
-                    style: TextStyle(
-                        color: sevColor, fontSize: 9,
-                        fontWeight: FontWeight.w900, letterSpacing: 0.4),
-                  ),
-                ),
-                const Spacer(),
-                Text(timeStr,
-                    style: TextStyle(color: t.textSecondary, fontSize: 10)),
-              ],
-            ),
-            const SizedBox(height: 7),
-            Text(
-              item.title,
-              style: TextStyle(
-                color:      t.textPrimary,
-                fontWeight: FontWeight.w700,
-                fontSize:   13,
-                height:     1.35,
-              ),
-            ),
-            if (item.summary.isNotEmpty) ...[
-              const SizedBox(height: 5),
-              Text(
-                item.summary,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                    color: t.textSecondary, fontSize: 12, height: 1.4),
-              ),
-            ],
+      margin: const EdgeInsets.only(bottom: 9),
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: t.cardBg,
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(color: sevColor.withValues(alpha: 0.20)),
+        gradient: LinearGradient(
+          colors: [
+            sevColor.withValues(alpha: 0.06),
+            t.cardBg,
           ],
+          stops: const [0.0, 0.12],
         ),
-      );
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: srcColor.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(
+                      color: srcColor.withValues(alpha: 0.3), width: 0.7),
+                ),
+                child: Text(
+                  item.source,
+                  style: TextStyle(
+                      color: srcColor,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.4),
+                ),
+              ),
+              const SizedBox(width: 5),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: sevColor.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  _sevLabel,
+                  style: TextStyle(
+                      color: sevColor,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.4),
+                ),
+              ),
+              const Spacer(),
+              Text(timeStr,
+                  style: TextStyle(color: t.textSecondary, fontSize: 10)),
+            ],
+          ),
+          const SizedBox(height: 7),
+          Text(
+            item.title,
+            style: TextStyle(
+              color: t.textPrimary,
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+              height: 1.35,
+            ),
+          ),
+          if (item.summary.isNotEmpty) ...[
+            const SizedBox(height: 5),
+            Text(
+              item.summary,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style:
+                  TextStyle(color: t.textSecondary, fontSize: 12, height: 1.4),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
   String _timeLabel(DateTime t) {
     final diff = DateTime.now().difference(t);
     if (diff.inSeconds < 60) return 'Just now';
     if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours   < 24) return '${diff.inHours}h ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
     return DateFormat('HH:mm').format(t);
   }
 }
@@ -370,18 +400,18 @@ class _LoadingView extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = RiverColors.of(context);
     return Center(
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        CircularProgressIndicator(color: t.accent, strokeWidth: 2),
-        SizedBox(height: 16),
-        Text('Fetching 7-day news…',
-            style: TextStyle(color: t.textSecondary, fontSize: 13)),
-        SizedBox(height: 6),
-        Text('IMD · NDMA · CWC · WRIS · GDACS · PIB',
-            style: TextStyle(color: t.textSecondary, fontSize: 11)),
-      ],
-    ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CircularProgressIndicator(color: t.accent, strokeWidth: 2),
+          SizedBox(height: 16),
+          Text('Fetching 7-day news…',
+              style: TextStyle(color: t.textSecondary, fontSize: 13)),
+          SizedBox(height: 6),
+          Text('IMD · NDMA · CWC · WRIS · GDACS · PIB',
+              style: TextStyle(color: t.textSecondary, fontSize: 11)),
+        ],
+      ),
     );
   }
 }
@@ -412,35 +442,38 @@ class _ErrorView extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = RiverColors.of(context);
     return Center(
-    child: Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.cloud_off_rounded, color: AppPalette.warning, size: 40),
-          const SizedBox(height: 12),
-          Text('Could not fetch news',
-              style: TextStyle(color: t.textPrimary,
-                  fontSize: 14, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 6),
-          Text(message, textAlign: TextAlign.center,
-              style: TextStyle(color: t.textSecondary, fontSize: 12)),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: onRetry,
-            style: ElevatedButton.styleFrom(
-                backgroundColor: t.accent.withValues(alpha: 0.15)),
-            icon: Icon(Icons.refresh_rounded, color: t.accent, size: 16),
-            label: Text('Retry',
-                style: TextStyle(color: t.accent, fontSize: 13)),
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cloud_off_rounded,
+                color: AppPalette.warning, size: 40),
+            const SizedBox(height: 12),
+            Text('Could not fetch news',
+                style: TextStyle(
+                    color: t.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600)),
+            const SizedBox(height: 6),
+            Text(message,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: t.textSecondary, fontSize: 12)),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: onRetry,
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: t.accent.withValues(alpha: 0.15)),
+              icon: Icon(Icons.refresh_rounded, color: t.accent, size: 16),
+              label: Text('Retry',
+                  style: TextStyle(color: t.accent, fontSize: 13)),
+            ),
+          ],
+        ),
       ),
-    ),
     );
   }
 }
-
 
 // ── Language toggle ──────────────────────────────────────────────────────────
 class _LangToggle extends ConsumerWidget {
@@ -450,8 +483,8 @@ class _LangToggle extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notifier = ref.read(newsFilterProvider.notifier);
-    final filter   = ref.watch(newsFilterProvider);
-    final isHindi  = filter.language == 'hi';
+    final filter = ref.watch(newsFilterProvider);
+    final isHindi = filter.language == 'hi';
 
     return GestureDetector(
       onTap: () => notifier.setLanguage(isHindi ? 'en' : 'hi'),
@@ -460,14 +493,14 @@ class _LangToggle extends ConsumerWidget {
         margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: isHindi
-              ? const Color(0xFFFFC857).withValues(alpha: 0.15)
-              : t.accent.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
             color: isHindi
-                ? const Color(0xFFFFC857).withValues(alpha: 0.40)
-                : t.accent.withValues(alpha: 0.30))),
+                ? const Color(0xFFFFC857).withValues(alpha: 0.15)
+                : t.accent.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+                color: isHindi
+                    ? const Color(0xFFFFC857).withValues(alpha: 0.40)
+                    : t.accent.withValues(alpha: 0.30))),
         child: Text(
           isHindi ? 'हिं' : 'EN',
           style: TextStyle(

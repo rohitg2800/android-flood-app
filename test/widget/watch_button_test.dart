@@ -26,26 +26,29 @@ class _FakeNotifier extends SubscriptionNotifier {
 }
 
 AlertSubscription _sub() => AlertSubscription(
-  stationId: 'GS001', cityName: 'Patna',
-  riverName: 'Ganga', createdAt: DateTime(2026),
-);
+      stationId: 'GS001',
+      cityName: 'Patna',
+      riverName: 'Ganga',
+      createdAt: DateTime(2026),
+    );
 
 Widget _wrap(_FakeNotifier n) => ProviderScope(
-  overrides: [subscriptionProvider.overrideWith((_) => n)],
-  child: RiverTheme(
-    child: MaterialApp(
-      home: Scaffold(
-        body: WatchButton(stationId: 'GS001', cityName: 'Patna', riverName: 'Ganga'),
+      overrides: [subscriptionProvider.overrideWith((_) => n)],
+      child: RiverTheme(
+        child: MaterialApp(
+          home: Scaffold(
+            body: WatchButton(
+                stationId: 'GS001', cityName: 'Patna', riverName: 'Ganga'),
+          ),
+        ),
       ),
-    ),
-  ),
-);
+    );
 
 void main() {
   testWidgets('shows notifications_none when not watching', (tester) async {
     await tester.pumpWidget(_wrap(_FakeNotifier([])));
     await tester.pumpAndSettle();
-    expect(find.byIcon(Icons.notifications_none_rounded),   findsOneWidget);
+    expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
     expect(find.byIcon(Icons.notifications_active_rounded), findsNothing);
   });
 
@@ -53,7 +56,7 @@ void main() {
     await tester.pumpWidget(_wrap(_FakeNotifier([_sub()])));
     await tester.pumpAndSettle();
     expect(find.byIcon(Icons.notifications_active_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.notifications_none_rounded),   findsNothing);
+    expect(find.byIcon(Icons.notifications_none_rounded), findsNothing);
   });
 
   testWidgets('tap when not watching calls subscribe', (tester) async {

@@ -7,16 +7,17 @@ class OpsBadge extends StatelessWidget {
   final String label;
   final OpsBadgeVariant variant;
 
-  const OpsBadge({super.key, required this.label, this.variant = OpsBadgeVariant.neutral});
+  const OpsBadge(
+      {super.key, required this.label, this.variant = OpsBadgeVariant.neutral});
 
   @override
   Widget build(BuildContext context) {
     final c = RiverTheme.of(context).colors;
     final Color base = switch (variant) {
-      OpsBadgeVariant.danger  => c.danger,
+      OpsBadgeVariant.danger => c.danger,
       OpsBadgeVariant.warning => c.warning,
       OpsBadgeVariant.success => c.success,
-      OpsBadgeVariant.info    => c.info,
+      OpsBadgeVariant.info => c.info,
       OpsBadgeVariant.neutral => c.textMuted,
     };
     return Container(
@@ -28,7 +29,10 @@ class OpsBadge extends StatelessWidget {
       ),
       child: Text(
         label.toUpperCase(),
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: base, letterSpacing: 0.7),
+        style: Theme.of(context)
+            .textTheme
+            .labelSmall
+            ?.copyWith(color: base, letterSpacing: 0.7),
       ),
     );
   }

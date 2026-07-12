@@ -30,33 +30,43 @@ Color riskColorSolid(DangerClass dc) => riskColor(dc, opacity: 1.0);
 /// Accepts gaugeRiskFromLevels output AND legacy API labels.
 Color riskColorFromString(String level, {double opacity = 1.0}) {
   switch (level.toUpperCase().trim()) {
-    case 'EXTREME':            return Color.fromRGBO(224, 64,  251, opacity);
+    case 'EXTREME':
+      return Color.fromRGBO(224, 64, 251, opacity);
     case 'CRITICAL':
-    case 'HIGH':               return Color.fromRGBO(211, 47,  47,  opacity);
+    case 'HIGH':
+      return Color.fromRGBO(211, 47, 47, opacity);
     case 'DANGER':
-    case 'SEVERE':             return Color.fromRGBO(255, 109, 0,   opacity);
+    case 'SEVERE':
+      return Color.fromRGBO(255, 109, 0, opacity);
     case 'WARNING':
-    case 'MODERATE':           return Color.fromRGBO(251, 192, 45,  opacity);
+    case 'MODERATE':
+      return Color.fromRGBO(251, 192, 45, opacity);
     case 'LOW':
-    case 'NORMAL':             return Color.fromRGBO(56,  142, 60,  opacity);
-    default:                   return Color.fromRGBO(117, 117, 117, opacity);
+    case 'NORMAL':
+      return Color.fromRGBO(56, 142, 60, opacity);
+    default:
+      return Color.fromRGBO(117, 117, 117, opacity);
   }
 }
 
 /// Human-readable labels — aligned with AlertSeverity / FloodData.riskLevel.
 String riskLabel(DangerClass dc) {
   switch (dc) {
-    case DangerClass.extreme:     return 'EXTREME';  // above HFL
-    case DangerClass.severe:      return 'CRITICAL'; // above DL
-    case DangerClass.aboveNormal: return 'WARNING';  // above WL
-    case DangerClass.normal:      return 'NORMAL';
+    case DangerClass.extreme:
+      return 'EXTREME'; // above HFL
+    case DangerClass.severe:
+      return 'CRITICAL'; // above DL
+    case DangerClass.aboveNormal:
+      return 'WARNING'; // above WL
+    case DangerClass.normal:
+      return 'NORMAL';
   }
 }
 
 /// Legend entries for the map overlay — ordered worst → best.
 const List<({String label, Color color})> kMapLegendEntries = [
-  (label: 'EXTREME',  color: Color(0xFFE040FB)),
+  (label: 'EXTREME', color: Color(0xFFE040FB)),
   (label: 'CRITICAL', color: Color(0xFFD32F2F)),
-  (label: 'WARNING',  color: Color(0xFFFF6D00)),
-  (label: 'NORMAL',   color: Color(0xFF388E3C)),
+  (label: 'WARNING', color: Color(0xFFFF6D00)),
+  (label: 'NORMAL', color: Color(0xFF388E3C)),
 ];

@@ -27,19 +27,18 @@ class WatchStationButton extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<WatchStationButton> createState() =>
-      _WatchStationButtonState();
+  ConsumerState<WatchStationButton> createState() => _WatchStationButtonState();
 }
 
 class _WatchStationButtonState extends ConsumerState<WatchStationButton>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ac;
-  late final Animation<double>   _scale;
+  late final Animation<double> _scale;
 
   @override
   void initState() {
     super.initState();
-    _ac    = AnimationController(
+    _ac = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 220));
     _scale = Tween<double>(begin: 1.0, end: 1.3)
         .animate(CurvedAnimation(parent: _ac, curve: Curves.elasticOut));
@@ -54,7 +53,7 @@ class _WatchStationButtonState extends ConsumerState<WatchStationButton>
   @override
   Widget build(BuildContext context) {
     final watching = ref.watch(isWatchedProvider(widget.stationId));
-    final t        = RiverColors.of(context);
+    final t = RiverColors.of(context);
 
     return AnimatedBuilder(
       animation: _scale,
@@ -79,22 +78,22 @@ class _WatchStationButtonState extends ConsumerState<WatchStationButton>
 
     if (!watching) {
       await ref.read(subscriptionProvider.notifier).subscribe(
-        AlertSubscription(
-          stationId:     widget.stationId,
-          cityName:      widget.cityName,
-          riverName:     widget.riverName,   // was missing
-          notifyRadiusKm: 50.0,              // correct field name
-          createdAt:     DateTime.now(),
-        ),
-      );
+            AlertSubscription(
+              stationId: widget.stationId,
+              cityName: widget.cityName,
+              riverName: widget.riverName, // was missing
+              notifyRadiusKm: 50.0, // correct field name
+              createdAt: DateTime.now(),
+            ),
+          );
     }
 
     if (ctx.mounted) {
       await Navigator.of(ctx).push(MaterialPageRoute(
         builder: (_) => AlertSettingsScreen(
-          stationId:    widget.stationId,
-          cityName:     widget.cityName,
-          dangerLevel:  widget.dangerLevel,
+          stationId: widget.stationId,
+          cityName: widget.cityName,
+          dangerLevel: widget.dangerLevel,
           warningLevel: widget.warningLevel,
         ),
       ));

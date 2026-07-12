@@ -21,20 +21,20 @@ enum AlertLevel {
       this == AlertLevel.danger || this == AlertLevel.extreme;
 
   String get label => switch (this) {
-    AlertLevel.normal  => 'Normal',
-    AlertLevel.watch   => 'Watch',
-    AlertLevel.warning => 'Warning',
-    AlertLevel.danger  => 'Danger',
-    AlertLevel.extreme => 'Extreme',
-  };
+        AlertLevel.normal => 'Normal',
+        AlertLevel.watch => 'Watch',
+        AlertLevel.warning => 'Warning',
+        AlertLevel.danger => 'Danger',
+        AlertLevel.extreme => 'Extreme',
+      };
 
   Color get color => switch (this) {
-    AlertLevel.normal  => const Color(0xFF00E676),
-    AlertLevel.watch   => const Color(0xFF40C4FF),
-    AlertLevel.warning => const Color(0xFFFFB300),
-    AlertLevel.danger  => const Color(0xFFFF6D00),
-    AlertLevel.extreme => const Color(0xFFFF1744),
-  };
+        AlertLevel.normal => const Color(0xFF00E676),
+        AlertLevel.watch => const Color(0xFF40C4FF),
+        AlertLevel.warning => const Color(0xFFFFB300),
+        AlertLevel.danger => const Color(0xFFFF6D00),
+        AlertLevel.extreme => const Color(0xFFFF1744),
+      };
 }
 
 // ─── AlertType ───────────────────────────────────────────────────────────────
@@ -52,17 +52,17 @@ enum AlertType {
   multiRiverAlert;
 
   String get displayName => switch (this) {
-    AlertType.levelAboveHfl      => 'Above HFL',
-    AlertType.levelAboveDanger   => 'Above Danger Level',
-    AlertType.levelAboveWarning  => 'Above Warning Level',
-    AlertType.rapidRise          => 'Rapid Rise',
-    AlertType.forecastDanger24h  => 'Forecast Danger (24h)',
-    AlertType.forecastDanger48h  => 'Forecast Danger (48h)',
-    AlertType.rainfallExtreme    => 'Extreme Rainfall',
-    AlertType.rainfallHeavy      => 'Heavy Rainfall',
-    AlertType.upstreamCritical   => 'Upstream Critical',
-    AlertType.multiRiverAlert    => 'Multi-River Alert',
-  };
+        AlertType.levelAboveHfl => 'Above HFL',
+        AlertType.levelAboveDanger => 'Above Danger Level',
+        AlertType.levelAboveWarning => 'Above Warning Level',
+        AlertType.rapidRise => 'Rapid Rise',
+        AlertType.forecastDanger24h => 'Forecast Danger (24h)',
+        AlertType.forecastDanger48h => 'Forecast Danger (48h)',
+        AlertType.rainfallExtreme => 'Extreme Rainfall',
+        AlertType.rainfallHeavy => 'Heavy Rainfall',
+        AlertType.upstreamCritical => 'Upstream Critical',
+        AlertType.multiRiverAlert => 'Multi-River Alert',
+      };
 }
 
 // ─── FloodAlert ───────────────────────────────────────────────────────────────
@@ -93,30 +93,30 @@ class FloodAlert {
     this.rainfall24hMm,
   });
 
-  final String     id;
-  final String     cityId;
-  final String     cityName;
-  final String     river;
-  final String     state;
-  final double     currentValue;
-  final double     dangerLevel;
-  final double     warningLevel;
-  final double     hfl;
-  final double     fillPercent;
+  final String id;
+  final String cityId;
+  final String cityName;
+  final String river;
+  final String state;
+  final double currentValue;
+  final double dangerLevel;
+  final double warningLevel;
+  final double hfl;
+  final double fillPercent;
   final AlertLevel level;
-  final AlertType  type;
-  final DateTime   issuedAt;
+  final AlertType type;
+  final DateTime issuedAt;
 
   // Optional / nullable fields used by services
-  final String?    station;       // station name (e.g. "Birpur (Kosi)")
-  final String?    message;       // short summary
-  final String?    body;          // long description / notification body
-  final String?    action;        // recommended action
-  final DateTime?  expiresAt;     // when this alert expires
-  final double?    rateOfRise;    // m/h
-  final double?    rateOfRiseMph; // m/h alias (some callers use this name)
-  final double?    rainfall24h;   // mm in last 24h
-  final double?    rainfall24hMm; // alias
+  final String? station; // station name (e.g. "Birpur (Kosi)")
+  final String? message; // short summary
+  final String? body; // long description / notification body
+  final String? action; // recommended action
+  final DateTime? expiresAt; // when this alert expires
+  final double? rateOfRise; // m/h
+  final double? rateOfRiseMph; // m/h alias (some callers use this name)
+  final double? rainfall24h; // mm in last 24h
+  final double? rainfall24hMm; // alias
 
   // ── Derived ─────────────────────────────────────────────────────────────
 
@@ -128,9 +128,10 @@ class FloodAlert {
     return currentValue - warningLevel;
   }
 
-  bool get isDanger  => level == AlertLevel.danger || level == AlertLevel.extreme;
+  bool get isDanger =>
+      level == AlertLevel.danger || level == AlertLevel.extreme;
   bool get isWarning => level == AlertLevel.warning;
-  bool get isWatch   => level == AlertLevel.watch;
+  bool get isWatch => level == AlertLevel.watch;
 
   @override
   String toString() =>

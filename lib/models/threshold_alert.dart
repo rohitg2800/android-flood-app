@@ -19,12 +19,12 @@ enum AlertLevel {
   int get order => index;
 
   String get label => switch (this) {
-    AlertLevel.normal  => 'Normal',
-    AlertLevel.watch   => 'Watch',
-    AlertLevel.warning => 'Warning',
-    AlertLevel.danger  => 'Danger',
-    AlertLevel.extreme => 'Extreme',
-  };
+        AlertLevel.normal => 'Normal',
+        AlertLevel.watch => 'Watch',
+        AlertLevel.warning => 'Warning',
+        AlertLevel.danger => 'Danger',
+        AlertLevel.extreme => 'Extreme',
+      };
 }
 
 // ─── TrendDirection ───────────────────────────────────────────────────────────
@@ -35,10 +35,10 @@ enum TrendDirection {
   falling;
 
   String get label => switch (this) {
-    TrendDirection.rising  => 'Rising',
-    TrendDirection.steady  => 'Steady',
-    TrendDirection.falling => 'Falling',
-  };
+        TrendDirection.rising => 'Rising',
+        TrendDirection.steady => 'Steady',
+        TrendDirection.falling => 'Falling',
+      };
 }
 
 // ─── ThresholdAlert ───────────────────────────────────────────────────────────
@@ -65,73 +65,74 @@ class ThresholdAlert {
     this.isSeen = false,
   });
 
-  final String         id;
-  final String         cityId;
-  final String         cityName;
-  final String         state;
-  final String         river;
-  final AlertLevel     level;
-  final double         currentValue;
-  final double         warningLevel;
-  final double         dangerLevel;
-  final double         hfl;
-  final double         breachMargin;
-  final double         fillPercent;
-  final DateTime       timestamp;
-  final bool           isDischarge;
-  final double?        previousValue;
+  final String id;
+  final String cityId;
+  final String cityName;
+  final String state;
+  final String river;
+  final AlertLevel level;
+  final double currentValue;
+  final double warningLevel;
+  final double dangerLevel;
+  final double hfl;
+  final double breachMargin;
+  final double fillPercent;
+  final DateTime timestamp;
+  final bool isDischarge;
+  final double? previousValue;
   final TrendDirection trend;
-  final bool           isSeen;
+  final bool isSeen;
 
   ThresholdAlert copyWith({
-    String?         id,
-    String?         cityId,
-    String?         cityName,
-    String?         state,
-    String?         river,
-    AlertLevel?     level,
-    double?         currentValue,
-    double?         warningLevel,
-    double?         dangerLevel,
-    double?         hfl,
-    double?         breachMargin,
-    double?         fillPercent,
-    DateTime?       timestamp,
-    bool?           isDischarge,
-    double?         previousValue,
+    String? id,
+    String? cityId,
+    String? cityName,
+    String? state,
+    String? river,
+    AlertLevel? level,
+    double? currentValue,
+    double? warningLevel,
+    double? dangerLevel,
+    double? hfl,
+    double? breachMargin,
+    double? fillPercent,
+    DateTime? timestamp,
+    bool? isDischarge,
+    double? previousValue,
     TrendDirection? trend,
-    bool?           isSeen,
+    bool? isSeen,
   }) {
     return ThresholdAlert(
-      id:            id            ?? this.id,
-      cityId:        cityId        ?? this.cityId,
-      cityName:      cityName      ?? this.cityName,
-      state:         state         ?? this.state,
-      river:         river         ?? this.river,
-      level:         level         ?? this.level,
-      currentValue:  currentValue  ?? this.currentValue,
-      warningLevel:  warningLevel  ?? this.warningLevel,
-      dangerLevel:   dangerLevel   ?? this.dangerLevel,
-      hfl:           hfl           ?? this.hfl,
-      breachMargin:  breachMargin  ?? this.breachMargin,
-      fillPercent:   fillPercent   ?? this.fillPercent,
-      timestamp:     timestamp     ?? this.timestamp,
-      isDischarge:   isDischarge   ?? this.isDischarge,
+      id: id ?? this.id,
+      cityId: cityId ?? this.cityId,
+      cityName: cityName ?? this.cityName,
+      state: state ?? this.state,
+      river: river ?? this.river,
+      level: level ?? this.level,
+      currentValue: currentValue ?? this.currentValue,
+      warningLevel: warningLevel ?? this.warningLevel,
+      dangerLevel: dangerLevel ?? this.dangerLevel,
+      hfl: hfl ?? this.hfl,
+      breachMargin: breachMargin ?? this.breachMargin,
+      fillPercent: fillPercent ?? this.fillPercent,
+      timestamp: timestamp ?? this.timestamp,
+      isDischarge: isDischarge ?? this.isDischarge,
       previousValue: previousValue ?? this.previousValue,
-      trend:         trend         ?? this.trend,
-      isSeen:        isSeen        ?? this.isSeen,
+      trend: trend ?? this.trend,
+      isSeen: isSeen ?? this.isSeen,
     );
   }
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is ThresholdAlert && runtimeType == other.runtimeType && id == other.id;
+      other is ThresholdAlert &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
 
   @override
   int get hashCode => id.hashCode;
 
   @override
-  String toString() =>
-      'ThresholdAlert($cityName, $level, $currentValue)';
+  String toString() => 'ThresholdAlert($cityName, $level, $currentValue)';
 }

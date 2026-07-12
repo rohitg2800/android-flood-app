@@ -9,11 +9,11 @@ import '../theme/river_theme.dart';
 
 class PremiumStatCard extends StatelessWidget {
   final IconData icon;
-  final String   value;
-  final String   label;
-  final Color    color;
-  final String?  delta;   // e.g. "+2" or "-1"
-  final bool     isAlert; // pulse border when true
+  final String value;
+  final String label;
+  final Color color;
+  final String? delta; // e.g. "+2" or "-1"
+  final bool isAlert; // pulse border when true
 
   const PremiumStatCard({
     super.key,
@@ -31,17 +31,14 @@ class PremiumStatCard extends StatelessWidget {
       duration: const Duration(milliseconds: 350),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color:        AppPalette.abyss2,
+        color: AppPalette.abyss2,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: isAlert
-              ? color.withValues(alpha: 0.60)
-              : AppPalette.abyssStroke,
+          color:
+              isAlert ? color.withValues(alpha: 0.60) : AppPalette.abyssStroke,
           width: isAlert ? 1.5 : 1,
         ),
-        boxShadow: isAlert
-            ? AppPalette.glowShadow(color, blur: 18)
-            : const [],
+        boxShadow: isAlert ? AppPalette.glowShadow(color, blur: 18) : const [],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -54,19 +51,18 @@ class PremiumStatCard extends StatelessWidget {
               const Spacer(),
               if (delta != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color:        color.withValues(alpha: 0.12),
+                    color: color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                        color: color.withValues(alpha: 0.3)),
+                    border: Border.all(color: color.withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     delta!,
                     style: TextStyle(
-                      color:      color,
-                      fontSize:   10,
+                      color: color,
+                      fontSize: 10,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -78,19 +74,19 @@ class PremiumStatCard extends StatelessWidget {
           Text(
             value,
             style: TextStyle(
-              color:      color,
-              fontSize:   26,
+              color: color,
+              fontSize: 26,
               fontWeight: FontWeight.w900,
               letterSpacing: -0.5,
-              height:     1.0,
+              height: 1.0,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             label,
             style: const TextStyle(
-              color:      AppPalette.textGrey,
-              fontSize:   11,
+              color: AppPalette.textGrey,
+              fontSize: 11,
               fontWeight: FontWeight.w500,
               letterSpacing: 0.1,
             ),

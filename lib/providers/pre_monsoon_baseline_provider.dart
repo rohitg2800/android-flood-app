@@ -42,8 +42,8 @@ final preMonsoonBaselineProvider = StateProvider<bool>((ref) => false);
 /// baseline toggle.  When the toggle is OFF it returns the full list unchanged
 /// so existing behaviour is 100 % preserved.
 final filteredBulkPredictionsProvider = Provider<List<FloodPrediction>>((ref) {
-  final all       = ref.watch(biharBulkPredictionsProvider);
-  final filterOn  = ref.watch(preMonsoonBaselineProvider);
+  final all = ref.watch(biharBulkPredictionsProvider);
+  final filterOn = ref.watch(preMonsoonBaselineProvider);
   if (!filterOn) return all;
   return all
       .where((p) => p.riskScore >= kPreMonsoonBaselineRiskThreshold)

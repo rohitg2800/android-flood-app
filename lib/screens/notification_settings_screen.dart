@@ -7,23 +7,23 @@ import '../theme/river_theme.dart';
 import '../widgets/app_back_button.dart';
 
 // ── simple local state ─────────────────────────────────────────────────────
-final _pushEnabledProvider    = StateProvider<bool>((_) => true);
-final _floodAlertsProvider    = StateProvider<bool>((_) => true);
-final _weatherAlertsProvider  = StateProvider<bool>((_) => true);
-final _dailyDigestProvider    = StateProvider<bool>((_) => false);
-final _quietHoursProvider     = StateProvider<bool>((_) => false);
+final _pushEnabledProvider = StateProvider<bool>((_) => true);
+final _floodAlertsProvider = StateProvider<bool>((_) => true);
+final _weatherAlertsProvider = StateProvider<bool>((_) => true);
+final _dailyDigestProvider = StateProvider<bool>((_) => false);
+final _quietHoursProvider = StateProvider<bool>((_) => false);
 
 class NotificationSettingsScreen extends ConsumerWidget {
   const NotificationSettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final t            = RiverColors.of(context);
-    final pushEnabled  = ref.watch(_pushEnabledProvider);
-    final floodAlerts  = ref.watch(_floodAlertsProvider);
+    final t = RiverColors.of(context);
+    final pushEnabled = ref.watch(_pushEnabledProvider);
+    final floodAlerts = ref.watch(_floodAlertsProvider);
     final weatherAlert = ref.watch(_weatherAlertsProvider);
-    final dailyDigest  = ref.watch(_dailyDigestProvider);
-    final quietHours   = ref.watch(_quietHoursProvider);
+    final dailyDigest = ref.watch(_dailyDigestProvider);
+    final quietHours = ref.watch(_quietHoursProvider);
 
     return Scaffold(
       backgroundColor: t.scaffoldBg,
@@ -47,8 +47,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
             title: 'Enable Push Notifications',
             subtitle: 'Master switch for all push alerts',
             value: pushEnabled,
-            onChanged: (v) =>
-                ref.read(_pushEnabledProvider.notifier).state = v,
+            onChanged: (v) => ref.read(_pushEnabledProvider.notifier).state = v,
           ),
           const SizedBox(height: 16),
           _SectionHeader(label: 'Alert Types', t: t),
@@ -90,8 +89,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
             title: 'Quiet Hours (10 PM – 6 AM)',
             subtitle: 'Silence non-critical alerts at night',
             value: quietHours,
-            onChanged: (v) =>
-                ref.read(_quietHoursProvider.notifier).state = v,
+            onChanged: (v) => ref.read(_quietHoursProvider.notifier).state = v,
           ),
         ],
       ),
@@ -147,8 +145,7 @@ class _SwitchTile extends StatelessWidget {
       ),
       child: SwitchListTile(
         secondary: Icon(icon,
-            color: onChanged != null ? t.accent : t.textSecondary,
-            size: 22),
+            color: onChanged != null ? t.accent : t.textSecondary, size: 22),
         title: Text(title,
             style: TextStyle(
                 color: onChanged != null ? t.textPrimary : t.textSecondary,

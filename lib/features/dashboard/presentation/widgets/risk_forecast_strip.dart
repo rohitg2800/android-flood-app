@@ -11,7 +11,7 @@ class RiskForecastStrip extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final c     = core_theme.RiverTheme.of(context).colors;
+    final c = core_theme.RiverTheme.of(context).colors;
     final preds = ref.watch(filteredBulkPredictionsProvider).take(5).toList();
 
     if (preds.isEmpty) return const SizedBox.shrink();
@@ -24,13 +24,16 @@ class RiskForecastStrip extends ConsumerWidget {
           child: Row(
             children: [
               Container(
-                width: 28, height: 28,
+                width: 28,
+                height: 28,
                 decoration: BoxDecoration(
                   color: const Color(0xFF818CF8).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFF818CF8).withValues(alpha: 0.30)),
+                  border: Border.all(
+                      color: const Color(0xFF818CF8).withValues(alpha: 0.30)),
                 ),
-                child: const Icon(Icons.auto_awesome_rounded, color: Color(0xFF818CF8), size: 15),
+                child: const Icon(Icons.auto_awesome_rounded,
+                    color: Color(0xFF818CF8), size: 15),
               ),
               const SizedBox(width: 8),
               Text(
@@ -44,11 +47,16 @@ class RiskForecastStrip extends ConsumerWidget {
               ),
               const Spacer(),
               GestureDetector(
-                onTap: () => Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const RainfallForecastScreen())),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const RainfallForecastScreen())),
                 child: Text(
                   "See all",
-                  style: TextStyle(color: c.accent, fontSize: 11, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                      color: c.accent,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600),
                 ),
               ),
             ],
@@ -63,11 +71,13 @@ class RiskForecastStrip extends ConsumerWidget {
             separatorBuilder: (_, __) => const SizedBox(width: 10),
             itemBuilder: (_, i) => _RiskCard(
               pred: preds[i],
-              onTap: () => Navigator.push(context, MaterialPageRoute(
-                builder: (_) => CityDetailScreen(
-                  cityName: preds[i].station.split(" (").first,
-                ),
-              )),
+              onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CityDetailScreen(
+                      cityName: preds[i].station.split(" (").first,
+                    ),
+                  )),
             ),
           ),
         ),
@@ -84,16 +94,20 @@ class _RiskCard extends StatelessWidget {
 
   Color _sevColor() {
     switch (pred.severity.toUpperCase()) {
-      case "CRITICAL": return const Color(0xFFFF4D5A);
-      case "SEVERE":   return const Color(0xFFFF8C42);
-      case "MODERATE": return const Color(0xFFFFC857);
-      default:         return const Color(0xFF3ACC8A);
+      case "CRITICAL":
+        return const Color(0xFFFF4D5A);
+      case "SEVERE":
+        return const Color(0xFFFF8C42);
+      case "MODERATE":
+        return const Color(0xFFFFC857);
+      default:
+        return const Color(0xFF3ACC8A);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final c   = core_theme.RiverTheme.of(context).colors;
+    final c = core_theme.RiverTheme.of(context).colors;
     final col = _sevColor();
     final bar = (pred.riskScore / 100).clamp(0.0, 1.0);
 
@@ -114,7 +128,8 @@ class _RiskCard extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: col.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(6),
@@ -122,7 +137,11 @@ class _RiskCard extends StatelessWidget {
                   ),
                   child: Text(
                     pred.severity,
-                    style: TextStyle(color: col, fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.4),
+                    style: TextStyle(
+                        color: col,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.4),
                   ),
                 ),
                 const Spacer(),
@@ -132,7 +151,10 @@ class _RiskCard extends StatelessWidget {
             const SizedBox(height: 5),
             Text(
               pred.station.split(" (").first,
-              style: TextStyle(color: c.textPrimary, fontSize: 11, fontWeight: FontWeight.w700),
+              style: TextStyle(
+                  color: c.textPrimary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),

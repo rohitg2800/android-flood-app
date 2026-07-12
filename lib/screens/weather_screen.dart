@@ -27,7 +27,7 @@ class _WeatherScreenState extends ConsumerState<WeatherScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final t       = RiverColors.of(context);
+    final t = RiverColors.of(context);
     final weather = ref.watch(weatherProvider);
 
     return Scaffold(
@@ -35,10 +35,10 @@ class _WeatherScreenState extends ConsumerState<WeatherScreen> {
       appBar: _buildAppBar(t, weather),
       body: SafeArea(
         child: switch (weather.status) {
-          WeatherStatus.idle    => _buildLoading(t),
+          WeatherStatus.idle => _buildLoading(t),
           WeatherStatus.loading => _buildLoading(t),
-          WeatherStatus.error   => _buildError(t, weather),
-          WeatherStatus.loaded  => _buildLoaded(t, weather),
+          WeatherStatus.error => _buildError(t, weather),
+          WeatherStatus.loaded => _buildLoaded(t, weather),
         },
       ),
     );
@@ -90,8 +90,9 @@ class _WeatherScreenState extends ConsumerState<WeatherScreen> {
           ),
         IconButton(
           icon: Icon(Icons.refresh_rounded, color: t.accent),
-          onPressed: () =>
-              ref.read(weatherProvider.notifier).fetchWeather(forceRefresh: true),
+          onPressed: () => ref
+              .read(weatherProvider.notifier)
+              .fetchWeather(forceRefresh: true),
         ),
       ],
     );
@@ -131,7 +132,7 @@ class _WeatherScreenState extends ConsumerState<WeatherScreen> {
             Text(weather.error,
                 textAlign: TextAlign.center,
                 style: TextStyle(color: t.textSecondary, fontSize: 13)),
-            if (weather.retryInSeconds > 0) ...[  
+            if (weather.retryInSeconds > 0) ...[
               const SizedBox(height: 8),
               Text('Retrying in ${weather.retryInSeconds}s',
                   style: TextStyle(
@@ -144,8 +145,9 @@ class _WeatherScreenState extends ConsumerState<WeatherScreen> {
               style: ElevatedButton.styleFrom(backgroundColor: t.accent),
               icon: const Icon(Icons.refresh_rounded, size: 16),
               label: const Text('Retry Now'),
-              onPressed: () =>
-                  ref.read(weatherProvider.notifier).fetchWeather(forceRefresh: true),
+              onPressed: () => ref
+                  .read(weatherProvider.notifier)
+                  .fetchWeather(forceRefresh: true),
             ),
           ],
         ),
@@ -190,7 +192,7 @@ class _WeatherScreenState extends ConsumerState<WeatherScreen> {
           const SizedBox(height: 16),
 
           // 7-day forecast
-          if (weather.forecast.isNotEmpty) ...[  
+          if (weather.forecast.isNotEmpty) ...[
             Text('7-DAY FORECAST',
                 style: TextStyle(
                     color: t.textSecondary,
@@ -257,8 +259,7 @@ class _SearchResults extends StatelessWidget {
                 leading:
                     Icon(Icons.location_on_rounded, color: t.accent, size: 16),
                 title: Text(c.displayName,
-                    style:
-                        TextStyle(color: t.textPrimary, fontSize: 13)),
+                    style: TextStyle(color: t.textPrimary, fontSize: 13)),
                 onTap: () => onSelect(c),
               ),
             )
@@ -319,14 +320,23 @@ class _StatRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        _StatChip(t: t, icon: Icons.water_drop_rounded,
-            label: 'Humidity', value: '${cur.humidity}%'),
+        _StatChip(
+            t: t,
+            icon: Icons.water_drop_rounded,
+            label: 'Humidity',
+            value: '${cur.humidity}%'),
         const SizedBox(width: 8),
-        _StatChip(t: t, icon: Icons.air_rounded,
-            label: 'Wind', value: '${cur.windKph.toStringAsFixed(0)} km/h'),
+        _StatChip(
+            t: t,
+            icon: Icons.air_rounded,
+            label: 'Wind',
+            value: '${cur.windKph.toStringAsFixed(0)} km/h'),
         const SizedBox(width: 8),
-        _StatChip(t: t, icon: Icons.umbrella_rounded,
-            label: 'Rain', value: '${cur.precipMm.toStringAsFixed(1)} mm'),
+        _StatChip(
+            t: t,
+            icon: Icons.umbrella_rounded,
+            label: 'Rain',
+            value: '${cur.precipMm.toStringAsFixed(1)} mm'),
       ],
     );
   }
@@ -362,8 +372,7 @@ class _StatChip extends StatelessWidget {
                     color: t.textPrimary,
                     fontWeight: FontWeight.w700,
                     fontSize: 13)),
-            Text(label,
-                style: TextStyle(color: t.textSecondary, fontSize: 10)),
+            Text(label, style: TextStyle(color: t.textSecondary, fontSize: 10)),
           ],
         ),
       ),
@@ -407,8 +416,7 @@ class _ForecastRow extends StatelessWidget {
           Text('${day.minC.toStringAsFixed(0)}°',
               style: TextStyle(color: t.textSecondary, fontSize: 12)),
           const SizedBox(width: 4),
-          Text('/',
-              style: TextStyle(color: t.stroke, fontSize: 12)),
+          Text('/', style: TextStyle(color: t.stroke, fontSize: 12)),
           const SizedBox(width: 4),
           Text('${day.maxC.toStringAsFixed(0)}°',
               style: TextStyle(
@@ -425,8 +433,18 @@ class _ForecastRow extends StatelessWidget {
       final d = DateTime.parse(iso);
       const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
       const months = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec'
       ];
       return '${days[d.weekday - 1]} ${d.day} ${months[d.month - 1]}';
     } catch (_) {
@@ -440,24 +458,24 @@ class _ForecastRow extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 IconData _wmoIcon(int code) {
-  if (code == 0)              return Icons.wb_sunny_rounded;
-  if (code <= 2)              return Icons.wb_cloudy_rounded;
-  if (code <= 9)              return Icons.cloud_rounded;
-  if (code <= 49)             return Icons.foggy;
-  if (code <= 59)             return Icons.grain_rounded;
-  if (code <= 69)             return Icons.water_drop_rounded;
-  if (code <= 79)             return Icons.ac_unit_rounded;
-  if (code <= 82)             return Icons.umbrella_rounded;
-  if (code <= 86)             return Icons.cloudy_snowing;
-  if (code <= 99)             return Icons.thunderstorm_rounded;
+  if (code == 0) return Icons.wb_sunny_rounded;
+  if (code <= 2) return Icons.wb_cloudy_rounded;
+  if (code <= 9) return Icons.cloud_rounded;
+  if (code <= 49) return Icons.foggy;
+  if (code <= 59) return Icons.grain_rounded;
+  if (code <= 69) return Icons.water_drop_rounded;
+  if (code <= 79) return Icons.ac_unit_rounded;
+  if (code <= 82) return Icons.umbrella_rounded;
+  if (code <= 86) return Icons.cloudy_snowing;
+  if (code <= 99) return Icons.thunderstorm_rounded;
   return Icons.wb_cloudy_rounded;
 }
 
 String _wmoLabel(int code) {
-  if (code == 0)  return 'Clear sky';
-  if (code == 1)  return 'Mainly clear';
-  if (code == 2)  return 'Partly cloudy';
-  if (code == 3)  return 'Overcast';
+  if (code == 0) return 'Clear sky';
+  if (code == 1) return 'Mainly clear';
+  if (code == 2) return 'Partly cloudy';
+  if (code == 3) return 'Overcast';
   if (code <= 49) return 'Fog';
   if (code <= 59) return 'Drizzle';
   if (code <= 69) return 'Rain';

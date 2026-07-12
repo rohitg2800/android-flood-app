@@ -22,16 +22,16 @@ class AlertEvaluator {
   }) {
     if (city.dangerLevel <= 0 && city.warningLevel <= 0) return null;
     return _build(
-      cityId:       city.id,
-      cityName:     city.name,
-      state:        city.state,
-      river:        city.river,
+      cityId: city.id,
+      cityName: city.name,
+      state: city.state,
+      river: city.river,
       currentValue: currentValue,
       warningLevel: city.warningLevel,
-      dangerLevel:  city.dangerLevel,
-      hfl:          city.hfl,
+      dangerLevel: city.dangerLevel,
+      hfl: city.hfl,
       previousValue: previousValue,
-      isDischarge:  isDischarge,
+      isDischarge: isDischarge,
     );
   }
 
@@ -42,16 +42,17 @@ class AlertEvaluator {
     double? previousValue,
   }) {
     return _build(
-      cityId:       '${gauge.river.toLowerCase().replaceAll(' ', '_')}_${gauge.station.toLowerCase().replaceAll(' ', '_')}',
-      cityName:     gauge.station,
-      state:        'Bihar',
-      river:        gauge.river,
+      cityId:
+          '${gauge.river.toLowerCase().replaceAll(' ', '_')}_${gauge.station.toLowerCase().replaceAll(' ', '_')}',
+      cityName: gauge.station,
+      state: 'Bihar',
+      river: gauge.river,
       currentValue: currentValue,
       warningLevel: gauge.warningLevel,
-      dangerLevel:  gauge.dangerLevel,
-      hfl:          gauge.hfl,
+      dangerLevel: gauge.dangerLevel,
+      hfl: gauge.hfl,
       previousValue: previousValue,
-      isDischarge:  false,
+      isDischarge: false,
     );
   }
 
@@ -68,72 +69,72 @@ class AlertEvaluator {
     double? previousDischarge,
   }) {
     return _build(
-      cityId:       cityId,
-      cityName:     cityName,
-      state:        state,
-      river:        river,
+      cityId: cityId,
+      cityName: cityName,
+      state: state,
+      river: river,
       currentValue: dischargeM3s,
       warningLevel: warningDischarge,
-      dangerLevel:  dangerDischarge,
-      hfl:          hflDischarge,
+      dangerLevel: dangerDischarge,
+      hfl: hflDischarge,
       previousValue: previousDischarge,
-      isDischarge:  true,
+      isDischarge: true,
     );
   }
 
   // ─── Core build logic ────────────────────────────────────────────────────
   static ThresholdAlert? _build({
-    required String  cityId,
-    required String  cityName,
-    required String  state,
-    required String  river,
-    required double  currentValue,
-    required double  warningLevel,
-    required double  dangerLevel,
-    required double  hfl,
-    double?          previousValue,
-    bool             isDischarge = false,
+    required String cityId,
+    required String cityName,
+    required String state,
+    required String river,
+    required double currentValue,
+    required double warningLevel,
+    required double dangerLevel,
+    required double hfl,
+    double? previousValue,
+    bool isDischarge = false,
   }) {
     final level = _classify(
       current: currentValue,
       warning: warningLevel,
-      danger:  dangerLevel,
-      hfl:     hfl,
+      danger: dangerLevel,
+      hfl: hfl,
     );
 
     // "watch" threshold: within 20% of the gap below warning level
-    final warnGap   = (dangerLevel - warningLevel).abs();
+    final warnGap = (dangerLevel - warningLevel).abs();
     final watchEdge = warningLevel - (warnGap * 0.20);
     if (currentValue < watchEdge && level == AlertLevel.normal) return null;
 
-    final breachRef   = _breachReference(level, warningLevel, dangerLevel, hfl);
+    final breachRef = _breachReference(level, warningLevel, dangerLevel, hfl);
     final breachMargin = currentValue - breachRef;
-    final gapWD       = (dangerLevel - warningLevel).abs();
+    final gapWD = (dangerLevel - warningLevel).abs();
     final fillPercent = gapWD > 0
         ? ((currentValue - warningLevel) / gapWD * 100).clamp(0.0, 150.0)
         : 0.0;
 
     final trend = _trend(currentValue, previousValue);
-    final ts    = DateTime.now();
-    final id    = '${cityId}_${level.name}_${ts.millisecondsSinceEpoch}';
+    final ts = DateTime.now();
+    final id = '${cityId}_${level.name}_${ts.millisecondsSinceEpoch}';
 
     return ThresholdAlert(
-      id:           id,
-      cityId:       cityId,
-      cityName:     cityName,
-      state:        state,
-      river:        river,
-      level:        level,
+      id: id,
+      cityId: cityId,
+      cityName: cityName,
+      state: state,
+      river: river,
+      level: level,
       currentValue: currentValue,
       warningLevel: warningLevel,
-      dangerLevel:  dangerLevel,
-      hfl:          hfl,
+      dangerLevel: dangerLevel,
+      hfl: hfl,
       breachMargin: breachMargin,
-      fillPercent:  fillPercent,
-      timestamp:    ts,
-      isDischarge:  isDischarge,
+      fillPercent: fillPercent,
+      timestamp: ts,
+      isDischarge: isDischarge,
       previousValue: previousValue,
-      trend:        trend,
+      trend: trend,
     );
   }
 
@@ -143,29 +144,29 @@ class AlertEvaluator {
     required double danger,
     required double hfl,
   }) {
-    if (hfl > 0 && current >= hfl)       return AlertLevel.extreme;
-    if (current >= danger)                return AlertLevel.danger;
-    if (current >= warning)               return AlertLevel.warning;
+    if (hfl > 0 && current >= hfl) return AlertLevel.extreme;
+    if (current >= danger) return AlertLevel.danger;
+    if (current >= warning) return AlertLevel.warning;
     final gap = (danger - warning).abs();
-    if (current >= warning - gap * 0.20)  return AlertLevel.watch;
+    if (current >= warning - gap * 0.20) return AlertLevel.watch;
     return AlertLevel.normal;
   }
 
   static double _breachReference(
-    AlertLevel level, double wl, double dl, double hfl) {
+      AlertLevel level, double wl, double dl, double hfl) {
     return switch (level) {
       AlertLevel.extreme => hfl,
-      AlertLevel.danger  => dl,
+      AlertLevel.danger => dl,
       AlertLevel.warning => wl,
-      AlertLevel.watch   => wl,
-      AlertLevel.normal  => wl,
+      AlertLevel.watch => wl,
+      AlertLevel.normal => wl,
     };
   }
 
   static TrendDirection _trend(double current, double? previous) {
     if (previous == null) return TrendDirection.steady;
     final delta = current - previous;
-    if (delta >  0.02) return TrendDirection.rising;
+    if (delta > 0.02) return TrendDirection.rising;
     if (delta < -0.02) return TrendDirection.falling;
     return TrendDirection.steady;
   }

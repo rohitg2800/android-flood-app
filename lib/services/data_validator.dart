@@ -14,36 +14,37 @@ import '../services/befiqr_cwc_service.dart';
 // ─── Failure taxonomy ─────────────────────────────────────────────────────────
 
 enum ValidationFailureKind {
-  malformedJson,      // parse error / null / wrong type
-  emptyPayload,       // list or map is present but empty
-  missingFields,      // required key absent
-  levelOutOfRange,    // water level outside 0.5–250 m
-  staleTimestamp,     // fetchedAt older than 30 min
-  negativeLevel,      // sanity: currentLevel < 0
+  malformedJson, // parse error / null / wrong type
+  emptyPayload, // list or map is present but empty
+  missingFields, // required key absent
+  levelOutOfRange, // water level outside 0.5–250 m
+  staleTimestamp, // fetchedAt older than 30 min
+  negativeLevel, // sanity: currentLevel < 0
 }
 
 class ValidationFailure {
   final ValidationFailureKind kind;
-  final String                detail;
+  final String detail;
   const ValidationFailure(this.kind, this.detail);
 
   /// Human-readable short label — shown in UI chips / banners
   String get label => switch (kind) {
-    ValidationFailureKind.malformedJson    => 'MALFORMED',
-    ValidationFailureKind.emptyPayload     => 'NO DATA',
-    ValidationFailureKind.missingFields    => 'INCOMPLETE',
-    ValidationFailureKind.levelOutOfRange  => 'RANGE ERR',
-    ValidationFailureKind.staleTimestamp   => 'STALE',
-    ValidationFailureKind.negativeLevel    => 'NEGATIVE LVL',
-  };
+        ValidationFailureKind.malformedJson => 'MALFORMED',
+        ValidationFailureKind.emptyPayload => 'NO DATA',
+        ValidationFailureKind.missingFields => 'INCOMPLETE',
+        ValidationFailureKind.levelOutOfRange => 'RANGE ERR',
+        ValidationFailureKind.staleTimestamp => 'STALE',
+        ValidationFailureKind.negativeLevel => 'NEGATIVE LVL',
+      };
 
   /// Maps to UI state: staleTimestamp → DataQualityState.stale, rest → sourceError
   DataQualityState get uiState => switch (kind) {
-    ValidationFailureKind.staleTimestamp => DataQualityState.stale,
-    _                                    => DataQualityState.sourceError,
-  };
+        ValidationFailureKind.staleTimestamp => DataQualityState.stale,
+        _ => DataQualityState.sourceError,
+      };
 
-  @override String toString() => 'ValidationFailure(${kind.name}: $detail)';
+  @override
+  String toString() => 'ValidationFailure(${kind.name}: $detail)';
 }
 
 // ─── Result type ──────────────────────────────────────────────────────────────
@@ -51,24 +52,25 @@ class ValidationFailure {
 sealed class ValidationResult<T> {
   const ValidationResult();
 
-  bool get isOk  => this is ValidationOk<T>;
+  bool get isOk => this is ValidationOk<T>;
   bool get isErr => this is ValidationErr<T>;
 
   R when<R>({
-    required R Function(T value)                ok,
+    required R Function(T value) ok,
     required R Function(ValidationFailure fail) err,
   }) {
     return switch (this) {
-      ValidationOk<T>  v => ok(v.value),
+      ValidationOk<T> v => ok(v.value),
       ValidationErr<T> e => err(e.failure),
     };
   }
 
-  T?                 get valueOrNull   => isOk  ? (this as ValidationOk<T>).value    : null;
-  ValidationFailure? get failureOrNull => isErr ? (this as ValidationErr<T>).failure : null;
+  T? get valueOrNull => isOk ? (this as ValidationOk<T>).value : null;
+  ValidationFailure? get failureOrNull =>
+      isErr ? (this as ValidationErr<T>).failure : null;
 }
 
-final class ValidationOk<T>  extends ValidationResult<T> {
+final class ValidationOk<T> extends ValidationResult<T> {
   final T value;
   const ValidationOk(this.value);
 }
@@ -81,8 +83,8 @@ final class ValidationErr<T> extends ValidationResult<T> {
 // ─── UI data quality states ───────────────────────────────────────────────────
 
 enum DataQualityState {
-  fresh,       // passed all checks
-  stale,       // timestamp > 30 min
+  fresh, // passed all checks
+  stale, // timestamp > 30 min
   sourceError, // structural / range / missing field problem
 }
 
@@ -96,18 +98,28 @@ class ValidatorConstraints {
   static const Duration maxAge = Duration(minutes: 30);
 
   static const List<String> requiredCwcKeys = [
-    'river', 'site', 'currentLevel', 'dangerLevel', 'fetchedAt',
+    'river',
+    'site',
+    'currentLevel',
+    'dangerLevel',
+    'fetchedAt',
   ];
   static const List<String> requiredFloodKeys = [
-    'city', 'state', 'currentLevel', 'warningLevel',
-    'dangerLevel', 'safeLevel', 'riskLevel', 'status', 'lastUpdated',
+    'city',
+    'state',
+    'currentLevel',
+    'warningLevel',
+    'dangerLevel',
+    'safeLevel',
+    'riskLevel',
+    'status',
+    'lastUpdated',
   ];
 }
 
 // ─── DataValidator ────────────────────────────────────────────────────────────
 
 abstract final class DataValidator {
-
   // ── CwcStation from parsed object ─────────────────────────────────────────
 
   static ValidationResult<CwcStation> validateStation(CwcStation s) {
@@ -151,13 +163,15 @@ abstract final class DataValidator {
       Map<String, dynamic>? json) {
     if (json == null || json.isEmpty) {
       return ValidationErr(ValidationFailure(
-        ValidationFailureKind.emptyPayload, 'null or empty map',
+        ValidationFailureKind.emptyPayload,
+        'null or empty map',
       ));
     }
     for (final key in ValidatorConstraints.requiredCwcKeys) {
       if (!json.containsKey(key) || json[key] == null) {
         return ValidationErr(ValidationFailure(
-          ValidationFailureKind.missingFields, 'missing key: $key',
+          ValidationFailureKind.missingFields,
+          'missing key: $key',
         ));
       }
     }
@@ -166,7 +180,8 @@ abstract final class DataValidator {
       return validateStation(station);
     } catch (e) {
       return ValidationErr(ValidationFailure(
-        ValidationFailureKind.malformedJson, e.toString(),
+        ValidationFailureKind.malformedJson,
+        e.toString(),
       ));
     }
   }
@@ -177,7 +192,8 @@ abstract final class DataValidator {
       String? raw) {
     if (raw == null || raw.trim().isEmpty) {
       return ValidationErr(ValidationFailure(
-        ValidationFailureKind.emptyPayload, 'empty string',
+        ValidationFailureKind.emptyPayload,
+        'empty string',
       ));
     }
     List<dynamic> decoded;
@@ -185,15 +201,17 @@ abstract final class DataValidator {
       decoded = jsonDecode(raw) as List<dynamic>;
     } catch (e) {
       return ValidationErr(ValidationFailure(
-        ValidationFailureKind.malformedJson, e.toString(),
+        ValidationFailureKind.malformedJson,
+        e.toString(),
       ));
     }
     if (decoded.isEmpty) {
       return ValidationErr(ValidationFailure(
-        ValidationFailureKind.emptyPayload, 'list has 0 items',
+        ValidationFailureKind.emptyPayload,
+        'list has 0 items',
       ));
     }
-    final valid    = <CwcStation>[];
+    final valid = <CwcStation>[];
     final rejected = <ValidationFailure>[];
     for (final item in decoded) {
       if (item is! Map<String, dynamic>) {
@@ -202,7 +220,7 @@ abstract final class DataValidator {
         continue;
       }
       validateStationJson(item).when(
-        ok:  valid.add,
+        ok: valid.add,
         err: rejected.add,
       );
     }
@@ -240,11 +258,9 @@ abstract final class DataValidator {
 
   // ── Bulk partition: (valid, failures) ────────────────────────────────────
 
-  static ({List<T> valid, List<ValidationFailure> failures})
-      partitionList<T>(
-          List<T> items,
-          ValidationResult<T> Function(T) validate) {
-    final valid    = <T>[];
+  static ({List<T> valid, List<ValidationFailure> failures}) partitionList<T>(
+      List<T> items, ValidationResult<T> Function(T) validate) {
+    final valid = <T>[];
     final failures = <ValidationFailure>[];
     for (final item in items) {
       validate(item).when(ok: valid.add, err: failures.add);

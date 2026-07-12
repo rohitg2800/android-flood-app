@@ -27,43 +27,45 @@ class OpsDepthCard extends StatelessWidget {
     switch (s) {
       case AlertSeverity.emergency:
         return _SevStyle(
-          color:  AppPalette.critical,
-          label:  'EMERGENCY',
-          icon:   Icons.warning_amber_rounded,
-          glow:   true,
+          color: AppPalette.critical,
+          label: 'EMERGENCY',
+          icon: Icons.warning_amber_rounded,
+          glow: true,
         );
       case AlertSeverity.critical:
         return _SevStyle(
-          color:  AppPalette.danger,
-          label:  'CRITICAL',
-          icon:   Icons.warning_rounded,
-          glow:   true,
+          color: AppPalette.danger,
+          label: 'CRITICAL',
+          icon: Icons.warning_rounded,
+          glow: true,
         );
       case AlertSeverity.warning:
         return _SevStyle(
-          color:  AppPalette.warning,
-          label:  'WARNING',
-          icon:   Icons.error_outline_rounded,
-          glow:   false,
+          color: AppPalette.warning,
+          label: 'WARNING',
+          icon: Icons.error_outline_rounded,
+          glow: false,
         );
       default:
         return _SevStyle(
-          color:  AppPalette.safe,
-          label:  'NORMAL',
-          icon:   Icons.check_circle_outline_rounded,
-          glow:   false,
+          color: AppPalette.safe,
+          label: 'NORMAL',
+          icon: Icons.check_circle_outline_rounded,
+          glow: false,
         );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final t     = RiverColors.of(context);
-    final sev   = _style(alert.severity);
-    final pct   = (alert.currentLevel /
-            (alert.thresholdLevel > 0 ? alert.thresholdLevel : alert.currentLevel * 1.2))
+    final t = RiverColors.of(context);
+    final sev = _style(alert.severity);
+    final pct = (alert.currentLevel /
+            (alert.thresholdLevel > 0
+                ? alert.thresholdLevel
+                : alert.currentLevel * 1.2))
         .clamp(0.0, 1.0);
-    final when  = timeago.format(alert.issuedAt);         // ✅ was triggeredAt
+    final when = timeago.format(alert.issuedAt); // ✅ was triggeredAt
 
     return GestureDetector(
       onTap: onTap,
@@ -82,8 +84,8 @@ class OpsDepthCard extends StatelessWidget {
           boxShadow: sev.glow
               ? [
                   BoxShadow(
-                    color:       sev.color.withValues(alpha: 0.18),
-                    blurRadius:  12,
+                    color: sev.color.withValues(alpha: 0.18),
+                    blurRadius: 12,
                     spreadRadius: 1,
                   ),
                 ]
@@ -103,8 +105,8 @@ class OpsDepthCard extends StatelessWidget {
                     child: Text(
                       alert.title,
                       style: TextStyle(
-                        color:      t.textPrimary,
-                        fontSize:   14,
+                        color: t.textPrimary,
+                        fontSize: 14,
                         fontWeight: FontWeight.w700,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -118,8 +120,8 @@ class OpsDepthCard extends StatelessWidget {
               // ── River + district ────────────────────────────────────
               Text(
                 '${alert.river}  •  ${alert.district}', // ✅ river (not riverName), district non-nullable
-                style: const TextStyle(
-                    color: AppPalette.textGrey, fontSize: 12),
+                style:
+                    const TextStyle(color: AppPalette.textGrey, fontSize: 12),
               ),
               const SizedBox(height: 10),
 
@@ -136,16 +138,15 @@ class OpsDepthCard extends StatelessWidget {
                             Text(
                               '${alert.currentLevel.toStringAsFixed(2)} m',
                               style: TextStyle(
-                                color:      sev.color,
-                                fontSize:   18,
+                                color: sev.color,
+                                fontSize: 18,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
                             Text(
                               '${(pct * 100).toStringAsFixed(0)}% of threshold',
                               style: const TextStyle(
-                                  color:    AppPalette.textGrey,
-                                  fontSize: 11),
+                                  color: AppPalette.textGrey, fontSize: 11),
                             ),
                           ],
                         ),
@@ -153,8 +154,8 @@ class OpsDepthCard extends StatelessWidget {
                         ClipRRect(
                           borderRadius: BorderRadius.circular(4),
                           child: LinearProgressIndicator(
-                            value:           pct,
-                            minHeight:       6,
+                            value: pct,
+                            minHeight: 6,
                             backgroundColor:
                                 AppPalette.abyss4.withValues(alpha: 0.5),
                             valueColor:
@@ -174,21 +175,18 @@ class OpsDepthCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      alert.body ?? alert.message,                         // ✅ was message
+                      alert.body ?? alert.message, // ✅ was message
                       style: TextStyle(
-                          color:    t.textSecondary,
-                          fontSize: 11,
-                          height:   1.4),
-                      maxLines:  2,
-                      overflow:  TextOverflow.ellipsis,
+                          color: t.textSecondary, fontSize: 11, height: 1.4),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   const SizedBox(width: 8),
                   Text(
                     when,
                     style: const TextStyle(
-                        color:    AppPalette.textGrey,
-                        fontSize: 10),
+                        color: AppPalette.textGrey, fontSize: 10),
                   ),
                 ],
               ),
@@ -203,10 +201,10 @@ class OpsDepthCard extends StatelessWidget {
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
 class _SevStyle {
-  final Color    color;
-  final String   label;
+  final Color color;
+  final String label;
   final IconData icon;
-  final bool     glow;
+  final bool glow;
   const _SevStyle({
     required this.color,
     required this.label,
@@ -217,7 +215,7 @@ class _SevStyle {
 
 class _SeverityChip extends StatelessWidget {
   final String label;
-  final Color  color;
+  final Color color;
   const _SeverityChip({required this.label, required this.color});
 
   @override
@@ -225,15 +223,15 @@ class _SeverityChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color:        color.withValues(alpha: 0.15),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(6),
-        border:       Border.all(color: color.withValues(alpha: 0.4)),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Text(
         label,
         style: TextStyle(
-          color:      color,
-          fontSize:   10,
+          color: color,
+          fontSize: 10,
           fontWeight: FontWeight.w800,
           letterSpacing: 0.6,
         ),

@@ -53,13 +53,13 @@ class BackendApiService {
     String? state,
     String? district,
     String? river,
-    int?    minRiskScore,
-    int     limit = 200,
+    int? minRiskScore,
+    int limit = 200,
   }) async {
     final params = <String, String>{'limit': '$limit'};
-    if (state        != null) params['state']          = state;
-    if (district     != null) params['district']       = district;
-    if (river        != null) params['river']          = river;
+    if (state != null) params['state'] = state;
+    if (district != null) params['district'] = district;
+    if (river != null) params['river'] = river;
     if (minRiskScore != null) params['min_risk_score'] = '$minRiskScore';
     _log('GET /api/river-severity $params');
     final body = await _ops.get('/api/river-severity', query: params);
@@ -98,14 +98,14 @@ class BackendApiService {
   }) async {
     final results = <Map<String, dynamic>>[];
     for (int i = 0; i < cityKeys.length; i += chunkSize) {
-      final end   = (i + chunkSize).clamp(0, cityKeys.length);
+      final end = (i + chunkSize).clamp(0, cityKeys.length);
       final cLats = lats.sublist(i, end);
       final cLons = lons.sublist(i, end);
       final cKeys = cityKeys.sublist(i, end);
       try {
         final body = await _ops.get(path, query: {
-          'lats'  : cLats.join(','),
-          'lons'  : cLons.join(','),
+          'lats': cLats.join(','),
+          'lons': cLons.join(','),
           'cities': cKeys.join(',').toLowerCase(),
         });
         results.addAll(_parseList(body, listKey));
@@ -152,13 +152,16 @@ class BackendApiService {
   // PUSH endpoints  (v3.0+)
   // ─────────────────────────────────────────────────────────────────────────
 
-  Future<Map<String, dynamic>> postGaugeTelemetry(Map<String, dynamic> payload) async =>
+  Future<Map<String, dynamic>> postGaugeTelemetry(
+          Map<String, dynamic> payload) async =>
       _ops.post('/api/gauge-telemetry', payload);
 
-  Future<Map<String, dynamic>> postRtdasThresholds(Map<String, dynamic> payload) async =>
+  Future<Map<String, dynamic>> postRtdasThresholds(
+          Map<String, dynamic> payload) async =>
       _ops.post('/api/rtdas-thresholds', payload);
 
-  Future<Map<String, dynamic>> postFloodEvents(Map<String, dynamic> payload) async =>
+  Future<Map<String, dynamic>> postFloodEvents(
+          Map<String, dynamic> payload) async =>
       _ops.post('/api/flood-events', payload);
 
   // ── helpers ────────────────────────────────────────────────────────────────
@@ -167,8 +170,14 @@ class BackendApiService {
   List<Map<String, dynamic>> _parseList(dynamic body, String tag) {
     if (body is List) return body.whereType<Map<String, dynamic>>().toList();
     if (body is Map) {
-      if (body['data']     is List) return (body['data']     as List).whereType<Map<String,dynamic>>().toList();
-      if (body['stations'] is List) return (body['stations'] as List).whereType<Map<String,dynamic>>().toList();
+      if (body['data'] is List)
+        return (body['data'] as List)
+            .whereType<Map<String, dynamic>>()
+            .toList();
+      if (body['stations'] is List)
+        return (body['stations'] as List)
+            .whereType<Map<String, dynamic>>()
+            .toList();
     }
     throw FormatException('$tag: unexpected response shape');
   }

@@ -14,22 +14,22 @@ class SyncStatusBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final statusAsync = ref.watch(wsStatusProvider);
-    final lastSync    = ref.watch(wsLastSyncProvider);
+    final lastSync = ref.watch(wsLastSyncProvider);
     // ignore: unused_local_variable
     final t = RiverColors.of(context);
 
     final status = statusAsync.when(
-      data:    (s) => s,
-      loading: ()  => WsStatus.connecting,
-      error:   (_, __) => WsStatus.offline,
+      data: (s) => s,
+      loading: () => WsStatus.connecting,
+      error: (_, __) => WsStatus.offline,
     );
 
     final cfg = _BannerConfig.from(status, lastSync);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 400),
-      height:   cfg.visible ? 28 : 0,
-      color:    cfg.bgColor.withValues(alpha: 0.92),
+      height: cfg.visible ? 28 : 0,
+      color: cfg.bgColor.withValues(alpha: 0.92),
       child: cfg.visible
           ? Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -43,8 +43,8 @@ class SyncStatusBanner extends ConsumerWidget {
                 Text(
                   cfg.label,
                   style: TextStyle(
-                    color:      cfg.textColor,
-                    fontSize:   11,
+                    color: cfg.textColor,
+                    fontSize: 11,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.3,
                   ),
@@ -114,10 +114,10 @@ class _PulseDotState extends State<_PulseDot>
 // ── Banner config helper ───────────────────────────────────────────────────
 
 class _BannerConfig {
-  final bool    visible;
-  final Color   bgColor, dotColor, textColor;
+  final bool visible;
+  final Color bgColor, dotColor, textColor;
   final IconData icon;
-  final String  label;
+  final String label;
 
   const _BannerConfig({
     required this.visible,
@@ -132,35 +132,33 @@ class _BannerConfig {
     switch (status) {
       case WsStatus.connected:
         return _BannerConfig(
-          visible:   false,   // Live = no banner needed (data flows silently)
-          bgColor:   AppPalette.safe.withValues(alpha: 0.15),
-          dotColor:  AppPalette.safe,
+          visible: false, // Live = no banner needed (data flows silently)
+          bgColor: AppPalette.safe.withValues(alpha: 0.15),
+          dotColor: AppPalette.safe,
           textColor: AppPalette.safe,
-          icon:      Icons.circle,
-          label:     'LIVE',
+          icon: Icons.circle,
+          label: 'LIVE',
         );
 
       case WsStatus.connecting:
         return _BannerConfig(
-          visible:   true,
-          bgColor:   AppPalette.gold.withValues(alpha: 0.12),
-          dotColor:  AppPalette.gold,
+          visible: true,
+          bgColor: AppPalette.gold.withValues(alpha: 0.12),
+          dotColor: AppPalette.gold,
           textColor: AppPalette.gold,
-          icon:      Icons.sync_rounded,
-          label:     'Connecting…',
+          icon: Icons.sync_rounded,
+          label: 'Connecting…',
         );
 
       case WsStatus.fallback:
-        final ago = lastSync != null
-            ? _timeAgo(lastSync)
-            : 'recently';
+        final ago = lastSync != null ? _timeAgo(lastSync) : 'recently';
         return _BannerConfig(
-          visible:   true,
-          bgColor:   AppPalette.warning.withValues(alpha: 0.12),
-          dotColor:  AppPalette.warning,
+          visible: true,
+          bgColor: AppPalette.warning.withValues(alpha: 0.12),
+          dotColor: AppPalette.warning,
           textColor: AppPalette.warning,
-          icon:      Icons.wifi_off_rounded,
-          label:     'Polling — synced $ago',
+          icon: Icons.wifi_off_rounded,
+          label: 'Polling — synced $ago',
         );
 
       case WsStatus.offline:
@@ -168,20 +166,20 @@ class _BannerConfig {
             ? 'Last data ${_timeAgo(lastSync)}'
             : 'No data yet';
         return _BannerConfig(
-          visible:   true,
-          bgColor:   AppPalette.critical.withValues(alpha: 0.12),
-          dotColor:  AppPalette.critical,
+          visible: true,
+          bgColor: AppPalette.critical.withValues(alpha: 0.12),
+          dotColor: AppPalette.critical,
           textColor: AppPalette.critical,
-          icon:      Icons.cloud_off_rounded,
-          label:     'Offline — $ago',
+          icon: Icons.cloud_off_rounded,
+          label: 'Offline — $ago',
         );
     }
   }
 
   static String _timeAgo(DateTime dt) {
     final diff = DateTime.now().difference(dt);
-    if (diff.inSeconds < 60)  return '${diff.inSeconds}s ago';
-    if (diff.inMinutes < 60)  return '${diff.inMinutes} min ago';
+    if (diff.inSeconds < 60) return '${diff.inSeconds}s ago';
+    if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
     return '${diff.inHours}h ago';
   }
 }

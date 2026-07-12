@@ -7,11 +7,11 @@
 import 'package:flutter/material.dart';
 
 class SummaryStrip extends StatelessWidget {
-  final int    critical;
-  final int    severe;
-  final int    warning;
-  final int    safe;
-  final int    noData;
+  final int critical;
+  final int severe;
+  final int warning;
+  final int safe;
+  final int noData;
   final String lastUpdate;
 
   const SummaryStrip({
@@ -36,11 +36,10 @@ class SummaryStrip extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _chip('CRITICAL', critical, Colors.red),
-              _chip('SEVERE',   severe,   Colors.deepOrange),
-              _chip('WARNING',  warning,  Colors.orange),
-              _chip('SAFE',     safe,     Colors.green),
-              if (noData > 0)
-                _chip('N/A', noData, Colors.grey),
+              _chip('SEVERE', severe, Colors.deepOrange),
+              _chip('WARNING', warning, Colors.orange),
+              _chip('SAFE', safe, Colors.green),
+              if (noData > 0) _chip('N/A', noData, Colors.grey),
             ],
           ),
           if (lastUpdate.isNotEmpty) ...[

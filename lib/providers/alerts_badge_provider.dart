@@ -38,8 +38,8 @@ final _ndmaAdvisoryCountProvider = Provider<int>((ref) {
 
 final criticalAlertCountProvider = Provider<int>((ref) {
   final engine = ref.watch(_alertEngineCountProvider);
-  final imd    = ref.watch(_imdAlertCountProvider);
-  final ndma   = ref.watch(_ndmaAdvisoryCountProvider);
+  final imd = ref.watch(_imdAlertCountProvider);
+  final ndma = ref.watch(_ndmaAdvisoryCountProvider);
   return engine + imd + ndma;
 });
 

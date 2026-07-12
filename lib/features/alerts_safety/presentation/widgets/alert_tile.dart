@@ -26,34 +26,43 @@ class AlertTile extends StatelessWidget {
 
   Color _color(dynamic c) {
     switch (severity) {
-      case AlertTileSeverity.critical: return c.danger;
-      case AlertTileSeverity.severe:   return const Color(0xFFFF8C42);
-      case AlertTileSeverity.warning:  return c.warning;
+      case AlertTileSeverity.critical:
+        return c.danger;
+      case AlertTileSeverity.severe:
+        return const Color(0xFFFF8C42);
+      case AlertTileSeverity.warning:
+        return c.warning;
     }
   }
 
   IconData _icon() {
     switch (severity) {
-      case AlertTileSeverity.critical: return Icons.crisis_alert_rounded;
-      case AlertTileSeverity.severe:   return Icons.warning_rounded;
-      case AlertTileSeverity.warning:  return Icons.warning_amber_rounded;
+      case AlertTileSeverity.critical:
+        return Icons.crisis_alert_rounded;
+      case AlertTileSeverity.severe:
+        return Icons.warning_rounded;
+      case AlertTileSeverity.warning:
+        return Icons.warning_amber_rounded;
     }
   }
 
   OpsBadgeVariant _badge() {
     switch (severity) {
-      case AlertTileSeverity.critical: return OpsBadgeVariant.danger;
-      case AlertTileSeverity.severe:   return OpsBadgeVariant.danger;
-      case AlertTileSeverity.warning:  return OpsBadgeVariant.warning;
+      case AlertTileSeverity.critical:
+        return OpsBadgeVariant.danger;
+      case AlertTileSeverity.severe:
+        return OpsBadgeVariant.danger;
+      case AlertTileSeverity.warning:
+        return OpsBadgeVariant.warning;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final c     = core_theme.RiverTheme.of(context).colors;
+    final c = core_theme.RiverTheme.of(context).colors;
     final color = _color(c);
     final level = currentLevel?.toStringAsFixed(2) ?? "--";
-    final dngr  = dangerLevel?.toStringAsFixed(2)  ?? "--";
+    final dngr = dangerLevel?.toStringAsFixed(2) ?? "--";
 
     return GestureDetector(
       onTap: onTap,
@@ -67,7 +76,8 @@ class AlertTile extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 42, height: 42,
+              width: 42,
+              height: 42,
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.14),
                 borderRadius: BorderRadius.circular(12),
@@ -82,7 +92,8 @@ class AlertTile extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: Text(city,
+                        child: Text(
+                          city,
                           style: TextStyle(
                             color: c.textPrimary,
                             fontSize: 14,
@@ -95,13 +106,16 @@ class AlertTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(river,
-                    style: TextStyle(color: c.textSecondary, fontSize: 12)),
+                      style: TextStyle(color: c.textSecondary, fontSize: 12)),
                   const SizedBox(height: 6),
                   Row(
                     children: [
                       _Chip(label: "Current", value: "$level m", color: color),
                       const SizedBox(width: 8),
-                      _Chip(label: "Danger",  value: "$dngr m", color: c.textMuted),
+                      _Chip(
+                          label: "Danger",
+                          value: "$dngr m",
+                          color: c.textMuted),
                     ],
                   ),
                 ],
@@ -119,7 +133,7 @@ class AlertTile extends StatelessWidget {
 class _Chip extends StatelessWidget {
   final String label;
   final String value;
-  final Color  color;
+  final Color color;
   const _Chip({required this.label, required this.value, required this.color});
 
   @override
@@ -133,10 +147,13 @@ class _Chip extends StatelessWidget {
       ),
       child: RichText(
         text: TextSpan(children: [
-          TextSpan(text: "\$label  ",
-            style: TextStyle(color: c.textMuted, fontSize: 10)),
-          TextSpan(text: value,
-            style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700)),
+          TextSpan(
+              text: "\$label  ",
+              style: TextStyle(color: c.textMuted, fontSize: 10)),
+          TextSpan(
+              text: value,
+              style: TextStyle(
+                  color: color, fontSize: 11, fontWeight: FontWeight.w700)),
         ]),
       ),
     );

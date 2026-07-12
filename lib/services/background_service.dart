@@ -15,9 +15,9 @@ import '../config/env_config.dart';
 import 'local_cache_service.dart';
 import 'alert_engine.dart';
 
-const _kTaskName       = 'floodSyncTask';
+const _kTaskName = 'floodSyncTask';
 const _kTaskUniqueName = 'flood_sync_periodic';
-const _kSubBoxName     = 'alert_subscriptions';
+const _kSubBoxName = 'alert_subscriptions';
 
 @pragma('vm:entry-point')
 void callbackDispatcher() {
@@ -27,10 +27,9 @@ void callbackDispatcher() {
       await LocalCacheService.instance.init();
       await AlertEngine.instance.init();
 
-      final url  = '${EnvConfig.backendBaseUrl}/api/live-levels';
-      final resp = await http
-          .get(Uri.parse(url))
-          .timeout(const Duration(seconds: 20));
+      final url = '${EnvConfig.backendBaseUrl}/api/live-levels';
+      final resp =
+          await http.get(Uri.parse(url)).timeout(const Duration(seconds: 20));
 
       if (resp.statusCode != 200) return true;
 
@@ -56,7 +55,7 @@ void callbackDispatcher() {
       }
 
       if (Hive.isBoxOpen(_kSubBoxName)) {
-        final box  = Hive.box<AlertSubscription>(_kSubBoxName);
+        final box = Hive.box<AlertSubscription>(_kSubBoxName);
         final subs = box.values.toList();
         if (subs.isNotEmpty) {
           // positional args — (gauges, subscriptions)
@@ -84,13 +83,13 @@ class BackgroundSyncService {
     await Workmanager().registerPeriodicTask(
       _kTaskUniqueName,
       _kTaskName,
-      frequency:   const Duration(minutes: 15),
+      frequency: const Duration(minutes: 15),
       constraints: Constraints(
-        networkType:          NetworkType.connected,
+        networkType: NetworkType.connected,
         requiresBatteryNotLow: false,
       ),
       existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
-      backoffPolicy:      BackoffPolicy.exponential,
+      backoffPolicy: BackoffPolicy.exponential,
       backoffPolicyDelay: const Duration(minutes: 5),
     );
     debugPrint('[BG] periodic sync registered (15 min)');

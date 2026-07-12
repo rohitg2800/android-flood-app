@@ -79,15 +79,16 @@ class BackendSyncService {
     // ─ 1. Full gauge telemetry payload ───────────────────────────────────────
     final sourceCountMap = <String, int>{};
     for (final s in snapshot.stations) {
-      sourceCountMap[s.source ?? 'unknown'] = (sourceCountMap[s.source ?? 'unknown'] ?? 0) + 1;
+      sourceCountMap[s.source ?? 'unknown'] =
+          (sourceCountMap[s.source ?? 'unknown'] ?? 0) + 1;
     }
 
     final gaugePaylod = <String, dynamic>{
-      'ts':            snapshot.fetchedAt.millisecondsSinceEpoch,
+      'ts': snapshot.fetchedAt.millisecondsSinceEpoch,
       'source_counts': sourceCountMap,
-      'live_count':    snapshot.liveStations,
-      'total_count':   snapshot.totalStations,
-      'stations':      snapshot.stations.map((s) => s.toJson()).toList(),
+      'live_count': snapshot.liveStations,
+      'total_count': snapshot.totalStations,
+      'stations': snapshot.stations.map((s) => s.toJson()).toList(),
     };
 
     unawaited(_safePost(
@@ -96,32 +97,36 @@ class BackendSyncService {
     ));
 
     // ─ 2. Flood-events: only critical / danger stations ─────────────────────
-    final dangerous = snapshot.stations.where(
-      (s) => s.riskLabel == 'CRITICAL' || s.riskLabel == 'DANGER',
-    ).toList();
+    final dangerous = snapshot.stations
+        .where(
+          (s) => s.riskLabel == 'CRITICAL' || s.riskLabel == 'DANGER',
+        )
+        .toList();
 
     if (dangerous.isNotEmpty) {
       final eventsPayload = <String, dynamic>{
         'ts': now.millisecondsSinceEpoch,
-        'events': dangerous.map((s) => {
-          'station':      s.stationName,
-          'river':        s.river,
-          'district':     s.district,
-          'state':        s.state,
-          'lat':          s.lat,
-          'lon':          s.lon,
-          'level':        s.currentLevel,
-          'warning_level':s.warningLevel,
-          'danger_level': s.dangerLevel,
-          'hfl':          s.hfl,
-          'progress_pct': s.progressPct,
-          'risk':         s.riskLabel,
-          'source':       s.source,
-          'rainfall_24h': s.rainfall24hMm,
-          'forecast_24h': s.forecastLevel24h,
-          'rate_of_rise': s.rateOfRiseMph,
-          'ts':           s.fetchedAt.millisecondsSinceEpoch,
-        }).toList(),
+        'events': dangerous
+            .map((s) => {
+                  'station': s.stationName,
+                  'river': s.river,
+                  'district': s.district,
+                  'state': s.state,
+                  'lat': s.lat,
+                  'lon': s.lon,
+                  'level': s.currentLevel,
+                  'warning_level': s.warningLevel,
+                  'danger_level': s.dangerLevel,
+                  'hfl': s.hfl,
+                  'progress_pct': s.progressPct,
+                  'risk': s.riskLabel,
+                  'source': s.source,
+                  'rainfall_24h': s.rainfall24hMm,
+                  'forecast_24h': s.forecastLevel24h,
+                  'rate_of_rise': s.rateOfRiseMph,
+                  'ts': s.fetchedAt.millisecondsSinceEpoch,
+                })
+            .toList(),
       };
       unawaited(_safePost(
         () => _api.postFloodEvents(eventsPayload),
@@ -139,25 +144,25 @@ class BackendSyncService {
 
     final store = ThresholdOverrideStore.instance;
     final thresholds = rows.map((r) {
-      final key   = _norm(r.station);
+      final key = _norm(r.station);
       final entry = store.get(key);
       return <String, dynamic>{
-        'station':    r.station,
+        'station': r.station,
         'station_key': key,
         'maintained_by': r.maintainedBy ?? 'WRD',
-        'wl':         r.warningLevel,
-        'dl':         r.dangerLevel,
-        'hfl':        r.hfl,
-        'source':     entry?.source ?? 'RTDAS/WRD',
-        'fetched_at': entry?.fetchedAt.millisecondsSinceEpoch
-                      ?? DateTime.now().millisecondsSinceEpoch,
+        'wl': r.warningLevel,
+        'dl': r.dangerLevel,
+        'hfl': r.hfl,
+        'source': entry?.source ?? 'RTDAS/WRD',
+        'fetched_at': entry?.fetchedAt.millisecondsSinceEpoch ??
+            DateTime.now().millisecondsSinceEpoch,
       };
     }).toList();
 
     final payload = <String, dynamic>{
-      'synced_at':       DateTime.now().millisecondsSinceEpoch,
-      'station_count':   thresholds.length,
-      'thresholds':      thresholds,
+      'synced_at': DateTime.now().millisecondsSinceEpoch,
+      'station_count': thresholds.length,
+      'thresholds': thresholds,
     };
 
     unawaited(_safePost(
@@ -168,8 +173,7 @@ class BackendSyncService {
 
   // ── Internal ──────────────────────────────────────────────────────────────
 
-  Future<void> _safePost(
-      Future<Map<String, dynamic>> Function() call,
+  Future<void> _safePost(Future<Map<String, dynamic>> Function() call,
       {required String tag}) async {
     try {
       final result = await call();

@@ -34,8 +34,8 @@ class EnvConfig {
 
   // Feature flags
   static const bool enableDistrictHeatmap = true;
-  static const bool enableMlPredictions   = true;
-  static const bool enableAdMob           = true;
+  static const bool enableMlPredictions = true;
+  static const bool enableAdMob = true;
 
   // ──────────────────────────────────────────────────────────────────
   // AdMob IDs — injected at build time via --dart-define.
@@ -74,7 +74,10 @@ class EnvConfig {
   /// Returns true if running in a debug build.
   static bool get _isDebug {
     bool d = false;
-    assert(() { d = true; return true; }());
+    assert(() {
+      d = true;
+      return true;
+    }());
     return d;
   }
 
@@ -98,13 +101,12 @@ class EnvConfig {
 
   /// Whether the current ad IDs are test IDs.
   /// Use this to show a dev warning banner in debug mode.
-  static bool get isAdTestMode =>
-      admobBannerIdAndroid == _testBannerIdAndroid;
+  static bool get isAdTestMode => admobBannerIdAndroid == _testBannerIdAndroid;
 
   // Request timeout
   static const Duration httpTimeout = Duration(seconds: 15);
 
   // Cache TTLs
-  static const Duration liveCacheTtl    = Duration(minutes: 5);
+  static const Duration liveCacheTtl = Duration(minutes: 5);
   static const Duration forecastCacheTtl = Duration(hours: 1);
 }

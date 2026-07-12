@@ -10,11 +10,11 @@ import '../theme/robotic_theme.dart';
 
 // ─── Extended theme modes ─────────────────────────────────────────────────────
 enum AppThemeMode {
-  system,        // Auto
-  dark,          // Night River
-  sunset,        // Sunset Warm  (premium)
-  ocean,         // Deep Ocean   (premium)
-  roboticDark,   // Tactical Dark
+  system, // Auto
+  dark, // Night River
+  sunset, // Sunset Warm  (premium)
+  ocean, // Deep Ocean   (premium)
+  roboticDark, // Tactical Dark
 }
 
 // ─── Legacy ChangeNotifier singleton (kept for non-Riverpod init()) ──────────
@@ -30,16 +30,21 @@ class ThemeProvider extends ChangeNotifier {
 
   ThemeMode get mode {
     switch (_appMode) {
-      case AppThemeMode.system:       return ThemeMode.system;
-      case AppThemeMode.dark:         return ThemeMode.dark;
-      case AppThemeMode.sunset:       return ThemeMode.dark;
-      case AppThemeMode.ocean:        return ThemeMode.dark;
-      case AppThemeMode.roboticDark:  return ThemeMode.dark;
+      case AppThemeMode.system:
+        return ThemeMode.system;
+      case AppThemeMode.dark:
+        return ThemeMode.dark;
+      case AppThemeMode.sunset:
+        return ThemeMode.dark;
+      case AppThemeMode.ocean:
+        return ThemeMode.dark;
+      case AppThemeMode.roboticDark:
+        return ThemeMode.dark;
     }
   }
 
   Future<void> init() async {
-    final prefs  = await SharedPreferences.getInstance();
+    final prefs = await SharedPreferences.getInstance();
     final stored = prefs.getString(_key);
     _appMode = AppThemeMode.values.firstWhere(
       (e) => e.name == stored,
@@ -67,7 +72,7 @@ class _ThemeModeNotifier extends Notifier<AppThemeMode> {
   }
 
   Future<void> _loadSaved() async {
-    final prefs  = await SharedPreferences.getInstance();
+    final prefs = await SharedPreferences.getInstance();
     final stored = prefs.getString(_key);
     if (stored == null) return;
     final saved = AppThemeMode.values.firstWhere(
@@ -91,31 +96,31 @@ class _ThemeModeNotifier extends Notifier<AppThemeMode> {
   }
 
   String get label => switch (state) {
-    AppThemeMode.system       => 'Auto',
-    AppThemeMode.dark         => 'Night River',
-    AppThemeMode.sunset       => 'Sunset Warm',
-    AppThemeMode.ocean        => 'Deep Ocean',
-    AppThemeMode.roboticDark  => 'Tactical Dark',
-  };
+        AppThemeMode.system => 'Auto',
+        AppThemeMode.dark => 'Night River',
+        AppThemeMode.sunset => 'Sunset Warm',
+        AppThemeMode.ocean => 'Deep Ocean',
+        AppThemeMode.roboticDark => 'Tactical Dark',
+      };
 
   IconData get icon => switch (state) {
-    AppThemeMode.system       => Icons.brightness_auto,
-    AppThemeMode.dark         => Icons.nights_stay,
-    AppThemeMode.sunset       => Icons.wb_twilight,
-    AppThemeMode.ocean        => Icons.water,
-    AppThemeMode.roboticDark  => Icons.memory_rounded,
-  };
+        AppThemeMode.system => Icons.brightness_auto,
+        AppThemeMode.dark => Icons.nights_stay,
+        AppThemeMode.sunset => Icons.wb_twilight,
+        AppThemeMode.ocean => Icons.water,
+        AppThemeMode.roboticDark => Icons.memory_rounded,
+      };
 
   // Every mode maps to ThemeMode.dark so MaterialApp always picks darkTheme
   // slot — which main.dart fills with the correct per-mode ThemeData.
   // system is the only exception where Flutter decides based on OS setting.
   ThemeMode get flutterMode => switch (state) {
-    AppThemeMode.system       => ThemeMode.system,
-    AppThemeMode.dark         => ThemeMode.dark,
-    AppThemeMode.sunset       => ThemeMode.dark,
-    AppThemeMode.ocean        => ThemeMode.dark,
-    AppThemeMode.roboticDark  => ThemeMode.dark,
-  };
+        AppThemeMode.system => ThemeMode.system,
+        AppThemeMode.dark => ThemeMode.dark,
+        AppThemeMode.sunset => ThemeMode.dark,
+        AppThemeMode.ocean => ThemeMode.dark,
+        AppThemeMode.roboticDark => ThemeMode.dark,
+      };
 }
 
 final themeModeProvider = NotifierProvider<_ThemeModeNotifier, AppThemeMode>(
@@ -128,8 +133,8 @@ final themeModeProvider = NotifierProvider<_ThemeModeNotifier, AppThemeMode>(
 final roboticThemeProvider = Provider<RoboticTheme?>((ref) {
   final mode = ref.watch(themeModeProvider);
   return switch (mode) {
-    AppThemeMode.roboticDark  => const RoboticTheme(isDark: true),
-    _                         => null,
+    AppThemeMode.roboticDark => const RoboticTheme(isDark: true),
+    _ => null,
   };
 });
 

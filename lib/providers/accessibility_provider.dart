@@ -8,20 +8,21 @@ class AccessibilityState {
   final String locale;
 
   const AccessibilityState({
-    this.highContrast    = false,
+    this.highContrast = false,
     this.textScaleFactor = 1.0,
-    this.locale          = 'en',
+    this.locale = 'en',
   });
 
   AccessibilityState copyWith({
-    bool?   highContrast,
+    bool? highContrast,
     double? textScaleFactor,
     String? locale,
-  }) => AccessibilityState(
-    highContrast:    highContrast    ?? this.highContrast,
-    textScaleFactor: textScaleFactor ?? this.textScaleFactor,
-    locale:          locale          ?? this.locale,
-  );
+  }) =>
+      AccessibilityState(
+        highContrast: highContrast ?? this.highContrast,
+        textScaleFactor: textScaleFactor ?? this.textScaleFactor,
+        locale: locale ?? this.locale,
+      );
 }
 
 class AccessibilityNotifier extends Notifier<AccessibilityState> {
@@ -31,10 +32,10 @@ class AccessibilityNotifier extends Notifier<AccessibilityState> {
 
   @override
   AccessibilityState build() => AccessibilityState(
-    highContrast:    prefs.getBool('a11y_high_contrast')   ?? false,
-    textScaleFactor: prefs.getDouble('a11y_text_scale')    ?? 1.0,
-    locale:          prefs.getString('a11y_locale')        ?? 'en',
-  );
+        highContrast: prefs.getBool('a11y_high_contrast') ?? false,
+        textScaleFactor: prefs.getDouble('a11y_text_scale') ?? 1.0,
+        locale: prefs.getString('a11y_locale') ?? 'en',
+      );
 
   Future<void> setHighContrast(bool value) async {
     await prefs.setBool('a11y_high_contrast', value);

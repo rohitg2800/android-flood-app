@@ -33,16 +33,15 @@ class ProbabilityBarWidget extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-        for (final label in labels) ...
-          [
-            _ProbRow(
-              label: label,
-              pct: probabilities[label] ?? 0,
-              color: _colors[label]!,
-              isTop: label == topSeverity,
-            ),
-            const SizedBox(height: 8),
-          ],
+        for (final label in labels) ...[
+          _ProbRow(
+            label: label,
+            pct: probabilities[label] ?? 0,
+            color: _colors[label]!,
+            isTop: label == topSeverity,
+          ),
+          const SizedBox(height: 8),
+        ],
       ],
     );
   }
@@ -104,13 +103,11 @@ class _ProbRowState extends State<_ProbRow>
                 child: Text(
                   widget.label,
                   style: TextStyle(
-                    color: widget.isTop
-                        ? Colors.white
-                        : const Color(0xFF7B8FA6),
+                    color:
+                        widget.isTop ? Colors.white : const Color(0xFF7B8FA6),
                     fontSize: 11,
-                    fontWeight: widget.isTop
-                        ? FontWeight.w700
-                        : FontWeight.normal,
+                    fontWeight:
+                        widget.isTop ? FontWeight.w700 : FontWeight.normal,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -131,8 +128,7 @@ class _ProbRowState extends State<_ProbRow>
                   ),
                 ),
                 FractionallySizedBox(
-                  widthFactor:
-                      (_anim.value * widget.pct / 100).clamp(0.0, 1.0),
+                  widthFactor: (_anim.value * widget.pct / 100).clamp(0.0, 1.0),
                   child: Container(
                     height: 10,
                     decoration: BoxDecoration(
@@ -141,8 +137,7 @@ class _ProbRowState extends State<_ProbRow>
                       boxShadow: widget.isTop
                           ? [
                               BoxShadow(
-                                color:
-                                    widget.color.withValues(alpha: 0.4),
+                                color: widget.color.withValues(alpha: 0.4),
                                 blurRadius: 6,
                                 offset: const Offset(0, 0),
                               ),
@@ -161,13 +156,9 @@ class _ProbRowState extends State<_ProbRow>
           child: Text(
             '${widget.pct.toStringAsFixed(1)}%',
             style: TextStyle(
-              color: widget.isTop
-                  ? widget.color
-                  : const Color(0xFF4A5568),
+              color: widget.isTop ? widget.color : const Color(0xFF4A5568),
               fontSize: 11,
-              fontWeight: widget.isTop
-                  ? FontWeight.w700
-                  : FontWeight.normal,
+              fontWeight: widget.isTop ? FontWeight.w700 : FontWeight.normal,
             ),
             textAlign: TextAlign.right,
           ),

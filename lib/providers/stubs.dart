@@ -6,10 +6,9 @@ import '../models/river_station.dart';
 
 /// Stub for real_time_river_provider.dart callers.
 /// Replace with a real implementation when the DataFetch layer is wired up.
-final dataFetchStationsProvider = Provider<List<RiverStation>>(
-    (ref) => const []);
+final dataFetchStationsProvider =
+    Provider<List<RiverStation>>((ref) => const []);
 
 /// Stub for map_live_index_provider.dart callers.
 /// Replace with a real SourceStatus enum/class when ready.
-final sourceStatusProvider = Provider<Map<String, bool>>(
-    (ref) => const {});
+final sourceStatusProvider = Provider<Map<String, bool>>((ref) => const {});

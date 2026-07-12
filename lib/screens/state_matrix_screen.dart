@@ -18,44 +18,44 @@ class StateMatrixScreen extends ConsumerWidget {
 
   // All 38 Bihar districts with their primary rivers
   static const _districts = [
-    (name: 'Araria',        river: 'Kosi',         riskBase: 0.72),
-    (name: 'Arwal',         river: 'Sone',          riskBase: 0.28),
-    (name: 'Aurangabad',    river: 'Sone',          riskBase: 0.25),
-    (name: 'Banka',         river: 'Chandan',       riskBase: 0.45),
-    (name: 'Begusarai',     river: 'Ganga',         riskBase: 0.60),
-    (name: 'Bhagalpur',     river: 'Ganga',         riskBase: 0.50),
-    (name: 'Bhojpur',       river: 'Ganga/Sone',    riskBase: 0.35),
-    (name: 'Buxar',         river: 'Ganga',         riskBase: 0.40),
-    (name: 'Darbhanga',     river: 'Bagmati/Kamla', riskBase: 0.82),
-    (name: 'E. Champaran',  river: 'Gandak/Bagmati',riskBase: 0.78),
-    (name: 'Gaya',          river: 'Falgu',         riskBase: 0.22),
-    (name: 'Gopalganj',     river: 'Gandak',        riskBase: 0.65),
-    (name: 'Jamui',         river: 'Chandan',       riskBase: 0.30),
-    (name: 'Jehanabad',     river: 'Punpun',        riskBase: 0.28),
-    (name: 'Kaimur',        river: 'Karmanasha',    riskBase: 0.32),
-    (name: 'Katihar',       river: 'Ganga/Kosi',    riskBase: 0.68),
-    (name: 'Khagaria',      river: 'Kosi/Bagmati',  riskBase: 0.74),
-    (name: 'Kishanganj',    river: 'Mahananda',     riskBase: 0.58),
-    (name: 'Lakhisarai',    river: 'Ganga',         riskBase: 0.42),
-    (name: 'Madhepura',     river: 'Kosi',          riskBase: 0.79),
-    (name: 'Madhubani',     river: 'Kamla/Bagmati', riskBase: 0.85),
-    (name: 'Munger',        river: 'Ganga',         riskBase: 0.38),
-    (name: 'Muzaffarpur',   river: 'Gandak/Burhi',  riskBase: 0.76),
-    (name: 'Nalanda',       river: 'Panchane',      riskBase: 0.20),
-    (name: 'Nawada',        river: 'Sakri',         riskBase: 0.22),
-    (name: 'Patna',         river: 'Ganga/Punpun',  riskBase: 0.44),
-    (name: 'Purnia',        river: 'Kosi',          riskBase: 0.70),
-    (name: 'Rohtas',        river: 'Sone',          riskBase: 0.26),
-    (name: 'Saharsa',       river: 'Kosi',          riskBase: 0.80),
-    (name: 'Samastipur',    river: 'Burhi Gandak',  riskBase: 0.54),
-    (name: 'Saran',         river: 'Ganga/Gandak',  riskBase: 0.58),
-    (name: 'Sheikhpura',    river: 'Ganga',         riskBase: 0.18),
-    (name: 'Sheohar',       river: 'Bagmati',       riskBase: 0.88),
-    (name: 'Sitamarhi',     river: 'Bagmati',       riskBase: 0.86),
-    (name: 'Siwan',         river: 'Ghaghra/Gandak',riskBase: 0.52),
-    (name: 'Supaul',        river: 'Kosi',          riskBase: 0.91),
-    (name: 'Vaishali',      river: 'Gandak/Ganga',  riskBase: 0.62),
-    (name: 'W. Champaran',  river: 'Gandak',        riskBase: 0.72),
+    (name: 'Araria', river: 'Kosi', riskBase: 0.72),
+    (name: 'Arwal', river: 'Sone', riskBase: 0.28),
+    (name: 'Aurangabad', river: 'Sone', riskBase: 0.25),
+    (name: 'Banka', river: 'Chandan', riskBase: 0.45),
+    (name: 'Begusarai', river: 'Ganga', riskBase: 0.60),
+    (name: 'Bhagalpur', river: 'Ganga', riskBase: 0.50),
+    (name: 'Bhojpur', river: 'Ganga/Sone', riskBase: 0.35),
+    (name: 'Buxar', river: 'Ganga', riskBase: 0.40),
+    (name: 'Darbhanga', river: 'Bagmati/Kamla', riskBase: 0.82),
+    (name: 'E. Champaran', river: 'Gandak/Bagmati', riskBase: 0.78),
+    (name: 'Gaya', river: 'Falgu', riskBase: 0.22),
+    (name: 'Gopalganj', river: 'Gandak', riskBase: 0.65),
+    (name: 'Jamui', river: 'Chandan', riskBase: 0.30),
+    (name: 'Jehanabad', river: 'Punpun', riskBase: 0.28),
+    (name: 'Kaimur', river: 'Karmanasha', riskBase: 0.32),
+    (name: 'Katihar', river: 'Ganga/Kosi', riskBase: 0.68),
+    (name: 'Khagaria', river: 'Kosi/Bagmati', riskBase: 0.74),
+    (name: 'Kishanganj', river: 'Mahananda', riskBase: 0.58),
+    (name: 'Lakhisarai', river: 'Ganga', riskBase: 0.42),
+    (name: 'Madhepura', river: 'Kosi', riskBase: 0.79),
+    (name: 'Madhubani', river: 'Kamla/Bagmati', riskBase: 0.85),
+    (name: 'Munger', river: 'Ganga', riskBase: 0.38),
+    (name: 'Muzaffarpur', river: 'Gandak/Burhi', riskBase: 0.76),
+    (name: 'Nalanda', river: 'Panchane', riskBase: 0.20),
+    (name: 'Nawada', river: 'Sakri', riskBase: 0.22),
+    (name: 'Patna', river: 'Ganga/Punpun', riskBase: 0.44),
+    (name: 'Purnia', river: 'Kosi', riskBase: 0.70),
+    (name: 'Rohtas', river: 'Sone', riskBase: 0.26),
+    (name: 'Saharsa', river: 'Kosi', riskBase: 0.80),
+    (name: 'Samastipur', river: 'Burhi Gandak', riskBase: 0.54),
+    (name: 'Saran', river: 'Ganga/Gandak', riskBase: 0.58),
+    (name: 'Sheikhpura', river: 'Ganga', riskBase: 0.18),
+    (name: 'Sheohar', river: 'Bagmati', riskBase: 0.88),
+    (name: 'Sitamarhi', river: 'Bagmati', riskBase: 0.86),
+    (name: 'Siwan', river: 'Ghaghra/Gandak', riskBase: 0.52),
+    (name: 'Supaul', river: 'Kosi', riskBase: 0.91),
+    (name: 'Vaishali', river: 'Gandak/Ganga', riskBase: 0.62),
+    (name: 'W. Champaran', river: 'Gandak', riskBase: 0.72),
   ];
 
   Color _riskColor(double r) {
@@ -74,13 +74,15 @@ class StateMatrixScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final t      = RiverColors.of(context);
+    final t = RiverColors.of(context);
     final alerts = ref.watch(alertsProvider);
 
     final criticalCount = _districts.where((d) => d.riskBase > 0.80).length;
-    final warningCount  = _districts.where((d) => d.riskBase > 0.60 && d.riskBase <= 0.80).length;
-    final watchCount    = _districts.where((d) => d.riskBase > 0.40 && d.riskBase <= 0.60).length;
-    final safeCount     = _districts.where((d) => d.riskBase <= 0.40).length;
+    final warningCount =
+        _districts.where((d) => d.riskBase > 0.60 && d.riskBase <= 0.80).length;
+    final watchCount =
+        _districts.where((d) => d.riskBase > 0.40 && d.riskBase <= 0.60).length;
+    final safeCount = _districts.where((d) => d.riskBase <= 0.40).length;
 
     return Scaffold(
       backgroundColor: t.scaffoldBg,
@@ -95,17 +97,28 @@ class StateMatrixScreen extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 60),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-
                 // ── Risk summary badges ───────────────────────────────────
                 Row(
                   children: [
-                    _Badge(label: 'Critical', count: criticalCount, color: const Color(0xFFE53935)),
+                    _Badge(
+                        label: 'Critical',
+                        count: criticalCount,
+                        color: const Color(0xFFE53935)),
                     const SizedBox(width: 8),
-                    _Badge(label: 'Warning',  count: warningCount,  color: const Color(0xFFFF8F00)),
+                    _Badge(
+                        label: 'Warning',
+                        count: warningCount,
+                        color: const Color(0xFFFF8F00)),
                     const SizedBox(width: 8),
-                    _Badge(label: 'Watch',    count: watchCount,    color: const Color(0xFFF9A825)),
+                    _Badge(
+                        label: 'Watch',
+                        count: watchCount,
+                        color: const Color(0xFFF9A825)),
                     const SizedBox(width: 8),
-                    _Badge(label: 'Safe',     count: safeCount,     color: const Color(0xFF43A047)),
+                    _Badge(
+                        label: 'Safe',
+                        count: safeCount,
+                        color: const Color(0xFF43A047)),
                   ],
                 ),
                 const SizedBox(height: 14),
@@ -113,8 +126,11 @@ class StateMatrixScreen extends ConsumerWidget {
                 // ── District grid ─────────────────────────────────────────
                 ..._districts.map((d) {
                   final color = _riskColor(d.riskBase);
-                  final liveAlerts = alerts.where((a) =>
-                    a.district.toLowerCase().contains(d.name.toLowerCase())).length;
+                  final liveAlerts = alerts
+                      .where((a) => a.district
+                          .toLowerCase()
+                          .contains(d.name.toLowerCase()))
+                      .length;
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Td3Card(
@@ -124,51 +140,81 @@ class StateMatrixScreen extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(14),
                         onTap: () {
                           HapticFeedback.selectionClick();
-                          Navigator.of(context).pushNamed(Routes.cityDetail, arguments: d.name);
+                          Navigator.of(context)
+                              .pushNamed(Routes.cityDetail, arguments: d.name);
                         },
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 12),
                           child: Row(
                             children: [
                               Container(
-                                width: 10, height: 10,
-                                decoration: BoxDecoration(color: color, shape: BoxShape.circle,
-                                  boxShadow: [BoxShadow(color: color.withValues(alpha: 0.45), blurRadius: 6)]),
+                                width: 10,
+                                height: 10,
+                                decoration: BoxDecoration(
+                                    color: color,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                          color: color.withValues(alpha: 0.45),
+                                          blurRadius: 6)
+                                    ]),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(d.name, style: TextStyle(color: t.textPrimary, fontSize: 13, fontWeight: FontWeight.w700)),
-                                    Text(d.river, style: TextStyle(color: t.textSecondary, fontSize: 10)),
+                                    Text(d.name,
+                                        style: TextStyle(
+                                            color: t.textPrimary,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w700)),
+                                    Text(d.river,
+                                        style: TextStyle(
+                                            color: t.textSecondary,
+                                            fontSize: 10)),
                                   ],
                                 ),
                               ),
                               if (liveAlerts > 0)
                                 Container(
                                   margin: const EdgeInsets.only(right: 8),
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
                                     color: const Color(0x1AE53935),
                                     borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(color: const Color(0x40E53935)),
+                                    border: Border.all(
+                                        color: const Color(0x40E53935)),
                                   ),
-                                  child: Text('$liveAlerts alert${liveAlerts>1?"s":""}',
-                                    style: const TextStyle(color: Color(0xFFE53935), fontSize: 9, fontWeight: FontWeight.w700)),
+                                  child: Text(
+                                      '$liveAlerts alert${liveAlerts > 1 ? "s" : ""}',
+                                      style: const TextStyle(
+                                          color: Color(0xFFE53935),
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w700)),
                                 ),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
                                 decoration: BoxDecoration(
                                   color: color.withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: color.withValues(alpha: 0.3)),
+                                  border: Border.all(
+                                      color: color.withValues(alpha: 0.3)),
                                 ),
                                 child: Text(_riskLabel(d.riskBase),
-                                  style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+                                    style: TextStyle(
+                                        color: color,
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 0.5)),
                               ),
                               const SizedBox(width: 8),
-                              Icon(Icons.chevron_right_rounded, color: t.textSecondary.withValues(alpha: 0.4), size: 16),
+                              Icon(Icons.chevron_right_rounded,
+                                  color: t.textSecondary.withValues(alpha: 0.4),
+                                  size: 16),
                             ],
                           ),
                         ),
@@ -194,19 +240,25 @@ class _Badge extends StatelessWidget {
   const _Badge({required this.label, required this.count, required this.color});
   @override
   Widget build(BuildContext context) => Expanded(
-    child: Container(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withValues(alpha: 0.25)),
-      ),
-      child: Column(
-        children: [
-          Text('$count', style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.w800)),
-          Text(label, style: TextStyle(color: color.withValues(alpha: 0.8), fontSize: 9, fontWeight: FontWeight.w600)),
-        ],
-      ),
-    ),
-  );
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: color.withValues(alpha: 0.25)),
+          ),
+          child: Column(
+            children: [
+              Text('$count',
+                  style: TextStyle(
+                      color: color, fontSize: 16, fontWeight: FontWeight.w800)),
+              Text(label,
+                  style: TextStyle(
+                      color: color.withValues(alpha: 0.8),
+                      fontSize: 9,
+                      fontWeight: FontWeight.w600)),
+            ],
+          ),
+        ),
+      );
 }

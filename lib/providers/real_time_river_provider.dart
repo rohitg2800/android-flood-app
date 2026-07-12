@@ -25,35 +25,36 @@ double? _birpurAmslToLocal(double? amsl) {
 }
 
 final wrdRiverStationsProvider = Provider<List<RiverStation>>((ref) {
-  final liveState   = ref.watch(biharLiveProvider);
+  final liveState = ref.watch(biharLiveProvider);
   final birpurAsync = ref.watch(kosiBirpurProvider);
   // Discard SEED readings — map should show null/fallback, not 71.48 m seed
-  final birpurRaw   = birpurAsync.valueOrNull;
-  final birpur      = (birpurRaw?.source == 'SEED') ? null : birpurRaw;
+  final birpurRaw = birpurAsync.valueOrNull;
+  final birpur = (birpurRaw?.source == 'SEED') ? null : birpurRaw;
 
-  return liveState.valueOrNull?.stations
-      .map((s) {
+  return liveState.valueOrNull?.stations.map((s) {
         final isBirpur = s.city.toLowerCase().contains('birpur');
         return RiverStation(
-          city:       s.city,
-          state:      s.state,
-          river:      s.river,
-          station:    s.id.isNotEmpty ? s.id : "${s.city}|${s.river ?? ''}", 
-          current:    isBirpur
-                        ? (birpur?.levelM ?? _birpurAmslToLocal(s.currentLevel) ?? kBirpurNormalLevel)
-                        : (s.currentLevel ?? 0),
-          warning:    isBirpur
-                        ? (birpur?.warningLevel ?? kBirpurWarningLevel)
-                        : (s.warningLevel ?? 0),
-          danger:     isBirpur
-                        ? (birpur?.dangerLevel ?? kBirpurDangerLevel)
-                        : (s.dangerLevel ?? 0),
-          hfl:        isBirpur ? kBirpurHFL : 0,
-          isLive:     isBirpur ? (birpur != null) : s.source == 'LIVE',
+          city: s.city,
+          state: s.state,
+          river: s.river,
+          station: s.id.isNotEmpty ? s.id : "${s.city}|${s.river ?? ''}",
+          current: isBirpur
+              ? (birpur?.levelM ??
+                  _birpurAmslToLocal(s.currentLevel) ??
+                  kBirpurNormalLevel)
+              : (s.currentLevel ?? 0),
+          warning: isBirpur
+              ? (birpur?.warningLevel ?? kBirpurWarningLevel)
+              : (s.warningLevel ?? 0),
+          danger: isBirpur
+              ? (birpur?.dangerLevel ?? kBirpurDangerLevel)
+              : (s.dangerLevel ?? 0),
+          hfl: isBirpur ? kBirpurHFL : 0,
+          isLive: isBirpur ? (birpur != null) : s.source == 'LIVE',
           dataSource: isBirpur ? (birpur?.source ?? s.source) : s.source,
         );
-      })
-      .toList() ?? const [];
+      }).toList() ??
+      const [];
 });
 
 /// Alias kept for backward compat.
@@ -61,16 +62,25 @@ final wrdStationsProvider = wrdRiverStationsProvider;
 
 // ── merged stations ───────────────────────────────────────────────────────────────────────────────────
 /// Merged station list: WRD base + DataFetch overlay.
-String _normCity(String s) => s.toLowerCase().replaceAll(RegExp(r"\s*\(.*?\)"), "").replaceAll(RegExp(r"[^a-z0-9]"), " ").replaceAll(RegExp(r" +"), " ").trim();
+String _normCity(String s) => s
+    .toLowerCase()
+    .replaceAll(RegExp(r"\s*\(.*?\)"), "")
+    .replaceAll(RegExp(r"[^a-z0-9]"), " ")
+    .replaceAll(RegExp(r" +"), " ")
+    .trim();
 
 final mergedStationsProvider = Provider<List<RiverStation>>((ref) {
-  final base       = ref.watch(wrdRiverStationsProvider);
+  final base = ref.watch(wrdRiverStationsProvider);
   final dfStations = ref.watch(dataFetchStationsProvider);
 
   if (dfStations.isEmpty) return base;
 
   return [
-    for (final s in base) dfStations.where((d) => _normCity(d.city) == _normCity(s.city)).firstOrNull ?? s,
+    for (final s in base)
+      dfStations
+              .where((d) => _normCity(d.city) == _normCity(s.city))
+              .firstOrNull ??
+          s,
     for (final s in dfStations)
       if (!base.any((b) => _normCity(b.city) == _normCity(s.city))) s,
   ];
@@ -79,10 +89,10 @@ final mergedStationsProvider = Provider<List<RiverStation>>((ref) {
 // ── merged river result (loading/error state wrapper) ─────────────────────────────────────────
 class RealTimeRiverState {
   final List<RiverStation> stations;
-  final bool               isLoading;
-  final String?            error;
+  final bool isLoading;
+  final String? error;
   const RealTimeRiverState({
-    this.stations  = const [],
+    this.stations = const [],
     this.isLoading = false,
     this.error,
   });
@@ -93,22 +103,21 @@ final realTimeRiverProvider = Provider<RealTimeRiverState>((ref) {
   return RealTimeRiverState(
     // .valueOrNull’s .stations are BiharStationData; for this wrapper we only
     // need the count so expose the already-mapped wrdRiverStationsProvider list.
-    stations:  ref.watch(wrdRiverStationsProvider),
+    stations: ref.watch(wrdRiverStationsProvider),
     // AsyncValue exposes .isLoading and .error natively.
     isLoading: liveState.isLoading,
-    error:     liveState.error?.toString(),
+    error: liveState.error?.toString(),
   );
 });
 
 // ── error / loading helpers ───────────────────────────────────────────────────────────────────────────────
-final wrdErrorProvider = Provider<String?>((ref) =>
-    ref.watch(realTimeRiverProvider).error);
+final wrdErrorProvider =
+    Provider<String?>((ref) => ref.watch(realTimeRiverProvider).error);
 
-final wrdIsLoadingProvider = Provider<bool>((ref) =>
-    ref.watch(realTimeRiverProvider).isLoading);
+final wrdIsLoadingProvider =
+    Provider<bool>((ref) => ref.watch(realTimeRiverProvider).isLoading);
 
 final mergedCriticalCountProvider = Provider<int>((ref) {
   final stations = ref.watch(mergedStationsProvider);
-  return stations.where((s) =>
-      s.danger > 0 && s.current >= s.danger).length;
+  return stations.where((s) => s.danger > 0 && s.current >= s.danger).length;
 });

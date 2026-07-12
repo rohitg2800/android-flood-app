@@ -26,7 +26,6 @@ import '../models/flood_prediction.dart';
 import '../models/prediction_point.dart';
 import '../theme/river_theme.dart';
 
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Public widget
 // ─────────────────────────────────────────────────────────────────────────────
@@ -69,8 +68,8 @@ class _AiPredictionPanelState extends ConsumerState<AiPredictionPanel>
     final async = ref.watch(predictionProvider((widget.stationKey, 24)));
     return async.when(
       loading: () => _skeleton(),
-      error:   (e, _) => _errorTile(e.toString()),
-      data:    (pred) => _body(pred),
+      error: (e, _) => _errorTile(e.toString()),
+      data: (pred) => _body(pred),
     );
   }
 
@@ -86,12 +85,10 @@ class _AiPredictionPanelState extends ConsumerState<AiPredictionPanel>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircularProgressIndicator(
-                  strokeWidth: 2, color: AppPalette.cyan),
+              CircularProgressIndicator(strokeWidth: 2, color: AppPalette.cyan),
               SizedBox(height: 10),
               Text('Running AI model…',
-                  style: TextStyle(
-                      color: AppPalette.textGrey, fontSize: 11)),
+                  style: TextStyle(color: AppPalette.textGrey, fontSize: 11)),
             ],
           ),
         ),
@@ -123,11 +120,13 @@ class _AiPredictionPanelState extends ConsumerState<AiPredictionPanel>
   // ── full body ────────────────────────────────────────────────────────────────
   Widget _body(FloodPrediction pred) {
     final severity = _severityOf(pred);
-    final color    = _sevColor(severity);
-    final probs    = _computeProbs(pred);
-    final points   = _window == 24
+    final color = _sevColor(severity);
+    final probs = _computeProbs(pred);
+    final points = _window == 24
         ? pred.next24h
-        : _window == 48 ? pred.next48h : pred.next72h;
+        : _window == 48
+            ? pred.next48h
+            : pred.next72h;
 
     return AnimatedBuilder(
       animation: _anim,
@@ -143,7 +142,6 @@ class _AiPredictionPanelState extends ConsumerState<AiPredictionPanel>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
               // ── header ────────────────────────────────────────────────────
               _Header(pred: pred, severity: severity, color: color),
 
@@ -159,8 +157,8 @@ class _AiPredictionPanelState extends ConsumerState<AiPredictionPanel>
                     const SizedBox(height: 8),
                     for (final lbl in ['CRITICAL', 'SEVERE', 'MODERATE', 'LOW'])
                       _ProbBar(
-                        label:     lbl,
-                        pct:       probs[lbl] ?? 0,
+                        label: lbl,
+                        pct: probs[lbl] ?? 0,
                         highlight: lbl == severity,
                       ),
                   ],
@@ -216,10 +214,10 @@ class _AiPredictionPanelState extends ConsumerState<AiPredictionPanel>
                         height: 100,
                         child: CustomPaint(
                           painter: _SparklinePainter(
-                            points:  points,
+                            points: points,
                             warning: pred.warningLevel,
-                            danger:  pred.dangerLevel,
-                            color:   color,
+                            danger: pred.dangerLevel,
+                            color: color,
                           ),
                           size: const Size(double.infinity, 100),
                         ),
@@ -253,31 +251,31 @@ class _AiPredictionPanelState extends ConsumerState<AiPredictionPanel>
 
               // ── stats row ─────────────────────────────────────────────────
               Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _StatPill(
-                      icon:  Icons.height_rounded,
+                      icon: Icons.height_rounded,
                       label: 'Now',
                       value: '${pred.currentLevel.toStringAsFixed(2)} m',
                       color: color,
                     ),
                     _StatPill(
-                      icon:  Icons.trending_up_rounded,
+                      icon: Icons.trending_up_rounded,
                       label: 'Peak ${_window}h',
                       value: '${_peakLevel(points).toStringAsFixed(2)} m',
                       color: color,
                     ),
                     _StatPill(
-                      icon:  Icons.warning_amber_rounded,
+                      icon: Icons.warning_amber_rounded,
                       label: 'Warning',
                       value: '${pred.warningLevel.toStringAsFixed(2)} m',
                       color: AppPalette.amber,
                     ),
                     _StatPill(
-                      icon:  Icons.dangerous_rounded,
+                      icon: Icons.dangerous_rounded,
                       label: 'Danger',
                       value: '${pred.dangerLevel.toStringAsFixed(2)} m',
                       color: AppPalette.danger,
@@ -326,12 +324,12 @@ class _AiPredictionPanelState extends ConsumerState<AiPredictionPanel>
               // ── source trail ───────────────────────────────────────────────
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 7),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                 decoration: const BoxDecoration(
                   color: AppPalette.abyss0,
                   borderRadius: BorderRadius.only(
-                    bottomLeft:  Radius.circular(16),
+                    bottomLeft: Radius.circular(16),
                     bottomRight: Radius.circular(16),
                   ),
                 ),
@@ -364,8 +362,8 @@ class _AiPredictionPanelState extends ConsumerState<AiPredictionPanel>
 
   // ── helpers ──────────────────────────────────────────────────────────────────
 
-  Widget _div() => const Divider(
-      height: 1, thickness: 1, color: AppPalette.abyss2);
+  Widget _div() =>
+      const Divider(height: 1, thickness: 1, color: AppPalette.abyss2);
 
   Widget _label(String t) => Text(t.toUpperCase(),
       style: const TextStyle(
@@ -374,18 +372,16 @@ class _AiPredictionPanelState extends ConsumerState<AiPredictionPanel>
           fontWeight: FontWeight.w700,
           letterSpacing: 1.2));
 
-  Widget _tiny(String t) => Text(t,
-      style: const TextStyle(
-          color: AppPalette.textGrey, fontSize: 8));
+  Widget _tiny(String t) =>
+      Text(t, style: const TextStyle(color: AppPalette.textGrey, fontSize: 8));
 
   double _peakLevel(List<PredictionPoint> pts) =>
       pts.isEmpty ? 0 : pts.map((p) => p.level).reduce(math.max);
 
   // ── Severity derived from level proximity to danger ──────────────────────────
   String _severityOf(FloodPrediction pred) {
-    final pct = pred.dangerLevel > 0
-        ? pred.currentLevel / pred.dangerLevel
-        : 0.0;
+    final pct =
+        pred.dangerLevel > 0 ? pred.currentLevel / pred.dangerLevel : 0.0;
     if (pct >= 1.00) return 'CRITICAL';
     if (pct >= 0.97) return 'SEVERE';
     if (pct >= 0.85) return 'MODERATE';
@@ -396,16 +392,16 @@ class _AiPredictionPanelState extends ConsumerState<AiPredictionPanel>
   // FloodPrediction has no probabilities field — we compute a plausible
   // soft-max distribution from (currentLevel / dangerLevel) and cwcRiskScore.
   Map<String, double> _computeProbs(FloodPrediction pred) {
-    final pct  = pred.dangerLevel > 0
+    final pct = pred.dangerLevel > 0
         ? (pred.currentLevel / pred.dangerLevel).clamp(0.0, 1.1)
         : 0.0;
     final risk = (pred.cwcRiskScore ?? (pct * 100)).clamp(0.0, 100.0);
 
     // Raw logit scores — higher pct pushes mass toward CRITICAL
     final rawCritical = math.max(0.0, (pct - 1.00) * 20 + (risk - 90) * 0.5);
-    final rawSevere   = math.max(0.0, (pct - 0.97) * 15 + (risk - 75) * 0.4);
+    final rawSevere = math.max(0.0, (pct - 0.97) * 15 + (risk - 75) * 0.4);
     final rawModerate = math.max(0.0, (pct - 0.85) * 10 + (risk - 50) * 0.3);
-    final rawLow      = math.max(0.0, (1.0 - pct) * 12 + (100 - risk) * 0.2);
+    final rawLow = math.max(0.0, (1.0 - pct) * 12 + (100 - risk) * 0.2);
 
     final total = rawCritical + rawSevere + rawModerate + rawLow;
     if (total == 0) {
@@ -413,27 +409,35 @@ class _AiPredictionPanelState extends ConsumerState<AiPredictionPanel>
     }
     return {
       'CRITICAL': (rawCritical / total * 100).roundToDouble(),
-      'SEVERE':   (rawSevere   / total * 100).roundToDouble(),
+      'SEVERE': (rawSevere / total * 100).roundToDouble(),
       'MODERATE': (rawModerate / total * 100).roundToDouble(),
-      'LOW':      (rawLow      / total * 100).roundToDouble(),
+      'LOW': (rawLow / total * 100).roundToDouble(),
     };
   }
 
   Color _sevColor(String sev) {
     switch (sev) {
-      case 'CRITICAL': return AppPalette.critical;
-      case 'SEVERE':   return AppPalette.danger;
-      case 'MODERATE': return AppPalette.amber;
-      default:         return AppPalette.safe;
+      case 'CRITICAL':
+        return AppPalette.critical;
+      case 'SEVERE':
+        return AppPalette.danger;
+      case 'MODERATE':
+        return AppPalette.amber;
+      default:
+        return AppPalette.safe;
     }
   }
 
   String _monitoringLevel(String sev) {
     switch (sev) {
-      case 'CRITICAL': return '🔴  EMERGENCY MONITORING';
-      case 'SEVERE':   return '🟠  HIGH ALERT';
-      case 'MODERATE': return '🟡  ACTIVE WATCH';
-      default:         return '🟢  ROUTINE MONITORING';
+      case 'CRITICAL':
+        return '🔴  EMERGENCY MONITORING';
+      case 'SEVERE':
+        return '🟠  HIGH ALERT';
+      case 'MODERATE':
+        return '🟡  ACTIVE WATCH';
+      default:
+        return '🟢  ROUTINE MONITORING';
     }
   }
 
@@ -461,11 +465,9 @@ class _AiPredictionPanelState extends ConsumerState<AiPredictionPanel>
 class _Header extends StatelessWidget {
   final FloodPrediction pred;
   final String severity;
-  final Color  color;
+  final Color color;
   const _Header(
-      {required this.pred,
-      required this.severity,
-      required this.color});
+      {required this.pred, required this.severity, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -474,7 +476,8 @@ class _Header extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 42, height: 42,
+            width: 42,
+            height: 42,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
@@ -498,8 +501,8 @@ class _Header extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   'AI Flood Prediction  ·  ${pred.station}',
-                  style: const TextStyle(
-                      color: AppPalette.textGrey, fontSize: 10),
+                  style:
+                      const TextStyle(color: AppPalette.textGrey, fontSize: 10),
                 ),
               ],
             ),
@@ -537,19 +540,27 @@ class _Header extends StatelessWidget {
 
   String _alert(String sev) {
     switch (sev) {
-      case 'CRITICAL': return '🚨';
-      case 'SEVERE':   return '⚠️';
-      case 'MODERATE': return '🟡';
-      default:         return '✅';
+      case 'CRITICAL':
+        return '🚨';
+      case 'SEVERE':
+        return '⚠️';
+      case 'MODERATE':
+        return '🟡';
+      default:
+        return '✅';
     }
   }
 
   IconData _icon(String sev) {
     switch (sev) {
-      case 'CRITICAL': return Icons.crisis_alert_rounded;
-      case 'SEVERE':   return Icons.warning_rounded;
-      case 'MODERATE': return Icons.warning_amber_rounded;
-      default:         return Icons.check_circle_outline_rounded;
+      case 'CRITICAL':
+        return Icons.crisis_alert_rounded;
+      case 'SEVERE':
+        return Icons.warning_rounded;
+      case 'MODERATE':
+        return Icons.warning_amber_rounded;
+      default:
+        return Icons.check_circle_outline_rounded;
     }
   }
 }
@@ -559,18 +570,20 @@ class _Header extends StatelessWidget {
 class _ProbBar extends StatelessWidget {
   final String label;
   final double pct;
-  final bool   highlight;
+  final bool highlight;
   const _ProbBar(
-      {required this.label,
-      required this.pct,
-      required this.highlight});
+      {required this.label, required this.pct, required this.highlight});
 
   Color get _c {
     switch (label) {
-      case 'CRITICAL': return AppPalette.critical;
-      case 'SEVERE':   return AppPalette.danger;
-      case 'MODERATE': return AppPalette.amber;
-      default:         return AppPalette.safe;
+      case 'CRITICAL':
+        return AppPalette.critical;
+      case 'SEVERE':
+        return AppPalette.danger;
+      case 'MODERATE':
+        return AppPalette.amber;
+      default:
+        return AppPalette.safe;
     }
   }
 
@@ -588,8 +601,7 @@ class _ProbBar extends StatelessWidget {
                 style: TextStyle(
                     color: highlight ? c : AppPalette.textGrey,
                     fontSize: 9,
-                    fontWeight:
-                        highlight ? FontWeight.w800 : FontWeight.w500)),
+                    fontWeight: highlight ? FontWeight.w800 : FontWeight.w500)),
           ),
           Expanded(
             child: Stack(
@@ -604,9 +616,7 @@ class _ProbBar extends StatelessWidget {
                   child: Container(
                       height: 6,
                       decoration: BoxDecoration(
-                          color: highlight
-                              ? c
-                              : c.withValues(alpha: 0.40),
+                          color: highlight ? c : c.withValues(alpha: 0.40),
                           borderRadius: BorderRadius.circular(4))),
                 ),
               ],
@@ -620,9 +630,7 @@ class _ProbBar extends StatelessWidget {
                 style: TextStyle(
                     color: highlight ? c : AppPalette.textDim,
                     fontSize: 9,
-                    fontWeight: highlight
-                        ? FontWeight.w800
-                        : FontWeight.w400)),
+                    fontWeight: highlight ? FontWeight.w800 : FontWeight.w400)),
           ),
         ],
       ),
@@ -635,7 +643,7 @@ class _ProbBar extends StatelessWidget {
 class _SparklinePainter extends CustomPainter {
   final List<PredictionPoint> points;
   final double warning, danger;
-  final Color  color;
+  final Color color;
   const _SparklinePainter({
     required this.points,
     required this.warning,
@@ -648,8 +656,8 @@ class _SparklinePainter extends CustomPainter {
     if (points.length < 2) return;
 
     final levels = points.map((p) => p.level).toList();
-    final minL   = levels.reduce(math.min);
-    final maxL   = math.max(levels.reduce(math.max), danger * 1.02);
+    final minL = levels.reduce(math.min);
+    final maxL = math.max(levels.reduce(math.max), danger * 1.02);
     final rangeL = maxL - minL;
     if (rangeL == 0) return;
 
@@ -662,11 +670,8 @@ class _SparklinePainter extends CustomPainter {
     areaPath.lineTo(xOf(0), yOf(levels[0]));
     for (int i = 1; i < levels.length; i++) {
       final x0 = xOf(i - 1), y0 = yOf(levels[i - 1]);
-      final x1 = xOf(i),     y1 = yOf(levels[i]);
-      areaPath.cubicTo(
-          x0 + (x1 - x0) / 3, y0,
-          x1 - (x1 - x0) / 3, y1,
-          x1, y1);
+      final x1 = xOf(i), y1 = yOf(levels[i]);
+      areaPath.cubicTo(x0 + (x1 - x0) / 3, y0, x1 - (x1 - x0) / 3, y1, x1, y1);
     }
     areaPath.lineTo(xOf(levels.length - 1), size.height);
     areaPath.close();
@@ -675,7 +680,7 @@ class _SparklinePainter extends CustomPainter {
         Paint()
           ..shader = LinearGradient(
             begin: Alignment.topCenter,
-            end:   Alignment.bottomCenter,
+            end: Alignment.bottomCenter,
             colors: [
               color.withValues(alpha: 0.28),
               color.withValues(alpha: 0.01),
@@ -687,11 +692,8 @@ class _SparklinePainter extends CustomPainter {
     linePath.moveTo(xOf(0), yOf(levels[0]));
     for (int i = 1; i < levels.length; i++) {
       final x0 = xOf(i - 1), y0 = yOf(levels[i - 1]);
-      final x1 = xOf(i),     y1 = yOf(levels[i]);
-      linePath.cubicTo(
-          x0 + (x1 - x0) / 3, y0,
-          x1 - (x1 - x0) / 3, y1,
-          x1, y1);
+      final x1 = xOf(i), y1 = yOf(levels[i]);
+      linePath.cubicTo(x0 + (x1 - x0) / 3, y0, x1 - (x1 - x0) / 3, y1, x1, y1);
     }
     canvas.drawPath(
         linePath,
@@ -705,13 +707,13 @@ class _SparklinePainter extends CustomPainter {
     final wY = yOf(warning);
     if (wY >= 0 && wY <= size.height) {
       canvas.drawLine(
-          Offset(0, wY), Offset(size.width, wY),
+          Offset(0, wY),
+          Offset(size.width, wY),
           Paint()
             ..color = AppPalette.warning.withValues(alpha: 0.55)
             ..strokeWidth = 1
             ..style = PaintingStyle.stroke);
-      canvas.drawParagraph(
-          _buildPara('⚠ warn', AppPalette.warning, 7.5),
+      canvas.drawParagraph(_buildPara('⚠ warn', AppPalette.warning, 7.5),
           Offset(size.width - 34, wY - 11));
     }
 
@@ -719,13 +721,13 @@ class _SparklinePainter extends CustomPainter {
     final dY = yOf(danger);
     if (dY >= 0 && dY <= size.height) {
       canvas.drawLine(
-          Offset(0, dY), Offset(size.width, dY),
+          Offset(0, dY),
+          Offset(size.width, dY),
           Paint()
             ..color = AppPalette.danger.withValues(alpha: 0.70)
             ..strokeWidth = 1.5
             ..style = PaintingStyle.stroke);
-      canvas.drawParagraph(
-          _buildPara('🔴 danger', AppPalette.danger, 7.5),
+      canvas.drawParagraph(_buildPara('🔴 danger', AppPalette.danger, 7.5),
           Offset(size.width - 48, dY - 11));
     }
 
@@ -733,7 +735,8 @@ class _SparklinePainter extends CustomPainter {
     final dotX = xOf(0), dotY = yOf(levels[0]);
     canvas.drawCircle(Offset(dotX, dotY), 5, Paint()..color = color);
     canvas.drawCircle(
-        Offset(dotX, dotY), 5,
+        Offset(dotX, dotY),
+        5,
         Paint()
           ..color = Colors.white.withValues(alpha: 0.3)
           ..style = PaintingStyle.stroke
@@ -757,8 +760,8 @@ class _SparklinePainter extends CustomPainter {
 
 class _StatPill extends StatelessWidget {
   final IconData icon;
-  final String   label, value;
-  final Color    color;
+  final String label, value;
+  final Color color;
   const _StatPill({
     required this.icon,
     required this.label,
@@ -772,12 +775,9 @@ class _StatPill extends StatelessWidget {
           const SizedBox(height: 3),
           Text(value,
               style: TextStyle(
-                  color: color,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800)),
+                  color: color, fontSize: 11, fontWeight: FontWeight.w800)),
           Text(label,
-              style: const TextStyle(
-                  color: AppPalette.textGrey, fontSize: 8)),
+              style: const TextStyle(color: AppPalette.textGrey, fontSize: 8)),
         ],
       );
 }

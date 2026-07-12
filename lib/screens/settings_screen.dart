@@ -28,53 +28,78 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final Map<String, bool> _expanded = {
-    'appearance':    true,
-    'account':       true,
+    'appearance': true,
+    'account': true,
     'accessibility': false,
-    'data':          true,
-    'tools':         true,
-    'maps':          true,
-    'weather':       false,
-    'community':     false,
-    'prediction':    false,
-    'news':          false,
-    'admin':         false,
+    'data': true,
+    'tools': true,
+    'maps': true,
+    'weather': false,
+    'community': false,
+    'prediction': false,
+    'news': false,
+    'admin': false,
   };
 
   void _toggle(String key) {
     HapticFeedback.selectionClick();
     setState(() => _expanded[key] = !(_expanded[key] ?? true));
   }
+
   bool _isOpen(String key) => _expanded[key] ?? true;
 
   // ── Per-section accent colours (mid-tone, matching dashboard _P) ──────────
   static const _sectionColors = {
-    'appearance':    Color(0xFF7E57C2),
-    'account':       Color(0xFF2196F3),
+    'appearance': Color(0xFF7E57C2),
+    'account': Color(0xFF2196F3),
     'accessibility': Color(0xFF00ACC1),
-    'data':          Color(0xFF0288D1),
-    'tools':         Color(0xFF26A69A),
-    'maps':          Color(0xFF00897B),
-    'weather':       Color(0xFFFF8F00),
-    'prediction':    Color(0xFF7E57C2),
-    'community':     Color(0xFF388E3C),
-    'news':          Color(0xFFF9A825),
-    'admin':         Color(0xFFB71C1C),
+    'data': Color(0xFF0288D1),
+    'tools': Color(0xFF26A69A),
+    'maps': Color(0xFF00897B),
+    'weather': Color(0xFFFF8F00),
+    'prediction': Color(0xFF7E57C2),
+    'community': Color(0xFF388E3C),
+    'news': Color(0xFFF9A825),
+    'admin': Color(0xFFB71C1C),
   };
 
   Color _sc(String key) => _sectionColors[key] ?? const Color(0xFF2196F3);
 
   static const _themes = [
-    (AppThemeMode.dark,         Icons.nights_stay_rounded,     'Night River',    'Deep abyss with gold accents',      Color(0xFFFFD966)),
-    (AppThemeMode.sunset,       Icons.wb_twilight_rounded,     'Sunset Warm',    'Red-orange fiery glow',             Color(0xFFFF6B35)),
-    (AppThemeMode.ocean,        Icons.water_rounded,           'Deep Ocean',     'Cyan + midnight navy',              Color(0xFF00C6FF)),
-    (AppThemeMode.roboticDark,  Icons.memory_rounded,          'Tactical Dark',  'Amber HUD on near-black',           Color(0xFFf59e0b)),
+    (
+      AppThemeMode.dark,
+      Icons.nights_stay_rounded,
+      'Night River',
+      'Deep abyss with gold accents',
+      Color(0xFFFFD966)
+    ),
+    (
+      AppThemeMode.sunset,
+      Icons.wb_twilight_rounded,
+      'Sunset Warm',
+      'Red-orange fiery glow',
+      Color(0xFFFF6B35)
+    ),
+    (
+      AppThemeMode.ocean,
+      Icons.water_rounded,
+      'Deep Ocean',
+      'Cyan + midnight navy',
+      Color(0xFF00C6FF)
+    ),
+    (
+      AppThemeMode.roboticDark,
+      Icons.memory_rounded,
+      'Tactical Dark',
+      'Amber HUD on near-black',
+      Color(0xFFf59e0b)
+    ),
   ];
 
   @override
   Widget build(BuildContext context) {
-    final t        = RiverColors.of(context);
-    final mode     = ref.watch(themeModeProvider);
+    final t = RiverColors.of(context);
+    final mode = ref.watch(themeModeProvider);
     final notifier = ref.read(themeModeProvider.notifier);
 
     return Scaffold(
@@ -87,7 +112,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             subtitle: 'Preferences & navigation',
             actions: [
               IconButton(
-                icon: Icon(Icons.info_outline_rounded, color: t.textSecondary, size: 20),
+                icon: Icon(Icons.info_outline_rounded,
+                    color: t.textSecondary, size: 20),
                 tooltip: 'About',
                 onPressed: () {},
               ),
@@ -97,13 +123,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 60),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-
                 // ── Appearance ──────────────────────────────────────────────
                 _CollapsibleSection(
-                  t: t, sectionKey: 'appearance',
-                  icon: Icons.palette_rounded, title: 'Appearance',
+                  t: t,
+                  sectionKey: 'appearance',
+                  icon: Icons.palette_rounded,
+                  title: 'Appearance',
                   accentColor: _sc('appearance'),
-                  open: _isOpen('appearance'), onToggle: () => _toggle('appearance'),
+                  open: _isOpen('appearance'),
+                  onToggle: () => _toggle('appearance'),
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(12, 4, 12, 14),
                     child: _buildThemeGrid(context, t, mode, notifier),
@@ -113,134 +141,284 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
                 // ── Account ─────────────────────────────────────────────────
                 _CollapsibleSection(
-                  t: t, sectionKey: 'account',
-                  icon: Icons.manage_accounts_rounded, title: 'Account',
+                  t: t,
+                  sectionKey: 'account',
+                  icon: Icons.manage_accounts_rounded,
+                  title: 'Account',
                   accentColor: _sc('account'),
-                  open: _isOpen('account'), onToggle: () => _toggle('account'),
+                  open: _isOpen('account'),
+                  onToggle: () => _toggle('account'),
                   child: _tiles(t, _sc('account'), [
-                    (Icons.person_rounded,              const Color(0xFF2196F3), 'Profile',               Routes.profile),
-                    (Icons.notifications_rounded,       const Color(0xFFFF8F00), 'Notification Settings', Routes.notificationSettings),
-                    (Icons.notifications_active_rounded,const Color(0xFFE53935), 'Alert Settings',        Routes.alertSettings),
+                    (
+                      Icons.person_rounded,
+                      const Color(0xFF2196F3),
+                      'Profile',
+                      Routes.profile
+                    ),
+                    (
+                      Icons.notifications_rounded,
+                      const Color(0xFFFF8F00),
+                      'Notification Settings',
+                      Routes.notificationSettings
+                    ),
+                    (
+                      Icons.notifications_active_rounded,
+                      const Color(0xFFE53935),
+                      'Alert Settings',
+                      Routes.alertSettings
+                    ),
                   ]),
                 ),
                 _gap,
 
                 // ── Accessibility ────────────────────────────────────────────
                 _CollapsibleSection(
-                  t: t, sectionKey: 'accessibility',
-                  icon: Icons.accessibility_new_rounded, title: 'Accessibility',
+                  t: t,
+                  sectionKey: 'accessibility',
+                  icon: Icons.accessibility_new_rounded,
+                  title: 'Accessibility',
                   accentColor: _sc('accessibility'),
-                  open: _isOpen('accessibility'), onToggle: () => _toggle('accessibility'),
+                  open: _isOpen('accessibility'),
+                  onToggle: () => _toggle('accessibility'),
                   child: _tiles(t, _sc('accessibility'), [
-                    (Icons.accessibility_new_rounded, const Color(0xFF00ACC1), 'Accessibility Settings', Routes.accessibilitySettings),
+                    (
+                      Icons.accessibility_new_rounded,
+                      const Color(0xFF00ACC1),
+                      'Accessibility Settings',
+                      Routes.accessibilitySettings
+                    ),
                   ]),
                 ),
                 _gap,
 
                 // ── Data & Analytics ────────────────────────────────────────
                 _CollapsibleSection(
-                  t: t, sectionKey: 'data',
-                  icon: Icons.area_chart_rounded, title: 'Data & Analytics',
+                  t: t,
+                  sectionKey: 'data',
+                  icon: Icons.area_chart_rounded,
+                  title: 'Data & Analytics',
                   accentColor: _sc('data'),
-                  open: _isOpen('data'), onToggle: () => _toggle('data'),
+                  open: _isOpen('data'),
+                  onToggle: () => _toggle('data'),
                   child: _tiles(t, _sc('data'), [
-                    (Icons.storage_rounded,      const Color(0xFF3ACC8A), 'Data & Sources',        '/data-sources'),
-                    (Icons.area_chart_rounded,  const Color(0xFF0288D1), 'Analytics Dashboard',  Routes.analytics),
-                    (Icons.timeline_rounded,    const Color(0xFF6D4C41), 'Historical Analytics', Routes.historicalAnalytics),
-                    (Icons.upload_file_rounded, const Color(0xFF455A64), 'Export Data',          Routes.export_),
+                    (
+                      Icons.storage_rounded,
+                      const Color(0xFF3ACC8A),
+                      'Data & Sources',
+                      '/data-sources'
+                    ),
+                    (
+                      Icons.area_chart_rounded,
+                      const Color(0xFF0288D1),
+                      'Analytics Dashboard',
+                      Routes.analytics
+                    ),
+                    (
+                      Icons.timeline_rounded,
+                      const Color(0xFF6D4C41),
+                      'Historical Analytics',
+                      Routes.historicalAnalytics
+                    ),
+                    (
+                      Icons.upload_file_rounded,
+                      const Color(0xFF455A64),
+                      'Export Data',
+                      Routes.export_
+                    ),
                   ]),
                 ),
                 _gap,
 
                 // ── Tools ───────────────────────────────────────────────────
                 _CollapsibleSection(
-                  t: t, sectionKey: 'tools',
-                  icon: Icons.build_circle_rounded, title: 'Tools',
+                  t: t,
+                  sectionKey: 'tools',
+                  icon: Icons.build_circle_rounded,
+                  title: 'Tools',
                   accentColor: _sc('tools'),
-                  open: _isOpen('tools'), onToggle: () => _toggle('tools'),
+                  open: _isOpen('tools'),
+                  onToggle: () => _toggle('tools'),
                   child: _tiles(t, _sc('tools'), [
-                    (Icons.broadcast_on_personal_rounded, const Color(0xFF26A69A), 'Live Stations', Routes.liveStations),
-                    (Icons.grid_view_rounded,             const Color(0xFF3949AB), 'State Matrix',  Routes.stateMatrix),
-                    (Icons.monitor_heart_outlined,        const Color(0xFF2196F3), 'River Monitor', Routes.riverMonitor),
-                    (Icons.info_rounded,                  const Color(0xFF7E57C2), 'Model Info',    Routes.modelInfo),
+                    (
+                      Icons.broadcast_on_personal_rounded,
+                      const Color(0xFF26A69A),
+                      'Live Stations',
+                      Routes.liveStations
+                    ),
+                    (
+                      Icons.grid_view_rounded,
+                      const Color(0xFF3949AB),
+                      'State Matrix',
+                      Routes.stateMatrix
+                    ),
+                    (
+                      Icons.monitor_heart_outlined,
+                      const Color(0xFF2196F3),
+                      'River Monitor',
+                      Routes.riverMonitor
+                    ),
+                    (
+                      Icons.info_rounded,
+                      const Color(0xFF7E57C2),
+                      'Model Info',
+                      Routes.modelInfo
+                    ),
                   ]),
                 ),
                 _gap,
 
                 // ── Maps ────────────────────────────────────────────────────
                 _CollapsibleSection(
-                  t: t, sectionKey: 'maps',
-                  icon: Icons.map_rounded, title: 'Maps',
+                  t: t,
+                  sectionKey: 'maps',
+                  icon: Icons.map_rounded,
+                  title: 'Maps',
                   accentColor: _sc('maps'),
-                  open: _isOpen('maps'), onToggle: () => _toggle('maps'),
+                  open: _isOpen('maps'),
+                  onToggle: () => _toggle('maps'),
                   child: _tiles(t, _sc('maps'), [
-                    (Icons.map_rounded,           const Color(0xFF00897B), 'Bihar River Map',      Routes.biharRiverMap),
-                    (Icons.travel_explore_rounded,const Color(0xFF0097A7), 'India River Explorer', Routes.indiaRiverExplorer),
-                    (Icons.directions_run_rounded,const Color(0xFFF57F17), 'Evacuation Routes',    Routes.evacuation),
+                    (
+                      Icons.map_rounded,
+                      const Color(0xFF00897B),
+                      'Bihar River Map',
+                      Routes.biharRiverMap
+                    ),
+                    (
+                      Icons.travel_explore_rounded,
+                      const Color(0xFF0097A7),
+                      'India River Explorer',
+                      Routes.indiaRiverExplorer
+                    ),
+                    (
+                      Icons.directions_run_rounded,
+                      const Color(0xFFF57F17),
+                      'Evacuation Routes',
+                      Routes.evacuation
+                    ),
                   ]),
                 ),
                 _gap,
 
                 // ── Weather ─────────────────────────────────────────────────
                 _CollapsibleSection(
-                  t: t, sectionKey: 'weather',
-                  icon: Icons.cloud_rounded, title: 'Weather',
+                  t: t,
+                  sectionKey: 'weather',
+                  icon: Icons.cloud_rounded,
+                  title: 'Weather',
                   accentColor: _sc('weather'),
-                  open: _isOpen('weather'), onToggle: () => _toggle('weather'),
+                  open: _isOpen('weather'),
+                  onToggle: () => _toggle('weather'),
                   child: _tiles(t, _sc('weather'), [
-                    (Icons.wb_sunny_rounded,    const Color(0xFFFF8F00), 'Weather',           Routes.weather),
-                    (Icons.grain_rounded,       const Color(0xFF1976D2), 'Rainfall Forecast', Routes.rainfallForecast),
+                    (
+                      Icons.wb_sunny_rounded,
+                      const Color(0xFFFF8F00),
+                      'Weather',
+                      Routes.weather
+                    ),
+                    (
+                      Icons.grain_rounded,
+                      const Color(0xFF1976D2),
+                      'Rainfall Forecast',
+                      Routes.rainfallForecast
+                    ),
                   ]),
                 ),
                 _gap,
 
                 // ── Prediction & AI ─────────────────────────────────────────
                 _CollapsibleSection(
-                  t: t, sectionKey: 'prediction',
-                  icon: Icons.psychology_rounded, title: 'Prediction & AI',
+                  t: t,
+                  sectionKey: 'prediction',
+                  icon: Icons.psychology_rounded,
+                  title: 'Prediction & AI',
                   accentColor: _sc('prediction'),
-                  open: _isOpen('prediction'), onToggle: () => _toggle('prediction'),
+                  open: _isOpen('prediction'),
+                  onToggle: () => _toggle('prediction'),
                   child: _tiles(t, _sc('prediction'), [
-                    (Icons.psychology_rounded,  const Color(0xFF7E57C2), 'AI Predictor',   Routes.aiPredictor),
-                    (Icons.query_stats_rounded, const Color(0xFF9C27B0), 'Manual Predict', Routes.predict),
+                    (
+                      Icons.psychology_rounded,
+                      const Color(0xFF7E57C2),
+                      'AI Predictor',
+                      Routes.aiPredictor
+                    ),
+                    (
+                      Icons.query_stats_rounded,
+                      const Color(0xFF9C27B0),
+                      'Manual Predict',
+                      Routes.predict
+                    ),
                   ]),
                 ),
                 _gap,
 
                 // ── Community ───────────────────────────────────────────────
                 _CollapsibleSection(
-                  t: t, sectionKey: 'community',
-                  icon: Icons.groups_rounded, title: 'Community',
+                  t: t,
+                  sectionKey: 'community',
+                  icon: Icons.groups_rounded,
+                  title: 'Community',
                   accentColor: _sc('community'),
-                  open: _isOpen('community'), onToggle: () => _toggle('community'),
+                  open: _isOpen('community'),
+                  onToggle: () => _toggle('community'),
                   child: _tiles(t, _sc('community'), [
-                    (Icons.forum_rounded,             const Color(0xFF6A1B9A), 'Crowd Reports',   Routes.crowdReports),
-                    (Icons.report_problem_rounded,    const Color(0xFFE64A19), 'Incident Report', Routes.incidentReport),
-                    (Icons.health_and_safety_rounded, const Color(0xFFC62828), 'SOS & Emergency', Routes.sos),
+                    (
+                      Icons.forum_rounded,
+                      const Color(0xFF6A1B9A),
+                      'Crowd Reports',
+                      Routes.crowdReports
+                    ),
+                    (
+                      Icons.report_problem_rounded,
+                      const Color(0xFFE64A19),
+                      'Incident Report',
+                      Routes.incidentReport
+                    ),
+                    (
+                      Icons.health_and_safety_rounded,
+                      const Color(0xFFC62828),
+                      'SOS & Emergency',
+                      Routes.sos
+                    ),
                   ]),
                 ),
                 _gap,
 
                 // ── News ────────────────────────────────────────────────────
                 _CollapsibleSection(
-                  t: t, sectionKey: 'news',
-                  icon: Icons.newspaper_rounded, title: 'News',
+                  t: t,
+                  sectionKey: 'news',
+                  icon: Icons.newspaper_rounded,
+                  title: 'News',
                   accentColor: _sc('news'),
-                  open: _isOpen('news'), onToggle: () => _toggle('news'),
+                  open: _isOpen('news'),
+                  onToggle: () => _toggle('news'),
                   child: _tiles(t, _sc('news'), [
-                    (Icons.article_rounded, const Color(0xFFF9A825), 'News Feed', Routes.news),
+                    (
+                      Icons.article_rounded,
+                      const Color(0xFFF9A825),
+                      'News Feed',
+                      Routes.news
+                    ),
                   ]),
                 ),
                 _gap,
 
                 // ── Administration ──────────────────────────────────────────
                 _CollapsibleSection(
-                  t: t, sectionKey: 'admin',
-                  icon: Icons.admin_panel_settings_rounded, title: 'Administration',
+                  t: t,
+                  sectionKey: 'admin',
+                  icon: Icons.admin_panel_settings_rounded,
+                  title: 'Administration',
                   accentColor: _sc('admin'),
-                  open: _isOpen('admin'), onToggle: () => _toggle('admin'),
+                  open: _isOpen('admin'),
+                  onToggle: () => _toggle('admin'),
                   child: _tiles(t, _sc('admin'), [
-                    (Icons.dashboard_customize_rounded, const Color(0xFFB71C1C), 'Admin Dashboard', Routes.adminDashboard),
+                    (
+                      Icons.dashboard_customize_rounded,
+                      const Color(0xFFB71C1C),
+                      'Admin Dashboard',
+                      Routes.adminDashboard
+                    ),
                   ]),
                 ),
 
@@ -273,7 +451,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           _tile(t, items[i].$1, items[i].$2, items[i].$3, items[i].$4),
           if (i < items.length - 1)
             Divider(
-              height: 1, indent: 58, endIndent: 16,
+              height: 1,
+              indent: 58,
+              endIndent: 16,
               color: sectionColor.withValues(alpha: 0.15),
             ),
         ],
@@ -289,10 +469,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     dynamic notifier,
   ) {
     final availableW = MediaQuery.of(ctx).size.width - 32 - 24;
-    final cardW      = (availableW - 10) / 2;
+    final cardW = (availableW - 10) / 2;
 
     return Wrap(
-      spacing:    10,
+      spacing: 10,
       runSpacing: 10,
       children: _themes.map((item) {
         final (themeMode, icon, label, desc, accentColor) = item;
@@ -305,9 +485,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           },
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 220),
-            curve:    Curves.easeOut,
-            width:    cardW,
-            padding:  const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+            curve: Curves.easeOut,
+            width: cardW,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
             decoration: BoxDecoration(
               color: selected ? accentColor.withValues(alpha: 0.10) : t.cardBg,
               borderRadius: BorderRadius.circular(18),
@@ -316,41 +496,63 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 width: selected ? 2.0 : 1.0,
               ),
               boxShadow: selected
-                  ? [BoxShadow(color: accentColor.withValues(alpha: 0.25), blurRadius: 16, offset: const Offset(0, 4))]
-                  : [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 6, offset: const Offset(0, 2))],
+                  ? [
+                      BoxShadow(
+                          color: accentColor.withValues(alpha: 0.25),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4))
+                    ]
+                  : [
+                      BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.06),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2))
+                    ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment:  MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Stack(
                   clipBehavior: Clip.none,
                   alignment: Alignment.center,
                   children: [
                     Container(
-                      width: 48, height: 48,
+                      width: 48,
+                      height: 48,
                       decoration: BoxDecoration(
                         gradient: RadialGradient(colors: [
                           accentColor.withValues(alpha: 0.22),
                           accentColor.withValues(alpha: 0.06),
                         ]),
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: accentColor.withValues(alpha: 0.30), width: 1),
+                        border: Border.all(
+                            color: accentColor.withValues(alpha: 0.30),
+                            width: 1),
                       ),
-                      child: Center(child: Icon(icon, color: accentColor, size: 24)),
+                      child: Center(
+                          child: Icon(icon, color: accentColor, size: 24)),
                     ),
                     if (selected)
                       Positioned(
-                        right: -5, top: -5,
+                        right: -5,
+                        top: -5,
                         child: Container(
-                          width: 18, height: 18,
+                          width: 18,
+                          height: 18,
                           decoration: BoxDecoration(
-                            color:  accentColor,
-                            shape:  BoxShape.circle,
+                            color: accentColor,
+                            shape: BoxShape.circle,
                             border: Border.all(color: t.cardBg, width: 2),
-                            boxShadow: [BoxShadow(color: accentColor.withValues(alpha: 0.5), blurRadius: 6)],
+                            boxShadow: [
+                              BoxShadow(
+                                  color: accentColor.withValues(alpha: 0.5),
+                                  blurRadius: 6)
+                            ],
                           ),
-                          child: const Center(child: Icon(Icons.check_rounded, color: Colors.white, size: 10)),
+                          child: const Center(
+                              child: Icon(Icons.check_rounded,
+                                  color: Colors.white, size: 10)),
                         ),
                       ),
                   ],
@@ -360,18 +562,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   label,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color:      selected ? accentColor : t.textPrimary,
-                    fontSize:   13,
+                    color: selected ? accentColor : t.textPrimary,
+                    fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    height:     1.1,
+                    height: 1.1,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   desc,
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: t.textSecondary, fontSize: 10, height: 1.3),
-                  maxLines: 2, overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      color: t.textSecondary, fontSize: 10, height: 1.3),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -384,10 +588,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   // ── Single nav tile ───────────────────────────────────────────────────────
   Widget _tile(
     RiverColors t,
-    IconData    icon,
-    Color       iconColor,
-    String      label,
-    String      route,
+    IconData icon,
+    Color iconColor,
+    String label,
+    String route,
   ) {
     return Material(
       color: Colors.transparent,
@@ -403,14 +607,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                width: 36, height: 36,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
                   gradient: RadialGradient(colors: [
                     iconColor.withValues(alpha: 0.22),
                     iconColor.withValues(alpha: 0.06),
                   ]),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: iconColor.withValues(alpha: 0.25), width: 1),
+                  border: Border.all(
+                      color: iconColor.withValues(alpha: 0.25), width: 1),
                 ),
                 child: Center(child: Icon(icon, color: iconColor, size: 18)),
               ),
@@ -419,23 +625,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 child: Text(
                   label,
                   style: TextStyle(
-                    color:      t.textPrimary,
-                    fontSize:   14,
+                    color: t.textPrimary,
+                    fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    height:     1.2,
+                    height: 1.2,
                   ),
                 ),
               ),
               const SizedBox(width: 4),
               Container(
-                width: 24, height: 24,
+                width: 24,
+                height: 24,
                 decoration: BoxDecoration(
-                  color:        iconColor.withValues(alpha: 0.08),
+                  color: iconColor.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(7),
                 ),
-                child: Center(child: Icon(
+                child: Center(
+                    child: Icon(
                   Icons.chevron_right_rounded,
-                  color: iconColor.withValues(alpha: 0.55), size: 16,
+                  color: iconColor.withValues(alpha: 0.55),
+                  size: 16,
                 )),
               ),
             ],
@@ -450,14 +659,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 // _CollapsibleSection  v4.0
 // ─────────────────────────────────────────────────────────────────────────────
 class _CollapsibleSection extends StatelessWidget {
-  final RiverColors  t;
-  final String       sectionKey;
-  final IconData     icon;
-  final String       title;
-  final Color        accentColor;
-  final bool         open;
+  final RiverColors t;
+  final String sectionKey;
+  final IconData icon;
+  final String title;
+  final Color accentColor;
+  final bool open;
   final VoidCallback onToggle;
-  final Widget       child;
+  final Widget child;
 
   const _CollapsibleSection({
     required this.t,
@@ -475,7 +684,7 @@ class _CollapsibleSection extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: Td3Card(
-        elevation:   Td3.elevMid,
+        elevation: Td3.elevMid,
         accentColor: accentColor,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -484,7 +693,7 @@ class _CollapsibleSection extends StatelessWidget {
             // ── Header ──
             InkWell(
               borderRadius: BorderRadius.vertical(
-                top:    const Radius.circular(18),
+                top: const Radius.circular(18),
                 bottom: open ? Radius.zero : const Radius.circular(18),
               ),
               onTap: onToggle,
@@ -494,42 +703,49 @@ class _CollapsibleSection extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Container(
-                      width: 34, height: 34,
+                      width: 34,
+                      height: 34,
                       decoration: BoxDecoration(
                         gradient: RadialGradient(colors: [
                           accentColor.withValues(alpha: 0.25),
                           accentColor.withValues(alpha: 0.08),
                         ]),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: accentColor.withValues(alpha: 0.30), width: 1),
+                        border: Border.all(
+                            color: accentColor.withValues(alpha: 0.30),
+                            width: 1),
                       ),
-                      child: Center(child: Icon(icon, color: accentColor, size: 16)),
+                      child: Center(
+                          child: Icon(icon, color: accentColor, size: 16)),
                     ),
                     const SizedBox(width: 11),
                     Expanded(
                       child: Text(
                         title.toUpperCase(),
                         style: TextStyle(
-                          color:         accentColor,
-                          fontSize:      11,
-                          fontWeight:    FontWeight.w800,
+                          color: accentColor,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
                           letterSpacing: 1.3,
                         ),
                       ),
                     ),
                     AnimatedRotation(
-                      turns:    open ? 0.0 : -0.25,
+                      turns: open ? 0.0 : -0.25,
                       duration: const Duration(milliseconds: 220),
-                      curve:    Curves.easeOut,
+                      curve: Curves.easeOut,
                       child: Container(
-                        width: 28, height: 28,
+                        width: 28,
+                        height: 28,
                         decoration: BoxDecoration(
-                          color:        accentColor.withValues(alpha: 0.10),
+                          color: accentColor.withValues(alpha: 0.10),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Center(child: Icon(
+                        child: Center(
+                            child: Icon(
                           Icons.keyboard_arrow_down_rounded,
-                          color: accentColor.withValues(alpha: 0.70), size: 18,
+                          color: accentColor.withValues(alpha: 0.70),
+                          size: 18,
                         )),
                       ),
                     ),
@@ -540,11 +756,12 @@ class _CollapsibleSection extends StatelessWidget {
 
             // ── Collapsible body ──
             AnimatedCrossFade(
-              duration:       const Duration(milliseconds: 220),
-              sizeCurve:      Curves.easeOut,
-              firstCurve:     Curves.easeOut,
-              secondCurve:    Curves.easeIn,
-              crossFadeState: open ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+              duration: const Duration(milliseconds: 220),
+              sizeCurve: Curves.easeOut,
+              firstCurve: Curves.easeOut,
+              secondCurve: Curves.easeIn,
+              crossFadeState:
+                  open ? CrossFadeState.showFirst : CrossFadeState.showSecond,
               firstChild: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -599,15 +816,16 @@ class _VersionFooter extends StatelessWidget {
               shaderCallback: (r) => LinearGradient(
                 colors: [t.accent, t.metricColor],
               ).createShader(r),
-              child: const Icon(Icons.water_rounded, color: Colors.white, size: 16),
+              child: const Icon(Icons.water_rounded,
+                  color: Colors.white, size: 16),
             ),
             const SizedBox(width: 6),
             Text(
               'OpsFlood Bihar  ·  v1.0.0',
               style: TextStyle(
-                color:         t.textSecondary.withValues(alpha: 0.55),
-                fontSize:      11,
-                fontWeight:    FontWeight.w600,
+                color: t.textSecondary.withValues(alpha: 0.55),
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
                 letterSpacing: 0.4,
               ),
             ),
@@ -618,8 +836,8 @@ class _VersionFooter extends StatelessWidget {
           'Bihar Flood Command Intelligence System',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color:      t.textSecondary.withValues(alpha: 0.35),
-            fontSize:   10,
+            color: t.textSecondary.withValues(alpha: 0.35),
+            fontSize: 10,
             letterSpacing: 0.2,
           ),
         ),

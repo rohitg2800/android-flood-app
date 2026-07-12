@@ -24,7 +24,7 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final t      = RiverColors.of(context);
+    final t = RiverColors.of(context);
     final rivers = ref.watch(liveLevelsProvider);
 
     return Scaffold(
@@ -39,7 +39,11 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 60),
             sliver: () {
-              final names = rivers.map((r) => r.riverName ?? r.stationName).toSet().toList()..sort();
+              final names = rivers
+                  .map((r) => r.riverName ?? r.stationName)
+                  .toSet()
+                  .toList()
+                ..sort();
               final dataA = _stationA != null
                   ? rivers.firstWhere(
                       (r) => (r.riverName ?? r.stationName) == _stationA,
@@ -53,29 +57,38 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
 
               return SliverList(
                 delegate: SliverChildListDelegate([
-
                   // ── Station selectors ──────────────────────────────────
                   Row(
                     children: [
-                      Expanded(child: _StationDropdown(
-                        t: t, label: 'Station A', color: const Color(0xFF1976D2),
-                        value: _stationA, items: names,
+                      Expanded(
+                          child: _StationDropdown(
+                        t: t,
+                        label: 'Station A',
+                        color: const Color(0xFF1976D2),
+                        value: _stationA,
+                        items: names,
                         onChanged: (v) => setState(() => _stationA = v),
                       )),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
-                        child: Icon(Icons.compare_arrows_rounded, color: t.textSecondary, size: 22),
+                        child: Icon(Icons.compare_arrows_rounded,
+                            color: t.textSecondary, size: 22),
                       ),
-                      Expanded(child: _StationDropdown(
-                        t: t, label: 'Station B', color: const Color(0xFF26A69A),
-                        value: _stationB, items: names,
+                      Expanded(
+                          child: _StationDropdown(
+                        t: t,
+                        label: 'Station B',
+                        color: const Color(0xFF26A69A),
+                        value: _stationB,
+                        items: names,
                         onChanged: (v) => setState(() => _stationB = v),
                       )),
                     ],
                   ),
                   const SizedBox(height: 16),
 
-                  if (dataA != null && dataB != null) ..._buildComparison(t, dataA, dataB)
+                  if (dataA != null && dataB != null)
+                    ..._buildComparison(t, dataA, dataB)
                   else
                     Center(
                       child: Padding(
@@ -83,10 +96,12 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
                         child: Column(
                           children: [
                             Icon(Icons.compare_arrows_rounded,
-                                color: t.textSecondary.withValues(alpha: 0.3), size: 48),
+                                color: t.textSecondary.withValues(alpha: 0.3),
+                                size: 48),
                             const SizedBox(height: 12),
                             Text('Select two stations to compare',
-                                style: TextStyle(color: t.textSecondary, fontSize: 13),
+                                style: TextStyle(
+                                    color: t.textSecondary, fontSize: 13),
                                 textAlign: TextAlign.center),
                           ],
                         ),
@@ -115,12 +130,12 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: Text(nameA,
-                        style: const TextStyle(
-                            color: Color(0xFF1976D2),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800),
-                        textAlign: TextAlign.center)),
+                      child: Text(nameA,
+                          style: const TextStyle(
+                              color: Color(0xFF1976D2),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800),
+                          textAlign: TextAlign.center)),
                   SizedBox(
                       width: 70,
                       child: Text('Metric',
@@ -130,23 +145,47 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
                               fontWeight: FontWeight.w600),
                           textAlign: TextAlign.center)),
                   Expanded(
-                    child: Text(nameB,
-                        style: const TextStyle(
-                            color: Color(0xFF26A69A),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800),
-                        textAlign: TextAlign.center)),
+                      child: Text(nameB,
+                          style: const TextStyle(
+                              color: Color(0xFF26A69A),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800),
+                          textAlign: TextAlign.center)),
                 ],
               ),
               const Divider(height: 20),
-              _CompRow(t: t, label: 'Level (m)',    vA: a.currentLevel, vB: b.currentLevel, unit: 'm', higherIsBad: true),
-              _CompRow(t: t, label: 'Danger Level', vA: a.dangerLevel,  vB: b.dangerLevel,  unit: 'm', higherIsBad: false),
-              _CompRow(t: t, label: 'Warning Level',vA: a.warningLevel, vB: b.warningLevel, unit: 'm', higherIsBad: false),
               _CompRow(
-                t: t, label: '% of Danger',
-                vA: a.dangerLevel > 0 ? (a.currentLevel / a.dangerLevel) * 100 : 0,
-                vB: b.dangerLevel > 0 ? (b.currentLevel / b.dangerLevel) * 100 : 0,
-                unit: '%', higherIsBad: true),
+                  t: t,
+                  label: 'Level (m)',
+                  vA: a.currentLevel,
+                  vB: b.currentLevel,
+                  unit: 'm',
+                  higherIsBad: true),
+              _CompRow(
+                  t: t,
+                  label: 'Danger Level',
+                  vA: a.dangerLevel,
+                  vB: b.dangerLevel,
+                  unit: 'm',
+                  higherIsBad: false),
+              _CompRow(
+                  t: t,
+                  label: 'Warning Level',
+                  vA: a.warningLevel,
+                  vB: b.warningLevel,
+                  unit: 'm',
+                  higherIsBad: false),
+              _CompRow(
+                  t: t,
+                  label: '% of Danger',
+                  vA: a.dangerLevel > 0
+                      ? (a.currentLevel / a.dangerLevel) * 100
+                      : 0,
+                  vB: b.dangerLevel > 0
+                      ? (b.currentLevel / b.dangerLevel) * 100
+                      : 0,
+                  unit: '%',
+                  higherIsBad: true),
             ],
           ),
         ),
@@ -172,38 +211,42 @@ class _StationDropdown extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w700)),
-      const SizedBox(height: 4),
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
-        ),
-        child: DropdownButtonHideUnderline(
-          child: DropdownButton<String>(
-            value: value,
-            hint: Text('Select…', style: TextStyle(color: t.textSecondary, fontSize: 12)),
-            isExpanded: true,
-            items: items
-                .map((n) => DropdownMenuItem(
-                    value: n,
-                    child: Text(n,
-                        style: TextStyle(color: t.textPrimary, fontSize: 12),
-                        overflow: TextOverflow.ellipsis)))
-                .toList(),
-            onChanged: (v) {
-              HapticFeedback.selectionClick();
-              onChanged(v);
-            },
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style: TextStyle(
+                  color: color, fontSize: 10, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: color.withValues(alpha: 0.3)),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: value,
+                hint: Text('Select…',
+                    style: TextStyle(color: t.textSecondary, fontSize: 12)),
+                isExpanded: true,
+                items: items
+                    .map((n) => DropdownMenuItem(
+                        value: n,
+                        child: Text(n,
+                            style:
+                                TextStyle(color: t.textPrimary, fontSize: 12),
+                            overflow: TextOverflow.ellipsis)))
+                    .toList(),
+                onChanged: (v) {
+                  HapticFeedback.selectionClick();
+                  onChanged(v);
+                },
+              ),
+            ),
           ),
-        ),
-      ),
-    ],
-  );
+        ],
+      );
 }
 
 class _CompRow extends StatelessWidget {
@@ -222,15 +265,18 @@ class _CompRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final aIsBetter = higherIsBad ? vA < vB : vA > vB;
-    final aColor = aIsBetter ? const Color(0xFF43A047) : const Color(0xFFE53935);
-    final bColor = !aIsBetter ? const Color(0xFF43A047) : const Color(0xFFE53935);
+    final aColor =
+        aIsBetter ? const Color(0xFF43A047) : const Color(0xFFE53935);
+    final bColor =
+        !aIsBetter ? const Color(0xFF43A047) : const Color(0xFFE53935);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(
         children: [
           Expanded(
               child: Text('${vA.toStringAsFixed(2)}$unit',
-                  style: TextStyle(color: aColor, fontSize: 13, fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                      color: aColor, fontSize: 13, fontWeight: FontWeight.w700),
                   textAlign: TextAlign.center)),
           SizedBox(
               width: 70,
@@ -239,7 +285,8 @@ class _CompRow extends StatelessWidget {
                   textAlign: TextAlign.center)),
           Expanded(
               child: Text('${vB.toStringAsFixed(2)}$unit',
-                  style: TextStyle(color: bColor, fontSize: 13, fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                      color: bColor, fontSize: 13, fontWeight: FontWeight.w700),
                   textAlign: TextAlign.center)),
         ],
       ),

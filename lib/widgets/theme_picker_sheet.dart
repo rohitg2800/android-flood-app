@@ -23,7 +23,7 @@ class ThemePickerSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final current = ref.watch(themeModeProvider);
-    final col     = RiverColors.of(context);
+    final col = RiverColors.of(context);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
@@ -33,7 +33,8 @@ class ThemePickerSheet extends ConsumerWidget {
         children: [
           Center(
             child: Container(
-              width: 40, height: 4,
+              width: 40,
+              height: 4,
               decoration: BoxDecoration(
                 color: col.stroke,
                 borderRadius: BorderRadius.circular(2),
@@ -56,11 +57,11 @@ class ThemePickerSheet extends ConsumerWidget {
             children: AppThemeMode.values.map((mode) {
               final isSelected = mode == current;
               final modeLabel = switch (mode) {
-                AppThemeMode.system       => 'Dark (Auto)',
-                AppThemeMode.dark         => 'Night River',
-                AppThemeMode.sunset       => 'Sunset Warm',
-                AppThemeMode.ocean        => 'Deep Ocean',
-                AppThemeMode.roboticDark  => 'Tactical Dark',
+                AppThemeMode.system => 'Dark (Auto)',
+                AppThemeMode.dark => 'Night River',
+                AppThemeMode.sunset => 'Sunset Warm',
+                AppThemeMode.ocean => 'Deep Ocean',
+                AppThemeMode.roboticDark => 'Tactical Dark',
               };
               return GestureDetector(
                 onTap: () {
@@ -69,8 +70,8 @@ class ThemePickerSheet extends ConsumerWidget {
                 },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
                     color: isSelected
                         ? AppPalette.gold.withValues(alpha: 0.15)
@@ -87,21 +88,16 @@ class ThemePickerSheet extends ConsumerWidget {
                       Icon(
                         _iconFor(mode),
                         size: 16,
-                        color: isSelected
-                            ? AppPalette.gold
-                            : col.textSecondary,
+                        color: isSelected ? AppPalette.gold : col.textSecondary,
                       ),
                       const SizedBox(width: 8),
                       Text(
                         modeLabel,
                         style: TextStyle(
                           fontSize: 13,
-                          fontWeight: isSelected
-                              ? FontWeight.w700
-                              : FontWeight.w500,
-                          color: isSelected
-                              ? AppPalette.gold
-                              : col.textPrimary,
+                          fontWeight:
+                              isSelected ? FontWeight.w700 : FontWeight.w500,
+                          color: isSelected ? AppPalette.gold : col.textPrimary,
                         ),
                       ),
                     ],
@@ -117,11 +113,16 @@ class ThemePickerSheet extends ConsumerWidget {
 
   IconData _iconFor(AppThemeMode mode) {
     switch (mode) {
-      case AppThemeMode.system:       return Icons.brightness_auto_outlined;
-      case AppThemeMode.dark:         return Icons.dark_mode_outlined;
-      case AppThemeMode.sunset:       return Icons.wb_twilight_outlined;
-      case AppThemeMode.ocean:        return Icons.water_outlined;
-      case AppThemeMode.roboticDark:  return Icons.memory_outlined;
+      case AppThemeMode.system:
+        return Icons.brightness_auto_outlined;
+      case AppThemeMode.dark:
+        return Icons.dark_mode_outlined;
+      case AppThemeMode.sunset:
+        return Icons.wb_twilight_outlined;
+      case AppThemeMode.ocean:
+        return Icons.water_outlined;
+      case AppThemeMode.roboticDark:
+        return Icons.memory_outlined;
     }
   }
 }

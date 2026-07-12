@@ -10,45 +10,49 @@ import 'package:equinox_flood/models/prediction_point.dart';
 class _FakeSvc extends FloodNotificationService {
   _FakeSvc() : super.internal();
   final List<String> criticalFired = [];
-  final List<String> warningFired  = [];
+  final List<String> warningFired = [];
 
   @override
   Future<void> showCriticalAlert({
-    required int id, required String city,
-    required double level, required double dangerLevel,
-  }) async => criticalFired.add(city);
+    required int id,
+    required String city,
+    required double level,
+    required double dangerLevel,
+  }) async =>
+      criticalFired.add(city);
 
   @override
   Future<void> showWarningAlert({
-    required int id, required String city,
+    required int id,
+    required String city,
     required double level,
-  }) async => warningFired.add(city);
+  }) async =>
+      warningFired.add(city);
 
   @override
   Future<void> init() async {}
 }
 
 final _t = DateTime(2026, 6, 17);
-FloodPrediction _stubPred(String station, String severity) =>
-    FloodPrediction(
-      station:       station,
-      severity:      severity,
-      riskScore:     severity == 'CRITICAL' ? 92.0 : 61.0,
-      currentLevel:  80.0,
-      warningLevel:  74.0,
-      dangerLevel:   76.0,
-      predicted24h:  80.5,
-      predicted48h:  81.0,
-      predicted72h:  81.5,
-      trend:         'Rising',
+FloodPrediction _stubPred(String station, String severity) => FloodPrediction(
+      station: station,
+      severity: severity,
+      riskScore: severity == 'CRITICAL' ? 92.0 : 61.0,
+      currentLevel: 80.0,
+      warningLevel: 74.0,
+      dangerLevel: 76.0,
+      predicted24h: 80.5,
+      predicted48h: 81.0,
+      predicted72h: 81.5,
+      trend: 'Rising',
       confidencePct: 78.0,
-      modelVersion:  'rule-v1',
-      outlook:       'Deteriorating',
-      fromBackend:   false,
-      next24h:       [PredictionPoint(time: _t, level: 80.5)],
-      next48h:       [PredictionPoint(time: _t, level: 81.0)],
-      next72h:       [PredictionPoint(time: _t, level: 81.5)],
-      updatedAt:     _t,
+      modelVersion: 'rule-v1',
+      outlook: 'Deteriorating',
+      fromBackend: false,
+      next24h: [PredictionPoint(time: _t, level: 80.5)],
+      next48h: [PredictionPoint(time: _t, level: 81.0)],
+      next72h: [PredictionPoint(time: _t, level: 81.5)],
+      updatedAt: _t,
     );
 
 void main() {
@@ -92,8 +96,8 @@ void main() {
 
     container.read(notificationWatcherProvider);
 
-    expect(fakeSvc.warningFired,  contains('Hajipur'));
+    expect(fakeSvc.warningFired, contains('Hajipur'));
     expect(fakeSvc.criticalFired, contains('Muzaffarpur'));
-    expect(fakeSvc.warningFired,  isNot(contains('Muzaffarpur')));
+    expect(fakeSvc.warningFired, isNot(contains('Muzaffarpur')));
   });
 }

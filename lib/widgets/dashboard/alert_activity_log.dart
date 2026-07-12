@@ -14,7 +14,8 @@ class AlertActivityLog extends StatelessWidget {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 12),
         child: Center(
-          child: Text('No recent transitions', style: TextStyle(color: Colors.white38, fontSize: 12)),
+          child: Text('No recent transitions',
+              style: TextStyle(color: Colors.white38, fontSize: 12)),
         ),
       );
     }
@@ -65,12 +66,15 @@ class _EventRow extends StatelessWidget {
               TextSpan(children: [
                 TextSpan(
                     text: event.city,
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w600, fontSize: 12)),
                 TextSpan(
                     text: '  ${event.fromLevel} → ${event.toLevel}',
                     style: TextStyle(
                         fontSize: 11,
-                        color: event.toLevel == 'CRITICAL' ? Colors.red : Colors.orange)),
+                        color: event.toLevel == 'CRITICAL'
+                            ? Colors.red
+                            : Colors.orange)),
               ]),
             ),
           ),

@@ -11,20 +11,20 @@ import '../models/flood_data.dart';
 import 'live_fetch_engine.dart';
 
 class StationMarker {
-  final String  city;
-  final String  state;
-  final String  district;
+  final String city;
+  final String state;
+  final String district;
   final String? river;
-  final double  lat;
-  final double  lon;
-  final String  riskLevel;
-  final double  capacityPercent;
+  final double lat;
+  final double lon;
+  final String riskLevel;
+  final double capacityPercent;
   final double? currentLevel;
-  final double  warningLevel;
-  final double  dangerLevel;
+  final double warningLevel;
+  final double dangerLevel;
   final double? rainfall24h;
   final double? flowRate;
-  final bool    hasLiveData;
+  final bool hasLiveData;
   final DateTime? lastUpdated;
 
   const StationMarker({
@@ -68,24 +68,24 @@ class StationsUnifiedBridge {
       final key = (mc['city'] as String).toLowerCase().trim();
       if (liveMap.containsKey(key)) return liveMap[key]!;
 
-      final dl = (mc['danger_level']  as num).toDouble();
+      final dl = (mc['danger_level'] as num).toDouble();
       final wl = (mc['warning_level'] as num).toDouble();
-      final cityName    = mc['city']     as String;
-      final riverName   = mc['river']    as String? ?? '';
+      final cityName = mc['city'] as String;
+      final riverName = mc['river'] as String? ?? '';
       final districtStr = (mc['district'] as String?) ?? '';
 
       return FloodData(
-        stationId:    cityName,
-        stationName:  cityName,
-        river:        riverName,
-        district:     districtStr,
+        stationId: cityName,
+        stationName: cityName,
+        river: riverName,
+        district: districtStr,
         currentLevel: 0.0,
         warningLevel: wl,
-        dangerLevel:  dl,
-        city:         cityName,
-        state:        mc['state'] as String? ?? '',
-        riverName:    riverName,
-        lastUpdated:  _kEpoch,
+        dangerLevel: dl,
+        city: cityName,
+        state: mc['state'] as String? ?? '',
+        riverName: riverName,
+        lastUpdated: _kEpoch,
       );
     }).toList();
   }
@@ -98,38 +98,45 @@ class StationsUnifiedBridge {
       final mc = IndiaGeodata.monitoredCities.firstWhere(
         (c) => (c['city'] as String).toLowerCase() == cityKey,
         orElse: () => {
-          'city': fd.city ?? '',  'state': fd.state ?? '',
-          'district': fd.district ?? '', 'river': fd.riverName ?? '',
-          'lat': 25.0, 'lon': 85.0,
+          'city': fd.city ?? '',
+          'state': fd.state ?? '',
+          'district': fd.district ?? '',
+          'river': fd.riverName ?? '',
+          'lat': 25.0,
+          'lon': 85.0,
           'danger_level': fd.dangerLevel,
           'warning_level': fd.warningLevel,
         },
       );
       return StationMarker(
-        city:            fd.city ?? '',
-        state:           fd.state ?? '',
-        district:        fd.district ?? '',
-        river:           fd.riverName,
-        lat:             (mc['lat'] as num).toDouble(),
-        lon:             (mc['lon'] as num).toDouble(),
-        riskLevel:       fd.riskLevel,
+        city: fd.city ?? '',
+        state: fd.state ?? '',
+        district: fd.district ?? '',
+        river: fd.riverName,
+        lat: (mc['lat'] as num).toDouble(),
+        lon: (mc['lon'] as num).toDouble(),
+        riskLevel: fd.riskLevel,
         capacityPercent: fd.capacityPercent,
-        currentLevel:    fd.currentLevel,
-        warningLevel:    fd.warningLevel,
-        dangerLevel:     fd.dangerLevel,
-        rainfall24h:     fd.effectiveRainfallMm > 0 ? fd.effectiveRainfallMm : null,
-        flowRate:        fd.flowRate,
-        hasLiveData:     fd.status == 'LIVE',
-        lastUpdated:     _liveTs(fd.lastUpdated),
+        currentLevel: fd.currentLevel,
+        warningLevel: fd.warningLevel,
+        dangerLevel: fd.dangerLevel,
+        rainfall24h: fd.effectiveRainfallMm > 0 ? fd.effectiveRainfallMm : null,
+        flowRate: fd.flowRate,
+        hasLiveData: fd.status == 'LIVE',
+        lastUpdated: _liveTs(fd.lastUpdated),
       );
     }).toList();
   }
 
-  int get totalCount    => allStations.length;
-  int get criticalCount => allStations.where((s) => s.riskLevel == 'CRITICAL').length;
-  int get severeCount   => allStations.where((s) => s.riskLevel == 'SEVERE').length;
-  int get warningCount  => allStations.where((s) => s.riskLevel == 'MODERATE').length;
-  int get safeCount     => allStations.where((s) =>
-      s.riskLevel == 'LOW' || s.riskLevel == 'UNKNOWN').length;
-  int get noDataCount   => allStations.where((s) => s.status == 'NO_DATA').length;
+  int get totalCount => allStations.length;
+  int get criticalCount =>
+      allStations.where((s) => s.riskLevel == 'CRITICAL').length;
+  int get severeCount =>
+      allStations.where((s) => s.riskLevel == 'SEVERE').length;
+  int get warningCount =>
+      allStations.where((s) => s.riskLevel == 'MODERATE').length;
+  int get safeCount => allStations
+      .where((s) => s.riskLevel == 'LOW' || s.riskLevel == 'UNKNOWN')
+      .length;
+  int get noDataCount => allStations.where((s) => s.status == 'NO_DATA').length;
 }

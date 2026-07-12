@@ -34,21 +34,22 @@ class FloodDataProvider extends ChangeNotifier {
 
   int get totalLiveCount => _stations.length;
 
-  List<FloodStation> get allStations => _stations.values.toList(growable: false);
+  List<FloodStation> get allStations =>
+      _stations.values.toList(growable: false);
 
   List<FloodStation> get biharStations =>
       allStations.where((s) => s.state == 'Bihar').toList(growable: false);
 
   int get biharLiveCount => biharStations.length;
 
-  List<FloodStation> get criticalStations =>
-      allStations.where((s) => s.riskLevel == 'CRITICAL').toList(growable: false);
+  List<FloodStation> get criticalStations => allStations
+      .where((s) => s.riskLevel == 'CRITICAL')
+      .toList(growable: false);
 
   List<FloodStation> stationsByState(String state) =>
       allStations.where((s) => s.state == state).toList(growable: false);
 
-  FloodStation? stationByCity(String city) =>
-      _stations[city.toLowerCase()];
+  FloodStation? stationByCity(String city) => _stations[city.toLowerCase()];
 
   Future<void> _load() async {
     if (_isLoading) return;
@@ -105,4 +106,3 @@ class FloodDataProvider extends ChangeNotifier {
 
   void refresh() => _load();
 }
-

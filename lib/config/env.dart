@@ -22,7 +22,8 @@ class Env {
   /// In development it can be overridden at build time:
   /// which is wired via --dart-define=EQUINOX_BH_BASE_URL at build time.
   static String get backendBaseUrl {
-    if (kDebugMode) return 'http://10.0.2.2:8000'; // Android emulator → local backend
-    return AppConfig.baseUrl; 
+    if (kDebugMode)
+      return 'http://10.0.2.2:8000'; // Android emulator → local backend
+    return AppConfig.baseUrl;
   }
 }

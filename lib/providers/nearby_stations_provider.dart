@@ -22,7 +22,7 @@ class NearbyStationsState {
   final String? error;
 
   const NearbyStationsState({
-    this.cards     = const [],
+    this.cards = const [],
     this.isLoading = false,
     this.error,
   });
@@ -47,9 +47,8 @@ class NearbyStationsNotifier extends Notifier<NearbyStationsState> {
 
       // Pick top-5 highest-risk stations as the "preferred cities".
       final top5 = allStations.take(5).toList();
-      final svcResult = top5
-          .map((s) => NearbyStation(station: s, distanceKm: 0))
-          .toList();
+      final svcResult =
+          top5.map((s) => NearbyStation(station: s, distanceKm: 0)).toList();
 
       final cards = <NearbyCardState>[];
       for (final ns in svcResult) {

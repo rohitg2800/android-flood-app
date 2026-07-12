@@ -9,11 +9,11 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter/foundation.dart';
 import '../models/flood_data.dart';
 
-const _kGaugeBox      = 'gauge_cache';
-const _kHistoryBox    = 'gauge_history';
-const _kKvBox         = 'kv_cache'; // generic key→value store
-const _kTimestampKey  = '__saved_at';
-const _kStaleMinutes  = 30;
+const _kGaugeBox = 'gauge_cache';
+const _kHistoryBox = 'gauge_history';
+const _kKvBox = 'kv_cache'; // generic key→value store
+const _kTimestampKey = '__saved_at';
+const _kStaleMinutes = 30;
 const _kMaxHistoryDays = 7;
 
 class LocalCacheService {
@@ -41,9 +41,9 @@ class LocalCacheService {
   /// be fully initialised via [Hive.initFlutter].
   @visibleForTesting
   void resetForTesting() {
-    _gaugeBox   = null;
+    _gaugeBox = null;
     _historyBox = null;
-    _kvBox      = null;
+    _kvBox = null;
     // Reset the singleton so the next [instance] access gets a blank service.
     _instance = LocalCacheService._();
   }
@@ -55,9 +55,9 @@ class LocalCacheService {
   Box? _kvBox;
 
   Future<void> init() async {
-    _gaugeBox   ??= await Hive.openBox(_kGaugeBox);
+    _gaugeBox ??= await Hive.openBox(_kGaugeBox);
     _historyBox ??= await Hive.openBox(_kHistoryBox);
-    _kvBox      ??= await Hive.openBox(_kKvBox);
+    _kvBox ??= await Hive.openBox(_kKvBox);
   }
 
   // ── Generic KV API (used by CachedFloodApi + OpsfloodDbService) ──────────
@@ -120,10 +120,9 @@ class LocalCacheService {
       final savedAt = _gaugeBox!.get(_kTimestampKey) as String?;
       bool stale = true;
       if (savedAt != null) {
-        final dt   = DateTime.tryParse(savedAt);
-        final diff = dt != null
-            ? DateTime.now().difference(dt).inMinutes
-            : 9999;
+        final dt = DateTime.tryParse(savedAt);
+        final diff =
+            dt != null ? DateTime.now().difference(dt).inMinutes : 9999;
         stale = diff > _kStaleMinutes;
       }
 
@@ -144,22 +143,21 @@ class LocalCacheService {
 
   // ── 7-day gauge level history ─────────────────────────────────────────────
 
-  Future<void> appendGaugeHistory(
-      String stationId, double currentLevel) async {
+  Future<void> appendGaugeHistory(String stationId, double currentLevel) async {
     await init();
     try {
-      final raw     = _historyBox!.get(stationId) as String?;
+      final raw = _historyBox!.get(stationId) as String?;
       final entries = raw != null
           ? (jsonDecode(raw) as List<dynamic>).cast<Map<String, dynamic>>()
           : <Map<String, dynamic>>[];
 
       entries.add({
-        'ts':    DateTime.now().toIso8601String(),
+        'ts': DateTime.now().toIso8601String(),
         'level': currentLevel,
       });
 
-      final cutoff = DateTime.now()
-          .subtract(const Duration(days: _kMaxHistoryDays));
+      final cutoff =
+          DateTime.now().subtract(const Duration(days: _kMaxHistoryDays));
       final pruned = entries.where((e) {
         final dt = DateTime.tryParse(e['ts'] as String? ?? '');
         return dt != null && dt.isAfter(cutoff);
@@ -176,10 +174,10 @@ class LocalCacheService {
     try {
       final raw = _historyBox!.get(stationId) as String?;
       if (raw == null) return [];
-      final entries = (jsonDecode(raw) as List<dynamic>)
-          .cast<Map<String, dynamic>>();
+      final entries =
+          (jsonDecode(raw) as List<dynamic>).cast<Map<String, dynamic>>();
       return entries.map((e) {
-        final dt    = DateTime.parse(e['ts'] as String);
+        final dt = DateTime.parse(e['ts'] as String);
         final level = (e['level'] as num).toDouble();
         return (dt, level);
       }).toList()

@@ -9,14 +9,15 @@ import 'map_risk_helpers.dart';
 // ── RiverPulsePopup ───────────────────────────────────────────────────────────
 class RiverPulsePopup extends StatelessWidget {
   final RiverStation station;
+
   /// v2.2: bottom sheet upgraded with 7-day mini sparkline + Semantics.
   const RiverPulsePopup({super.key, required this.station});
 
   @override
   Widget build(BuildContext context) {
-    final rc    = context.rc;
-    final s     = station;
-    final dc    = s.dangerClass;
+    final rc = context.rc;
+    final s = station;
+    final dc = s.dangerClass;
     final color = riskColorSolid(dc);
 
     return ClipRRect(
@@ -24,7 +25,8 @@ class RiverPulsePopup extends StatelessWidget {
       child: Container(
         margin: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom,
-          left: 12, right: 12,
+          left: 12,
+          right: 12,
         ),
         color: rc.cardBg,
         child: Column(
@@ -42,7 +44,8 @@ class RiverPulsePopup extends StatelessWidget {
                   // Drag handle
                   Center(
                     child: Container(
-                      width: 36, height: 4,
+                      width: 36,
+                      height: 4,
                       decoration: BoxDecoration(
                         color: rc.stroke,
                         borderRadius: BorderRadius.circular(2),
@@ -61,8 +64,8 @@ class RiverPulsePopup extends StatelessWidget {
                             Text(
                               s.station,
                               style: TextStyle(
-                                color:      rc.textPrimary,
-                                fontSize:   18,
+                                color: rc.textPrimary,
+                                fontSize: 18,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
@@ -78,17 +81,17 @@ class RiverPulsePopup extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
-                          color:        color.withValues(alpha: 0.15),
+                          color: color.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(8),
-                          border:       Border.all(
-                              color: color.withValues(alpha: 0.5)),
+                          border:
+                              Border.all(color: color.withValues(alpha: 0.5)),
                         ),
                         child: Text(
                           riskLabel(dc),
                           style: TextStyle(
-                            color:         color,
-                            fontSize:      12,
-                            fontWeight:    FontWeight.w700,
+                            color: color,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
                             letterSpacing: 0.8,
                           ),
                         ),
@@ -176,14 +179,13 @@ class RiverPulsePopup extends StatelessWidget {
                     children: [
                       Text(
                         'Flood Level Progress',
-                        style: TextStyle(
-                            color: rc.textSecondary, fontSize: 11),
+                        style: TextStyle(color: rc.textSecondary, fontSize: 11),
                       ),
                       Text(
                         '${(s.progressPct * 100).toStringAsFixed(1)}% of HFL',
                         style: TextStyle(
-                          color:      color,
-                          fontSize:   11,
+                          color: color,
+                          fontSize: 11,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -193,10 +195,10 @@ class RiverPulsePopup extends StatelessWidget {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
-                      value:           s.progressPct,
-                      minHeight:       8,
+                      value: s.progressPct,
+                      minHeight: 8,
                       backgroundColor: rc.stroke,
-                      valueColor:      AlwaysStoppedAnimation(color),
+                      valueColor: AlwaysStoppedAnimation(color),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -206,10 +208,10 @@ class RiverPulsePopup extends StatelessWidget {
                     width: double.infinity,
                     child: ElevatedButton.icon(
                       onPressed: () => Navigator.pop(context),
-                      icon:  Icon(Icons.close_rounded,
+                      icon: Icon(Icons.close_rounded,
                           size: 16, color: rc.scaffoldBg),
-                      label: Text('Close',
-                          style: TextStyle(color: rc.scaffoldBg)),
+                      label:
+                          Text('Close', style: TextStyle(color: rc.scaffoldBg)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: rc.accent,
                         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -233,7 +235,8 @@ class RiverPulsePopup extends StatelessWidget {
 class MiniSparkline7d extends StatelessWidget {
   final List<double> values;
   final Color stroke;
-  const MiniSparkline7d({super.key, required this.values, required this.stroke});
+  const MiniSparkline7d(
+      {super.key, required this.values, required this.stroke});
 
   @override
   Widget build(BuildContext context) {
@@ -316,7 +319,10 @@ class _MiniSparklinePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _MiniSparklinePainter old) =>
-      old.values != values || old.stroke != stroke || old.minV != minV || old.range != range;
+      old.values != values ||
+      old.stroke != stroke ||
+      old.minV != minV ||
+      old.range != range;
 }
 
 List<double> _mock7DaySeries(RiverStation s) {
@@ -342,7 +348,7 @@ List<double> _mock7DaySeries(RiverStation s) {
 class MetricTile extends StatelessWidget {
   final String label;
   final String value;
-  final Color  color;
+  final Color color;
 
   const MetricTile({
     super.key,
@@ -356,12 +362,11 @@ class MetricTile extends StatelessWidget {
     final rc = context.rc;
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(
-            horizontal: 8, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         decoration: BoxDecoration(
-          color:        rc.cardBgElevated,
+          color: rc.cardBgElevated,
           borderRadius: BorderRadius.circular(8),
-          border:       Border.all(color: rc.stroke),
+          border: Border.all(color: rc.stroke),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -369,9 +374,9 @@ class MetricTile extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color:         rc.textSecondary,
-                fontSize:      10,
-                fontWeight:    FontWeight.w600,
+                color: rc.textSecondary,
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
                 letterSpacing: 0.4,
               ),
             ),
@@ -379,9 +384,9 @@ class MetricTile extends StatelessWidget {
             Text(
               value,
               style: TextStyle(
-                color:        color,
-                fontSize:     13,
-                fontWeight:   FontWeight.w700,
+                color: color,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
               overflow: TextOverflow.ellipsis,

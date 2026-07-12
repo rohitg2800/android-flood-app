@@ -36,7 +36,8 @@ class StateDataPrefetcher {
       if (kDebugMode) debugPrint('[Prefetch] warming Bihar WRD cache...');
       final stations = await BiharWrdScraper.instance.fetchAll();
       if (kDebugMode) {
-        debugPrint('[Prefetch] Bihar ready: ${stations.length} stations cached');
+        debugPrint(
+            '[Prefetch] Bihar ready: ${stations.length} stations cached');
       }
     } catch (e) {
       if (kDebugMode) debugPrint('[Prefetch] Bihar prefetch failed: $e');

@@ -8,7 +8,7 @@ import '../widgets/app_back_button.dart';
 
 enum _ExportFormat { csv, json, pdf }
 
-final _formatProvider  = StateProvider<_ExportFormat>((_) => _ExportFormat.csv);
+final _formatProvider = StateProvider<_ExportFormat>((_) => _ExportFormat.csv);
 final _exportingProvider = StateProvider<bool>((_) => false);
 
 class ExportScreen extends ConsumerWidget {
@@ -16,8 +16,8 @@ class ExportScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final t         = RiverColors.of(context);
-    final format    = ref.watch(_formatProvider);
+    final t = RiverColors.of(context);
+    final format = ref.watch(_formatProvider);
     final exporting = ref.watch(_exportingProvider);
 
     return Scaffold(
@@ -115,20 +115,16 @@ class _FormatTile extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: selected
-              ? t.accent.withValues(alpha: 0.12)
-              : t.cardBg,
+          color: selected ? t.accent.withValues(alpha: 0.12) : t.cardBg,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: selected
-                ? t.accent.withValues(alpha: 0.5)
-                : Colors.transparent,
+            color:
+                selected ? t.accent.withValues(alpha: 0.5) : Colors.transparent,
           ),
         ),
         child: Row(
           children: [
-            Icon(icon,
-                color: selected ? t.accent : t.textSecondary, size: 22),
+            Icon(icon, color: selected ? t.accent : t.textSecondary, size: 22),
             const SizedBox(width: 14),
             Expanded(
               child: Text(

@@ -10,4 +10,3 @@ class PredictionPoint {
     required this.level,
   });
 }
-

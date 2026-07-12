@@ -11,9 +11,9 @@ import '../../theme/rx.dart';
 
 // ── MapTopBar ─────────────────────────────────────────────────────────────────
 class MapTopBar extends StatelessWidget {
-  final MapViewMode  mode;
-  final SyncMeta     syncMeta;
-  final bool         drawerOpen;
+  final MapViewMode mode;
+  final SyncMeta syncMeta;
+  final bool drawerOpen;
   final VoidCallback onToggle;
   final VoidCallback onDrawerToggle;
   final void Function(FloodStation station) onStationSelected;
@@ -30,7 +30,7 @@ class MapTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rc      = context.rc;
+    final rc = context.rc;
     final isBihar = mode == MapViewMode.bihar;
 
     return Column(
@@ -40,17 +40,16 @@ class MapTopBar extends StatelessWidget {
           children: [
             Expanded(
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
-                  color:        rc.cardBg.withValues(alpha: 0.92),
+                  color: rc.cardBg.withValues(alpha: 0.92),
                   borderRadius: BorderRadius.circular(12),
-                  border:       Border.all(color: rc.stroke, width: 1),
+                  border: Border.all(color: rc.stroke, width: 1),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.radar_rounded,
-                        color: rc.accent, size: 18),
+                    Icon(Icons.radar_rounded, color: rc.accent, size: 18),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Column(
@@ -60,9 +59,9 @@ class MapTopBar extends StatelessWidget {
                           Text(
                             'COMMAND CENTER',
                             style: TextStyle(
-                              color:         rc.textPrimary,
-                              fontSize:      13,
-                              fontWeight:    FontWeight.w800,
+                              color: rc.textPrimary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
                               letterSpacing: 1.2,
                             ),
                           ),
@@ -75,8 +74,8 @@ class MapTopBar extends StatelessWidget {
                               return Text(
                                 '${p.biharLiveCount} stations live · $critical critical',
                                 style: TextStyle(
-                                  color:      rc.textSecondary,
-                                  fontSize:   10,
+                                  color: rc.textSecondary,
+                                  fontSize: 10,
                                   fontWeight: FontWeight.w500,
                                 ),
                               );
@@ -91,10 +90,8 @@ class MapTopBar extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             MapIconBtn(
-              icon:    drawerOpen
-                           ? Icons.close_rounded
-                           : Icons.list_rounded,
-              onTap:   onDrawerToggle,
+              icon: drawerOpen ? Icons.close_rounded : Icons.list_rounded,
+              onTap: onDrawerToggle,
               tooltip: 'Live Telemetry',
             ),
           ],
@@ -103,15 +100,15 @@ class MapTopBar extends StatelessWidget {
         Row(
           children: [
             MapToggleChip(
-              label:  '🗺 Bihar',
+              label: '🗺 Bihar',
               active: isBihar,
-              onTap:  isBihar ? null : onToggle,
+              onTap: isBihar ? null : onToggle,
             ),
             const SizedBox(width: 8),
             MapToggleChip(
-              label:  '🇮🇳 National',
+              label: '🇮🇳 National',
               active: !isBihar,
-              onTap:  isBihar ? onToggle : null,
+              onTap: isBihar ? onToggle : null,
             ),
           ],
         ),
@@ -119,12 +116,10 @@ class MapTopBar extends StatelessWidget {
         // ── Search autocomplete (Task 4) ─────────────────────────────────
         Consumer<FloodDataProvider>(
           builder: (_, provider, __) {
-            final stations = isBihar
-                ? provider.biharStations
-                : provider.allStations;
+            final stations =
+                isBihar ? provider.biharStations : provider.allStations;
             return Autocomplete<FloodStation>(
-              displayStringForOption: (s) =>
-                  '${s.city} · ${s.riverName}',
+              displayStringForOption: (s) => '${s.city} · ${s.riverName}',
               optionsBuilder: (TextEditingValue textValue) {
                 if (textValue.text.isEmpty) return const [];
                 final query = textValue.text.toLowerCase();
@@ -142,37 +137,35 @@ class MapTopBar extends StatelessWidget {
                 onFieldSubmitted,
               ) {
                 return Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
                   decoration: BoxDecoration(
                     color: rc.cardBg.withValues(alpha: 0.85),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                        color: rc.stroke.withValues(alpha: 0.5)),
+                    border: Border.all(color: rc.stroke.withValues(alpha: 0.5)),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.search_rounded,
-                          size: 15, color: rc.accent),
+                      Icon(Icons.search_rounded, size: 15, color: rc.accent),
                       const SizedBox(width: 8),
                       Expanded(
                         child: TextField(
-                          controller:  controller,
-                          focusNode:   focusNode,
+                          controller: controller,
+                          focusNode: focusNode,
                           style: TextStyle(
-                            color:    rc.textPrimary,
+                            color: rc.textPrimary,
                             fontSize: 12,
                           ),
                           decoration: InputDecoration(
                             hintText: 'Search station or city…',
                             hintStyle: TextStyle(
-                              color:    rc.textSecondary,
+                              color: rc.textSecondary,
                               fontSize: 12,
                             ),
-                            border:         InputBorder.none,
-                            isDense:        true,
-                            contentPadding: const EdgeInsets.symmetric(
-                                vertical: 6),
+                            border: InputBorder.none,
+                            isDense: true,
+                            contentPadding:
+                                const EdgeInsets.symmetric(vertical: 6),
                           ),
                         ),
                       ),
@@ -188,37 +181,37 @@ class MapTopBar extends StatelessWidget {
                 return Align(
                   alignment: Alignment.topLeft,
                   child: Material(
-                    color:        rc.cardBg,
-                    elevation:    4,
+                    color: rc.cardBg,
+                    elevation: 4,
                     borderRadius: BorderRadius.circular(8),
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(
-                          maxHeight: 220, maxWidth: 320),
+                      constraints:
+                          const BoxConstraints(maxHeight: 220, maxWidth: 320),
                       child: ListView.builder(
-                        padding:     EdgeInsets.zero,
-                        shrinkWrap:  true,
-                        itemCount:   options.length,
+                        padding: EdgeInsets.zero,
+                        shrinkWrap: true,
+                        itemCount: options.length,
                         itemBuilder: (context, index) {
                           final s = options.elementAt(index);
                           final riskColor = _riskColor(s.riskLevel);
                           return ListTile(
                             dense: true,
                             leading: CircleAvatar(
-                              radius:          6,
+                              radius: 6,
                               backgroundColor: riskColor,
                             ),
                             title: Text(
                               s.city,
                               style: TextStyle(
-                                color:      rc.textPrimary,
-                                fontSize:   12,
+                                color: rc.textPrimary,
+                                fontSize: 12,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
                             subtitle: Text(
                               s.riverName,
                               style: TextStyle(
-                                color:    rc.textSecondary,
+                                color: rc.textSecondary,
                                 fontSize: 10,
                               ),
                             ),
@@ -238,10 +231,9 @@ class MapTopBar extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
           decoration: BoxDecoration(
-            color:        rc.cardBg.withValues(alpha: 0.85),
+            color: rc.cardBg.withValues(alpha: 0.85),
             borderRadius: BorderRadius.circular(8),
-            border:       Border.all(
-                color: rc.stroke.withValues(alpha: 0.5)),
+            border: Border.all(color: rc.stroke.withValues(alpha: 0.5)),
           ),
           child: Row(
             children: [
@@ -250,8 +242,8 @@ class MapTopBar extends StatelessWidget {
               Text(
                 'Data last synced: ${syncMeta.freshnessLabel}',
                 style: TextStyle(
-                  color:      rc.textSecondary,
-                  fontSize:   11,
+                  color: rc.textSecondary,
+                  fontSize: 11,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -264,20 +256,25 @@ class MapTopBar extends StatelessWidget {
 
   Color _riskColor(String level) {
     switch (level) {
-      case 'CRITICAL': return const Color(0xFFC62828);
-      case 'HIGH':     return const Color(0xFFFF8F00);
-      case 'MODERATE': return const Color(0xFFF57F17);
-      case 'LOW':      return const Color(0xFF2E7D32);
-      default:         return const Color(0xFF757575);
+      case 'CRITICAL':
+        return const Color(0xFFC62828);
+      case 'HIGH':
+        return const Color(0xFFFF8F00);
+      case 'MODERATE':
+        return const Color(0xFFF57F17);
+      case 'LOW':
+        return const Color(0xFF2E7D32);
+      default:
+        return const Color(0xFF757575);
     }
   }
 }
 
 // ── MapIconBtn ────────────────────────────────────────────────────────────────
 class MapIconBtn extends StatelessWidget {
-  final IconData     icon;
+  final IconData icon;
   final VoidCallback onTap;
-  final String       tooltip;
+  final String tooltip;
 
   const MapIconBtn({
     super.key,
@@ -294,11 +291,12 @@ class MapIconBtn extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          width: 42, height: 42,
+          width: 42,
+          height: 42,
           decoration: BoxDecoration(
-            color:        rc.cardBg.withValues(alpha: 0.92),
+            color: rc.cardBg.withValues(alpha: 0.92),
             borderRadius: BorderRadius.circular(12),
-            border:       Border.all(color: rc.stroke),
+            border: Border.all(color: rc.stroke),
           ),
           child: Icon(icon, color: rc.accent, size: 20),
         ),
@@ -309,8 +307,8 @@ class MapIconBtn extends StatelessWidget {
 
 // ── MapToggleChip ─────────────────────────────────────────────────────────────
 class MapToggleChip extends StatelessWidget {
-  final String        label;
-  final bool          active;
+  final String label;
+  final bool active;
   final VoidCallback? onTap;
 
   const MapToggleChip({
@@ -327,8 +325,7 @@ class MapToggleChip extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(
-            horizontal: 14, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: active
               ? rc.accent.withValues(alpha: 0.15)
@@ -342,8 +339,8 @@ class MapToggleChip extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            color:      active ? rc.accent : rc.textSecondary,
-            fontSize:   12,
+            color: active ? rc.accent : rc.textSecondary,
+            fontSize: 12,
             fontWeight: active ? FontWeight.w700 : FontWeight.w500,
           ),
         ),

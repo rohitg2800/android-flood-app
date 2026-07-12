@@ -7,7 +7,12 @@ class OpsPillChip extends StatelessWidget {
   final VoidCallback? onTap;
   final Color? activeColor;
 
-  const OpsPillChip({super.key, required this.label, this.selected = false, this.onTap, this.activeColor});
+  const OpsPillChip(
+      {super.key,
+      required this.label,
+      this.selected = false,
+      this.onTap,
+      this.activeColor});
 
   @override
   Widget build(BuildContext context) {
@@ -27,8 +32,8 @@ class OpsPillChip extends StatelessWidget {
         child: Text(
           label,
           style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: selected ? active : c.textSecondary,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.w500),
+              color: selected ? active : c.textSecondary,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w500),
         ),
       ),
     );

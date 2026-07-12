@@ -17,9 +17,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 // Prefs keys
 // ---------------------------------------------------------------------------
 
-const _kLargeText     = 'a11y_large_text';
-const _kHighContrast  = 'a11y_high_contrast';
-const _kReduceMotion  = 'a11y_reduce_motion';
+const _kLargeText = 'a11y_large_text';
+const _kHighContrast = 'a11y_high_contrast';
+const _kReduceMotion = 'a11y_reduce_motion';
 
 // ---------------------------------------------------------------------------
 // State
@@ -30,7 +30,7 @@ class AccessibilityState {
   final bool highContrast;
   final bool reduceMotion;
   const AccessibilityState({
-    this.largeText    = false,
+    this.largeText = false,
     this.highContrast = false,
     this.reduceMotion = false,
   });
@@ -38,24 +38,24 @@ class AccessibilityState {
     bool? largeText,
     bool? highContrast,
     bool? reduceMotion,
-  }) => AccessibilityState(
-    largeText:    largeText    ?? this.largeText,
-    highContrast: highContrast ?? this.highContrast,
-    reduceMotion: reduceMotion ?? this.reduceMotion,
-  );
+  }) =>
+      AccessibilityState(
+        largeText: largeText ?? this.largeText,
+        highContrast: highContrast ?? this.highContrast,
+        reduceMotion: reduceMotion ?? this.reduceMotion,
+      );
 }
 
 // ---------------------------------------------------------------------------
 // Notifier
 // ---------------------------------------------------------------------------
 
-class AccessibilityNotifier
-    extends AsyncNotifier<AccessibilityState> {
+class AccessibilityNotifier extends AsyncNotifier<AccessibilityState> {
   @override
   Future<AccessibilityState> build() async {
     final prefs = await SharedPreferences.getInstance();
     return AccessibilityState(
-      largeText:    prefs.getBool(_kLargeText)    ?? false,
+      largeText: prefs.getBool(_kLargeText) ?? false,
       highContrast: prefs.getBool(_kHighContrast) ?? false,
       reduceMotion: prefs.getBool(_kReduceMotion) ?? false,
     );
@@ -90,13 +90,13 @@ final accessibilityProvider =
 
 class ContrastColors {
   static const background = Color(0xFF000000);
-  static const surface    = Color(0xFF1A1A1A);
-  static const primary    = Color(0xFFFFFFFF);
-  static const accent     = Color(0xFFFFD600);
-  static const danger     = Color(0xFFFF1744);
-  static const warning    = Color(0xFFFFAB00);
-  static const safe       = Color(0xFF69FF47);
-  static const text       = Color(0xFFFFFFFF);
+  static const surface = Color(0xFF1A1A1A);
+  static const primary = Color(0xFFFFFFFF);
+  static const accent = Color(0xFFFFD600);
+  static const danger = Color(0xFFFF1744);
+  static const warning = Color(0xFFFFAB00);
+  static const safe = Color(0xFF69FF47);
+  static const text = Color(0xFFFFFFFF);
   static const textSecondary = Color(0xFFCCCCCC);
 }
 
@@ -111,8 +111,8 @@ class AccessibilityWrapper extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Fixed: Riverpod 3.x AsyncValue has no .valueOrNull — use .value
-    final a11y = ref.watch(accessibilityProvider).value
-        ?? const AccessibilityState();
+    final a11y =
+        ref.watch(accessibilityProvider).value ?? const AccessibilityState();
 
     Widget result = child;
 
@@ -161,8 +161,7 @@ class SemanticAlertBadge extends StatelessWidget {
       label: '$count $severity flood alert${count > 1 ? "s" : ""} active',
       child: ExcludeSemantics(
         child: Container(
-          padding: const EdgeInsets.symmetric(
-              horizontal: 8, vertical: 3),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
             color: const Color(0xFFEF4444),
             borderRadius: BorderRadius.circular(12),
@@ -170,9 +169,7 @@ class SemanticAlertBadge extends StatelessWidget {
           child: Text(
             count > 99 ? '99+' : '$count',
             style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.bold),
+                color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
           ),
         ),
       ),
@@ -191,15 +188,14 @@ Widget accessibleTapTarget({
   String? tooltip,
 }) {
   return Semantics(
-    label:  semanticLabel,
+    label: semanticLabel,
     button: true,
     child: Tooltip(
       message: tooltip ?? semanticLabel ?? '',
       child: InkWell(
         onTap: onTap,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(
-              minWidth: 48, minHeight: 48),
+          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
           child: Center(child: child),
         ),
       ),
@@ -219,45 +215,39 @@ class AccessibilitySettingsCard extends ConsumerWidget {
     final a11yAsync = ref.watch(accessibilityProvider);
     return a11yAsync.when(
       loading: () => const SizedBox.shrink(),
-      error:   (_, __) => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
       data: (a11y) => Card(
-        margin: const EdgeInsets.symmetric(
-            horizontal: 16, vertical: 8),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Column(
           children: [
             ListTile(
-              leading:  const Icon(Icons.text_increase),
-              title:    const Text('Large Text'),
+              leading: const Icon(Icons.text_increase),
+              title: const Text('Large Text'),
               subtitle: const Text('Scale all text to 135%'),
               trailing: Switch(
-                value:    a11y.largeText,
-                onChanged: (v) => ref
-                    .read(accessibilityProvider.notifier)
-                    .setLargeText(v),
+                value: a11y.largeText,
+                onChanged: (v) =>
+                    ref.read(accessibilityProvider.notifier).setLargeText(v),
               ),
             ),
             ListTile(
-              leading:  const Icon(Icons.contrast),
-              title:    const Text('High Contrast'),
-              subtitle: const Text(
-                  'Black background, yellow accents'),
+              leading: const Icon(Icons.contrast),
+              title: const Text('High Contrast'),
+              subtitle: const Text('Black background, yellow accents'),
               trailing: Switch(
-                value:    a11y.highContrast,
-                onChanged: (v) => ref
-                    .read(accessibilityProvider.notifier)
-                    .setHighContrast(v),
+                value: a11y.highContrast,
+                onChanged: (v) =>
+                    ref.read(accessibilityProvider.notifier).setHighContrast(v),
               ),
             ),
             ListTile(
-              leading:  const Icon(Icons.animation),
-              title:    const Text('Reduce Motion'),
-              subtitle: const Text(
-                  'Disables all transitions & animations'),
+              leading: const Icon(Icons.animation),
+              title: const Text('Reduce Motion'),
+              subtitle: const Text('Disables all transitions & animations'),
               trailing: Switch(
-                value:    a11y.reduceMotion,
-                onChanged: (v) => ref
-                    .read(accessibilityProvider.notifier)
-                    .setReduceMotion(v),
+                value: a11y.reduceMotion,
+                onChanged: (v) =>
+                    ref.read(accessibilityProvider.notifier).setReduceMotion(v),
               ),
             ),
           ],

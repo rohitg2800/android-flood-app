@@ -49,14 +49,18 @@ class HeroSection extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _CountChip(label: 'CRITICAL', count: critical, color: Colors.red),
-              _CountChip(label: 'SEVERE',   count: severe,   color: Colors.orange),
-              _CountChip(label: 'MODERATE', count: moderate, color: Colors.amber),
-              _CountChip(label: 'LOW',      count: safe,     color: Colors.green),
+              _CountChip(label: 'SEVERE', count: severe, color: Colors.orange),
+              _CountChip(
+                  label: 'MODERATE', count: moderate, color: Colors.amber),
+              _CountChip(label: 'LOW', count: safe, color: Colors.green),
             ],
           ),
           // Alert ticker
-          if (alertCities.isNotEmpty) ...
-            [const SizedBox(height: 10), _AlertTicker(cities: alertCities, idx: tickerIdx, pulseAnim: pulseAnim)],
+          if (alertCities.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            _AlertTicker(
+                cities: alertCities, idx: tickerIdx, pulseAnim: pulseAnim)
+          ],
         ],
       ),
     );
@@ -71,14 +75,25 @@ class _RiskGauge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pct = (risk * progress).clamp(0, 100);
-    final color = pct >= 75 ? Colors.red : pct >= 50 ? Colors.orange : pct >= 25 ? Colors.amber : Colors.green;
+    final color = pct >= 75
+        ? Colors.red
+        : pct >= 50
+            ? Colors.orange
+            : pct >= 25
+                ? Colors.amber
+                : Colors.green;
     return Column(
       children: [
         Text(
           '${pct.toStringAsFixed(0)}%',
-          style: TextStyle(fontSize: 36, fontWeight: FontWeight.w800, color: color),
+          style: TextStyle(
+              fontSize: 36, fontWeight: FontWeight.w800, color: color),
         ),
-        Text('Overall Basin Risk', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white54)),
+        Text('Overall Basin Risk',
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall
+                ?.copyWith(color: Colors.white54)),
       ],
     );
   }
@@ -88,14 +103,19 @@ class _CountChip extends StatelessWidget {
   final String label;
   final int count;
   final Color color;
-  const _CountChip({required this.label, required this.count, required this.color});
+  const _CountChip(
+      {required this.label, required this.count, required this.color});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text('$count', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: color)),
-        Text(label, style: const TextStyle(fontSize: 10, color: Colors.white54, letterSpacing: 0.5)),
+        Text('$count',
+            style: TextStyle(
+                fontSize: 22, fontWeight: FontWeight.w800, color: color)),
+        Text(label,
+            style: const TextStyle(
+                fontSize: 10, color: Colors.white54, letterSpacing: 0.5)),
       ],
     );
   }
@@ -105,14 +125,16 @@ class _AlertTicker extends StatelessWidget {
   final List<FloodData> cities;
   final int idx;
   final Animation<double> pulseAnim;
-  const _AlertTicker({required this.cities, required this.idx, required this.pulseAnim});
+  const _AlertTicker(
+      {required this.cities, required this.idx, required this.pulseAnim});
 
   @override
   Widget build(BuildContext context) {
     final city = cities[idx % cities.length];
     return AnimatedBuilder(
       animation: pulseAnim,
-      builder: (_, child) => Opacity(opacity: 0.6 + 0.4 * pulseAnim.value, child: child),
+      builder: (_, child) =>
+          Opacity(opacity: 0.6 + 0.4 * pulseAnim.value, child: child),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
@@ -123,11 +145,13 @@ class _AlertTicker extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 14),
+            const Icon(Icons.warning_amber_rounded,
+                color: Colors.red, size: 14),
             const SizedBox(width: 6),
             Text(
               '${city.city} — ${city.riskLevel}',
-              style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                  color: Colors.red, fontSize: 12, fontWeight: FontWeight.w600),
             ),
           ],
         ),

@@ -31,34 +31,72 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class FcmTopics {
   static const String emergency = 'flood_emergency';
-  static const String critical  = 'flood_critical';
-  static const String warning   = 'flood_warning';
-  static const String info      = 'flood_info';
+  static const String critical = 'flood_critical';
+  static const String warning = 'flood_warning';
+  static const String info = 'flood_info';
 
   static const List<String> severityTopics = [
-    emergency, critical, warning, info,
+    emergency,
+    critical,
+    warning,
+    info,
   ];
 
   /// All 38 Bihar district slugs.
   static const List<String> biharDistricts = [
-    'araria', 'arwal', 'aurangabad', 'banka', 'begusarai',
-    'bhagalpur', 'bhojpur', 'buxar', 'darbhanga', 'gaya',
-    'gopalganj', 'jamui', 'jehanabad', 'kaimur', 'katihar',
-    'khagaria', 'kishanganj', 'lakhisarai', 'madhepura',
-    'madhubani', 'munger', 'muzaffarpur', 'nalanda', 'nawada',
-    'patna', 'purnia', 'rohtas', 'saharsa', 'samastipur',
-    'saran', 'sheikhpura', 'sheohar', 'sitamarhi', 'siwan',
-    'supaul', 'vaishali', 'west_champaran', 'east_champaran',
+    'araria',
+    'arwal',
+    'aurangabad',
+    'banka',
+    'begusarai',
+    'bhagalpur',
+    'bhojpur',
+    'buxar',
+    'darbhanga',
+    'gaya',
+    'gopalganj',
+    'jamui',
+    'jehanabad',
+    'kaimur',
+    'katihar',
+    'khagaria',
+    'kishanganj',
+    'lakhisarai',
+    'madhepura',
+    'madhubani',
+    'munger',
+    'muzaffarpur',
+    'nalanda',
+    'nawada',
+    'patna',
+    'purnia',
+    'rohtas',
+    'saharsa',
+    'samastipur',
+    'saran',
+    'sheikhpura',
+    'sheohar',
+    'sitamarhi',
+    'siwan',
+    'supaul',
+    'vaishali',
+    'west_champaran',
+    'east_champaran',
   ];
 
   /// All Bihar river slugs.
   static const List<String> biharRivers = [
-    'kosi', 'gandak', 'bagmati', 'burhi_gandak',
-    'mahananda', 'kamla', 'adhwara',
+    'kosi',
+    'gandak',
+    'bagmati',
+    'burhi_gandak',
+    'mahananda',
+    'kamla',
+    'adhwara',
   ];
 
   static String districtTopic(String slug) => 'district_$slug';
-  static String riverTopic(String slug)    => 'river_$slug';
+  static String riverTopic(String slug) => 'river_$slug';
 }
 
 // ── FcmTopicManager ──────────────────────────────────────────────────────────
@@ -77,15 +115,14 @@ class FcmTopicManager {
   Stream<Set<String>> get topicsStream => _controller.stream;
 
   /// Current snapshot (unmodifiable).
-  Set<String> get currentTopics =>
-      Set.unmodifiable(_subscribedTopics);
+  Set<String> get currentTopics => Set.unmodifiable(_subscribedTopics);
 
   // ── Init ────────────────────────────────────────────────────────────
 
   /// Call once from main() after Firebase.initializeApp().
   /// Restores persisted subscriptions and re-subscribes to FCM.
   Future<void> init() async {
-    final prefs  = await SharedPreferences.getInstance();
+    final prefs = await SharedPreferences.getInstance();
     final stored = prefs.getStringList(_prefsKey) ?? [];
 
     if (stored.isEmpty) {
@@ -153,31 +190,24 @@ class FcmTopicManager {
     }
   }
 
-  bool isSubscribed(String topic) =>
-      _subscribedTopics.contains(topic);
+  bool isSubscribed(String topic) => _subscribedTopics.contains(topic);
 
   // ── District / river helpers ─────────────────────────────────────────
 
-  Future<void> setDistrictSubscriptions(
-      List<String> districtSlugs) async {
+  Future<void> setDistrictSubscriptions(List<String> districtSlugs) async {
     // Unsubscribe from all current district topics.
-    final currentDistricts = _subscribedTopics
-        .where((t) => t.startsWith('district_'))
-        .toList();
+    final currentDistricts =
+        _subscribedTopics.where((t) => t.startsWith('district_')).toList();
     await unsubscribeFromAll(currentDistricts);
     // Subscribe to new selection.
-    await subscribeToAll(
-        districtSlugs.map(FcmTopics.districtTopic).toList());
+    await subscribeToAll(districtSlugs.map(FcmTopics.districtTopic).toList());
   }
 
-  Future<void> setRiverSubscriptions(
-      List<String> riverSlugs) async {
-    final current = _subscribedTopics
-        .where((t) => t.startsWith('river_'))
-        .toList();
+  Future<void> setRiverSubscriptions(List<String> riverSlugs) async {
+    final current =
+        _subscribedTopics.where((t) => t.startsWith('river_')).toList();
     await unsubscribeFromAll(current);
-    await subscribeToAll(
-        riverSlugs.map(FcmTopics.riverTopic).toList());
+    await subscribeToAll(riverSlugs.map(FcmTopics.riverTopic).toList());
   }
 
   List<String> get subscribedDistricts => _subscribedTopics
@@ -202,10 +232,8 @@ class FcmTopicManager {
 
   Future<void> _persist() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(
-        _prefsKey, _subscribedTopics.toList());
+    await prefs.setStringList(_prefsKey, _subscribedTopics.toList());
   }
 
-  void _emit() =>
-      _controller.add(Set.unmodifiable(_subscribedTopics));
+  void _emit() => _controller.add(Set.unmodifiable(_subscribedTopics));
 }

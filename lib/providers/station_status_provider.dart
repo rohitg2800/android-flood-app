@@ -41,8 +41,8 @@ class StationStatus {
         currentLevel: (map['current_level'] ?? 0.0).toDouble(),
         dangerLevel: (map['danger_level'] ?? 0.0).toDouble(),
         warningLevel: (map['warning_level'] ?? 0.0).toDouble(),
-        severity: FloodSeverityLevelExtension.fromString(
-            map['severity'] ?? 'normal'),
+        severity:
+            FloodSeverityLevelExtension.fromString(map['severity'] ?? 'normal'),
         trend: StationTrend.values.firstWhere(
           (t) => t.name == (map['trend'] ?? 'stable'),
           orElse: () => StationTrend.stable,
@@ -55,9 +55,12 @@ class StationStatus {
 
   String get trendLabel {
     switch (trend) {
-      case StationTrend.rising: return '⬆️ Rising';
-      case StationTrend.falling: return '⬇️ Falling';
-      case StationTrend.stable: return '➡️ Stable';
+      case StationTrend.rising:
+        return '⬆️ Rising';
+      case StationTrend.falling:
+        return '⬇️ Falling';
+      case StationTrend.stable:
+        return '➡️ Stable';
     }
   }
 }
@@ -74,12 +77,14 @@ class StationStatusProvider extends ChangeNotifier {
   String? get error => _error;
 
   int get dangerCount => _stations
-      .where((s) => s.severity == FloodSeverityLevel.danger ||
+      .where((s) =>
+          s.severity == FloodSeverityLevel.danger ||
           s.severity == FloodSeverityLevel.extreme)
       .length;
 
   int get watchCount => _stations
-      .where((s) => s.severity == FloodSeverityLevel.watch ||
+      .where((s) =>
+          s.severity == FloodSeverityLevel.watch ||
           s.severity == FloodSeverityLevel.warning)
       .length;
 
@@ -110,8 +115,7 @@ class StationStatusProvider extends ChangeNotifier {
         if (cached != null) {
           _stations
             ..clear()
-            ..addAll(
-                cached.map(StationStatus.fromMap));
+            ..addAll(cached.map(StationStatus.fromMap));
           notifyListeners();
           return;
         }

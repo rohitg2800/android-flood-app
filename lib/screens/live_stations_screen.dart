@@ -42,7 +42,8 @@ class LiveStationsScreen extends ConsumerWidget {
   static bool _passesBaseline(BiharStationData s) {
     final dl = s.dangerLevel;
     final cl = s.currentLevel;
-    if (dl == null || dl <= 0 || cl == null) return true; // no data → always show
+    if (dl == null || dl <= 0 || cl == null)
+      return true; // no data → always show
     final fillPct = (cl / dl) * 100.0;
     return fillPct >= kPreMonsoonBaselineRiskThreshold;
   }
@@ -51,7 +52,7 @@ class LiveStationsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final liveAsync = ref.watch(biharLiveProvider);
     final baselineOn = ref.watch(preMonsoonBaselineProvider);
-    final t          = RiverColors.of(context);
+    final t = RiverColors.of(context);
 
     return Scaffold(
       backgroundColor: t.scaffoldBg,
@@ -64,48 +65,53 @@ class LiveStationsScreen extends ConsumerWidget {
             ),
           ],
         ),
-        error: (err, stack) { debugPrint('[LiveStationsScreen] \$err\n\$stack'); return CustomScrollView(
-          slivers: [
-            const Td3AppBar(title: 'Live Stations'),
-            SliverFillRemaining(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.cloud_off_rounded, size: 48, color: t.danger),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Could not load station data',
-                        style: TextStyle(
-                            color: t.textPrimary, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        err.toString(),
-                        style: TextStyle(color: t.textSecondary, fontSize: 12),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 20),
-                      Td3Button(
-                        label: 'Retry',
-                        icon: Icons.refresh_rounded,
-                        width: 140,
-                        height: 44,
-                        color: t.accent,
-                        onTap: () =>
-                            ref.read(biharLiveProvider.notifier).refresh(),
-                      ),
-                    ],
+        error: (err, stack) {
+          debugPrint('[LiveStationsScreen] \$err\n\$stack');
+          return CustomScrollView(
+            slivers: [
+              const Td3AppBar(title: 'Live Stations'),
+              SliverFillRemaining(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.cloud_off_rounded,
+                            size: 48, color: t.danger),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Could not load station data',
+                          style: TextStyle(
+                              color: t.textPrimary,
+                              fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          err.toString(),
+                          style:
+                              TextStyle(color: t.textSecondary, fontSize: 12),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 20),
+                        Td3Button(
+                          label: 'Retry',
+                          icon: Icons.refresh_rounded,
+                          width: 140,
+                          height: 44,
+                          color: t.accent,
+                          onTap: () =>
+                              ref.read(biharLiveProvider.notifier).refresh(),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
-        );
-      },
-      data: (state) {
+            ],
+          );
+        },
+        data: (state) {
           if (state.stations.isEmpty) {
             return CustomScrollView(
               slivers: [
@@ -214,7 +220,8 @@ class LiveStationsScreen extends ConsumerWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 7),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF7B2FF7).withValues(alpha: 0.10),
+                          color:
+                              const Color(0xFF7B2FF7).withValues(alpha: 0.10),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                               color: const Color(0xFF7B2FF7)
@@ -250,37 +257,36 @@ class LiveStationsScreen extends ConsumerWidget {
                       (ctx, i) {
                         final s = visibleStations[i];
                         final rs = RiverStation(
-                          city:        s.city,
-                          state:       s.state,
-                          river:       s.river,
-                          station:     s.city,
-                          current:     s.currentLevel ?? 0.0,
-                          warning:     s.warningLevel ?? 0.0,
-                          danger:      s.dangerLevel  ?? 0.0,
-                          hfl:         (s.dangerLevel ?? 0.0) * 1.2,
-                          isLive:      s.source == 'LIVE',
-                          dataSource:  s.source,
+                          city: s.city,
+                          state: s.state,
+                          river: s.river,
+                          station: s.city,
+                          current: s.currentLevel ?? 0.0,
+                          warning: s.warningLevel ?? 0.0,
+                          danger: s.dangerLevel ?? 0.0,
+                          hfl: (s.dangerLevel ?? 0.0) * 1.2,
+                          isLive: s.source == 'LIVE',
+                          dataSource: s.source,
                           lastUpdated: s.fetchedAt,
                         );
                         final preds = ref.watch(floodPredictionsProvider);
-                        final pred  = preds
+                        final pred = preds
                             .where((p) => p.station
                                 .toLowerCase()
                                 .contains(s.city.toLowerCase()))
                             .toList();
-                        final conf = pred.isNotEmpty
-                            ? pred.first.confidencePct
-                            : null;
+                        final conf =
+                            pred.isNotEmpty ? pred.first.confidencePct : null;
                         return RiverPulseCard(
-                          station:           rs,
-                          index:             i,
+                          station: rs,
+                          index: i,
                           confidencePercent: conf,
                           onTap: () => Navigator.of(ctx).push(
                             MaterialPageRoute<void>(
                               builder: (_) => CityDetailScreen(
-                                cityName:  s.city,
+                                cityName: s.city,
                                 liveLevel: s.currentLevel,
-                                liveRisk:  s.riskLabel,
+                                liveRisk: s.riskLabel,
                               ),
                             ),
                           ),
@@ -298,8 +304,7 @@ class LiveStationsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _refreshAction(
-      BuildContext context, WidgetRef ref, RiverColors t) {
+  Widget _refreshAction(BuildContext context, WidgetRef ref, RiverColors t) {
     return IconButton(
       icon: Icon(Icons.refresh_rounded, color: t.accent),
       tooltip: 'Refresh',

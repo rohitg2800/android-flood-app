@@ -34,7 +34,10 @@ class _SparkPainter extends CustomPainter {
     final min = values.reduce((a, b) => a < b ? a : b);
     final max = values.reduce((a, b) => a > b ? a : b);
     final range = max - min == 0 ? 1.0 : max - min;
-    final paint = Paint()..color = color..strokeWidth = 1.5..style = PaintingStyle.stroke;
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
     final path = Path();
     for (var i = 0; i < values.length; i++) {
       final x = size.width * i / (values.length - 1);

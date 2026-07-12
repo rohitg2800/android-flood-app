@@ -18,22 +18,23 @@ export 'stubs.dart' show sourceStatusProvider;
 // ─────────────────────────────────────────────────────────────────────────────
 /// View-model for a single gauge on the Bihar map.
 class MapStationData {
-  final String  station;
-  final String  river;
-  final String  city;
+  final String station;
+  final String river;
+  final String city;
+
   /// CWC / WRD risk label: "CRITICAL" | "DANGER" | "WARNING" | "SAFE" | "LOW"
   final String? riskLabel;
-  final bool    isLive;
+  final bool isLive;
   final double? currentLevel;
   final double? rainfall24h;
-  final String? trend;   // "rising" | "falling" | "steady"
+  final String? trend; // "rising" | "falling" | "steady"
 
   const MapStationData({
     required this.station,
     required this.river,
     required this.city,
     this.riskLabel,
-    this.isLive    = false,
+    this.isLive = false,
     this.currentLevel,
     this.rainfall24h,
     this.trend,
@@ -41,9 +42,9 @@ class MapStationData {
 
   factory MapStationData.fromStation(RiverStation s) {
     // Derive risk label from thresholds
-    final cl  = s.current;
-    final dl  = s.danger;
-    final wl  = s.warning;
+    final cl = s.current;
+    final dl = s.danger;
+    final wl = s.warning;
     final hfl = s.hfl;
 
     String? riskLabel;
@@ -75,15 +76,15 @@ class MapStationData {
     }
 
     return MapStationData(
-      station:      s.station,
-      river:        s.river,
-      city:         s.city,
-      riskLabel:    riskLabel,
-      isLive:       s.isLive,
+      station: s.station,
+      river: s.river,
+      city: s.city,
+      riskLabel: riskLabel,
+      isLive: s.isLive,
       currentLevel: cl > 0 ? cl : null,
       // Fix: RiverStation has rainfallLastHour, not rainfall24h.
-      rainfall24h:  s.rainfallLastHour,
-      trend:        trend,
+      rainfall24h: s.rainfallLastHour,
+      trend: trend,
     );
   }
 }
@@ -93,9 +94,8 @@ class MapStationData {
 // ─────────────────────────────────────────────────────────────────────────────
 /// Keyed by normalised station name (lower-case, spaces trimmed).
 /// bihar_river_map_screen.dart resolves stations via fuzzy matching on this map.
-final mapLiveIndexProvider =
-    Provider<Map<String, MapStationData>>((ref) {
-  final stations  = ref.watch(mergedStationsProvider);
+final mapLiveIndexProvider = Provider<Map<String, MapStationData>>((ref) {
+  final stations = ref.watch(mergedStationsProvider);
   final dfSources = ref.watch(sourceStatusProvider);
 
   final Map<String, MapStationData> index = {};

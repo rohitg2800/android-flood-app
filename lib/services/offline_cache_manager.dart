@@ -25,12 +25,12 @@ import 'package:hive_flutter/hive_flutter.dart';
 // Constants
 // ---------------------------------------------------------------------------
 
-const _kBoxMeta      = 'opscache_meta';
-const _kBoxData      = 'opscache_data';
-const _kBoxQueue     = 'opscache_queue';
-const _kStationsKey  = 'stations';
-const _kAlertsKey    = 'alerts';
-const _kTtlMs        = 10 * 60 * 1000; // 10 minutes
+const _kBoxMeta = 'opscache_meta';
+const _kBoxData = 'opscache_data';
+const _kBoxQueue = 'opscache_queue';
+const _kStationsKey = 'stations';
+const _kAlertsKey = 'alerts';
+const _kTtlMs = 10 * 60 * 1000; // 10 minutes
 
 // ---------------------------------------------------------------------------
 // OfflineCacheManager
@@ -43,7 +43,7 @@ class OfflineCacheManager {
   late Box<String> _meta;
   late Box<String> _data;
   late Box<String> _queue;
-  bool             _initialised = false;
+  bool _initialised = false;
   bool get initialised => _initialised;
   StreamSubscription? _connectivitySub;
 
@@ -53,15 +53,13 @@ class OfflineCacheManager {
   Future<void> init() async {
     if (_initialised) return;
     await Hive.initFlutter();
-    _meta  = await Hive.openBox<String>(_kBoxMeta);
-    _data  = await Hive.openBox<String>(_kBoxData);
+    _meta = await Hive.openBox<String>(_kBoxMeta);
+    _data = await Hive.openBox<String>(_kBoxData);
     _queue = await Hive.openBox<String>(_kBoxQueue);
     _initialised = true;
 
     // Auto-flush queue when connectivity restored
-    _connectivitySub = Connectivity()
-        .onConnectivityChanged
-        .listen((results) {
+    _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
       if (results.any((r) => r != ConnectivityResult.none)) {
         flushQueue();
       }
@@ -76,8 +74,8 @@ class OfflineCacheManager {
   Future<void> saveStations(List<Map<String, dynamic>> stations) async {
     _assertInit();
     await _data.put(_kStationsKey, jsonEncode(stations));
-    await _meta.put(
-        '${_kStationsKey}_ts', DateTime.now().millisecondsSinceEpoch.toString());
+    await _meta.put('${_kStationsKey}_ts',
+        DateTime.now().millisecondsSinceEpoch.toString());
     debugPrint('[OfflineCache] Saved ${stations.length} stations');
   }
 
@@ -85,8 +83,7 @@ class OfflineCacheManager {
     _assertInit();
     final raw = _data.get(_kStationsKey);
     if (raw == null) return null;
-    return (jsonDecode(raw) as List)
-        .cast<Map<String, dynamic>>();
+    return (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
   }
 
   // ────────────────────────────────────────────────────────────────────────────
@@ -104,8 +101,7 @@ class OfflineCacheManager {
     _assertInit();
     final raw = _data.get(_kAlertsKey);
     if (raw == null) return null;
-    return (jsonDecode(raw) as List)
-        .cast<Map<String, dynamic>>();
+    return (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
   }
 
   // ────────────────────────────────────────────────────────────────────────────
@@ -127,7 +123,7 @@ class OfflineCacheManager {
     _assertInit();
     final tsStr = _meta.get('${key}_ts');
     if (tsStr == null) return true;
-    final ts  = int.tryParse(tsStr) ?? 0;
+    final ts = int.tryParse(tsStr) ?? 0;
     final age = DateTime.now().millisecondsSinceEpoch - ts;
     return age > ttlMs;
   }
@@ -177,7 +173,7 @@ class OfflineCacheManager {
     debugPrint('[OfflineCache] Flushing ${_queue.length} queued actions…');
     final keys = _queue.keys.toList();
     for (final key in keys) {
-      final raw    = _queue.get(key as String);
+      final raw = _queue.get(key as String);
       if (raw == null) continue;
       final action = jsonDecode(raw) as Map<String, dynamic>;
       bool success = true;
@@ -215,14 +211,15 @@ class OfflineCacheManager {
   // ---------------------------------------------------------------------------
 
   void _assertInit() {
-    assert(_initialised,
+    assert(
+        _initialised,
         'OfflineCacheManager.init() must be called before use. '
         'Add it to main() after Hive.initFlutter().');
   }
 
   // ── FloodPrediction cache (Step 8c) ────────────────────────────────────────
   static const _kPredictionsKey = 'bulk_predictions';
-  static const _kPredTtlMs      = 15 * 60 * 1000; // 15 min
+  static const _kPredTtlMs = 15 * 60 * 1000; // 15 min
 
   /// Persist bulk Bihar predictions as JSON list.
   Future<void> savePredictions(List<Map<String, dynamic>> preds) async {
@@ -243,8 +240,7 @@ class OfflineCacheManager {
     final raw = _data.get(_kPredictionsKey);
     if (raw == null) return null;
     try {
-      return (jsonDecode(raw) as List)
-          .cast<Map<String, dynamic>>();
+      return (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
     } catch (e) {
       debugPrint('[OfflineCache] loadPredictions parse error: $e');
       return null;
@@ -255,7 +251,7 @@ class OfflineCacheManager {
   bool isPredictionStale() {
     final tsStr = _meta.get('${_kPredictionsKey}_ts');
     if (tsStr == null) return true;
-    final ts  = int.tryParse(tsStr) ?? 0;
+    final ts = int.tryParse(tsStr) ?? 0;
     final age = DateTime.now().millisecondsSinceEpoch - ts;
     return age > _kPredTtlMs;
   }
@@ -264,12 +260,11 @@ class OfflineCacheManager {
   String predictionCacheAge() {
     final tsStr = _meta.get('${_kPredictionsKey}_ts');
     if (tsStr == null) return 'no cache';
-    final ts      = int.tryParse(tsStr) ?? 0;
-    final ageMs   = DateTime.now().millisecondsSinceEpoch - ts;
+    final ts = int.tryParse(tsStr) ?? 0;
+    final ageMs = DateTime.now().millisecondsSinceEpoch - ts;
     final ageMins = (ageMs / 60000).round();
-    if (ageMins < 1)  return 'just now';
+    if (ageMins < 1) return 'just now';
     if (ageMins < 60) return '$ageMins min ago';
     return '${(ageMins / 60).round()} hr ago';
   }
-
 }

@@ -9,7 +9,7 @@ import '../theme/river_theme.dart';
 class RiskHeatmapEntry {
   final String state;
   final String level; // 'SAFE' | 'WARNING' | 'DANGER' | 'CRITICAL'
-  final int    count;
+  final int count;
 
   const RiskHeatmapEntry({
     required this.state,
@@ -30,9 +30,9 @@ class RiskHeatmap extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color:        AppPalette.abyss2,
+          color: AppPalette.abyss2,
           borderRadius: BorderRadius.circular(22),
-          border:       Border.all(color: AppPalette.abyssStroke),
+          border: Border.all(color: AppPalette.abyssStroke),
         ),
         child: const Center(
           child: Text(
@@ -45,9 +45,9 @@ class RiskHeatmap extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color:        AppPalette.abyss2,
+        color: AppPalette.abyss2,
         borderRadius: BorderRadius.circular(22),
-        border:       Border.all(color: AppPalette.abyssStroke),
+        border: Border.all(color: AppPalette.abyssStroke),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -55,9 +55,10 @@ class RiskHeatmap extends StatelessWidget {
           // header
           Row(children: [
             Container(
-              width: 3, height: 18,
+              width: 3,
+              height: 18,
               decoration: BoxDecoration(
-                color:        AppPalette.cyan,
+                color: AppPalette.cyan,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -65,8 +66,8 @@ class RiskHeatmap extends StatelessWidget {
             const Text(
               'State Risk Matrix',
               style: TextStyle(
-                color:      AppPalette.textWhite,
-                fontSize:   14,
+                color: AppPalette.textWhite,
+                fontSize: 14,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -74,15 +75,15 @@ class RiskHeatmap extends StatelessWidget {
           const SizedBox(height: 14),
           // grid
           Wrap(
-            spacing:    8,
+            spacing: 8,
             runSpacing: 8,
             children: entries.map((e) {
               final col = _color(e.level);
               return Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 7),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                 decoration: BoxDecoration(
-                  color:        col.withValues(alpha: 0.08),
+                  color: col.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: col.withValues(alpha: 0.3)),
                 ),
@@ -94,8 +95,8 @@ class RiskHeatmap extends StatelessWidget {
                           ? '${e.state.substring(0, 12)}…'
                           : e.state,
                       style: TextStyle(
-                        color:      col,
-                        fontSize:   11,
+                        color: col,
+                        fontSize: 11,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -103,7 +104,7 @@ class RiskHeatmap extends StatelessWidget {
                     Text(
                       '${e.count} station${e.count != 1 ? 's' : ''}',
                       style: const TextStyle(
-                        color:    AppPalette.textGrey,
+                        color: AppPalette.textGrey,
                         fontSize: 9,
                       ),
                     ),
@@ -122,17 +123,18 @@ class RiskHeatmap extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Container(
-                            width: 8, height: 8,
+                            width: 8,
+                            height: 8,
                             decoration: BoxDecoration(
-                              color:  _color(l),
-                              shape:  BoxShape.circle,
+                              color: _color(l),
+                              shape: BoxShape.circle,
                             ),
                           ),
                           const SizedBox(width: 4),
                           Text(
                             l,
                             style: const TextStyle(
-                              color:    AppPalette.textGrey,
+                              color: AppPalette.textGrey,
                               fontSize: 9,
                             ),
                           ),

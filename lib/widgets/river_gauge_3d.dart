@@ -17,16 +17,16 @@ import '../theme/app_palette.dart';
 /// )
 /// ```
 class RiverGauge3D extends StatefulWidget {
-  final double progressPct;  // 0–100
+  final double progressPct; // 0–100
   final double height;
   final double width;
-  final bool   animate;
+  final bool animate;
 
   const RiverGauge3D({
     super.key,
     required this.progressPct,
-    this.height  = 72,
-    this.width   = 24,
+    this.height = 72,
+    this.width = 24,
     this.animate = true,
   });
 
@@ -37,8 +37,8 @@ class RiverGauge3D extends StatefulWidget {
 class _RiverGauge3DState extends State<RiverGauge3D>
     with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
-  late Animation<double>   _fillAnim;
-  late Animation<double>   _waveAnim;
+  late Animation<double> _fillAnim;
+  late Animation<double> _waveAnim;
 
   @override
   void initState() {
@@ -87,23 +87,23 @@ class _RiverGauge3DState extends State<RiverGauge3D>
   Color get _fillColor {
     final pct = widget.progressPct;
     if (pct >= 100) return AppPalette.critical;
-    if (pct >= 80)  return AppPalette.danger;
-    if (pct >= 60)  return AppPalette.warning;
+    if (pct >= 80) return AppPalette.danger;
+    if (pct >= 60) return AppPalette.warning;
     return AppPalette.safe;
   }
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width:  widget.width,
+      width: widget.width,
       height: widget.height,
       child: AnimatedBuilder(
         animation: _fillAnim,
         builder: (_, __) => CustomPaint(
           painter: _GaugePainter(
-            fill:      _fillAnim.value,
+            fill: _fillAnim.value,
             fillColor: _fillColor,
-            wave:      _waveAnim.value,
+            wave: _waveAnim.value,
           ),
         ),
       ),
@@ -112,9 +112,9 @@ class _RiverGauge3DState extends State<RiverGauge3D>
 }
 
 class _GaugePainter extends CustomPainter {
-  final double fill;       // 0–1
-  final Color  fillColor;
-  final double wave;       // radians for wave phase
+  final double fill; // 0–1
+  final Color fillColor;
+  final double wave; // radians for wave phase
 
   _GaugePainter({
     required this.fill,
@@ -132,7 +132,7 @@ class _GaugePainter extends CustomPainter {
     final shellPaint = Paint()
       ..shader = LinearGradient(
         begin: Alignment.centerLeft,
-        end:   Alignment.centerRight,
+        end: Alignment.centerRight,
         colors: [
           AppPalette.abyss3,
           AppPalette.abyss2,
@@ -147,7 +147,7 @@ class _GaugePainter extends CustomPainter {
 
     // ── Tick marks ──────────────────────────────────────────────────────
     final tickPaint = Paint()
-      ..color       = AppPalette.abyssStroke.withValues(alpha: 0.6)
+      ..color = AppPalette.abyssStroke.withValues(alpha: 0.6)
       ..strokeWidth = 0.8;
     for (int i = 1; i < 4; i++) {
       final y = h * i / 4;
@@ -163,8 +163,7 @@ class _GaugePainter extends CustomPainter {
       wavePath.moveTo(0, fillTop);
 
       for (double x = 0; x <= w; x++) {
-        final y = fillTop +
-            math.sin((x / w * 2 * math.pi) + wave) * 1.5;
+        final y = fillTop + math.sin((x / w * 2 * math.pi) + wave) * 1.5;
         wavePath.lineTo(x, y);
       }
       wavePath.lineTo(w, h);
@@ -180,7 +179,7 @@ class _GaugePainter extends CustomPainter {
       final waterPaint = Paint()
         ..shader = LinearGradient(
           begin: Alignment.topCenter,
-          end:   Alignment.bottomCenter,
+          end: Alignment.bottomCenter,
           colors: [
             fillColor.withValues(alpha: 0.55),
             fillColor.withValues(alpha: 0.90),
@@ -191,9 +190,9 @@ class _GaugePainter extends CustomPainter {
 
       // Specular highlight stripe
       final glowPaint = Paint()
-        ..color       = fillColor.withValues(alpha: 0.25)
+        ..color = fillColor.withValues(alpha: 0.25)
         ..strokeWidth = w * 0.12
-        ..strokeCap   = StrokeCap.round;
+        ..strokeCap = StrokeCap.round;
       canvas.drawLine(
         Offset(w * 0.2, fillTop + 3),
         Offset(w * 0.2, h - 4),
@@ -204,12 +203,11 @@ class _GaugePainter extends CustomPainter {
     }
 
     // ── Border ring ─────────────────────────────────────────────────────
-    final borderColor = fill >= 0.8
-        ? fillColor.withValues(alpha: 0.7)
-        : AppPalette.abyssStroke;
+    final borderColor =
+        fill >= 0.8 ? fillColor.withValues(alpha: 0.7) : AppPalette.abyssStroke;
     final borderPaint = Paint()
-      ..color       = borderColor
-      ..style       = PaintingStyle.stroke
+      ..color = borderColor
+      ..style = PaintingStyle.stroke
       ..strokeWidth = fill >= 0.8 ? 1.5 : 1.0;
     canvas.drawRRect(
       RRect.fromRectAndRadius(Rect.fromLTWH(0, 0, w, h), r),
@@ -219,7 +217,7 @@ class _GaugePainter extends CustomPainter {
     // ── Danger line ──────────────────────────────────────────────────────
     final dangerY = h * 0.2; // top 20% = danger zone marker
     final dangerPaint = Paint()
-      ..color       = AppPalette.critical.withValues(alpha: 0.5)
+      ..color = AppPalette.critical.withValues(alpha: 0.5)
       ..strokeWidth = 1.0;
     canvas.drawLine(
       Offset(w * 0.15, dangerY),

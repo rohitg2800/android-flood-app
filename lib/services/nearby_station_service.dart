@@ -23,7 +23,7 @@ class NearbyStation {
 
   /// Human-readable label, e.g. "3.2 km" or "124 km".
   String get distanceLabel {
-    if (distanceKm < 1)  return '${(distanceKm * 1000).round()} m';
+    if (distanceKm < 1) return '${(distanceKm * 1000).round()} m';
     if (distanceKm < 10) return '${distanceKm.toStringAsFixed(1)} km';
     return '${distanceKm.round()} km';
   }
@@ -46,7 +46,7 @@ class NearbyStationService {
   Future<List<NearbyStation>> findNearest({
     double? lat,
     double? lon,
-    int    topN     = 10,
+    int topN = 10,
     double radiusKm = 50.0,
     required List<RiverStation> allStations,
   }) async {
@@ -72,8 +72,7 @@ class NearbyStationService {
 
     for (final station in allStations) {
       if (station.lat == null || station.lon == null) continue;
-      final d = _haversineKm(
-          userLat, userLon, station.lat!, station.lon!);
+      final d = _haversineKm(userLat, userLon, station.lat!, station.lon!);
       if (d <= radiusKm) {
         results.add(NearbyStation(station: station, distanceKm: d));
       }
@@ -88,7 +87,7 @@ class NearbyStationService {
     required double lat,
     required double lon,
     required List<RiverStation> allStations,
-    int    topN     = 10,
+    int topN = 10,
     double radiusKm = 50.0,
   }) {
     final results = <NearbyStation>[];

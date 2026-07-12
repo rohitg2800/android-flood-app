@@ -21,10 +21,14 @@ class ForecastItem {
 
   String get severityLabel {
     switch (severity) {
-      case ForecastSeverity.critical: return 'CRITICAL';
-      case ForecastSeverity.severe:   return 'SEVERE';
-      case ForecastSeverity.moderate: return 'MODERATE';
-      case ForecastSeverity.normal:   return 'NORMAL';
+      case ForecastSeverity.critical:
+        return 'CRITICAL';
+      case ForecastSeverity.severe:
+        return 'SEVERE';
+      case ForecastSeverity.moderate:
+        return 'MODERATE';
+      case ForecastSeverity.normal:
+        return 'NORMAL';
     }
   }
 }

@@ -44,9 +44,9 @@ void main() {
     });
 
     test('toJson round-trips correctly', () {
-      final data  = FloodData.fromJson(validJson);
+      final data = FloodData.fromJson(validJson);
       final data2 = FloodData.fromJson(data.toJson());
-      expect(data2.station,      equals(data.station));
+      expect(data2.station, equals(data.station));
       expect(data2.currentLevel, equals(data.currentLevel));
     });
 

@@ -27,7 +27,8 @@ class FloodMarker extends StatelessWidget {
       child: Center(
         child: Text(
           label.isNotEmpty ? label[0].toUpperCase() : '?',
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+          style: const TextStyle(
+              color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
         ),
       ),
     );

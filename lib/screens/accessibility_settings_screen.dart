@@ -15,7 +15,7 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final t     = RiverColors.of(context);
+    final t = RiverColors.of(context);
     final state = ref.watch(accessibilityProvider);
     final notifier = ref.read(accessibilityProvider.notifier);
 
@@ -30,7 +30,6 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
         children: [
-
           // ── Section: Display
           _SectionHeader('Display', t),
           const SizedBox(height: 8),
@@ -39,8 +38,8 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
           _SettingCard(
             t: t,
             child: SwitchListTile(
-              value:       state.highContrast,
-              onChanged:   notifier.setHighContrast,
+              value: state.highContrast,
+              onChanged: notifier.setHighContrast,
               activeColor: t.accent,
               contentPadding: EdgeInsets.zero,
               title: Text('High Contrast',
@@ -90,20 +89,20 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
                   ),
                 ),
                 Slider(
-                  value:      state.textScaleFactor,
-                  min:        1.0,
-                  max:        1.4,
-                  divisions:  4,
-                  label:      '×${state.textScaleFactor.toStringAsFixed(1)}',
+                  value: state.textScaleFactor,
+                  min: 1.0,
+                  max: 1.4,
+                  divisions: 4,
+                  label: '×${state.textScaleFactor.toStringAsFixed(1)}',
                   activeColor: t.accent,
-                  onChanged:  notifier.setTextScale,
+                  onChanged: notifier.setTextScale,
                 ),
                 // Live preview
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: MediaQuery(
-                    data: MediaQuery.of(context)
-                        .copyWith(textScaler: TextScaler.linear(state.textScaleFactor)),
+                    data: MediaQuery.of(context).copyWith(
+                        textScaler: TextScaler.linear(state.textScaleFactor)),
                     child: Text(
                       'Preview: River level 12.34 m — CRITICAL',
                       style: TextStyle(
@@ -127,35 +126,35 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
             child: Column(
               children: [
                 _LangTile(
-                  tag:      'en',
-                  label:    'English',
+                  tag: 'en',
+                  label: 'English',
                   selected: state.locale == 'en',
-                  t:        t,
-                  onTap:    () => notifier.setLocale('en'),
+                  t: t,
+                  onTap: () => notifier.setLocale('en'),
                 ),
                 _Divider(t),
                 _LangTile(
-                  tag:      'hi',
-                  label:    'हिंदी (Hindi)',
+                  tag: 'hi',
+                  label: 'हिंदी (Hindi)',
                   selected: state.locale == 'hi',
-                  t:        t,
-                  onTap:    () => notifier.setLocale('hi'),
+                  t: t,
+                  onTap: () => notifier.setLocale('hi'),
                 ),
                 _Divider(t),
                 _LangTile(
-                  tag:      'bn',
-                  label:    'বাংলা (Bengali)',
+                  tag: 'bn',
+                  label: 'বাংলা (Bengali)',
                   selected: state.locale == 'bn',
-                  t:        t,
-                  onTap:    () => notifier.setLocale('bn'),
+                  t: t,
+                  onTap: () => notifier.setLocale('bn'),
                 ),
                 _Divider(t),
                 _LangTile(
-                  tag:      'or',
-                  label:    'ଓଡ଼ିଆ (Odia)',
+                  tag: 'or',
+                  label: 'ଓଡ଼ିଆ (Odia)',
                   selected: state.locale == 'or',
-                  t:        t,
-                  onTap:    () => notifier.setLocale('or'),
+                  t: t,
+                  onTap: () => notifier.setLocale('or'),
                 ),
               ],
             ),
@@ -182,9 +181,7 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
                     'High Contrast mode achieves ≥4.5:1 contrast ratio '
                     'for all body text.',
                     style: TextStyle(
-                        color: t.textSecondary,
-                        fontSize: 11,
-                        height: 1.5),
+                        color: t.textSecondary, fontSize: 11, height: 1.5),
                   ),
                 ),
               ],
@@ -234,49 +231,51 @@ class _SettingCard extends StatelessWidget {
       color: t.cardBg,
       borderRadius: BorderRadius.circular(16),
       child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: t.divider.withValues(alpha: 0.3)),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 3)),
-        ],
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: t.divider.withValues(alpha: 0.3)),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 3)),
+          ],
+        ),
+        child: child,
       ),
-      child: child,
-    ),
     );
   }
 }
 
 class _LangTile extends StatelessWidget {
-  final String       tag, label;
-  final bool         selected;
-  final RiverColors  t;
+  final String tag, label;
+  final bool selected;
+  final RiverColors t;
   final VoidCallback onTap;
   const _LangTile({
-    required this.tag, required this.label,
-    required this.selected, required this.t,
+    required this.tag,
+    required this.label,
+    required this.selected,
+    required this.t,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label:   label,
-      button:  true,
+      label: label,
+      button: true,
       selected: selected,
       child: ListTile(
         contentPadding: EdgeInsets.zero,
-        onTap:    onTap,
+        onTap: onTap,
         title: Text(
           label,
           style: TextStyle(
-              color:      selected ? t.accent : t.textPrimary,
-              fontSize:   14,
+              color: selected ? t.accent : t.textPrimary,
+              fontSize: 14,
               fontWeight: selected ? FontWeight.w800 : FontWeight.w500),
         ),
         trailing: selected
