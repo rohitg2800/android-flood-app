@@ -1,12 +1,8 @@
-// lib/services/local_cache_service.dart  Step 4.3
-// Hive-backed local cache.
-//
-// v4.5 — added resetForTesting() so unit tests can fully reset singleton state
-//         between test cases without needing Hive to be initialised.
-
 import 'dart:convert';
-import 'package:hive_flutter/hive_flutter.dart';
+
 import 'package:flutter/foundation.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+
 import '../models/flood_data.dart';
 
 const _kGaugeBox = 'gauge_cache';
@@ -20,7 +16,7 @@ class LocalCacheService {
   LocalCacheService._();
 
   /// Public constructor for sub-classing / mocking in tests across library
-  /// boundaries.  Production code always uses [instance].
+  /// boundaries. Production code always uses [instance].
   @visibleForTesting
   LocalCacheService.forTesting();
 
@@ -36,7 +32,7 @@ class LocalCacheService {
   }
 
   /// Wipe all in-memory box references and reset the singleton back to a
-  /// fresh, uninitialised state.  Call this in [setUp] / [tearDown] of unit
+  /// fresh, uninitialised state. Call this in [setUp] / [tearDown] of unit
   /// tests so each test starts from a clean slate without requiring Hive to
   /// be fully initialised via [Hive.initFlutter].
   @visibleForTesting
@@ -44,7 +40,6 @@ class LocalCacheService {
     _gaugeBox = null;
     _historyBox = null;
     _kvBox = null;
-    // Reset the singleton so the next [instance] access gets a blank service.
     _instance = LocalCacheService._();
   }
 
@@ -118,7 +113,7 @@ class LocalCacheService {
       if (raw == null) return (data: <FloodData>[], isStale: true);
 
       final savedAt = _gaugeBox!.get(_kTimestampKey) as String?;
-      bool stale = true;
+      var stale = true;
       if (savedAt != null) {
         final dt = DateTime.tryParse(savedAt);
         final diff =
