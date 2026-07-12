@@ -9,7 +9,10 @@ import 'package:equinox_flood/models/alert_subscription.dart';
 import 'package:equinox_flood/theme/river_theme.dart';
 
 class _FakeNotifier extends SubscriptionNotifier {
-  _FakeNotifier(super.seed) : super.forTesting();
+  final List<AlertSubscription> seed;
+  _FakeNotifier(this.seed);
+
+  List<AlertSubscription> build() => List<AlertSubscription>.from(seed);
   final List<String> calls = [];
 
   @override
@@ -33,7 +36,7 @@ AlertSubscription _sub() => AlertSubscription(
     );
 
 Widget _wrap(_FakeNotifier n) => ProviderScope(
-      overrides: [subscriptionProvider.overrideWith((_) => n)],
+      overrides: [subscriptionProvider.overrideWith(() => n)],
       child: RiverTheme(
         child: MaterialApp(
           home: Scaffold(

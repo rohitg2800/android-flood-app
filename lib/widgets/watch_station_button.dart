@@ -1,12 +1,8 @@
-// lib/widgets/watch_station_button.dart  v2
-// Fixed:
-//   AlertSubscription requires riverName (was missing)
-//   radiusKm param → notifyRadiusKm
-//   stationId/cityName/dangerLevel/warningLevel are now widget fields (no change)
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/subscription_provider.dart';
+
 import '../models/alert_subscription.dart';
+import '../providers/subscription_provider.dart';
 import '../screens/alert_settings_screen.dart';
 import '../theme/river_theme.dart';
 
@@ -39,9 +35,12 @@ class _WatchStationButtonState extends ConsumerState<WatchStationButton>
   void initState() {
     super.initState();
     _ac = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 220));
-    _scale = Tween<double>(begin: 1.0, end: 1.3)
-        .animate(CurvedAnimation(parent: _ac, curve: Curves.elasticOut));
+      vsync: this,
+      duration: const Duration(milliseconds: 220),
+    );
+    _scale = Tween<double>(begin: 1.0, end: 1.3).animate(
+      CurvedAnimation(parent: _ac, curve: Curves.elasticOut),
+    );
   }
 
   @override
@@ -77,26 +76,28 @@ class _WatchStationButtonState extends ConsumerState<WatchStationButton>
     _ac.forward().then((_) => _ac.reverse());
 
     if (!watching) {
-      await ref.read(subscriptionProvider.notifier).subscribe(
+      ref.read(subscriptionProvider.notifier).subscribe(
             AlertSubscription(
               stationId: widget.stationId,
               cityName: widget.cityName,
-              riverName: widget.riverName, // was missing
-              notifyRadiusKm: 50.0, // correct field name
+              riverName: widget.riverName,
+              notifyRadiusKm: 50.0,
               createdAt: DateTime.now(),
             ),
           );
     }
 
-    if (ctx.mounted) {
-      await Navigator.of(ctx).push(MaterialPageRoute(
+    if (!ctx.mounted) return;
+
+    await Navigator.of(ctx).push(
+      MaterialPageRoute(
         builder: (_) => AlertSettingsScreen(
           stationId: widget.stationId,
           cityName: widget.cityName,
           dangerLevel: widget.dangerLevel,
           warningLevel: widget.warningLevel,
         ),
-      ));
-    }
+      ),
+    );
   }
 }
