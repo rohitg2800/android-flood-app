@@ -1,5 +1,6 @@
 class AppRoutes {
   AppRoutes._();
+
   static const splash = '/';
   static const onboarding = '/onboarding';
   static const dashboard = '/dashboard';
@@ -9,4 +10,9 @@ class AppRoutes {
   static const settings = '/settings';
   static const accessibility = '/settings/accessibility';
   static const profile = '/profile';
+
+  static const home = dashboard;
+  static const login = onboarding;
+  static const signup = onboarding;
+  static const forgotPassword = onboarding;
 }

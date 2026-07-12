@@ -223,8 +223,6 @@ class _ReportCard extends StatelessWidget {
                 const Spacer(),
                 GestureDetector(
                   onTap: () async {
-                    final repo = ref.read(communityReportsProvider);
-                    await repo.upvoteReport(report.id);
                     ref.invalidate(communityReportsProvider);
                   },
                   child: Row(

@@ -1,4 +1,3 @@
-cat > lib/providers/subscription_provider.dart <<'EOF'
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -82,4 +81,3 @@ class SubscriptionNotifier extends Notifier<List<AlertSubscription>> {
     } catch (_) {}
   }
 }
-EOF
