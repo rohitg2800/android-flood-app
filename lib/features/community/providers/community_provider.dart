@@ -1,18 +1,33 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:equinox_flood/features/community/models/community_report.dart';
-import 'package:equinox_flood/features/community/repositories/community_repository.dart';
+
+class CommunityRepository {
+  const CommunityRepository();
+
+  Future<List<CommunityReport>> fetchReports() async {
+    return const [];
+  }
+
+  Future<void> submitReport({
+    required String title,
+    required String description,
+    required double latitude,
+    required double longitude,
+    required ReportSeverity severity,
+    required ReportCategory category,
+  }) async {}
+
+  Future<void> upvoteReport(String reportId) async {}
+}
+
+final communityRepositoryProvider = Provider<CommunityRepository>((ref) {
+  return const CommunityRepository();
+});
 
 final communityReportsProvider =
     FutureProvider<List<CommunityReport>>((ref) async {
   final repo = ref.watch(communityRepositoryProvider);
   return repo.fetchReports();
-});
-
-final filteredReportsProvider =
-    FutureProvider.family<List<CommunityReport>, ReportStatus>(
-        (ref, status) async {
-  final repo = ref.watch(communityRepositoryProvider);
-  return repo.fetchReports(status: status);
 });
 
 class SubmitReportNotifier extends AsyncNotifier<void> {
@@ -26,22 +41,17 @@ class SubmitReportNotifier extends AsyncNotifier<void> {
     required double longitude,
     required ReportSeverity severity,
     required ReportCategory category,
-    String? imageUrl,
   }) async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
-      final repo = ref.read(communityRepositoryProvider);
-      await repo.submitReport(
-        title: title,
-        description: description,
-        latitude: latitude,
-        longitude: longitude,
-        severity: severity,
-        category: category,
-        imageUrl: imageUrl,
-      );
-      ref.invalidate(communityReportsProvider);
-    });
+    final repo = ref.read(communityRepositoryProvider);
+    state = await AsyncValue.guard(() => repo.submitReport(
+          title: title,
+          description: description,
+          latitude: latitude,
+          longitude: longitude,
+          severity: severity,
+          category: category,
+        ));
   }
 }
 

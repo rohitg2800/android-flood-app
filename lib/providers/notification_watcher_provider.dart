@@ -1,3 +1,4 @@
+// lib/providers/notification_watcher_provider.dart
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,6 +25,7 @@ class _NotificationWatcherNotifier extends Notifier<void> {
       }
 
       if (pred.severity == 'CRITICAL') {
+        _firedWarning.remove(key);
         if (_firedCritical.add(key)) {
           svc.showCriticalAlert(
             id: key.hashCode.abs() % 100000,
@@ -35,12 +37,16 @@ class _NotificationWatcherNotifier extends Notifier<void> {
         continue;
       }
 
-      if (pred.severity == 'SEVERE' && _firedWarning.add(key)) {
-        svc.showWarningAlert(
-          id: (key.hashCode.abs() % 100000) + 100000,
-          city: city,
-          level: pred.currentLevel,
-        );
+      if (pred.severity == 'SEVERE') {
+        _firedCritical.remove(key);
+        if (_firedWarning.add(key)) {
+          svc.showWarningAlert(
+            id: (key.hashCode.abs() % 100000) + 100000,
+            city: city,
+            level: pred.currentLevel,
+          );
+        }
+        continue;
       }
     }
   }
@@ -48,5 +54,5 @@ class _NotificationWatcherNotifier extends Notifier<void> {
 
 final notificationWatcherProvider =
     NotifierProvider<_NotificationWatcherNotifier, void>(
-  _NotificationWatcherNotifier.new,
-);
+      _NotificationWatcherNotifier.new,
+    );

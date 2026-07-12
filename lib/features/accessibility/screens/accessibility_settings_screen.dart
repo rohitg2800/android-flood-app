@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:equinox_flood/features/accessibility/providers/accessibility_provider.dart';
 
-class AccessibilitySettingsScreen extends ConsumerWidget {
+class AccessibilitySettingsScreen extends StatelessWidget {
   const AccessibilitySettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(accessibilityProvider);
-    final notifier = ref.read(accessibilityProvider.notifier);
-
+  Widget build(BuildContext context) {
     return Scaffold(
+<<<<<<< HEAD
+      appBar: AppBar(title: const Text('Accessibility Settings')),
+      body: const Padding(
+        padding: EdgeInsets.all(16),
+        child: Text(
+          'Accessibility settings are temporarily unavailable while this feature is being integrated.',
+=======
       backgroundColor: const Color(0xFF0A0A0F),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0A0A0F),
@@ -164,61 +166,8 @@ class _ToggleTile extends StatelessWidget {
           activeColor: const Color(0xFF00D4FF),
           inactiveThumbColor: Colors.white30,
           inactiveTrackColor: Colors.white10,
+>>>>>>> 62aa11686ade765099217874c2d458aa2faccf9d
         ),
-      ),
-    );
-  }
-}
-
-class _ScaleSlider extends StatelessWidget {
-  final double value;
-  final ValueChanged<double> onChanged;
-  const _ScaleSlider({required this.value, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF12121A),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Text Scale',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600)),
-              Text('${(value * 100).round()}%',
-                  style: const TextStyle(
-                      color: Color(0xFF00D4FF),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700)),
-            ],
-          ),
-          const SizedBox(height: 8),
-          SliderTheme(
-            data: SliderThemeData(
-              activeTrackColor: const Color(0xFF00D4FF),
-              inactiveTrackColor: Colors.white.withOpacity(0.1),
-              thumbColor: const Color(0xFF00D4FF),
-              overlayColor: const Color(0xFF00D4FF).withOpacity(0.2),
-            ),
-            child: Slider(
-              value: value,
-              min: 0.8,
-              max: 1.6,
-              divisions: 8,
-              onChanged: onChanged,
-            ),
-          ),
-        ],
       ),
     );
   }
