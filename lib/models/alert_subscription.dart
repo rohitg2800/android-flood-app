@@ -1,5 +1,4 @@
 import 'package:hive_flutter/hive_flutter.dart';
-
 @HiveType(typeId: 10)
 class AlertSubscription extends HiveObject {
   @HiveField(0)

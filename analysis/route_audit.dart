@@ -146,7 +146,7 @@ String? _closest(String route, Set<String> defined) {
   if (defined.contains(route)) return route;
   final parts = route.split('/');
   for (var i = parts.length; i > 1; i--) {
-    final candidate = parts.sublist(0, i).join('/') + '/*';
+    final candidate = '${parts.sublist(0, i).join('/')}/*';
     if (defined.contains(candidate)) return candidate;
   }
   for (final r in defined) {
