@@ -26,7 +26,7 @@ dependencies:
   xml: ^6.3.0
 
   # WebSocket real-time pipeline
-  web_socket_channel: ^3.0.1
+  web_socket_channel: ^3.0.3
 
   # State management
   flutter_riverpod: ^2.6.1

@@ -91,6 +91,8 @@ if _is_package_context():
     from backend.routers.news import router as news_router
     from backend.ml.bootstrap_model import ensure_model_exists
     from backend.routers.fastapi_contracts import router as flutter_contracts_router
+    from backend.routes.water_level_ws import router as water_level_ws_router
+    from backend.services.water_level_pg_listener import start_water_level_listener
     from backend.ws_server import ws_gauges_endpoint
 
 else:
@@ -128,6 +130,8 @@ else:
     from routers.cwc_stations import router as cwc_stations_router
     from routers.news import router as news_router
     from ml.bootstrap_model import ensure_model_exists
+    from routes.water_level_ws import router as water_level_ws_router
+    from services.water_level_pg_listener import start_water_level_listener
     from ws_server import ws_gauges_endpoint
 
 
@@ -576,6 +580,7 @@ app.include_router(rainfall_router)
 app.include_router(cwc_stations_router)
 app.include_router(news_router)
 app.include_router(flutter_contracts_router)
+app.include_router(water_level_ws_router)
 
 
 # ── WebSocket route — REGISTERED HERE ──────────────────────────────────────
@@ -660,3 +665,8 @@ if os.path.isdir(FRONTEND_DIST_DIR):
         if os.path.isfile(file_path):
             return FileResponse(file_path)
         return FileResponse(FRONTEND_INDEX_PATH)
+
+
+@app.on_event("startup")
+async def startup_water_level_ws_listener():
+    asyncio.create_task(start_water_level_listener())
